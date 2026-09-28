@@ -48,6 +48,38 @@ test('exact SKU or image changes invalidate readiness and failure identities, bu
   assert.equal(productImageIdentity(item), productImageIdentity({ ...item, title: 'Edited by owner' }));
 });
 
+test('built-in airport placeholders and whitespace-only assets cannot become product photos', () => {
+  const placeholders = [
+    '/hero-web-airport.png', '/hero-web-airport.png?v=4#cover',
+    'hero-web-airport.png?cache=1',
+    'https://landing.toptik.co.il/hero-web-airport.png',
+    'https://cdn.example.com/hero-web-airport.png?cache=1',
+    '//cdn.example.com/hero-web-airport.png?cache=2',
+    '', '   ', '\n\t',
+  ];
+  for (const placeholder of placeholders) {
+    const placeholderOnly = { ...item, coverImagePath: placeholder,
+      angles: [{ imagePath: placeholder, angleOrder: 0 }] };
+    assert.deepEqual(ownProductImagePaths(placeholderOnly), [], JSON.stringify(placeholder));
+    assert.deepEqual(productImageCandidates(placeholderOnly, placeholder, 720), []);
+    assert.deepEqual(productImageCandidates({ ...placeholderOnly, angles: [
+      { imagePath: placeholder, angleOrder: 0 }, { imagePath: angle, angleOrder: 1 },
+    ] }, placeholder, 720), [
+      { src: trimmedProductSrc(angle, 720), originalSrc: angle },
+      { src: angle, originalSrc: angle },
+    ], 'a real own angle remains usable when the cover is a placeholder');
+  }
+  for (const properUrl of [
+    'https://photos.example.com/custom-product.png?version=3',
+    '/uploads/hero-web-airport.png', '/manual-product.jpg',
+  ]) {
+    const custom = { ...item, coverImagePath: properUrl, angles: [] };
+    assert.deepEqual(productImageCandidates(custom, properUrl, 720), [
+      { src: properUrl, originalSrc: properUrl },
+    ], 'do not broadly exclude or rewrite unknown legitimate assets');
+  }
+});
+
 test('trim failure falls back to exact raw URL and stops after the first decoded candidate', async () => {
   const candidates = productImageCandidates(item, cover, 720);
   const attempts = [];

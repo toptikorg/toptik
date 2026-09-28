@@ -9,13 +9,25 @@ type ProductImageOwner = {
 
 export type ProductImageCandidate = { src: string; originalSrc: string };
 
+function isProductPhoto(path: string): boolean {
+  if (!path.trim()) return false;
+  try {
+    // This built-in scene is an old admin default, never a product photo.
+    // Compare paths so absolute URLs and cache queries cannot reintroduce it.
+    return new URL(path, "https://landing.toptik.co.il").pathname !== "/hero-web-airport.png";
+  } catch {
+    // Keep other supplied assets unchanged; normal decoding decides validity.
+    return true;
+  }
+}
+
 export function ownProductImagePaths(item: ProductImageOwner): string[] {
   return [...new Set([
     item.coverImagePath,
     ...[...item.angles]
       .sort((a, b) => (a.angleOrder ?? 0) - (b.angleOrder ?? 0))
       .map((angle) => angle.imagePath),
-  ].filter(Boolean))];
+  ].filter(isProductPhoto))];
 }
 
 // Include the exact SKU and media list: a reused item ID must not reuse another
