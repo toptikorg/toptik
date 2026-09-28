@@ -1072,6 +1072,7 @@ body {
 
 .catalog-card-buy-btn {
   display: inline-flex;
+  text-decoration: none;
   align-items: center;
   justify-content: center;
   align-self: center;
@@ -1447,6 +1448,7 @@ body {
 
 .product-modal-buy-btn {
   display: inline-flex;
+  text-decoration: none;
   align-items: center;
   justify-content: center;
   font-size: 13px;

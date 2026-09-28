@@ -91,6 +91,7 @@ function CatalogCard({
 }) {
   const displayed = item.coverImagePath;
   const catalog = extractCatalogNumber(item);
+  const purchaseUrl = purchaseUrlFor(item.catalogNumber);
 
   return (
     <article className="catalog-card">
@@ -101,18 +102,18 @@ function CatalogCard({
           {item.description && <div className="catalog-card-description">{item.description}</div>}
         </div>
         <div className="catalog-card-actions">
-          <button
-            type="button"
-            className="catalog-card-buy-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              const url = purchaseUrlFor(item.catalogNumber);
-              if (url) window.open(url, "_blank", "noopener");
-            }}
-            aria-label={`רכישת ${item.title}`}
-          >
-            <span>לרכישה</span>
-          </button>
+          {purchaseUrl && (
+            <a
+              className="catalog-card-buy-btn"
+              href={purchaseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`רכישת ${item.title}`}
+            >
+              <span>לרכישה</span>
+            </a>
+          )}
           {(item.sourceUrl || (item.techSpecs?.specs?.length ?? 0) > 0) && (
             <button
               className="catalog-card-tech-btn"

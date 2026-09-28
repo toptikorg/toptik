@@ -36,8 +36,8 @@ const VARIANT_IDS: Record<string, string> = {
   P10UJV24A92: "50083960783098",
 };
 
-// Checkout URL for an item's catalog number, or null when the product has no
-// store listing (callers keep the button inert in that case).
+// Checkout URL for an item's catalog number, or null when no verified store
+// listing is mapped. Callers must not display a purchase action in that case.
 export function purchaseUrlFor(catalogNumber: string | null | undefined): string | null {
   if (!catalogNumber) return null;
   const key = normalizeCatalogKey(catalogNumber).replace(/TU$/, "");
