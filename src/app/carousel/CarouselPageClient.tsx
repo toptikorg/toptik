@@ -179,6 +179,10 @@ export default function CarouselPageClient() {
         </div>
       </header>
 
+      <p className="carousel-showroom-note" dir="rtl">
+        גלריית המוצרים של TopTik. לצפייה במחיר ולהשלמת הרכישה, עוברים לחנות.
+      </p>
+
       {isLoading ? (
         <div className="carousel-loading">טוען מוצרים...</div>
       ) : (

@@ -279,9 +279,9 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  aria-label={`רכישת ${item.title}`}
+                  aria-label={`להמשך רכישה בחנות TopTik: ${item.title}`}
                 >
-                  לרכישה
+                  להמשך רכישה בחנות TopTik
                 </a>
               )}
               {(item.sourceUrl || (item.techSpecs?.specs?.length ?? 0) > 0) && (

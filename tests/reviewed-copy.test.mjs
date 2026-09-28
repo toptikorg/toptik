@@ -16,10 +16,14 @@ test("all 25 reviewed exact SKUs replace audited legacy copy without touching co
   for (const [sku, entry] of Object.entries(copy)) {
     const original = {catalogNumber:sku, title:entry.expectedLegacyTitle,
       description:entry.expectedLegacyDescription, id:"unchanged", coverImagePath:"same.jpg",
-      angles:[{imagePath:"side.jpg"}], isActive:true, displayOrder:3, sourceUrl:"https://example.com"};
+      angles:[{imagePath:"side.jpg"}], isActive:true, displayOrder:3, sourceUrl:"https://example.com",
+      techSpecs:structuredClone(entry.expectedLegacyTechSpecs)};
     const actual = applyReviewedCopy(original);
-    assert.deepEqual(actual, {...original, title:entry.title, description:entry.description}, sku);
+    assert.deepEqual(actual, {...original, title:entry.title, description:entry.description,
+      techSpecs:{...original.techSpecs, colors:original.techSpecs?.colors ?? [],
+        specs:[{heading:"פרטי מוצר",items:entry.specs}]}}, sku);
     assert.equal(original.description, entry.expectedLegacyDescription, "input is not mutated");
+    assert.deepEqual(original.techSpecs, entry.expectedLegacyTechSpecs, "legacy specs are not mutated");
     assert.deepEqual(applyReviewedCopy(actual), actual, "idempotent");
     assert.ok(entry.sourceUrls.length > 0);
     assert.ok(entry.title && entry.description);
@@ -41,10 +45,72 @@ test("new manual edits and unknown or changed SKUs are preserved", () => {
   assert.equal(reviewedCopyFor("P10SZV24 A83 TU"), null);
 });
 
+test("spec repair ignores JSON key order but preserves every new manual change", () => {
+  const reorderKeys = value => Array.isArray(value) ? value.map(reorderKeys) :
+    value && typeof value === "object" ? Object.fromEntries(
+      Object.entries(value).reverse().map(([key, child]) => [key, reorderKeys(child)])) : value;
+  for (const [sku, entry] of Object.entries(copy)) {
+    const item = {catalogNumber:sku, title:"כותרת ידנית חדשה", description:"תיאור ידני חדש",
+      techSpecs:reorderKeys(entry.expectedLegacyTechSpecs)};
+    const repaired = applyReviewedCopy(item);
+    assert.equal(repaired.title, item.title);
+    assert.equal(repaired.description, item.description);
+    assert.deepEqual(repaired.techSpecs.specs, [{heading:"פרטי מוצר",items:entry.specs}], sku);
+    assert.deepEqual(repaired.techSpecs.colors, item.techSpecs?.colors ?? []);
+    assert.equal(repaired.techSpecs.category, item.techSpecs?.category);
+    for (const techSpecs of [
+      {...item.techSpecs, specs:[{heading:"עריכה ידנית",items:[{label:"מידה",value:"נבדק ידנית"}]}]},
+      {...item.techSpecs, colors:[{name:"צבע חדש",hex:null,swatchUrl:null}]},
+      {...item.techSpecs, category:"manual-category"},
+      null,
+    ]) {
+      const manual = {...item, techSpecs};
+      assert.deepEqual(applyReviewedCopy(manual), manual, `${sku}: manual specs/colors/category preserved`);
+    }
+    const unknown = {...item, catalogNumber:sku+"-OTHER"};
+    assert.deepEqual(applyReviewedCopy(unknown), unknown);
+  }
+  const sku = "BAH08453.001";
+  const legacy = structuredClone(copy[sku].expectedLegacyTechSpecs);
+  assert.ok(legacy.specs.length > 1);
+  legacy.specs.reverse();
+  const reordered = {catalogNumber:sku,title:"manual",description:"manual",techSpecs:legacy};
+  assert.deepEqual(applyReviewedCopy(reordered), reordered, "section order is a meaningful change");
+});
+
+test("unverified products expose only identity specs and suppress stale modal fallback", async () => {
+  for (const sku of ["P10JNV05465", "P10JNV0508Q", "P10GXV24A32", "P10UJV24-A92-TU"]) {
+    const entry = copy[sku];
+    assert.deepEqual(entry.specs.map(spec => spec.label), ["מותג", "מק״ט"]);
+    assert.equal(entry.specs[1].value, sku);
+    const item = applyReviewedCopy({catalogNumber:sku,title:entry.title,
+      techSpecs:structuredClone(entry.expectedLegacyTechSpecs)});
+    assert.ok(item.techSpecs, "non-null reviewed data takes precedence over the scrape/session cache");
+    assert.deepEqual(item.techSpecs.specs, [{heading:"פרטי מוצר",items:entry.specs}]);
+  }
+  const modal = await read("src/components/carousel/TechSpecsModal.tsx");
+  assert.match(modal, /const synchronousDetails = cachedTechSpecs \?\? sessionHit/);
+  assert.match(modal, /if \(!url \|\| synchronousDetails\) return/);
+  const displayBranch = modal.match(/let displayState: FetchState;[\s\S]*?(?=\n  return \()/)?.[0];
+  assert.ok(displayBranch, "modal display-state selection must be present");
+  const { chooseDisplay } = await moduleFrom(`export function chooseDisplay(details, url) {
+    const fetchFailed = false;
+    const fetchedUrl = null;
+    ${displayBranch}
+    return {displayState, displayDetails};
+  }`);
+  const identityDetails = {specs:[{heading:"פרטי מוצר",items:copy.P10JNV05465.specs}],colors:[]};
+  assert.deepEqual(chooseDisplay(identityDetails, null), {
+    displayState:"done",displayDetails:identityDetails,
+  }, "reviewed cached specs render even when the original source URL is absent");
+});
+
 test("production read/save and import paths actually use reviewed copy", async () => {
   const repository = await read("src/lib/carousel/repository.ts");
   assert.match(repository, /\.map\(\(item\) => applyReviewedCopy\(\{/);
   assert.match(repository, /\.\.\.applyReviewedCopy\(item\)/);
+  assert.match(repository, /techSpecs: item\.tech_specs \?\? null/);
+  assert.match(repository, /tech_specs: item\.techSpecs \?\? null/);
   const importer = await read("src/lib/import/import-handler.ts");
   assert.match(importer, /reviewedCopyFor\(productCatalogNumber\)/);
   assert.match(importer, /reviewedCopy\?\.description/);
@@ -129,6 +195,16 @@ test("import through save preserves raw SKU identity while storage paths stay sa
       assert.equal(savedRows[0].title, rawSku === exactSku ? entry.title : entry.expectedLegacyTitle);
       assert.equal(savedRows[0].description,
         rawSku === exactSku ? entry.description : entry.expectedLegacyDescription);
+      if (rawSku === exactSku) {
+        for (const [sku, reviewed] of Object.entries(copy)) {
+          const legacy = {...imported.item, catalogNumber:sku,
+            techSpecs:structuredClone(reviewed.expectedLegacyTechSpecs)};
+          await save({items:[legacy],settings:{autoplayMs:3000,transitionMode:"curtain-fade"}});
+          assert.deepEqual(savedRows[0].tech_specs,
+            {...legacy.techSpecs,colors:legacy.techSpecs?.colors ?? [],
+              specs:[{heading:"פרטי מוצר",items:reviewed.specs}]}, `${sku}: persisted in tech_specs`);
+        }
+      }
     }
   }
 });

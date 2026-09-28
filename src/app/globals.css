@@ -554,6 +554,18 @@ body {
   align-items: center;
 }
 
+.carousel-showroom-note {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  max-width: 760px;
+  margin: 0 auto 4px;
+  color: #f2ece2;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+}
+
 .brand-wordmark {
   font-family: var(--font-poppins), sans-serif;
   letter-spacing: 5px;
@@ -1088,7 +1100,8 @@ body {
   font-family: inherit;
   width: 182px;
   height: 32px;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
   overflow: hidden;
   transition: background 0.15s ease;
 }
@@ -1461,7 +1474,9 @@ body {
   background: #d7aa6a;
   cursor: pointer;
   font-family: inherit;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.2;
+  text-align: center;
   width: 100%;
   transition: background 0.15s ease;
 }

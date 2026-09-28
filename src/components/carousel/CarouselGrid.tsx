@@ -109,9 +109,9 @@ function CatalogCard({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              aria-label={`רכישת ${item.title}`}
+              aria-label={`להמשך רכישה בחנות TopTik: ${item.title}`}
             >
-              <span>לרכישה</span>
+              <span>להמשך רכישה בחנות TopTik</span>
             </a>
           )}
           {(item.sourceUrl || (item.techSpecs?.specs?.length ?? 0) > 0) && (
