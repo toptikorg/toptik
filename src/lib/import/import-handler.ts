@@ -7,6 +7,7 @@ import { enumerateBricsColorVariants } from "@/lib/catalog-source/brics-scraper"
 import { uploadRemoteImageToStorage, uploadVariantGalleries } from "@/lib/catalog-source/storage";
 import { toCarouselColors, toBricsCarouselColors } from "@/lib/carousel/colors";
 import { translateToHebrew } from "@/lib/catalog-source/translate";
+import { reviewedCopyFor } from "@/lib/carousel/reviewed-copy";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { supabaseEnv } from "@/lib/supabase/env";
 import type { SourceColorVariant, SourceProduct } from "@/lib/catalog-source/types";
@@ -62,8 +63,8 @@ function angleKeyByIndex(index: number) {
 }
 
 // The full import pipeline for an already-fetched source product: re-host
-// images, warm tech specs, enumerate + re-host colour galleries, translate the
-// description, and build the draft CarouselItem. Shared by the catalog-number
+// images, warm tech specs, enumerate + re-host colour galleries, use reviewed
+// exact-SKU copy (or preserve the source), and build the draft CarouselItem.
 // route handlers and the import-by-URL route.
 export async function importSourceProduct(
   vendor: CatalogVendor,
@@ -146,12 +147,14 @@ export async function importSourceProduct(
       }
 
       const translatedDescription = await translateToHebrew(sourceProduct.description);
+  const reviewedCopy = reviewedCopyFor(sourceProduct.catalogNumber || catalogNumber);
 
       const itemId = targetItemId ?? crypto.randomUUID();
       const importedItem: CarouselItem = {
         id: itemId,
-        title: sourceProduct.title || `${vendorConfig.label} ${catalogNumber}`,
+        title: reviewedCopy?.title || sourceProduct.title || `${vendorConfig.label} ${catalogNumber}`,
         description: (
+          reviewedCopy?.description ||
           translatedDescription ||
           sourceProduct.description ||
           `ייבוא אוטומטי לפי מק״ט ${catalogNumber} ממקור ${vendorConfig.label}`

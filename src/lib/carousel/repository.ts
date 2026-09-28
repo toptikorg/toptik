@@ -3,6 +3,7 @@ import { CarouselPayload } from "@/lib/carousel/types";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { hasSupabasePublicEnv } from "@/lib/supabase/env";
 import { adminCarouselPayloadSchema } from "@/lib/validation/carousel";
+import { applyReviewedCopy } from "./reviewed-copy";
 
 type SettingsRow = {
   id: number;
@@ -91,7 +92,7 @@ export async function getCarouselPayload(
   }
 
   return {
-    items: (itemRows as ItemRow[]).map((item) => ({
+    items: (itemRows as ItemRow[]).map((item) => applyReviewedCopy({
       id: item.id,
       title: item.title,
       description: item.description,
@@ -122,7 +123,7 @@ export async function saveCarouselPayload(input: unknown) {
   const supabase = createSupabaseServiceRoleClient();
 
   const normalizedItems = parsed.items.map((item) => ({
-    ...item,
+    ...applyReviewedCopy(item),
     id: item.id ?? crypto.randomUUID(),
     angles: item.angles.map((angle) => ({
       ...angle,

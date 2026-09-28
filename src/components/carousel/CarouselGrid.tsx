@@ -95,7 +95,7 @@ function CatalogCard({
 
   return (
     <article className="catalog-card">
-      <div className="catalog-card-body">
+      <div className="catalog-card-body swiper-no-swiping">
         {catalog && <div className="catalog-card-catalog">מספר קטלוגי: {catalog}</div>}
         <div className="catalog-card-main">
           <div className="catalog-card-title">{item.title}</div>
@@ -260,6 +260,9 @@ export function CarouselGrid({ items, autoplayMs, onOpenItem, onOpenTechSpecs, o
       </button>
       <Swiper
         key={swiperKey}
+        // Text selection and links keep native pointer behavior; images still swipe.
+        noSwiping={true}
+        noSwipingClass="swiper-no-swiping"
         modules={[Pagination, Keyboard, A11y, Autoplay]}
         slidesPerView={1}
         initialSlide={0}
