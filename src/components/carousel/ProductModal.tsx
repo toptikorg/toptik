@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { CarouselItem } from "@/lib/carousel/types";
 import type { ResolvedSwatch } from "@/lib/carousel/colors";
 import { trimmedProductSrc, MODAL_IMG_WIDTH } from "@/lib/carousel/trim-src";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
+import { ReliableProductImage, type ProductImageState } from "./ReliableProductImage";
 
 type ProductModalProps = {
   item: CarouselItem | null;
@@ -82,15 +82,13 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
     () => colors.find((c) => c.isCurrent)?.key ?? null,
   );
   const [angleIdx, setAngleIdx] = useState(0);
+  const [imageState, setImageState] = useState<ProductImageState>("loading");
+  const [resolvedPath, setResolvedPath] = useState<string | null>(null);
 
-  const currentSwatch = colors.find((c) => c.key === selectedColorKey) ?? null;
-
-  // The active rotation gallery: the selected colour's angles, else the item's
-  // own imported angles, else its cover. Switching colour swaps the whole gallery.
+  // Rotation is strictly this item's gallery. A colour swatch explicitly
+  // navigates to a different item; it is never an automatic image fallback.
   const gallery: string[] =
-    currentSwatch && currentSwatch.angles.length > 0
-      ? currentSwatch.angles
-      : item && item.angles.length > 0
+    item && item.angles.length > 0
         ? item.angles.map((a) => a.imagePath)
         : item?.coverImagePath
           ? [item.coverImagePath]
@@ -136,6 +134,7 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
   if (!item) return null;
 
   const displayed = gallery[safeIdx] ?? item.coverImagePath;
+  const resolvedAngle = resolvedPath ? gallery.indexOf(resolvedPath) : -1;
   const catalogLabel = item.catalogNumber ? `דגם ${item.catalogNumber}` : "דגם";
   const purchaseUrl = purchaseUrlFor(item.catalogNumber);
 
@@ -183,17 +182,15 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
                   if (event.key === "Enter" || event.key === " ") next();
                 }}
               >
-                {displayed && (
-                  <Image
-                    src={trimmedProductSrc(displayed, MODAL_IMG_WIDTH)}
-                    alt={`${item.title} - ${safeIdx + 1}`}
-                    width={MODAL_IMG_WIDTH}
-                    height={MODAL_IMG_WIDTH}
-                    unoptimized
-                    priority
-                    className="product-modal-image"
-                  />
-                )}
+                <ReliableProductImage
+                  item={item}
+                  preferredSrc={displayed}
+                  width={MODAL_IMG_WIDTH}
+                  className="product-modal-image"
+                  onStateChange={setImageState}
+                  onResolved={setResolvedPath}
+                />
+                {imageState === "unavailable" && <p role="status">תמונות המוצר אינן זמינות כרגע.</p>}
                 <div className="product-modal-cycle-btn product-modal-cycle-btn--icon" aria-label="לזוויות נוספות דפדפו">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/360.png" alt="" aria-hidden="true" className="product-modal-cycle-icon" />
@@ -222,10 +219,10 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
                   {gallery.map((path, index) => (
                     <button
                       key={`${path}-${index}`}
-                      className={`product-modal-slider-dot${index === safeIdx ? " is-active" : ""}`}
+                      className={`product-modal-slider-dot${index === resolvedAngle ? " is-active" : ""}`}
                       onClick={() => setAngleIdx(index)}
                       aria-label={`עבור לזווית ${index + 1}`}
-                      aria-current={index === safeIdx ? "true" : undefined}
+                      aria-current={index === resolvedAngle ? "true" : undefined}
                     />
                   ))}
                 </div>
@@ -269,7 +266,7 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
             <div className="product-modal-title">{item.title}</div>
             {item.description && <div className="product-modal-description">{item.description}</div>}
             <div className="product-modal-angle">
-              {safeIdx + 1} / {count}
+              {resolvedAngle >= 0 ? `${resolvedAngle + 1} / ${count}` : imageState === "ready" ? "תמונת מוצר" : ""}
             </div>
             <div className="product-modal-actions">
               {purchaseUrl && (

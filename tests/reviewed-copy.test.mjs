@@ -137,6 +137,7 @@ test("import through save preserves raw SKU identity while storage paths stay sa
   const saveBody = repositorySource.slice(saveStart).replace(/^export /gm, "");
   const { createSaver } = await moduleFrom(`export function createSaver(deps) {
     const { adminCarouselPayloadSchema, createSupabaseServiceRoleClient, applyReviewedCopy } = deps;
+    const isUnavailableCarouselPayload = (input) => input?.unavailable === true;
     ${saveBody}
     return saveCarouselPayload;
   }`);

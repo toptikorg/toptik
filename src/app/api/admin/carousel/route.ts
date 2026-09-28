@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCarouselPayload, saveCarouselPayload } from "@/lib/carousel/repository";
 import { supabaseEnv } from "@/lib/supabase/env";
+import { CAROUSEL_UNAVAILABLE_MESSAGE, isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 
 function isAuthorized(req: NextRequest) {
   const token = req.headers.get("x-admin-token");
@@ -14,6 +15,9 @@ export async function GET(req: NextRequest) {
 
   try {
     const payload = await getCarouselPayload({ includeInactive: true });
+    if (isUnavailableCarouselPayload(payload)) {
+      return NextResponse.json({ error: CAROUSEL_UNAVAILABLE_MESSAGE }, { status: 503 });
+    }
     return NextResponse.json(payload);
   } catch (error) {
     console.error("GET /api/admin/carousel failed", error);

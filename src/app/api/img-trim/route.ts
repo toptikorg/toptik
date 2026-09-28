@@ -52,12 +52,12 @@ export async function GET(req: NextRequest) {
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) {
-      return NextResponse.json({ error: `source ${res.status}` }, { status: 502 });
+      return NextResponse.json({ error: `source ${res.status}` }, { status: 502, headers: { "cache-control": "no-store" } });
     }
     sourceBytes = Buffer.from(await res.arrayBuffer());
   } catch (error) {
     const message = error instanceof Error ? error.message : "fetch failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return NextResponse.json({ error: message }, { status: 502, headers: { "cache-control": "no-store" } });
   }
 
   try {
@@ -98,13 +98,21 @@ export async function GET(req: NextRequest) {
       headers: { ...CACHE_HEADERS, "content-type": "image/webp" },
     });
   } catch {
-    // If trim fails for any reason, pass the original image through so the
-    // carousel never breaks. The browser still sees a valid image.
-    return new NextResponse(new Uint8Array(sourceBytes), {
-      headers: {
-        ...CACHE_HEADERS,
-        "content-type": "image/webp",
-      },
-    });
+    // A crop failure can still use the same photo without trimming. Decode and
+    // re-encode it: never cache an HTML/error body as a successful WebP image.
+    try {
+      const fallback = targetWidth
+        ? sharp(sourceBytes).resize({ width: targetWidth, withoutEnlargement: true })
+        : sharp(sourceBytes);
+      const validImage = await fallback.webp({ quality: 82 }).toBuffer();
+      return new NextResponse(new Uint8Array(validImage), {
+        headers: { ...CACHE_HEADERS, "content-type": "image/webp" },
+      });
+    } catch {
+      return NextResponse.json({ error: "invalid source image" }, {
+        status: 502,
+        headers: { "cache-control": "no-store" },
+      });
+    }
   }
 }

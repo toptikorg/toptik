@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Image from "next/image";
 import { A11y, Autoplay, Keyboard, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
@@ -9,6 +8,8 @@ import { CarouselItem } from "@/lib/carousel/types";
 import { buildModelSiblingSwatches, resolveItemSwatches, type ResolvedSwatch } from "@/lib/carousel/colors";
 import { trimmedProductSrc, CARD_IMG_WIDTH, MODAL_IMG_WIDTH } from "@/lib/carousel/trim-src";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
+import { productImageIdentity } from "@/lib/carousel/product-image";
+import { ReliableProductImage, type ProductImageState } from "./ReliableProductImage";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -74,27 +75,37 @@ function chunkItems(items: CarouselItem[], size: number) {
   return chunks;
 }
 
-// One catalog card. Holds the locally-selected colour so clicking a swatch swaps
-// the displayed image to that colour's re-hosted cover (scraped colours only).
+// Every card and every automatic image fallback belong to one exact item.
 function CatalogCard({
   item,
   swatches,
   onOpenItem,
   onOpenTechSpecs,
   onNavigate,
+  onImageUnavailable,
+  onImageReady,
 }: {
   item: CarouselItem;
   swatches: ResolvedSwatch[];
   onOpenItem: (item: CarouselItem) => void;
   onOpenTechSpecs: (item: CarouselItem) => void;
   onNavigate: (itemId: string) => void;
+  onImageUnavailable: (identity: string) => void;
+  onImageReady: () => void;
 }) {
   const displayed = item.coverImagePath;
+  const [imageState, setImageState] = useState<ProductImageState>("loading");
+  const imageReady = imageState === "ready";
   const catalog = extractCatalogNumber(item);
   const purchaseUrl = purchaseUrlFor(item.catalogNumber);
 
   return (
-    <article className="catalog-card">
+    <article
+      className="catalog-card"
+      style={{ visibility: imageReady ? undefined : "hidden" }}
+      aria-hidden={!imageReady || undefined}
+      aria-busy={!imageReady}
+    >
       <div className="catalog-card-body swiper-no-swiping">
         {catalog && <div className="catalog-card-catalog">מספר קטלוגי: {catalog}</div>}
         <div className="catalog-card-main">
@@ -142,18 +153,17 @@ function CatalogCard({
             if (event.key === "Enter" || event.key === " ") onOpenItem(item);
           }}
         >
-          {displayed ? (
-            <Image
-              src={trimmedProductSrc(displayed, CARD_IMG_WIDTH)}
-              alt={item.title}
-              width={CARD_IMG_WIDTH}
-              height={CARD_IMG_WIDTH}
-              unoptimized
-              className="catalog-card-image"
-            />
-          ) : (
-            <div className="catalog-card-image-placeholder" aria-hidden="true" />
-          )}
+          <ReliableProductImage
+            item={item}
+            preferredSrc={displayed}
+            width={CARD_IMG_WIDTH}
+            className="catalog-card-image"
+            onStateChange={(state) => {
+              setImageState(state);
+              if (state === "unavailable") onImageUnavailable(productImageIdentity(item));
+              if (state === "ready") onImageReady();
+            }}
+          />
 
           {/* top: view angles */}
           <button
@@ -223,9 +233,15 @@ export function CarouselGrid({ items, autoplayMs, onOpenItem, onOpenTechSpecs, o
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
-  const pages = useMemo(() => chunkItems(items, perPage), [items, perPage]);
-  const swiperKey = useMemo(() => `${perPage}:${items.map((item) => item.id).join("|")}`, [items, perPage]);
-  const modelSiblings = useMemo(() => buildModelSiblingSwatches(items), [items]);
+  const [unavailableImages, setUnavailableImages] = useState<Set<string>>(() => new Set());
+  // Presentation-only filter. Keep the supplied catalog and persisted rows intact.
+  const visibleItems = useMemo(
+    () => items.filter((item) => !unavailableImages.has(productImageIdentity(item))),
+    [items, unavailableImages],
+  );
+  const pages = useMemo(() => chunkItems(visibleItems, perPage), [visibleItems, perPage]);
+  const swiperKey = useMemo(() => `${perPage}:${visibleItems.map((item) => item.id).join("|")}`, [visibleItems, perPage]);
+  const modelSiblings = useMemo(() => buildModelSiblingSwatches(visibleItems), [visibleItems]);
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(false);
@@ -240,6 +256,10 @@ export function CarouselGrid({ items, autoplayMs, onOpenItem, onOpenTechSpecs, o
       onMouseEnter={() => swiperInstance?.autoplay?.pause()}
       onMouseLeave={() => swiperInstance?.autoplay?.resume()}
     >
+      {visibleItems.length < items.length && (
+        <p role="status">חלק מתמונות המוצרים אינן זמינות כרגע. הפריטים האלה הוסתרו זמנית מהגלריה.</p>
+      )}
+      {pages.length > 0 && <>
       <button
         type="button"
         dir="ltr"
@@ -265,6 +285,7 @@ export function CarouselGrid({ items, autoplayMs, onOpenItem, onOpenTechSpecs, o
         noSwipingClass="swiper-no-swiping"
         modules={[Pagination, Keyboard, A11y, Autoplay]}
         slidesPerView={1}
+        autoHeight={true}
         initialSlide={0}
         speed={450}
         navigation={false}
@@ -288,18 +309,26 @@ export function CarouselGrid({ items, autoplayMs, onOpenItem, onOpenTechSpecs, o
             <div className="catalog-grid">
               {page.map((item) => (
                 <CatalogCard
-                  key={item.id}
+                  key={productImageIdentity(item)}
                   item={item}
                   swatches={resolveItemSwatches(modelSiblings.get(item.id))}
                   onOpenItem={onOpenItem}
                   onOpenTechSpecs={onOpenTechSpecs}
                   onNavigate={onNavigateToItem}
+                  onImageUnavailable={(identity) => setUnavailableImages((previous) => {
+                    if (previous.has(identity)) return previous;
+                    return new Set([...previous, identity]);
+                  })}
+                  onImageReady={() => requestAnimationFrame(() => {
+                    if (swiperInstance && !swiperInstance.destroyed) swiperInstance.updateAutoHeight();
+                  })}
                 />
               ))}
             </div>
           </SwiperSlide>
         ))}
       </Swiper>
+      </>}
     </section>
   );
 }

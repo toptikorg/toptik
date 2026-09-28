@@ -1,4 +1,4 @@
-import { fallbackCarouselPayload } from "@/lib/carousel/fallback-data";
+import { fallbackCarouselPayload, isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { CarouselPayload } from "@/lib/carousel/types";
 import { createSupabaseServerClient, createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import { hasSupabasePublicEnv } from "@/lib/supabase/env";
@@ -64,10 +64,7 @@ export async function getCarouselPayload(
   }
 
   if (itemRows.length === 0) {
-    // DB is reachable but has no products — show a genuinely EMPTY gallery, not
-    // the demo fallback. (The fallback is only for the no-DB/error cases above,
-    // so local dev still renders something.) Returning demo items here also used
-    // to leak them into the admin editor and get persisted on "save all".
+    // A successful empty read is distinct from the unavailable fallback above.
     return {
       items: [],
       settings: {
@@ -119,6 +116,10 @@ export async function getCarouselPayload(
 }
 
 export async function saveCarouselPayload(input: unknown) {
+  // Check before schema parsing strips the failure marker and before any write.
+  if (isUnavailableCarouselPayload(input)) {
+    throw new Error("Cannot save an unavailable catalog. Reload the catalog first.");
+  }
   const parsed = adminCarouselPayloadSchema.parse(input);
   const supabase = createSupabaseServiceRoleClient();
 

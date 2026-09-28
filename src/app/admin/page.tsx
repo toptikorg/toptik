@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CarouselPayload, TransitionMode } from "@/lib/carousel/types";
-import { fallbackCarouselPayload } from "@/lib/carousel/fallback-data";
+import { CAROUSEL_UNAVAILABLE_MESSAGE, fallbackCarouselPayload, isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { detectVendorFromCatalog, normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
 import { PRODUCT_CATEGORIES, categorizeItem, type ProductCategory } from "@/lib/carousel/categories";
 import {
@@ -237,6 +237,9 @@ export default function AdminPage() {
   }
 
   async function persistPayload(nextPayload: CarouselPayload) {
+    if (!authReady || isUnavailableCarouselPayload(nextPayload)) {
+      throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
+    }
     // Renumber displayOrder to a clean 1..N by current sort order before saving.
     // This keeps the saved order identical to what the editor shows AND makes
     // sure every value satisfies the server's >=1 rule — so a product added "at
@@ -260,6 +263,7 @@ export default function AdminPage() {
   }
 
   const loadData = useCallback(async (activeToken: string) => {
+    setAuthReady(false);
     try {
       setStatus("טוען נתוני אדמין...");
       const res = await fetch("/api/admin/carousel", {
@@ -270,6 +274,7 @@ export default function AdminPage() {
         throw new Error(data?.error || "Unauthorized or load failed");
       }
       const data = await res.json();
+      if (isUnavailableCarouselPayload(data)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
       setPayload(data);
       setStatus("מחובר");
       setAuthReady(true);
@@ -282,7 +287,6 @@ export default function AdminPage() {
   useEffect(() => {
     const savedToken = window.localStorage.getItem(STORAGE_KEY) || "";
     setToken(savedToken);
-    setAuthReady(Boolean(savedToken));
     if (!savedToken) {
       setStatus("הזן טוקן אדמין כדי להתחבר");
       return;

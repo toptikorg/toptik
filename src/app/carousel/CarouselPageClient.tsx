@@ -8,8 +8,18 @@ import { ProductModal } from "@/components/carousel/ProductModal";
 import { TechSpecsModal } from "@/components/carousel/TechSpecsModal";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 import { CarouselItem, CarouselPayload } from "@/lib/carousel/types";
-import { fallbackCarouselPayload } from "@/lib/carousel/fallback-data";
+import {
+  CAROUSEL_UNAVAILABLE_MESSAGE,
+  fallbackCarouselPayload,
+  isUnavailableCarouselPayload,
+} from "@/lib/carousel/fallback-data";
 import { buildModelSiblingSwatches, resolveItemSwatches } from "@/lib/carousel/colors";
+import {
+  availableBrands,
+  filterByBrand,
+  parseBrandParam,
+  urlWithBrand,
+} from "@/lib/carousel/brands";
 import {
   CategoryKey,
   DEFAULT_CATEGORY,
@@ -22,6 +32,10 @@ export default function CarouselPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<CarouselItem | null>(null);
   const [techSpecsItem, setTechSpecsItem] = useState<CarouselItem | null>(null);
+  const [requestedBrand, setRequestedBrand] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return new URL(window.location.href).searchParams.get("brand");
+  });
   const [activeCategory, setActiveCategory] = useState<CategoryKey>(() => {
     if (typeof window === "undefined") return DEFAULT_CATEGORY;
     const param = new URL(window.location.href).searchParams.get("category");
@@ -34,7 +48,26 @@ export default function CarouselPageClient() {
     const url = new URL(window.location.href);
     if (key === "all") url.searchParams.delete("category");
     else url.searchParams.set("category", key);
-    window.history.replaceState({}, "", url.toString());
+    window.history.replaceState(window.history.state, "", url.toString());
+  }, []);
+
+  const onChangeBrand = useCallback((key: string) => {
+    setRequestedBrand(key);
+    setSelectedItem(null);
+    setTechSpecsItem(null);
+    window.history.replaceState(window.history.state, "", urlWithBrand(window.location.href, key));
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const params = new URL(window.location.href).searchParams;
+      setRequestedBrand(params.get("brand"));
+      setActiveCategory(parseCategoryParam(params.get("category")));
+      setSelectedItem(null);
+      setTechSpecsItem(null);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   useEffect(() => {
@@ -45,6 +78,9 @@ export default function CarouselPageClient() {
         return res.json();
       })
       .then((data: CarouselPayload) => {
+        if (!data || !Array.isArray(data.items) || !data.settings) {
+          throw new Error("Invalid carousel payload");
+        }
         setPayload(data);
         // Fallback warming: most visitors arrive via the landing page which
         // already pre-warms. This catches deep-link visits to /carousel.
@@ -62,9 +98,13 @@ export default function CarouselPageClient() {
         }
       })
       .catch((error) => {
-        console.warn("Using fallback carousel payload", error);
+        if (controller.signal.aborted) return;
+        console.warn("Carousel unavailable", error);
+        setPayload(fallbackCarouselPayload);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
 
     return () => controller.abort();
   }, []);
@@ -103,6 +143,11 @@ export default function CarouselPageClient() {
     return [...deduped.values()];
   }, [payload.items]);
 
+  const brands = useMemo(() => availableBrands(activeItems), [activeItems]);
+  const galleryUnavailable = isUnavailableCarouselPayload(payload);
+  const activeBrand = parseBrandParam(requestedBrand, brands);
+  const brandLabel = brands.find(brand => brand.key === activeBrand)?.label ?? "כל המותגים";
+
   const onOpenItem = useCallback((item: CarouselItem) => {
     const orderedAngles = [...item.angles].sort((a, b) => a.angleOrder - b.angleOrder);
     setSelectedItem({ ...item, angles: orderedAngles });
@@ -125,8 +170,8 @@ export default function CarouselPageClient() {
   const onCloseTechSpecs = useCallback(() => setTechSpecsItem(null), []);
 
   const visibleItems = useMemo(
-    () => filterByCategory(activeItems, activeCategory),
-    [activeItems, activeCategory],
+    () => filterByCategory(filterByBrand(activeItems, activeBrand), activeCategory),
+    [activeItems, activeBrand, activeCategory],
   );
 
   return (
@@ -169,7 +214,21 @@ export default function CarouselPageClient() {
       />
       <header className="carousel-header">
         <div className="carousel-title-block">
-          <div className="brand-wordmark">MANDARINA DUCK</div>
+          <label className="carousel-brand-picker">
+            <span className="carousel-brand-label">בחרו מותג</span>
+            <span className="brand-wordmark carousel-brand-current" aria-hidden="true">{brandLabel}</span>
+            <select
+              className="carousel-brand-select"
+              value={activeBrand}
+              onChange={event => onChangeBrand(event.target.value)}
+              disabled={isLoading || galleryUnavailable}
+              title="בחרו מותג"
+              aria-controls="carousel-brand-results"
+            >
+              <option value="all">כל המותגים</option>
+              {brands.map(brand => <option key={brand.key} value={brand.key}>{brand.label}</option>)}
+            </select>
+          </label>
           <h1 className="collection-title">קולקציה <span>נבחרת</span></h1>
         </div>
         <div className="carousel-header-actions">
@@ -180,21 +239,44 @@ export default function CarouselPageClient() {
       </header>
 
       <p className="carousel-showroom-note" dir="rtl">
-        גלריית המוצרים של TopTik. לצפייה במחיר ולהשלמת הרכישה, עוברים לחנות.
+        להכיר את המוצר לפני שבוחרים: הגדילו את התמונות, עברו בין זוויות הצילום ובחנו את הפרטים והמידות הזמינים לכל דגם. כך תוכלו להשוות מה מתאים לנסיעה שלכם. מצאתם את הדגם המתאים? המחיר והשלמת הרכישה מחכים לכם בחנות TopTik.
       </p>
 
       {isLoading ? (
         <div className="carousel-loading">טוען מוצרים...</div>
+      ) : galleryUnavailable ? (
+        <div id="carousel-brand-results" className="carousel-loading carousel-brand-empty" role="status" dir="rtl">
+          <p>{CAROUSEL_UNAVAILABLE_MESSAGE}</p>
+          <button type="button" onClick={() => window.location.reload()}>ניסיון נוסף</button>
+        </div>
       ) : (
         <div className="carousel-page-body" dir="rtl">
           <CategoryNav active={activeCategory} onChange={onChangeCategory} />
-          <CarouselGrid
-            items={visibleItems}
-            autoplayMs={payload.settings.autoplayMs}
-            onOpenItem={onOpenItem}
-            onOpenTechSpecs={onOpenTechSpecs}
-            onNavigateToItem={onNavigateToItem}
-          />
+          <div id="carousel-brand-results" className="carousel-brand-results">
+            <p className="carousel-brand-status" role="status">
+              {brandLabel}: {visibleItems.length} מוצרים בקטלוג בסינון הנבחר
+            </p>
+            {visibleItems.length > 0 ? (
+              <CarouselGrid
+                items={visibleItems}
+                autoplayMs={payload.settings.autoplayMs}
+                onOpenItem={onOpenItem}
+                onOpenTechSpecs={onOpenTechSpecs}
+                onNavigateToItem={onNavigateToItem}
+              />
+            ) : (
+              <div className="carousel-brand-empty" role="status">
+                <p>{activeItems.length === 0
+                  ? "אין כרגע מוצרים להצגה בגלריה."
+                  : `לא נמצאו מוצרים של ${brandLabel} בקטגוריה זו.`}</p>
+                {activeCategory !== "all" && (
+                  <button type="button" onClick={() => onChangeCategory("all")}>
+                    הצגת כל המוצרים של {brandLabel}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
