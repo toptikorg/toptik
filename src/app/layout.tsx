@@ -68,6 +68,8 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://landing.toptik.co.il"),
   title: "TopTik Collection — Move in Style. Travel with Purpose.",
   description: "TopTik — דף נחיתה רשמי",
+  // Keep the existing site public while content and SEO await release approval.
+  robots: { index: false, follow: true },
 };
 
 export const viewport = {
