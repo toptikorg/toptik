@@ -1,7 +1,7 @@
 import type { CarouselItem } from "./types";
 
-// Nav keys: "all" is a view-all tab; every product is classified into one of the
-// two real categories, chosen per-product in the admin.
+// "all" also includes accessories and items whose category is not verified.
+// The two narrower categories can be chosen per-product in the admin.
 export type CategoryKey = "all" | "suitcase" | "carryon";
 export type ProductCategory = "suitcase" | "carryon";
 
@@ -40,17 +40,46 @@ export function parseCategoryParam(raw: string | null | undefined): CategoryKey 
   return isCategoryKey(raw) ? raw : DEFAULT_CATEGORY;
 }
 
-// The category chosen in the admin (stored in techSpecs.category) wins. For
-// legacy products with no explicit choice, guess from the English title so they
-// still land in one of the two buckets — a clear cabin/carry-on marker maps to
-// "carryon", everything else defaults to "suitcase". The admin checkbox lets an
-// editor correct any guess.
-export function categorizeItem(item: CarouselItem): ProductCategory {
+// Exact identities checked against the sources recorded in reviewed-copy.json.
+// BXL38124 is described by Bric's as a cabin trolley (not inferred from size).
+// A category here is not a guarantee of acceptance by any particular airline.
+// Null keeps accessories and unverified models in "all" without mislabelling.
+const REVIEWED_CATEGORY_BY_SKU: Record<string, ProductCategory | null> = {
+  P10JNV05465: null,
+  P10GXV24A32: null,
+  P10JNV0508Q: null,
+  BXL38124078: "carryon",
+  "BAH08453.001": "suitcase",
+  "BAH08453.006": "suitcase",
+  "BAH08451.001": "carryon",
+  "BAH08454.001": "suitcase",
+  "BAH08453.078": "suitcase",
+  "BXL58117.101": "carryon",
+  BXL38124101: "carryon",
+  "BXL58145.101": "suitcase",
+  "BXL58145.050": "suitcase",
+  "BXL58145.078": "suitcase",
+  "P10SZV24-05J-TU": "carryon",
+  "P10SZV24-A83-TU": "carryon",
+  "P10UJV24-A92-TU": null,
+  "P10SZV24-A81-TU": "carryon",
+  "P10OUV24-A89-TU": "carryon",
+  "P10OUN01-A89-TU": null,
+  "P10UJN01-A92-TU": null,
+  "ORI05500.909": "carryon",
+  "ORI05500.024": "carryon",
+  "P10OSV04-05J-TU": "suitcase",
+  "P10ZJT06-24U-TU": null,
+};
+
+// A deliberate admin choice wins. Otherwise use only verified exact SKU
+// evidence, never a translated title or a default that turns bags into luggage.
+export function categorizeItem(item: CarouselItem): ProductCategory | null {
   const explicit = item.techSpecs?.category;
   if (isProductCategory(explicit)) return explicit;
-  const t = item.title.toLowerCase();
-  if (/\b(cabin|carry[-\s]?on|hand\s*luggage|underseat|trolley\s*case)\b/.test(t)) return "carryon";
-  return "suitcase";
+  const sku = item.catalogNumber?.trim().toUpperCase();
+  return sku && Object.hasOwn(REVIEWED_CATEGORY_BY_SKU, sku)
+    ? REVIEWED_CATEGORY_BY_SKU[sku] : null;
 }
 
 export function filterByCategory(items: CarouselItem[], category: CategoryKey): CarouselItem[] {

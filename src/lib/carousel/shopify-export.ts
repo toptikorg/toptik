@@ -200,7 +200,8 @@ export function buildShopifyExportRows(items: CarouselItem[], origin: string): S
     // Mandarina pattern — including an empty string. Only claim a brand when
     // there is actually a catalog number to judge.
     const vendor = baseCatalog ? VENDOR_LABEL[detectVendorFromCatalog(baseCatalog)] ?? "" : "";
-    const type = TYPE_LABEL[categorizeItem(item)] ?? "";
+    const category = categorizeItem(item);
+    const type = category ? TYPE_LABEL[category] ?? "" : "";
     const title = splitTitle(item.title);
     // Hebrew storefront name from the curated per-SKU table; a stored Hebrew
     // title (an editor's rewrite) still wins.

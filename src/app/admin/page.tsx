@@ -329,8 +329,8 @@ export default function AdminPage() {
         isActive: true,
         dimensions: null,
         weight: null,
-        // Start explicitly in the first category; the editor can switch it.
-        techSpecs: { specs: [], colors: [], category: "suitcase" },
+        // Do not persist a guessed category before an editor identifies it.
+        techSpecs: { specs: [], colors: [], category: null },
         // Manual entry starts with no angle images — upload cover + angles below.
         angles: [],
       };
@@ -511,9 +511,9 @@ export default function AdminPage() {
 
   // Catalog category (מזוודה / טרולי-Carry-on) is stored inside item.techSpecs
   // so it round-trips without a new DB column. Show the effective category
-  // (explicit choice, else the title-derived guess) and preserve specs/colours
+  // (explicit choice, else a verified SKU match) and preserve specs/colours
   // when the editor changes it.
-  function getItemCategory(item: CarouselPayload["items"][number]): ProductCategory {
+  function getItemCategory(item: CarouselPayload["items"][number]): ProductCategory | null {
     return categorizeItem(item);
   }
   function setItemCategory(itemIndex: number, key: ProductCategory) {
