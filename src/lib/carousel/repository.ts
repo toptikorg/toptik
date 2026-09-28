@@ -33,12 +33,14 @@ type AngleRow = {
 
 type GetCarouselPayloadOptions = {
   includeInactive?: boolean;
+  strict?: boolean;
 };
 
 export async function getCarouselPayload(
   options: GetCarouselPayloadOptions = {},
 ): Promise<CarouselPayload> {
   if (!hasSupabasePublicEnv()) {
+    if (options.strict) throw new Error("Gallery data source is not configured");
     return fallbackCarouselPayload;
   }
 
@@ -59,6 +61,7 @@ export async function getCarouselPayload(
   ]);
 
   if (itemsError || !itemRows) {
+    if (options.strict) throw new Error("Gallery data source is unavailable");
     return fallbackCarouselPayload;
   }
 
@@ -77,11 +80,12 @@ export async function getCarouselPayload(
   }
 
   const itemIds = itemRows.map((row: ItemRow) => row.id);
-  const { data: angleRows } = await supabase
+  const { data: angleRows, error: anglesError } = await supabase
     .from("carousel_item_angles")
     .select("*")
     .in("item_id", itemIds.length ? itemIds : [""])
     .order("angle_order", { ascending: true });
+  if (options.strict && anglesError) throw new Error("Gallery media source is unavailable");
 
   const anglesByItem = new Map<string, AngleRow[]>();
   for (const angle of (angleRows ?? []) as AngleRow[]) {

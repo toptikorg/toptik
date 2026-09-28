@@ -137,7 +137,7 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
 
   const displayed = gallery[safeIdx] ?? item.coverImagePath;
   const catalogLabel = item.catalogNumber ? `דגם ${item.catalogNumber}` : "דגם";
-  const purchaseUrl = purchaseUrlFor(item.catalogNumber);
+  const purchaseUrl = purchaseUrlFor(item);
 
   const next = () => setAngleIdx((i) => (count ? (i + 1) % count : 0));
   const prev = () => setAngleIdx((i) => (count ? (i - 1 + count) % count : 0));
@@ -272,6 +272,11 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
               {safeIdx + 1} / {count}
             </div>
             <div className="product-modal-actions">
+              {item.commerce?.productUrl && (
+                <a className="product-modal-tech-btn" href={item.commerce.productUrl}
+                  target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                  aria-label={`פרטי ${item.title} בחנות`}>למוצר בחנות</a>
+              )}
               {purchaseUrl && (
                 <a
                   className="product-modal-buy-btn"

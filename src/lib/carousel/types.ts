@@ -47,6 +47,28 @@ export interface CarouselItem {
   angles: CarouselAngle[];
   techSpecs?: CachedTechSpecs | null;
   colors?: CarouselColor[] | null;
+  // Public read-through projection only. Never submitted to the legacy editor.
+  commerce?: CarouselCommerce | null;
+  editorial?: import("./editorial-schema").ProductEditorial;
+  showroomUrl?: string;
+}
+
+export interface CarouselCollection {
+  id: string;
+  handle: string;
+  title: string;
+}
+
+export interface CarouselCommerce {
+  productId: string;
+  variantId: string;
+  productUrl: string;
+  availableForSale: boolean;
+  price: string;
+  currency: string;
+  vendor: string;
+  collectionIds: string[];
+  checkedAt: string;
 }
 
 export interface CarouselSettings {
@@ -57,6 +79,15 @@ export interface CarouselSettings {
 export interface CarouselPayload {
   items: CarouselItem[];
   settings: CarouselSettings;
+  collections?: CarouselCollection[];
+  sync?: {
+    status: "current" | "unavailable";
+    checkedAt: string | null;
+    productCount: number;
+    variantCount: number;
+    matchedCount: number;
+    addedCount: number;
+  };
 }
 
 export interface AdminItemInput {

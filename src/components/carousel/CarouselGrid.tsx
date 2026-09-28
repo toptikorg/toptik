@@ -91,14 +91,14 @@ function CatalogCard({
 }) {
   const displayed = item.coverImagePath;
   const catalog = extractCatalogNumber(item);
-  const purchaseUrl = purchaseUrlFor(item.catalogNumber);
+  const purchaseUrl = purchaseUrlFor(item);
 
   return (
     <article className="catalog-card">
       <div className="catalog-card-body">
         {catalog && <div className="catalog-card-catalog">מספר קטלוגי: {catalog}</div>}
         <div className="catalog-card-main">
-          <div className="catalog-card-title">{item.title}</div>
+          <div className="catalog-card-title">{item.showroomUrl ? <a className="showroom-title-link" href={item.showroomUrl}>{item.title}</a> : item.title}</div>
           {item.description && <div className="catalog-card-description">{item.description}</div>}
         </div>
         <div className="catalog-card-actions">
@@ -113,6 +113,11 @@ function CatalogCard({
             >
               <span>לרכישה</span>
             </a>
+          )}
+          {item.commerce?.productUrl && (
+            <a className="catalog-card-tech-btn" href={item.commerce.productUrl}
+              target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+              aria-label={`פרטי ${item.title} בחנות`}>למוצר בחנות</a>
           )}
           {(item.sourceUrl || (item.techSpecs?.specs?.length ?? 0) > 0) && (
             <button

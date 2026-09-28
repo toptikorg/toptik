@@ -8,25 +8,19 @@ import { ProductModal } from "@/components/carousel/ProductModal";
 import { TechSpecsModal } from "@/components/carousel/TechSpecsModal";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 import { CarouselItem, CarouselPayload } from "@/lib/carousel/types";
-import { fallbackCarouselPayload } from "@/lib/carousel/fallback-data";
 import { buildModelSiblingSwatches, resolveItemSwatches } from "@/lib/carousel/colors";
 import {
   CategoryKey,
-  DEFAULT_CATEGORY,
+  CategoryDefinition,
+  CATEGORIES,
   filterByCategory,
-  parseCategoryParam,
 } from "@/lib/carousel/categories";
 
-export default function CarouselPageClient() {
-  const [payload, setPayload] = useState<CarouselPayload>(fallbackCarouselPayload);
-  const [isLoading, setIsLoading] = useState(true);
+export default function CarouselPageClient({ initialPayload, initialCategory }: { initialPayload: CarouselPayload; initialCategory: CategoryKey }) {
+  const [payload, setPayload] = useState<CarouselPayload>(initialPayload);
   const [selectedItem, setSelectedItem] = useState<CarouselItem | null>(null);
   const [techSpecsItem, setTechSpecsItem] = useState<CarouselItem | null>(null);
-  const [activeCategory, setActiveCategory] = useState<CategoryKey>(() => {
-    if (typeof window === "undefined") return DEFAULT_CATEGORY;
-    const param = new URL(window.location.href).searchParams.get("category");
-    return parseCategoryParam(param);
-  });
+  const [activeCategory, setActiveCategory] = useState<CategoryKey>(initialCategory);
 
   const onChangeCategory = useCallback((key: CategoryKey) => {
     setActiveCategory(key);
@@ -39,35 +33,45 @@ export default function CarouselPageClient() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/carousel", { signal: controller.signal })
+    let refreshing = false;
+    const refresh = () => {
+      if (refreshing || document.hidden) return;
+      refreshing = true;
+      fetch("/api/carousel", { signal: controller.signal, cache: "no-store" })
       .then(async (res) => {
         if (!res.ok) throw new Error("Failed to fetch carousel payload");
         return res.json();
       })
       .then((data: CarouselPayload) => {
         setPayload(data);
-        // Fallback warming: most visitors arrive via the landing page which
-        // already pre-warms. This catches deep-link visits to /carousel.
-        const cold = data.items
-          .filter((it) => it.isActive && it.sourceUrl && !it.techSpecs)
-          .map((it) => it.sourceUrl!);
-        if (cold.length > 0) {
-          void Promise.all(
-            cold.map((url) =>
-              fetch(`/api/product-details?url=${encodeURIComponent(url)}`, {
-                signal: controller.signal,
-              }).catch(() => {}),
-            ),
-          );
-        }
+        setSelectedItem(previous => previous ? data.items.find(item => item.id === previous.id) ?? null : null);
       })
       .catch((error) => {
-        console.warn("Using fallback carousel payload", error);
+        if (controller.signal.aborted) return;
+        console.warn("Public catalog refresh unavailable", error);
+        // Retain the visible showroom but never keep an old verified buy action.
+        setPayload(previous => ({ ...previous,
+          items: previous.items.map(item => ({ ...item, commerce: null })),
+          sync: { status: "unavailable", checkedAt: null, productCount: 0, variantCount: 0, matchedCount: 0, addedCount: 0 },
+        }));
+        setSelectedItem(previous => previous ? { ...previous, commerce: null } : null);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => { refreshing = false; });
+    };
+    const timer = window.setInterval(refresh, 60000);
+    const visible = () => { if (!document.hidden) refresh(); };
+    document.addEventListener("visibilitychange", visible);
+    if (initialPayload.sync?.status !== "current") refresh();
 
-    return () => controller.abort();
-  }, []);
+    return () => { controller.abort(); window.clearInterval(timer); document.removeEventListener("visibilitychange", visible); };
+  }, [initialPayload.sync?.status]);
+
+  const categories = useMemo<CategoryDefinition[]>(() => payload.collections?.length
+    ? [...CATEGORIES, ...payload.collections
+      .filter(collection => collection.handle !== "all")
+      .map(collection => ({ key: `collection:${collection.id.split("/").pop()}` as CategoryKey, label: collection.title }))]
+    : [...CATEGORIES], [payload.collections]);
+  const effectiveCategory = categories.some(category => category.key === activeCategory) ? activeCategory : "all";
 
   const modelSiblings = useMemo(() => buildModelSiblingSwatches(payload.items.filter(i => i.isActive)), [payload.items]);
 
@@ -84,7 +88,7 @@ export default function CarouselPageClient() {
       .forEach((item) => {
         const catalogKey = item.catalogNumber?.trim().toLowerCase();
         const signature =
-          catalogKey && catalogKey.length > 0
+          item.commerce ? `variant:${item.commerce.variantId}` : catalogKey && catalogKey.length > 0
             ? `catalog:${catalogKey}`
             : `${item.title.trim().toLowerCase()}|${item.coverImagePath.trim().toLowerCase()}`;
         const current = deduped.get(signature);
@@ -125,8 +129,8 @@ export default function CarouselPageClient() {
   const onCloseTechSpecs = useCallback(() => setTechSpecsItem(null), []);
 
   const visibleItems = useMemo(
-    () => filterByCategory(activeItems, activeCategory),
-    [activeItems, activeCategory],
+    () => filterByCategory(activeItems, effectiveCategory),
+    [activeItems, effectiveCategory],
   );
 
   return (
@@ -169,30 +173,30 @@ export default function CarouselPageClient() {
       />
       <header className="carousel-header">
         <div className="carousel-title-block">
-          <div className="brand-wordmark">MANDARINA DUCK</div>
-          <h1 className="collection-title">קולקציה <span>נבחרת</span></h1>
+          <div className="brand-wordmark">TOPTIK</div>
+          <h1 className="collection-title">אולם <span>התצוגה</span></h1>
         </div>
         <div className="carousel-header-actions">
           <Link className="carousel-back-link" href="/">
             חזרה לדף הבית
           </Link>
+          <a className="carousel-back-link" href="https://www.toptik.co.il/">לחנות טופ תיק</a>
         </div>
       </header>
 
-      {isLoading ? (
-        <div className="carousel-loading">טוען מוצרים...</div>
-      ) : (
+      {payload.sync?.status === "unavailable" && (
+        <div className="catalog-sync-notice" role="status">עדכון הקטלוג אינו זמין כרגע. לבדיקת פרטים ורכישה אפשר לעבור לחנות טופ תיק.</div>
+      )}
         <div className="carousel-page-body" dir="rtl">
-          <CategoryNav active={activeCategory} onChange={onChangeCategory} />
-          <CarouselGrid
+          <CategoryNav active={effectiveCategory} onChange={onChangeCategory} categories={categories} />
+          {visibleItems.length ? <CarouselGrid
             items={visibleItems}
             autoplayMs={payload.settings.autoplayMs}
             onOpenItem={onOpenItem}
             onOpenTechSpecs={onOpenTechSpecs}
             onNavigateToItem={onNavigateToItem}
-          />
+          /> : <div className="carousel-loading">אין כרגע מוצרים להצגה בקטגוריה זו.</div>}
         </div>
-      )}
 
       <ProductModal
         key={selectedItem?.id ?? "none"}

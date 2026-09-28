@@ -697,62 +697,6 @@ async function tryShopifyProductData(sourceUrl: string): Promise<{ bodyHtml: str
   return { bodyHtml: null, colors: [] };
 }
 
-// ─── Google Translate fallback (anything left in English) ────────────────────
-
-// Letters-only test: an item that still contains [a-zA-Z] after the dictionary
-// pass needs a runtime translation. We preserve common technical tokens
-// (TSA, K-RING, etc.) by skipping pure-acronym strings.
-function needsTranslation(text: string): boolean {
-  if (!/[a-zA-Z]/.test(text)) return false;
-  // Pure acronym / single uppercase token like "TSA" — keep as is.
-  if (/^[A-Z][A-Z0-9-]{1,6}$/.test(text.trim())) return false;
-  return true;
-}
-
-async function translateOne(text: string): Promise<string> {
-  try {
-    const url =
-      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=he&dt=t&q=${encodeURIComponent(text)}`;
-    const res = await fetch(url, {
-      cache: "force-cache",
-      signal: AbortSignal.timeout(6000),
-      headers: { "user-agent": DEFAULT_HEADERS["user-agent"] },
-    });
-    if (!res.ok) return text;
-    const data = (await res.json()) as unknown;
-    if (!Array.isArray(data) || !Array.isArray(data[0])) return text;
-    const segs = data[0] as unknown[];
-    const out = segs
-      .map((s) => (Array.isArray(s) ? String(s[0] ?? "") : ""))
-      .join("")
-      .trim();
-    return out || text;
-  } catch {
-    return text;
-  }
-}
-
-async function batchTranslateSpecs(specs: SpecSection[]): Promise<void> {
-  const unique = new Set<string>();
-  for (const section of specs) {
-    for (const item of section.items) {
-      if (needsTranslation(item.label)) unique.add(item.label);
-      if (item.value && needsTranslation(item.value)) unique.add(item.value);
-    }
-  }
-  if (unique.size === 0) return;
-  const entries = [...unique];
-  const translations = await Promise.all(entries.map((s) => translateOne(s)));
-  const map = new Map<string, string>();
-  entries.forEach((src, i) => map.set(src, translations[i]));
-  for (const section of specs) {
-    for (const item of section.items) {
-      if (map.has(item.label)) item.label = map.get(item.label)!;
-      if (item.value && map.has(item.value)) item.value = map.get(item.value)!;
-    }
-  }
-}
-
 // ─── Main entry ──────────────────────────────────────────────────────────────
 
 const SECTION_ORDER = ["חיצוני", "פנימי", "הרכב", "מידות"];
@@ -828,10 +772,7 @@ export async function fetchProductDetails(sourceUrl: string): Promise<ProductDet
     .filter((h) => sectionItems[h].length > 0)
     .map((h) => ({ heading: h, items: sectionItems[h] }));
 
-  // Final pass: any item still containing English (a phrase the dictionary
-  // doesn't cover) is sent through Google Translate so the modal is fully
-  // Hebrew. Cached at the fetch layer via force-cache.
-  await batchTranslateSpecs(specs);
+  // Retain source facts for editorial review. Never machine-translate them.
 
   const colors = shopify.colors.length > 0 ? shopify.colors : extractColorsFromPageHtml(pageHtml);
 

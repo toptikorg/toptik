@@ -2,7 +2,7 @@ import type { CarouselItem } from "./types";
 
 // Nav keys: "all" is a view-all tab; every product is classified into one of the
 // two real categories, chosen per-product in the admin.
-export type CategoryKey = "all" | "suitcase" | "carryon";
+export type CategoryKey = "all" | "suitcase" | "carryon" | `collection:${string}`;
 export type ProductCategory = "suitcase" | "carryon";
 
 export interface CategoryDefinition {
@@ -29,7 +29,7 @@ const CATEGORY_KEYS = new Set<string>(CATEGORIES.map((c) => c.key));
 const PRODUCT_CATEGORY_KEYS = new Set<string>(PRODUCT_CATEGORIES.map((c) => c.key));
 
 export function isCategoryKey(value: string | null | undefined): value is CategoryKey {
-  return Boolean(value && CATEGORY_KEYS.has(value));
+  return Boolean(value && (CATEGORY_KEYS.has(value) || /^collection:\d+$/.test(value)));
 }
 
 export function isProductCategory(value: string | null | undefined): value is ProductCategory {
@@ -55,5 +55,11 @@ export function categorizeItem(item: CarouselItem): ProductCategory {
 
 export function filterByCategory(items: CarouselItem[], category: CategoryKey): CarouselItem[] {
   if (category === "all") return items;
-  return items.filter((item) => categorizeItem(item) === category);
+  if (category.startsWith("collection:")) {
+    const id = `gid://shopify/Collection/${category.slice("collection:".length)}`;
+    return items.filter(item => item.commerce?.collectionIds.includes(id));
+  }
+  // Legacy saved categories apply to the curated gallery only. In particular,
+  // do not classify a newly imported laptop bag as a suitcase by default.
+  return items.filter((item) => !item.id.startsWith("shopify-") && categorizeItem(item) === category);
 }

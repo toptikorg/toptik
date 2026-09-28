@@ -62,12 +62,12 @@ export function TechSpecsModal({ item, onClose }: TechSpecsModalProps) {
 
   let displayState: FetchState;
   let displayDetails: ProductDetails | null = null;
-  if (!url) {
-    displayState = "done";
-    displayDetails = { specs: [], colors: [] };
-  } else if (details) {
+  if (details) {
     displayState = "done";
     displayDetails = details;
+  } else if (!url) {
+    displayState = "done";
+    displayDetails = { specs: [], colors: [] };
   } else if (fetchFailed && fetchedUrl === url) {
     displayState = "error";
   } else {

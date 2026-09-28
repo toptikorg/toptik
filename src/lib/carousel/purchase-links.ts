@@ -1,4 +1,4 @@
-import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
+import type { CarouselItem } from "./types";
 
 // Per-SKU Shopify VARIANT IDs — from the owner's "Products_urls" sheet
 // (2026-08-17). Keys are normalized catalog keys (letters+digits, uppercase,
@@ -10,7 +10,7 @@ import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
 // homepage (where the site popup then traps the buyer). The documented stable
 // form is the CART PERMALINK, /cart/<variantId>:<qty>, which adds the item and
 // jumps straight into checkout, skipping the storefront entirely.
-const VARIANT_IDS: Record<string, string> = {
+export const LEGACY_VARIANT_IDS: Readonly<Record<string, string>> = {
   P10SZV2405J: "42465754808570",
   P10JNV0508Q: "42466128494842",
   P10JNV05465: "42624928415994",
@@ -36,11 +36,11 @@ const VARIANT_IDS: Record<string, string> = {
   P10UJV24A92: "50083960783098",
 };
 
-// Checkout URL for an item's catalog number, or null when no verified store
-// listing is mapped. Callers must not display a purchase action in that case.
-export function purchaseUrlFor(catalogNumber: string | null | undefined): string | null {
-  if (!catalogNumber) return null;
-  const key = normalizeCatalogKey(catalogNumber).replace(/TU$/, "");
-  const variantId = VARIANT_IDS[key];
-  return variantId ? `https://www.toptik.co.il/cart/${variantId}:1` : null;
+// Checkout URL only for a currently verified, purchasable public variant.
+// Legacy IDs above are identity checks for the projection, never a fallback.
+export function purchaseUrlFor(item: Pick<CarouselItem, "commerce">): string | null {
+  const commerce = item.commerce;
+  if (!commerce?.availableForSale || !/^\d+$/.test(commerce.variantId)) return null;
+  // IDs enter commerce only after live Storefront identity verification.
+  return `https://www.toptik.co.il/cart/${commerce.variantId}:1`;
 }

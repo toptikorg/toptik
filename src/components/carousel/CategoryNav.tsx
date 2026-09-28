@@ -1,16 +1,17 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { CATEGORIES, type CategoryKey } from "@/lib/carousel/categories";
+import { CATEGORIES, type CategoryKey, type CategoryDefinition } from "@/lib/carousel/categories";
 
 type CategoryNavProps = {
   active: CategoryKey;
   onChange: (key: CategoryKey) => void;
+  categories?: readonly CategoryDefinition[];
 };
 
 // Outline-stroke icons matching the mockup — Mandarina warm brown, ~22px,
 // stroke-width 1.6 to match the catalog-card-tech-btn family.
-const ICONS: Record<CategoryKey, ReactNode> = {
+const ICONS: Partial<Record<CategoryKey, ReactNode>> = {
   // All products — a shopping/bag glyph for the view-all tab.
   all: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -39,12 +40,12 @@ const ICONS: Record<CategoryKey, ReactNode> = {
   ),
 };
 
-export function CategoryNav({ active, onChange }: CategoryNavProps) {
+export function CategoryNav({ active, onChange, categories = CATEGORIES }: CategoryNavProps) {
   return (
     <aside className="category-nav" dir="rtl" aria-label="קטגוריות מוצרים">
       <h2 className="category-nav-title">קטגוריות</h2>
       <div className="category-nav-list" role="tablist">
-        {CATEGORIES.map((c) => {
+        {categories.map((c) => {
           const isActive = active === c.key;
           return (
             <button
@@ -56,7 +57,7 @@ export function CategoryNav({ active, onChange }: CategoryNavProps) {
               onClick={() => onChange(c.key)}
             >
               <span className="category-pill-label">{c.label}</span>
-              <span className="category-pill-icon">{ICONS[c.key]}</span>
+              <span className="category-pill-icon">{ICONS[c.key] ?? ICONS.all}</span>
             </button>
           );
         })}

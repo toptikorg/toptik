@@ -634,6 +634,7 @@ body {
 
 .category-nav {
   display: flex;
+  min-height: 0;
   flex-direction: column;
   gap: 10px;
   width: 220px;
@@ -655,7 +656,37 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
+
+.category-pill { flex-shrink: 0; }
+.showroom-title-link { color: inherit; text-decoration: none; }
+.editorial-form { display: grid; gap: 16px; max-width: 1000px; margin: 24px auto; }
+.editorial-form label { display: grid; gap: 6px; }
+.editorial-form input:not([type=checkbox]), .editorial-form textarea { width: 100%; font: inherit; padding: 10px; }
+.editorial-form p { overflow-wrap: anywhere; }
+.showroom-title-link:hover, .showroom-title-link:focus-visible { text-decoration: underline; }
+.showroom-product-page { min-height: 100vh; background: #393027; color: #f6eddd; padding: 28px 5vw 60px; font-family: var(--font-assistant), sans-serif; }
+.showroom-product-page nav { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+.showroom-product-page nav a { color: inherit; }
+.showroom-product-panel { background: #fff8eb; color: #30281f; padding: 28px; border-radius: 16px; max-width: 1200px; margin: auto; }
+.showroom-product-panel h1 { font-size: clamp(24px, 3vw, 36px); margin: 12px 0; }
+.showroom-product-content { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.showroom-product-photos { display: flex; overflow-x: auto; gap: 12px; scroll-snap-type: x mandatory; align-items: start; }
+.showroom-product-photos img { width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; flex: 0 0 100%; scroll-snap-align: start; mix-blend-mode: multiply; }
+.showroom-product-copy { white-space: pre-line; line-height: 1.9; }
+.showroom-product-specs { margin: 1rem 0; }
+.showroom-product-specs > div { display: flex; gap: 1rem; padding: .5rem 0; border-bottom: 1px solid #d9cbb7; }
+.showroom-product-specs dt { font-weight: 600; min-width: 6rem; }
+.showroom-product-specs dd { margin: 0; overflow-wrap: anywhere; }
+.showroom-product-content h2 { font-size: 22px; margin-bottom: 12px; }
+.showroom-product-content p { margin-bottom: 20px; }
+.showroom-identity { font-size: 12px; overflow-wrap: anywhere; margin-top: 28px; }
+@media(max-width: 767px) { .showroom-product-content { grid-template-columns: minmax(0, 1fr); } .showroom-product-panel { padding: 20px; } }
+.catalog-card-tech-btn, .product-modal-tech-btn { text-decoration: none; text-align: center; }
+.catalog-sync-notice { position: relative; z-index: 1; text-align: center; color: #fff4dc; font-size: 13px; margin: 4px 0 8px; }
 
 .category-pill {
   display: flex;
