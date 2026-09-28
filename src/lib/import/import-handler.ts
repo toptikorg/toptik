@@ -76,15 +76,15 @@ export async function importSourceProduct(
   {
     {
       const catalogNumber = inputLabel;
-      const normalizedCatalogNumber = (sourceProduct.catalogNumber || catalogNumber)
-        // Storage folder name must stay path-safe whatever the source gave us.
-        .replace(/[^A-Za-z0-9._-]/g, "-");
+      const productCatalogNumber = sourceProduct.catalogNumber || catalogNumber;
+      // Sanitize file paths only; SKU punctuation remains part of product identity.
+      const storageCatalogNumber = productCatalogNumber.replace(/[^A-Za-z0-9._-]/g, "-");
 
       const uploadedUrls: string[] = [];
       for (const [index, imageUrl] of sourceProduct.imageUrls.entries()) {
         try {
           const publicUrl = await uploadRemoteImageToStorage(
-            `imports/${vendorConfig.storageFolder}/${normalizedCatalogNumber}`,
+            `imports/${vendorConfig.storageFolder}/${storageCatalogNumber}`,
             imageUrl,
             index,
           );
@@ -135,7 +135,7 @@ export async function importSourceProduct(
           const variants = await vendorConfig.enumerateVariants(sourceProduct);
           if (variants.length > 0) {
             const galleryByHandle = await uploadVariantGalleries(
-              `imports/${vendorConfig.storageFolder}/${normalizedCatalogNumber}/colors`,
+              `imports/${vendorConfig.storageFolder}/${storageCatalogNumber}/colors`,
               variants,
             );
             const mapped = vendorConfig.mapColors(variants, galleryByHandle);
@@ -147,7 +147,7 @@ export async function importSourceProduct(
       }
 
       const translatedDescription = await translateToHebrew(sourceProduct.description);
-  const reviewedCopy = reviewedCopyFor(sourceProduct.catalogNumber || catalogNumber);
+      const reviewedCopy = reviewedCopyFor(productCatalogNumber);
 
       const itemId = targetItemId ?? crypto.randomUUID();
       const importedItem: CarouselItem = {
@@ -159,7 +159,7 @@ export async function importSourceProduct(
           sourceProduct.description ||
           `ייבוא אוטומטי לפי מק״ט ${catalogNumber} ממקור ${vendorConfig.label}`
         ).slice(0, 2000),
-        catalogNumber: normalizedCatalogNumber,
+        catalogNumber: productCatalogNumber,
         sourceUrl: sourceProduct.sourceUrl,
         coverImagePath: uploadedUrls[0],
         displayOrder: 1,
@@ -202,7 +202,7 @@ export async function importSourceProduct(
         item: importedItem,
         source: {
           vendor,
-          catalogNumber: normalizedCatalogNumber,
+          catalogNumber: productCatalogNumber,
           sourceUrl: sourceProduct.sourceUrl,
           importedImages: uploadedUrls.length,
         },

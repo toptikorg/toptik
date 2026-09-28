@@ -46,8 +46,91 @@ test("production read/save and import paths actually use reviewed copy", async (
   assert.match(repository, /\.map\(\(item\) => applyReviewedCopy\(\{/);
   assert.match(repository, /\.\.\.applyReviewedCopy\(item\)/);
   const importer = await read("src/lib/import/import-handler.ts");
-  assert.match(importer, /reviewedCopyFor\(sourceProduct\.catalogNumber \|\| catalogNumber\)/);
+  assert.match(importer, /reviewedCopyFor\(productCatalogNumber\)/);
   assert.match(importer, /reviewedCopy\?\.description/);
+});
+
+test("import through save preserves raw SKU identity while storage paths stay safe", async () => {
+  // Execute the production import/save bodies with only their collaborators
+  // injected. No credentials, network requests or real database writes occur.
+  const importerSource = await read("src/lib/import/import-handler.ts");
+  const importStart = importerSource.indexOf("function angleKeyByIndex");
+  const importEnd = importerSource.indexOf("export function createImportRouteHandler");
+  assert.ok(importStart >= 0 && importEnd > importStart);
+  const importBody = importerSource.slice(importStart, importEnd).replace(/^export /gm, "");
+  const { createImporter } = await moduleFrom(`export function createImporter(deps) {
+    const { VENDOR_CONFIG, uploadRemoteImageToStorage, uploadVariantGalleries,
+      fetchProductDetails, translateToHebrew, reviewedCopyFor,
+      createSupabaseServiceRoleClient } = deps;
+    ${importBody}
+    return importSourceProduct;
+  }`);
+  const repositorySource = await read("src/lib/carousel/repository.ts");
+  const saveStart = repositorySource.indexOf("export async function saveCarouselPayload");
+  assert.ok(saveStart >= 0);
+  const saveBody = repositorySource.slice(saveStart).replace(/^export /gm, "");
+  const { createSaver } = await moduleFrom(`export function createSaver(deps) {
+    const { adminCarouselPayloadSchema, createSupabaseServiceRoleClient, applyReviewedCopy } = deps;
+    ${saveBody}
+    return saveCarouselPayload;
+  }`);
+  const { translateToHebrew } = await moduleFrom(await read("src/lib/catalog-source/translate.ts"));
+  const exactSku = "P10SZV24-A83-TU";
+  const entry = copy[exactSku];
+  for (const rawSku of [exactSku, "P10SZV24/A83/TU", "P10SZV24 A83 TU"]) {
+    for (const sourceSku of [rawSku, null]) {
+      const storagePaths = [];
+      const sourceProduct = {
+        catalogNumber: sourceSku, title: entry.expectedLegacyTitle,
+        description: entry.expectedLegacyDescription,
+        sourceUrl: "https://example.com/product", imageUrls: ["https://example.com/image.jpg"],
+      };
+      const importProduct = createImporter({
+        VENDOR_CONFIG: { mandarina: {
+          label: "Mandarina Duck", storageFolder: "mandarina",
+          enumerateVariants: async () => [{}], mapColors: () => [],
+        } },
+        uploadRemoteImageToStorage: async folder => {
+          storagePaths.push(folder);
+          return "https://example.com/stored.jpg";
+        },
+        uploadVariantGalleries: async folder => { storagePaths.push(folder); return new Map(); },
+        fetchProductDetails: async () => ({ specs: [], colors: [] }),
+        translateToHebrew, reviewedCopyFor,
+        createSupabaseServiceRoleClient: () => { throw new Error("Import must not persist a new item"); },
+      });
+      const imported = await importProduct("mandarina", sourceProduct, undefined, rawSku);
+      assert.equal(imported.item.catalogNumber, rawSku);
+      assert.equal(imported.source.catalogNumber, rawSku);
+      assert.deepEqual(storagePaths, [
+        `imports/mandarina/${exactSku}`, `imports/mandarina/${exactSku}/colors`,
+      ]);
+
+      let savedRows;
+      const db = { from(table) { return {
+        upsert(rows) {
+          if (table === "carousel_items") {
+            savedRows = rows;
+            return { select: async () => ({ data: rows.map(row => ({ id: row.id })), error: null }) };
+          }
+          return Promise.resolve({ error: null });
+        },
+        select: async () => ({ data: [], error: null }),
+      }; } };
+      const save = createSaver({
+        // This test isolates identity propagation, not the unchanged Zod schema.
+        adminCarouselPayloadSchema: { parse: input => structuredClone(input) },
+        createSupabaseServiceRoleClient: () => db, applyReviewedCopy,
+      });
+      await save({ items: [imported.item], settings: {
+        autoplayMs: 3000, transitionMode: "curtain-fade",
+      } });
+      assert.equal(savedRows[0].catalog_number, rawSku);
+      assert.equal(savedRows[0].title, rawSku === exactSku ? entry.title : entry.expectedLegacyTitle);
+      assert.equal(savedRows[0].description,
+        rawSku === exactSku ? entry.description : entry.expectedLegacyDescription);
+    }
+  }
 });
 
 test("translation cannot make network requests or reintroduce machine copy", async () => {
