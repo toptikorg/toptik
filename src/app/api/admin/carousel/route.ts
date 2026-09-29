@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCarouselPayload } from "@/lib/carousel/repository";
 import { saveCarouselPayload } from "@/lib/carousel/repository-admin";
-import { supabaseEnv } from "@/lib/supabase/env";
+import { requireAdminToken } from "@/lib/admin/admin-token";
 import { CAROUSEL_UNAVAILABLE_MESSAGE, isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 
-function isAuthorized(req: NextRequest) {
-  const token = req.headers.get("x-admin-token");
-  return Boolean(token && supabaseEnv.adminToken && token === supabaseEnv.adminToken);
-}
-
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = requireAdminToken(req);
+  if (denied) return denied;
 
   try {
     const payload = await getCarouselPayload({ includeInactive: true });
@@ -27,9 +21,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = requireAdminToken(req);
+  if (denied) return denied;
 
   try {
     const body = await req.json();

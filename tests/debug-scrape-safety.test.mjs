@@ -30,8 +30,9 @@ test("the public debug-scrape route is closed: 404, no fetch, no URL handling", 
 test("the admin diagnostics route authenticates before doing anything", async () => {
   const route = await read("src/app/api/admin/debug-scrape/route.ts");
   const handler = route.slice(route.indexOf("export async function GET"));
-  const authAt = handler.indexOf("if (!isAuthorized(req))");
-  const unauthorizedAt = handler.indexOf("status: 401");
+  // Central constant-time token gate (src/lib/admin/admin-token.ts) answers 401.
+  const authAt = handler.indexOf("requireAdminToken(req)");
+  const unauthorizedAt = handler.indexOf("if (denied) return denied;");
   const urlAt = handler.indexOf("searchParams.get(\"url\")");
   const approvedAt = handler.indexOf("approvedSourceUrl(url)");
   const scrapeAt = handler.indexOf("scrapeDiagnostics(");
@@ -39,7 +40,9 @@ test("the admin diagnostics route authenticates before doing anything", async ()
   assert.ok(urlAt > unauthorizedAt && approvedAt > urlAt && scrapeAt > approvedAt, "auth, then allowlist, then scrape");
   assert.match(handler, /safeSourceFetch\(target, init\)/, "only the guarded fetcher is used");
   assert.doesNotMatch(route, /\bfetch\(|service-role|createSupabaseServiceRoleClient|\.(insert|update|upsert|delete)\(/);
-  assert.match(route, /token === supabaseEnv\.adminToken/);
+  const gate = await read("src/lib/admin/admin-token.ts");
+  assert.match(gate, /timingSafeEqual/);
+  assert.match(gate, /status: 401/);
 });
 
 test("diagnostics never touch the network directly", async () => {

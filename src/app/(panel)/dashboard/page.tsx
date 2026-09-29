@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requirePanelUser } from "@/lib/admin/supabase-server";
+import { requireAdminPage } from "@/lib/admin/authz";
 import {
   LANDING_URL,
   GALLERY_EDITOR_URL,
@@ -19,7 +19,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const user = await requirePanelUser();
+  const { user } = await requireAdminPage();
 
   return (
     <>

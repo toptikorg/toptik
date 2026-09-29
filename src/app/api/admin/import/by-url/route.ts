@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminToken } from "@/lib/admin/admin-token";
 import { z } from "zod";
 import { importSourceProduct } from "@/lib/import/import-handler";
 import { fetchMandarinaByUrl } from "@/lib/catalog-source/mandarina-scraper";
 import { fetchBricsByUrl } from "@/lib/catalog-source/brics-scraper";
-import { supabaseEnv } from "@/lib/supabase/env";
 import type { SourceProduct } from "@/lib/catalog-source/types";
 import type { CatalogVendor } from "@/lib/catalog-source/provider";
 
@@ -17,11 +17,6 @@ const importByUrlSchema = z.object({
   url: z.string().trim().url().max(600),
   targetItemId: z.string().uuid().optional(),
 });
-
-function isAuthorized(req: NextRequest) {
-  const token = req.headers.get("x-admin-token");
-  return Boolean(token && supabaseEnv.adminToken && token === supabaseEnv.adminToken);
-}
 
 type UrlSource = {
   label: string;
@@ -50,9 +45,8 @@ const URL_SOURCES: UrlSource[] = [
 ];
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = requireAdminToken(req);
+  if (denied) return denied;
 
   try {
     const body = await req.json();

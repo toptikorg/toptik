@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPanelUser, createPanelServerClient } from "@/lib/admin/supabase-server";
+import { createPanelServerClient } from "@/lib/admin/supabase-server";
+import { requireAdminUser } from "@/lib/admin/authz";
 import {
   isVaultConfigured,
   listVaultEntries,
@@ -13,11 +14,14 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /** Step 2 of the vault gate — verify the OTP, open a short step-up window, and
- *  return the decrypted entries. */
+ *  return the decrypted entries. Requires an authorized admin FIRST: a valid
+ *  OTP alone never opens the vault. */
 export async function POST(req: NextRequest) {
   if (isPanelDemo()) return NextResponse.json({ ok: true, entries: await listVaultEntries() });
-  const user = await getPanelUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireAdminUser();
+  if (!gate.ok) return gate.response;
+  const { user } = gate;
+  if (!user.email) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!isVaultConfigured()) {
     return NextResponse.json({ error: "כספת הסיסמאות אינה מוגדרת בשרת" }, { status: 503 });
   }

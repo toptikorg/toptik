@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
-import { getPanelUser } from "@/lib/admin/supabase-server";
+import { requireOwnerUser } from "@/lib/admin/authz";
 import { deleteAdmin, createAdminWithPassword, listAdminUsers } from "@/lib/admin/users";
 import { isPanelDemo, DEMO_USERS } from "@/lib/admin/demo";
 
@@ -12,19 +12,21 @@ const createSchema = z.object({
   password: z.string().min(10, "הסיסמה חייבת להכיל לפחות 10 תווים"),
 });
 
-async function guard(): Promise<NextResponse | null> {
-  const user = await getPanelUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!hasSupabaseAdminEnv()) {
-    return NextResponse.json({ error: "Supabase admin env not configured" }, { status: 500 });
-  }
-  return null;
+// Admin-user management is owner-only: anonymous → 401, any other signed-in
+// user (admin, or a user without a panel role) → 403. Each handler calls the
+// gate first, before any service-role operation.
+function adminEnvMissing(): NextResponse | null {
+  return hasSupabaseAdminEnv()
+    ? null
+    : NextResponse.json({ error: "Supabase admin env not configured" }, { status: 500 });
 }
 
 export async function GET(): Promise<NextResponse> {
   if (isPanelDemo()) return NextResponse.json({ users: DEMO_USERS });
-  const blocked = await guard();
-  if (blocked) return blocked;
+  const gate = await requireOwnerUser();
+  if (!gate.ok) return gate.response;
+  const envMissing = adminEnvMissing();
+  if (envMissing) return envMissing;
   try {
     return NextResponse.json({ users: await listAdminUsers() });
   } catch (error) {
@@ -34,8 +36,10 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const blocked = await guard();
-  if (blocked) return blocked;
+  const gate = await requireOwnerUser();
+  if (!gate.ok) return gate.response;
+  const envMissing = adminEnvMissing();
+  if (envMissing) return envMissing;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
@@ -52,8 +56,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 }
 
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
-  const blocked = await guard();
-  if (blocked) return blocked;
+  const gate = await requireOwnerUser();
+  if (!gate.ok) return gate.response;
+  const envMissing = adminEnvMissing();
+  if (envMissing) return envMissing;
 
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "חסר מזהה משתמש" }, { status: 400 });

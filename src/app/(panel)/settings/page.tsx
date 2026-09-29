@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requirePanelUser } from "@/lib/admin/supabase-server";
+import { requireAdminPage } from "@/lib/admin/authz";
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { SettingsUsersClient } from "@/components/admin/SettingsUsersClient";
 import { VaultLauncher } from "@/components/admin/VaultLauncher";
@@ -9,7 +9,7 @@ import { INTERNIC_URL, VERCEL_URL, GITHUB_URL } from "@/lib/admin/config";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const user = await requirePanelUser();
+  const { user, role } = await requireAdminPage();
 
   return (
     <>
@@ -26,7 +26,14 @@ export default async function SettingsPage() {
           <p className="admin-subtitle">נהלו את חשבונות המנהלים והגדרות המערכת.</p>
         </div>
 
-        <SettingsUsersClient currentEmail={user.email ?? null} />
+        {/* Admin-user management is owner-only (enforced again by the API). */}
+        {role === "owner" ? (
+          <SettingsUsersClient currentEmail={user.email ?? null} />
+        ) : (
+          <div className="admin-feedback admin-feedback--info" role="status">
+            ניהול חשבונות המנהלים זמין לבעלים בלבד.
+          </div>
+        )}
 
         <div className="admin-grid" style={{ marginTop: 22 }}>
           <a href={INTERNIC_URL} target="_blank" rel="noopener noreferrer" className="admin-tile">
