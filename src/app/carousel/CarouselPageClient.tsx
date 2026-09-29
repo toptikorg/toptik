@@ -28,18 +28,12 @@ import {
   filterByCategory,
   parseCategoryParam,
 } from "@/lib/carousel/categories";
-import { selectionSummary } from "@/lib/carousel/selection-summary";
 
 export default function CarouselPageClient() {
   const [payload, setPayload] = useState<CarouselPayload>(fallbackCarouselPayload);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<CarouselItem | null>(null);
   const [techSpecsItem, setTechSpecsItem] = useState<CarouselItem | null>(null);
-  // Preview-only switch for the owner's choice of control placement (?nav=bar). Default keeps the side arrows.
-  const [navVariant] = useState<"side" | "bar">(() => {
-    if (typeof window === "undefined") return "side";
-    return new URL(window.location.href).searchParams.get("nav") === "bar" ? "bar" : "side";
-  });
   const [requestedBrand, setRequestedBrand] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return new URL(window.location.href).searchParams.get("brand");
@@ -237,11 +231,8 @@ export default function CarouselPageClient() {
         </div>
       </header>
 
-      <p className="carousel-showroom-note" dir="rtl">
-        <span id="carousel-brand-help">לבחירת מותג אחר ולצפייה בקולקציה שלו, לחצו על שם המותג בראש הגלריה.</span>
-        <br />
-        להכיר את המוצר לפני שבוחרים: הגדילו את התמונות, עברו בין זוויות הצילום ובחנו את הפרטים והמידות הזמינים לכל דגם. כך תוכלו להשוות מה מתאים לנסיעה שלכם. מצאתם את הדגם המתאים? רכשו באתר או בואו לבקר ברשת חנויות TopTik.
-      </p>
+      {/* Visible explanations removed; the dynamic status line above the products replaces them. */}
+      <span id="carousel-brand-help" className="carousel-a11y-hidden">לבחירת מותג אחר ולצפייה בקולקציה שלו, לחצו על שם המותג בראש הגלריה.</span>
 
       {isLoading ? (
         <div className="carousel-loading">טוען מוצרים...</div>
@@ -257,18 +248,11 @@ export default function CarouselPageClient() {
             <p className="carousel-brand-status" role="status">
               {brandLabel}: {visibleItems.length} מוצרים בקטלוג בסינון הנבחר
             </p>
-            <div className="carousel-selection" dir="rtl" data-testid="carousel-selection">
-              <p className="carousel-selection-line">
-                {selectionSummary({ brandLabel, allBrands: activeBrand === "all", category: activeCategory, total: visibleItems.length }).selection}
-              </p>
-              <p className="carousel-selection-help">
-                {selectionSummary({ brandLabel, allBrands: activeBrand === "all", category: activeCategory, total: visibleItems.length }).help}
-              </p>
-            </div>
             {visibleItems.length > 0 ? (
               <CarouselGrid
                 items={visibleItems}
-                navVariant={navVariant}
+                brandLabel={brandLabel}
+                category={activeCategory}
                 onOpenItem={onOpenItem}
                 onOpenTechSpecs={onOpenTechSpecs}
                 onNavigateToItem={onNavigateToItem}

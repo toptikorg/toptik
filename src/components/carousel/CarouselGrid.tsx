@@ -10,6 +10,8 @@ import { trimmedProductSrc, CARD_IMG_WIDTH, MODAL_IMG_WIDTH } from "@/lib/carous
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
 import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
 import { productImageIdentity } from "@/lib/carousel/product-image";
+import { statusLine } from "@/lib/carousel/selection-summary";
+import type { CategoryKey } from "@/lib/carousel/categories";
 import { ReliableProductImage, type ProductImageState } from "./ReliableProductImage";
 
 import "swiper/css";
@@ -17,11 +19,12 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 type CarouselGridProps = {
+  brandLabel: string;
+  category: CategoryKey;
   items: CarouselItem[];
   /** Deprecated and ignored: the gallery no longer moves by itself. Kept so callers still compile. */
   autoplayMs?: number;
   /** Preview-only choice of control placement: "side" (arrows on the card sides) or "bar" (bottom control bar). */
-  navVariant?: "side" | "bar";
   onOpenItem: (item: CarouselItem) => void;
   onOpenTechSpecs: (item: CarouselItem) => void;
   onNavigateToItem: (itemId: string) => void;
@@ -227,7 +230,7 @@ function CatalogCard({
   );
 }
 
-export function CarouselGrid({ items, navVariant = "side", onOpenItem, onOpenTechSpecs, onNavigateToItem }: CarouselGridProps) {
+export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTechSpecs, onNavigateToItem }: CarouselGridProps) {
   // Desktop shows 4 cards per slide (2×2); mobile shows 2 (stacked). Default to
   // the desktop count for SSR, then adjust on mount + on viewport changes.
   const [perPage, setPerPage] = useState(4);
@@ -254,9 +257,8 @@ export function CarouselGrid({ items, navVariant = "side", onOpenItem, onOpenTec
   const total = visibleItems.length;
   const first = Math.min(total, activeIndex * perPage + 1);
   const last = Math.min(total, (activeIndex + 1) * perPage);
-  const slideText = pages.length > 0 ? `שקופית ${Math.min(activeIndex + 1, pages.length)} מתוך ${pages.length}` : "";
-  const positionText = total === 0 ? "" : `${first === last ? `מוצר ${first} מתוך ${total}` : `מוצרים ${first}–${last} מתוך ${total}`} · ${slideText}`;
-  const edgeText = pages.length <= 1 ? "" : isBeginning ? "תחילת הרשימה" : isEnd ? "סוף הרשימה" : "";
+  const status = statusLine({ brandLabel, category, first, last, total });
+  const progressPct = pages.length > 0 ? Math.round((Math.min(activeIndex + 1, pages.length) / pages.length) * 100) : 0;
   const prevDisabled = isBeginning;
   const nextDisabled = isEnd;
 
@@ -264,39 +266,42 @@ export function CarouselGrid({ items, navVariant = "side", onOpenItem, onOpenTec
     <section
       className="catalog-carousel"
       aria-label="קטלוג מוצרים"
-      data-nav-variant={navVariant}
+      data-nav-variant="top"
     >
       {visibleItems.length < items.length && (
         <p role="status">חלק מתמונות המוצרים אינן זמינות כרגע. הפריטים האלה הוסתרו זמנית מהגלריה.</p>
       )}
       {pages.length > 0 && <>
-      {navVariant === "side" && (
-        <p className="carousel-position carousel-position--top" role="status" aria-live="polite" data-testid="carousel-position">
-          {positionText}{edgeText ? ` · ${edgeText}` : ""}
-        </p>
-      )}
-      {navVariant === "side" && <>
-      <button
-        type="button"
-        dir="ltr"
-        className={`carousel-nav carousel-nav-prev${prevDisabled ? " swiper-button-disabled" : ""}`}
-        aria-label="מוצרים קודמים"
-        aria-disabled={prevDisabled}
-        onClick={() => swiperInstance?.slidePrev()}
-      >
-        <span className="carousel-nav-glyph">&#x2039;</span>
-      </button>
-      <button
-        type="button"
-        dir="ltr"
-        className={`carousel-nav carousel-nav-next${nextDisabled ? " swiper-button-disabled" : ""}`}
-        aria-label="מוצרים הבאים"
-        aria-disabled={nextDisabled}
-        onClick={() => swiperInstance?.slideNext()}
-      >
-        <span className="carousel-nav-glyph">&#x203A;</span>
-      </button>
-      </>}
+      <div className="carousel-navrow" role="group" aria-label="ניווט בין מוצרים" dir="rtl">
+        <button
+          type="button"
+          className="carousel-navrow-btn"
+          aria-label="הקודם"
+          aria-disabled={prevDisabled}
+          disabled={prevDisabled}
+          onClick={() => swiperInstance?.slidePrev()}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+          <span className="carousel-navrow-label" aria-hidden="true">הקודם</span>
+        </button>
+        <div className="carousel-navrow-info">
+          <p className="carousel-position" role="status" aria-live="polite" data-testid="carousel-position">
+            {status}
+          </p>
+          <div className="carousel-progress" aria-hidden="true"><span style={{ width: `${progressPct}%` }} /></div>
+        </div>
+        <button
+          type="button"
+          className="carousel-navrow-btn"
+          aria-label="הבא"
+          aria-disabled={nextDisabled}
+          disabled={nextDisabled}
+          onClick={() => swiperInstance?.slideNext()}
+        >
+          <span className="carousel-navrow-label" aria-hidden="true">הבא</span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+        </button>
+      </div>
       <Swiper
         key={swiperKey}
         // Text selection and links keep native pointer behavior; images still swipe.
@@ -342,17 +347,6 @@ export function CarouselGrid({ items, navVariant = "side", onOpenItem, onOpenTec
           </SwiperSlide>
         ))}
       </Swiper>
-      {navVariant === "bar" && (
-        <div className="carousel-controls" role="group" aria-label="ניווט בין מוצרים">
-          <button type="button" className="carousel-controls-btn" aria-label="מוצרים קודמים" aria-disabled={prevDisabled}
-            disabled={prevDisabled} onClick={() => swiperInstance?.slidePrev()}><span aria-hidden="true">&#x203A;</span></button>
-          <p className="carousel-position carousel-position--bar" role="status" aria-live="polite" data-testid="carousel-position">
-            <span>{positionText}</span>{edgeText && <span className="carousel-position-edge">{edgeText}</span>}
-          </p>
-          <button type="button" className="carousel-controls-btn" aria-label="מוצרים הבאים" aria-disabled={nextDisabled}
-            disabled={nextDisabled} onClick={() => swiperInstance?.slideNext()}><span aria-hidden="true">&#x2039;</span></button>
-        </div>
-      )}
       </>}
     </section>
   );
