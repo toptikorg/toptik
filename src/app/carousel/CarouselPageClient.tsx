@@ -34,6 +34,11 @@ export default function CarouselPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<CarouselItem | null>(null);
   const [techSpecsItem, setTechSpecsItem] = useState<CarouselItem | null>(null);
+  // Preview-only switch for the owner's choice of control placement (?nav=bar). Default keeps the side arrows.
+  const [navVariant] = useState<"side" | "bar">(() => {
+    if (typeof window === "undefined") return "side";
+    return new URL(window.location.href).searchParams.get("nav") === "bar" ? "bar" : "side";
+  });
   const [requestedBrand, setRequestedBrand] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return new URL(window.location.href).searchParams.get("brand");
@@ -254,7 +259,7 @@ export default function CarouselPageClient() {
             {visibleItems.length > 0 ? (
               <CarouselGrid
                 items={visibleItems}
-                autoplayMs={payload.settings.autoplayMs}
+                navVariant={navVariant}
                 onOpenItem={onOpenItem}
                 onOpenTechSpecs={onOpenTechSpecs}
                 onNavigateToItem={onNavigateToItem}
