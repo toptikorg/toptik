@@ -1,24 +1,11 @@
 import { NextResponse } from "next/server";
-import { getCarouselPayload } from "@/lib/carousel/repository";
-import { buildItemColorGroups, extractColorWord, getFamilyKey } from "@/lib/carousel/color-groups";
 
-export async function GET() {
-  const payload = await getCarouselPayload();
-  const activeItems = payload.items.filter(i => i.isActive);
-  const colorGroups = buildItemColorGroups(activeItems);
+// This public diagnostic route listed the title, id and colour grouping of
+// every active gallery item. Nothing in the gallery, the admin tools or the
+// tests consumes it, so it is closed and answers 404 like the retired
+// /api/debug-scrape route.
+const NOT_FOUND = () =>
+  NextResponse.json({ error: "not_found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
 
-  const itemDebug = activeItems.map(item => ({
-    id: item.id,
-    title: item.title,
-    colorWord: extractColorWord(item.title),
-    familyKey: getFamilyKey(item.title),
-    hasColorGroup: colorGroups.has(item.id),
-    swatches: colorGroups.get(item.id) ?? [],
-  }));
-
-  return NextResponse.json({
-    totalItems: activeItems.length,
-    itemsWithColors: itemDebug.filter(i => i.hasColorGroup).length,
-    items: itemDebug,
-  }, { headers: { "cache-control": "no-store" } });
-}
+export const GET = NOT_FOUND;
+export const POST = NOT_FOUND;
