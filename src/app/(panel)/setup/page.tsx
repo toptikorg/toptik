@@ -1,26 +1,18 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { getPanelUser } from "@/lib/admin/supabase-server";
+import { getPanelAccess } from "@/lib/admin/authz";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
-import { countAdminUsers } from "@/lib/admin/users";
 import { SetupClient } from "@/components/admin/SetupClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function SetupPage() {
-  const user = await getPanelUser();
-  if (user) redirect("/dashboard");
+  const { role } = await getPanelAccess();
+  if (role) redirect("/dashboard");
 
+  // No service-role read on this public page: the setup token is checked by
+  // POST /api/panel/setup, which also refuses once any account exists.
   const envOk = hasSupabaseAdminEnv();
-  let alreadySetUp = false;
-  if (envOk) {
-    try {
-      alreadySetUp = (await countAdminUsers()) > 0;
-    } catch {
-      alreadySetUp = false;
-    }
-  }
-  if (alreadySetUp) redirect("/login");
 
   return (
     <main className="admin-main admin-main--narrow">

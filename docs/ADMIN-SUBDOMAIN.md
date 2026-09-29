@@ -127,12 +127,15 @@ Optional overrides: `NEXT_PUBLIC_ADMIN_HOST` (default `admin.toptik.co.il`),
 3. From **הגדרות אדמין** (`/settings`) invite up to **2 more** admins by email.
    Each invitee receives a link to set their password.
 
-After an owner exists, `/setup` is locked (redirects to `/login`).
+After an owner exists, `POST /api/panel/setup` refuses (409). The `/setup` page no
+longer reads the account count with the service role.
 
 ## Security notes
 - Passwords are hashed and managed by Supabase Auth; the app never stores them.
-- Panel pages and the `/api/panel/*` routes are gated by the Supabase session
-  (`getPanelUser()` validates the JWT server-side).
+- A Supabase session is NOT panel access. Panel pages and `/api/panel/*` are
+  gated by role (`requireAdminUser` / `requireOwnerUser` / `requireAdminPage`,
+  roles from `app_metadata` only; user management is owner-only; the vault needs
+  an admin AND an OTP). See `docs/ADMIN-AUTHZ.md` (2026-09-29).
 - `ADMIN_PANEL_TOKEN` stays server-side and now guards only one-time `/setup`.
-  The legacy `/admin` carousel editor + `/api/admin/*` keep their own
-  `x-admin-token` auth, unchanged.
+  The legacy `/admin` carousel editor + `/api/admin/*` keep token auth, now
+  through the central constant-time `requireAdminToken`.

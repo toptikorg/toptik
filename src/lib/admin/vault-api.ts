@@ -2,19 +2,20 @@ import "server-only";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
-import { getPanelUser } from "@/lib/admin/supabase-server";
+import { requireAdminUser } from "@/lib/admin/authz";
 import { isVaultConfigured, verifyStepUpToken, STEP_UP_COOKIE, type VaultEntryInput } from "@/lib/admin/vault";
 import { isPanelDemo, DEMO_USER } from "@/lib/admin/demo";
 
 /**
- * Gate for vault read/write routes: requires an authenticated panel session AND
- * a valid (recent) email-OTP step-up token cookie. Returns the user, or a ready
- * NextResponse to short-circuit with.
+ * Gate for vault read/write routes: requires an AUTHORIZED admin (owner/admin
+ * role, see authz-core.ts) AND a valid (recent) email-OTP step-up token cookie
+ * bound to that user. Returns the user, or a ready NextResponse to short-circuit.
  */
 export async function authStepUp(): Promise<{ res: NextResponse } | { user: User }> {
   if (isPanelDemo()) return { user: DEMO_USER };
-  const user = await getPanelUser();
-  if (!user) return { res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  const gate = await requireAdminUser();
+  if (!gate.ok) return { res: gate.response };
+  const { user } = gate;
   if (!isVaultConfigured()) {
     return { res: NextResponse.json({ error: "כספת הסיסמאות אינה מוגדרת בשרת" }, { status: 503 }) };
   }

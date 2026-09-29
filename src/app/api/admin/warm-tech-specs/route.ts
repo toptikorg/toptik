@@ -1,24 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminToken } from "@/lib/admin/admin-token";
 import { fetchProductDetails, type ProductDetails } from "@/lib/catalog-source/product-details";
 import { createCatalogSourceProvider } from "@/lib/catalog-source/provider";
 import { detectVendorFromCatalog } from "@/lib/catalog-source/vendor-detect";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
-import { hasSupabaseAdminEnv, supabaseEnv } from "@/lib/supabase/env";
+import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-function isAuthorized(req: NextRequest) {
-  // Accept token from header (admin tool) or query param (one-off curl/MCP).
-  const token = req.headers.get("x-admin-token") ?? req.nextUrl.searchParams.get("token");
-  if (token && supabaseEnv.adminToken && token === supabaseEnv.adminToken) return true;
-  // Vercel Cron Jobs authenticate via `Authorization: Bearer <CRON_SECRET>`,
-  // where CRON_SECRET is an env var the project owner sets on Vercel.
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = req.headers.get("authorization");
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true;
-  return false;
-}
 
 type StoredTechSpecs = {
   specs?: ProductDetails["specs"];
@@ -90,9 +79,8 @@ function specCount(ts: StoredTechSpecs | null | undefined) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = requireAdminToken(req, { allowQueryToken: true, allowCron: true });
+  if (denied) return denied;
   if (!hasSupabaseAdminEnv()) {
     return NextResponse.json({ error: "Supabase admin env not configured" }, { status: 500 });
   }

@@ -3,18 +3,29 @@ import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { MAX_ADMIN_USERS } from "@/lib/admin/config";
+import { authorizePanelUser, type PanelRole } from "@/lib/admin/authz-core";
+
+// Server-only admin-user operations (service role). Callers: owner-gated panel
+// routes (requireOwnerUser) and the token-gated one-time setup. Roles are read
+// with authorizePanelUser (app_metadata, or the temporary legacy email list) —
+// never from user_metadata — and new accounts get their role in app_metadata.
 
 export type AdminUserSummary = {
   id: string;
   email: string | null;
-  role: string;
+  role: PanelRole;
   createdAt: string | null;
   lastSignInAt: string | null;
   invitePending: boolean;
 };
 
-function toSummary(user: User): AdminUserSummary {
-  const role = typeof user.user_metadata?.role === "string" ? user.user_metadata.role : "admin";
+/** Panel role of an auth user, or null when the account has no panel access. */
+function panelRoleOf(user: User): PanelRole | null {
+  const decision = authorizePanelUser(user, "admin");
+  return decision.ok ? decision.role : null;
+}
+
+function toSummary(user: User, role: PanelRole): AdminUserSummary {
   return {
     id: user.id,
     email: user.email ?? null,
@@ -26,13 +37,17 @@ function toSummary(user: User): AdminUserSummary {
   };
 }
 
-/** Lists every admin account (sorted oldest-first, so the owner is on top). */
+/** Lists the accounts that HAVE panel access (owner/admin), oldest first.
+ *  Signed-up users without a role are not admins and are not listed. */
 export async function listAdminUsers(): Promise<AdminUserSummary[]> {
   const admin = createSupabaseServiceRoleClient();
   const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 100 });
   if (error) throw error;
   return data.users
-    .map(toSummary)
+    .flatMap((user) => {
+      const role = panelRoleOf(user);
+      return role ? [toSummary(user, role)] : [];
+    })
     .sort((a, b) => (a.createdAt ?? "").localeCompare(b.createdAt ?? ""));
 }
 
@@ -56,7 +71,8 @@ export async function createPrimaryAdmin(email: string, password: string): Promi
     email,
     password,
     email_confirm: true,
-    user_metadata: { role: "owner" },
+    // Server-controlled role (the user cannot edit app_metadata).
+    app_metadata: { role: "owner" },
   });
   if (error) throw error;
 }
@@ -81,22 +97,30 @@ export async function createAdminWithPassword(email: string, password: string): 
     email,
     password,
     email_confirm: true,
-    user_metadata: { role: "admin" },
+    // Server-controlled role (the user cannot edit app_metadata).
+    app_metadata: { role: "admin" },
   });
   if (error) throw error;
   if (!data.user) throw new Error("יצירת המנהל נכשלה.");
-  return toSummary(data.user);
+  const role = panelRoleOf(data.user);
+  if (!role) throw new Error("יצירת המנהל נכשלה.");
+  return toSummary(data.user, role);
 }
 
-/** Removes an admin. Never lets the last remaining account be deleted. */
+/** Removes an admin. Only panel accounts can be targeted; the last remaining
+ *  account and the last owner can never be deleted. */
 export async function deleteAdmin(id: string): Promise<void> {
   const admin = createSupabaseServiceRoleClient();
   const users = await listAdminUsers();
   if (users.length <= 1) {
     throw new Error("לא ניתן למחוק את המנהל האחרון שנותר.");
   }
-  if (!users.some((u) => u.id === id)) {
+  const target = users.find((u) => u.id === id);
+  if (!target) {
     throw new Error("המנהל לא נמצא.");
+  }
+  if (target.role === "owner" && users.filter((u) => u.role === "owner").length <= 1) {
+    throw new Error("לא ניתן למחוק את הבעלים האחרון.");
   }
   const { error } = await admin.auth.admin.deleteUser(id);
   if (error) throw error;
@@ -108,6 +132,11 @@ export async function deleteAdmin(id: string): Promise<void> {
  */
 export async function setAdminPassword(id: string, password: string): Promise<void> {
   const admin = createSupabaseServiceRoleClient();
+  // Only an existing panel account can be targeted — never an arbitrary user.
+  const users = await listAdminUsers();
+  if (!users.some((u) => u.id === id)) {
+    throw new Error("המנהל לא נמצא.");
+  }
   const { error } = await admin.auth.admin.updateUserById(id, { password });
   if (error) throw error;
 }

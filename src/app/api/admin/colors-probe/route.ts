@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminToken } from "@/lib/admin/admin-token";
 import { scrapeColorVariantsByCatalog } from "@/lib/catalog-source/mandarina-scraper";
-import { supabaseEnv } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -10,15 +10,10 @@ export const maxDuration = 120;
 // scraping accuracy on real data (on Vercel/local where MD is reachable) before
 // the import wires these colours into the catalog. Auth: x-admin-token header or
 // ?token= query (mirrors /api/admin/warm-tech-specs).
-function isAuthorized(req: NextRequest) {
-  const token = req.headers.get("x-admin-token") ?? req.nextUrl.searchParams.get("token");
-  return Boolean(token && supabaseEnv.adminToken && token === supabaseEnv.adminToken);
-}
 
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = requireAdminToken(req, { allowQueryToken: true });
+  if (denied) return denied;
 
   const catalog = req.nextUrl.searchParams.get("catalog")?.trim();
   if (!catalog) {

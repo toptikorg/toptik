@@ -21,8 +21,10 @@ export function isPanelDemo(): boolean {
 export const DEMO_USER = {
   id: "demo-owner",
   email: "rordan@gmail.com",
-  user_metadata: { role: "owner" },
-  app_metadata: {},
+  user_metadata: {},
+  // Dev-only demo owner: the role lives in app_metadata, like real accounts.
+  app_metadata: { provider: "email", role: "owner" },
+  email_confirmed_at: "2026-06-01T10:00:00Z",
   aud: "authenticated",
   created_at: "2026-06-01T10:00:00Z",
 } as unknown as User;

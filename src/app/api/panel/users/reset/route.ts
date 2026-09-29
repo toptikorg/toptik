@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
-import { getPanelUser } from "@/lib/admin/supabase-server";
+import { requireOwnerUser } from "@/lib/admin/authz";
 import { setAdminPassword } from "@/lib/admin/users";
 
 export const runtime = "nodejs";
@@ -13,8 +13,8 @@ const resetSchema = z.object({
 
 /** Owner-initiated password reset: sets a new password directly (no email). */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const user = await getPanelUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireOwnerUser();
+  if (!gate.ok) return gate.response;
   if (!hasSupabaseAdminEnv()) {
     return NextResponse.json({ error: "Supabase admin env not configured" }, { status: 500 });
   }

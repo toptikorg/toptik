@@ -1,6 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { hasSupabasePublicEnv, supabaseEnv } from "@/lib/supabase/env";
 import { isPanelDemo, DEMO_USER } from "@/lib/admin/demo";
@@ -39,8 +38,10 @@ export async function createPanelServerClient() {
 }
 
 /**
- * Returns the authenticated panel user, or `null`. Uses `getUser()` which
+ * Returns the signed-in Supabase user, or `null`. Uses `getUser()` which
  * validates the JWT against Supabase Auth (never trust the unverified cookie).
+ * A session is NOT panel access: authorization is decided only by the gates in
+ * `@/lib/admin/authz` (requireAdminUser / requireOwnerUser / requireAdminPage).
  */
 export async function getPanelUser(): Promise<User | null> {
   if (isPanelDemo()) return DEMO_USER;
@@ -54,14 +55,4 @@ export async function getPanelUser(): Promise<User | null> {
   } catch {
     return null;
   }
-}
-
-/**
- * Server-side guard for protected panel pages. Redirects to `/login` when there
- * is no valid session. Returns the user otherwise.
- */
-export async function requirePanelUser(): Promise<User> {
-  const user = await getPanelUser();
-  if (!user) redirect("/login");
-  return user;
 }

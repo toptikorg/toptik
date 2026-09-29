@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { hasSupabaseAdminEnv, supabaseEnv } from "@/lib/supabase/env";
-import { countAdminUsers, createPrimaryAdmin } from "@/lib/admin/users";
+import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
+import { createPrimaryAdmin } from "@/lib/admin/users";
+import { isValidSetupToken } from "@/lib/admin/admin-token";
 
 export const runtime = "nodejs";
 
@@ -11,21 +12,12 @@ const setupSchema = z.object({
   token: z.string().optional(),
 });
 
-/** GET → whether first-time setup is still available (no accounts yet). */
-export async function GET(): Promise<NextResponse> {
-  if (!hasSupabaseAdminEnv()) {
-    return NextResponse.json({ available: false, reason: "env" });
-  }
-  try {
-    const count = await countAdminUsers();
-    return NextResponse.json({ available: count === 0 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed";
-    return NextResponse.json({ available: false, reason: message }, { status: 500 });
-  }
-}
+// No public GET: whether accounts exist is not disclosed to anonymous visitors
+// (it used to be read with the service role). Setup is decided by POST only.
 
-/** POST → create the primary admin (guarded by the one-time setup token). */
+/** POST → create the primary owner (guarded by the one-time setup token; the
+ *  service role is reached only after the token check, and createPrimaryAdmin
+ *  refuses once any account exists). */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!hasSupabaseAdminEnv()) {
     return NextResponse.json({ error: "Supabase admin env not configured" }, { status: 500 });
@@ -37,7 +29,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const providedToken = parsed.data.token ?? req.headers.get("x-admin-token") ?? "";
-  if (!supabaseEnv.adminToken || providedToken !== supabaseEnv.adminToken) {
+  if (!isValidSetupToken(providedToken)) {
     return NextResponse.json({ error: "טוקן הקמה שגוי" }, { status: 401 });
   }
 

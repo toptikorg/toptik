@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getPanelUser, createPanelServerClient } from "@/lib/admin/supabase-server";
+import { createPanelServerClient } from "@/lib/admin/supabase-server";
+import { requireAdminUser } from "@/lib/admin/authz";
 import { isVaultConfigured } from "@/lib/admin/vault";
 import { isPanelDemo, DEMO_MASKED_EMAIL } from "@/lib/admin/demo";
 
@@ -13,11 +14,14 @@ function maskEmail(email: string): string {
   return `${head}${"•".repeat(Math.max(1, name.length - head.length))}@${domain}`;
 }
 
-/** Step 1 of the vault gate — email a fresh 6-digit OTP to the admin. */
+/** Step 1 of the vault gate — email a fresh 6-digit OTP to an AUTHORIZED admin.
+ *  A signed-in user without a panel role gets 403 and no code is sent. */
 export async function POST() {
   if (isPanelDemo()) return NextResponse.json({ ok: true, email: DEMO_MASKED_EMAIL });
-  const user = await getPanelUser();
-  if (!user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = await requireAdminUser();
+  if (!gate.ok) return gate.response;
+  const { user } = gate;
+  if (!user.email) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!isVaultConfigured()) {
     return NextResponse.json({ error: "כספת הסיסמאות אינה מוגדרת בשרת" }, { status: 503 });
   }

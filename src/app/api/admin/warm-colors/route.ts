@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminToken } from "@/lib/admin/admin-token";
 import { enumerateColorVariants } from "@/lib/catalog-source/mandarina-scraper";
 import { enumerateBricsColorVariants } from "@/lib/catalog-source/brics-scraper";
 import { uploadVariantGalleries } from "@/lib/catalog-source/storage";
@@ -6,7 +7,7 @@ import { ensureOwnColor, toCarouselColors, toBricsCarouselColors } from "@/lib/c
 import { dominantHexFromUrl } from "@/lib/carousel/dominant-color";
 import type { CarouselColor } from "@/lib/carousel/types";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
-import { hasSupabaseAdminEnv, supabaseEnv } from "@/lib/supabase/env";
+import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -15,14 +16,6 @@ export const maxDuration = 300;
 // each model on Mandarina Duck, re-host a cover image per colour, and cache the
 // result. Mirrors /api/admin/warm-tech-specs (same auth + cron model). Add
 // ?force=1 to refresh items that already have colours.
-function isAuthorized(req: NextRequest) {
-  const token = req.headers.get("x-admin-token") ?? req.nextUrl.searchParams.get("token");
-  if (token && supabaseEnv.adminToken && token === supabaseEnv.adminToken) return true;
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = req.headers.get("authorization");
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true;
-  return false;
-}
 
 type ColorWarmRow = {
   id: string;
@@ -34,9 +27,8 @@ type ColorWarmRow = {
 };
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = requireAdminToken(req, { allowQueryToken: true, allowCron: true });
+  if (denied) return denied;
   if (!hasSupabaseAdminEnv()) {
     return NextResponse.json({ error: "Supabase admin env not configured" }, { status: 500 });
   }

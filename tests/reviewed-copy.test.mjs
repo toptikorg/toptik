@@ -218,7 +218,7 @@ test("translation cannot make network requests or reintroduce machine copy", asy
   assert.equal(await translateToHebrew("Manufacturer original"), "Manufacturer original");
   assert.equal(await translateToHebrew(null), null);
   const route = await read("src/app/api/admin/translate/route.ts");
-  assert.match(route, /isAuthorized\(req\)/);
+  assert.match(route, /requireAdminToken\(req\)/);
   assert.match(route, /status: 410/);
 });
 

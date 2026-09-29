@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminToken } from "@/lib/admin/admin-token";
 import { z } from "zod";
 import { CatalogVendor, createCatalogSourceProvider } from "@/lib/catalog-source/provider";
 import { fetchProductDetails } from "@/lib/catalog-source/product-details";
@@ -8,7 +9,6 @@ import { uploadRemoteImageToStorage, uploadVariantGalleries } from "@/lib/catalo
 import { toCarouselColors, toBricsCarouselColors } from "@/lib/carousel/colors";
 import { reviewedCopyFor } from "@/lib/carousel/reviewed-copy";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
-import { supabaseEnv } from "@/lib/supabase/env";
 import type { SourceColorVariant, SourceProduct } from "@/lib/catalog-source/types";
 import { CachedTechSpecs, CarouselColor, CarouselItem } from "@/lib/carousel/types";
 
@@ -50,11 +50,6 @@ const VENDOR_CONFIG: Record<CatalogVendor, VendorConfig> = {
     mapColors: toBricsCarouselColors,
   },
 };
-
-function isAuthorized(req: NextRequest) {
-  const token = req.headers.get("x-admin-token");
-  return Boolean(token && supabaseEnv.adminToken && token === supabaseEnv.adminToken);
-}
 
 function angleKeyByIndex(index: number) {
   const defaults = ["front", "right", "back", "left", "top"];
@@ -212,9 +207,8 @@ export async function importSourceProduct(
 
 export function createImportRouteHandler(vendor: CatalogVendor) {
   return async function POST(req: NextRequest) {
-    if (!isAuthorized(req)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = requireAdminToken(req);
+    if (denied) return denied;
 
     try {
       const body = await req.json();
