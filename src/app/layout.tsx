@@ -3,35 +3,35 @@ import localFont from "next/font/local";
 import "./globals.css";
 
 const italiana = localFont({
-  src: "./fonts/Italiana-Regular.ttf",
+  src: "./fonts/Italiana-Regular.woff2",
   variable: "--font-italiana",
   weight: "400",
   display: "swap",
 });
 
 const greatVibes = localFont({
-  src: "./fonts/GreatVibes-Regular.ttf",
+  src: "./fonts/GreatVibes-Regular.woff2",
   variable: "--font-great-vibes",
   weight: "400",
   display: "swap",
 });
 
 const rubik = localFont({
-  src: "./fonts/Rubik[wght].ttf",
+  src: "./fonts/Rubik[wght].woff2",
   variable: "--font-rubik",
   weight: "400 700",
   display: "swap",
 });
 
 const playfair = localFont({
-  src: "./fonts/PlayfairDisplay[wght].ttf",
+  src: "./fonts/PlayfairDisplay[wght].woff2",
   variable: "--font-playfair",
   weight: "400 700",
   display: "swap",
 });
 
 const assistant = localFont({
-  src: "./fonts/Assistant[wght].ttf",
+  src: "./fonts/Assistant[wght].woff2",
   variable: "--font-assistant",
   weight: "300 700",
   display: "swap",
@@ -41,16 +41,16 @@ const assistant = localFont({
 // "קולקציה נבחרת" collection title (Heebo) — per the leather-background design.
 const poppins = localFont({
   src: [
-    { path: "./fonts/Poppins-Medium.ttf", weight: "500", style: "normal" },
-    { path: "./fonts/Poppins-SemiBold.ttf", weight: "600", style: "normal" },
-    { path: "./fonts/Poppins-Bold.ttf", weight: "700", style: "normal" },
+    { path: "./fonts/Poppins-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/Poppins-SemiBold.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/Poppins-Bold.woff2", weight: "700", style: "normal" },
   ],
   variable: "--font-poppins",
   display: "swap",
 });
 
 const heebo = localFont({
-  src: "./fonts/Heebo[wght].ttf",
+  src: "./fonts/Heebo[wght].woff2",
   variable: "--font-heebo",
   weight: "300 700",
   display: "swap",
