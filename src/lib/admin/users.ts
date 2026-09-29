@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { MAX_ADMIN_USERS } from "@/lib/admin/config";
 
 export type AdminUserSummary = {

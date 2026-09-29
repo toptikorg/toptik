@@ -1,4 +1,4 @@
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import type { SourceColorVariant } from "@/lib/catalog-source/types";
 
 // Shared image-ingest helper: download a remote (Mandarina CDN) image and

@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Operational rules — deployment workflow, post-Figma-export cleanup, and the **locked carousel-image CSS** — live in AGENTS.md and are authoritative. Read them before any deploy or visual change.
+Operational rules — deployment workflow, post-Figma-export cleanup, and the **locked carousel-image CSS** — live in AGENTS.md. The owner's project instructions and the Drive master log override both files; read them before any deploy or visual change.
 
-**Live domain:** as of **2026-06-20** the apex **`toptik.co.il` was returned to the Shopify store**; this Next/Vercel landing page now lives on the subdomain **`landing.toptik.co.il`** (auto-deployed from `master`). DNS is managed at internic → sitesdepot (zone 7144); Google Workspace email (MX/SPF) and Shopify email records are intentionally left untouched. The `landing` subdomain cutover (Vercel domain-add + `CNAME landing → Vercel`) is tracked step-by-step in **`docs/LANDING-SUBDOMAIN.md`** — read it before touching DNS or the domain. The original apex→Vercel migration record and rollback anchors remain in **`docs/DOMAIN-MIGRATION.md`**.
+**Live domain:** as of **2026-06-20** the apex **`toptik.co.il` was returned to the Shopify store**; this Next/Vercel landing page now lives on the subdomain **`landing.toptik.co.il`** (Production builds from `master`; releases need the owner's explicit approval — see AGENTS.md). DNS is managed at internic → sitesdepot (zone 7144); Google Workspace email (MX/SPF) and Shopify email records are intentionally left untouched. The `landing` subdomain cutover (Vercel domain-add + `CNAME landing → Vercel`) is tracked step-by-step in **`docs/LANDING-SUBDOMAIN.md`** — read it before touching DNS or the domain. The original apex→Vercel migration record and rollback anchors remain in **`docs/DOMAIN-MIGRATION.md`**.
 
 @AGENTS.md
 
@@ -12,14 +12,16 @@ Operational rules — deployment workflow, post-Figma-export cleanup, and the **
 
 ```bash
 npm run dev      # Next.js dev server (HMR)
-npm run build    # production build
+npm run build    # production build (next build --webpack)
 npm run start    # serve the production build
 npm run lint     # ESLint (flat config: eslint.config.mjs)
-npm run verify   # lint + build — the quality gate; mirrors CI (.github/workflows/ci-quality.yml)
+npm test         # all unit/regression tests: node --test tests/*.test.mjs
+npm run verify   # lint + build; mirrors CI (.github/workflows/ci-quality.yml)
 npm run backup:bundle  # full git bundle — Windows/PowerShell only
 ```
 
-- **No test framework is configured** — there are no unit/e2e tests, so there is no "run a single test". Verification = `npm run verify` (lint + build) plus a manual check in the browser. CI (push/PR to `dev`/`master`/`main`) runs lint + build only.
+- **Tests** live in `tests/*.test.mjs` and use the built-in Node test runner (Node 22.13+ for `stripTypeScriptTypes`; no extra framework). Run one file with `node --test tests/<name>.test.mjs`. CI (push/PR to `dev`/`master`/`main`) runs lint + build only, so run `npm test` yourself before every change. Verification = `npm test` + `npm run lint` + `npm run build`, then the Preview/acceptance steps in AGENTS.md.
+- Offline builds: `next/font/google` downloads fonts at build time. Where `fonts.googleapis.com` is blocked, `NEXT_FONT_GOOGLE_MOCKED_RESPONSES` may be used to check the structure only; a real-font build must still pass on Vercel.
 - **Do not run `npm run build` or delete `.next/` while `npm run dev` is running** — it wipes the dev server's manifests and breaks it. Stop the dev server first (see `.cursor/rules/dev_server_safety.md`).
 
 ## Stack
@@ -37,11 +39,11 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 (via `@tail
 
 ## Data layer (Supabase)
 
-- `src/lib/carousel/repository.ts` is the single read/write boundary:
-  - `getCarouselPayload()` reads with the **public anon** client.
-  - `saveCarouselPayload()` does a full diff-based upsert/delete with the **service-role** client and tolerates older DB schemas (retries the item upsert without `catalog_number`/`source_url` if those columns are missing).
+- The read and write boundaries are separate modules:
+  - `src/lib/carousel/repository.ts` — `getCarouselPayload()` reads with the **public anon** client. Public routes use only this.
+  - `src/lib/carousel/repository-admin.ts` — `saveCarouselPayload()` does a full diff-based upsert/delete with the **service-role** client and tolerates older DB schemas (retries the item upsert without `catalog_number`/`source_url` if those columns are missing). Admin routes only.
 - Tables: `carousel_items`, `carousel_item_angles`, `carousel_settings` (singleton row `id=1`). Schema + storage policies are in `supabase/migrations/`. Per-product spec data is cached as JSON in `carousel_items.tech_specs`.
-- **Graceful degradation:** when Supabase env vars are absent, reads return `fallbackCarouselPayload` (`src/lib/carousel/fallback-data.ts`), so the app builds and runs locally with no DB or secrets.
+- **Unavailable, not fake:** when the public Supabase env vars are absent or the read fails, reads return `fallbackCarouselPayload` (`src/lib/carousel/fallback-data.ts`) — an explicit `unavailable` marker with no products. The app still builds and runs locally without a DB or secrets, and the gallery shows its "unavailable" message.
 
 ### Environment variables (all optional for a local build — missing ones trigger fallback)
 
@@ -50,7 +52,7 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 (via `@tail
 - `ADMIN_VAULT_KEY` — 32-byte base64 key for the password-vault AES-256-GCM encryption + step-up token HMAC. Without it the vault reports "not configured" and stays closed.
 - `CRON_SECRET` — Vercel cron auth for the tech-specs warmer.
 
-Env access is centralized in `src/lib/supabase/env.ts` (`hasSupabasePublicEnv()` / `hasSupabaseAdminEnv()`); clients are constructed in `src/lib/supabase/server.ts`.
+Public env lives in `src/lib/supabase/public-env.ts` (`hasSupabasePublicEnv()`); admin env in `src/lib/supabase/env.ts` (`hasSupabaseAdminEnv()`). The anon server client is in `src/lib/supabase/server.ts` and the service-role client in `src/lib/supabase/service-role.ts` — both `server-only`. Client components and public routes must never reach `service-role.ts` (enforced by `tests/public-read-isolation.test.mjs`).
 
 ## Admin panel (third surface — `admin.toptik.co.il`)
 
@@ -67,7 +69,7 @@ A session-gated control panel served on the **`admin.toptik.co.il`** subdomain. 
 
 ## Catalog import
 
-- Import (`POST /api/admin/import/mandarina`): scrape Mandarina Duck by catalog number (`src/lib/catalog-source/`, `MandarinaDuckScraperProvider`) → download images → re-upload to the Supabase storage bucket **`carousel-media`** → translate the description to Hebrew (Google Translate endpoint) → prefetch & cache tech specs. It returns a **draft** item; the admin must "save all" (`saveCarouselPayload`) to persist it.
+- Import (`POST /api/admin/import/mandarina`): scrape Mandarina Duck by catalog number (`src/lib/catalog-source/`, `MandarinaDuckScraperProvider`) → download images → re-upload to the Supabase storage bucket **`carousel-media`** → keep the source description verbatim unless an exact-SKU reviewed copy exists (no machine translation, GAL-009) → prefetch & cache tech specs. It returns a **draft** item; the admin must "save all" (`saveCarouselPayload`) to persist it.
 
 ## Image pipeline
 
@@ -76,4 +78,10 @@ A session-gated control panel served on the **`admin.toptik.co.il`** subdomain. 
 
 ## Tech-specs cache warmer
 
-`/api/admin/warm-tech-specs` (add `?force=1` to refresh all) scrapes and caches product specs into `carousel_items.tech_specs`. A Vercel cron runs it daily at 03:00 UTC (`vercel.json`). Auth: `x-admin-token` / `?token=`, or `Authorization: Bearer $CRON_SECRET`.
+`/api/admin/warm-tech-specs` (add `?force=1` to refresh all) scrapes and caches product specs into `carousel_items.tech_specs`. A Vercel cron runs it daily at 03:00 UTC (`vercel.json`). Auth: `x-admin-token` / `?token=`, or `Authorization: Bearer $CRON_SECRET`. Scraping goes through `safeSourceFetch()` (`src/lib/catalog-source/safe-fetch.ts`): HTTPS only, approved manufacturer hosts only (`source-allowlist.ts`), no internal addresses, every redirect re-validated.
+
+Scraped specs are **not machine-translated** (GAL-009): the Google Translate helpers in `product-details.ts` are disconnected and `tests/no-machine-translation.test.mjs` blocks any caller.
+
+The public `/api/product-details?url=` is **read-only** (GAL-025): it returns only specs already stored with an existing active product whose source URL is approved. It never fetches the URL and never writes to the database.
+
+`/api/debug-scrape` is closed (404, GAL-026). Scrape diagnostics live at `/api/admin/debug-scrape` (admin token + approved source + `safeSourceFetch`, read-only).

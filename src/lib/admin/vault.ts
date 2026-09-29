@@ -1,6 +1,6 @@
 import "server-only";
 import crypto from "crypto";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 import { isPanelDemo } from "@/lib/admin/demo";
 
