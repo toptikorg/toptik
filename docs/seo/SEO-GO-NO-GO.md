@@ -35,7 +35,15 @@ diff מול `master` `fac1678` (קבצי קוד ובדיקות): `src/app/carous
 build מקומי נכשל בגלל Google Fonts בסביבה, ו-build אמיתי ב-Vercel. Preview חי: ראו סעיף 4.
 
 ## 4. Preview חי (מועמד ללא Sitemap)
-התוצאות מתועדות בעדכון המאסטר ובזיכרון (כתובת Preview, HEAD ותוצאות), ובקובץ זה מתעדכן ה-HEAD המדויק בקומיט הסופי.
+Preview של קומיט `9ce4488` (הקוד המלא של שלב 1): Vercel Ready, 44 שנ'. כתובת: `https://toptik-git-claude-gallery-seo-candidate-20260929-toptik.vercel.app`. קומיטי docs שאחריו לא משנים קוד.
+תוצאות חיות (קריאה בלבד):
+- `/carousel`: 200; canonical `https://landing.toptik.co.il/carousel`; `noindex, follow` ב-meta וב-header; h1 "קולקציה נבחרת"; JSON-LD `CollectionPage` תואם (שם וכתובת); `og:url` קנוני.
+- `/`: 200; canonical `https://landing.toptik.co.il`; `noindex, follow` (meta + header).
+- `/admin`: 200 (טופס כניסה), `noindex, follow`, ללא canonical. `/login`: `noindex, nofollow`.
+- `/sitemap.xml`: **404**. `robots.txt`: ללא שורת Sitemap, `Allow: /`, `Disallow: /admin`.
+- `/api/carousel`: 82 פריטים, 0 American Tourister, 82/82 תמונות נטענו.
+- אבטחה: `debug-colors` 404, `debug-scrape` 404, `admin/debug-scrape` 401, `admin/carousel` 401, `warm-tech-specs` POST 401, `panel/users` 401, `product-details` עם כתובת לא מאושרת 400.
+- Production (`fac1678`) נבדק שוב באותו לילה: `landing`, `site`, `vercel.app`, `admin`: `noindex, follow` (header ו-meta), ללא canonical, `/sitemap.xml` 404. `admin` `/` מפנה ל-`/login` (`noindex, nofollow`).
 
 ## 5. `/` מול `/carousel` — הכרעה
 | | `/` | `/carousel` |
