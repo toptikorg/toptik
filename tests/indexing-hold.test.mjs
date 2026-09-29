@@ -63,10 +63,10 @@ test("existing nested metadata cannot re-enable indexing", async () => {
   await checkDirectory("src/app");
 });
 
-test("the isolated hold adds no product or editorial-admin routes and no static sitemap or robots file", async () => {
+test("the isolated hold adds no product, editorial-admin or sitemap routes", async () => {
   for (const path of [
     "src/app/carousel/products", "src/app/admin/seo", "src/app/api/admin/editorial",
-    "src/app/sitemap.xml", "public/sitemap.xml", "public/robots.txt",
+    "src/app/sitemap.ts", "src/app/sitemap.xml", "public/sitemap.xml", "public/robots.txt",
   ]) {
     await assert.rejects(access(new URL(path, root)), { code: "ENOENT" }, `${path} must remain absent`);
   }

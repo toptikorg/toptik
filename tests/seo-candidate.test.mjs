@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 
 // SEO candidate, indexing hold still active: these tests pin what the candidate
-// is allowed to do (metadata, canonical, an unadvertised sitemap, structured data
+// is allowed to do (metadata, canonical, structured data
 // that mirrors visible content) and what it must not do (lift noindex).
 const root = new URL("../", import.meta.url);
 const read = path => readFile(new URL(path, root), "utf8");
@@ -20,15 +20,11 @@ test("canonical host is landing.toptik.co.il and paths resolve against it", () =
   assert.equal(site.absoluteUrl("/carousel"), "https://landing.toptik.co.il/carousel");
 });
 
-test("sitemap lists only clean public URLs on the canonical host", async () => {
-  assert.deepEqual([...site.SITEMAP_PATHS], ["/carousel"]);
-  for (const path of site.SITEMAP_PATHS) {
-    assert.ok(path.startsWith("/") && !path.includes("?") && !path.includes("#"));
-    for (const blocked of ["/admin", "/dashboard", "/login", "/settings", "/setup", "/reset", "/auth", "/api"])
-      assert.ok(!path.startsWith(blocked), `${path} must not be a private path`);
-  }
-  const sitemapSource = await read("src/app/sitemap.ts");
-  assert.doesNotMatch(sitemapSource, /lastModified/, "no fabricated dates");
+test("phase 1 ships no sitemap: the file is absent and nothing advertises one", async () => {
+  await assert.rejects(read("src/app/sitemap.ts"), { code: "ENOENT" });
+  await assert.rejects(read("src/app/sitemap.xml"), { code: "ENOENT" });
+  await assert.rejects(read("public/sitemap.xml"), { code: "ENOENT" });
+  assert.equal(Object.hasOwn(site, "SITEMAP_PATHS"), false);
 });
 
 test("robots.txt still does not advertise the sitemap during the hold", async () => {
@@ -37,7 +33,7 @@ test("robots.txt still does not advertise the sitemap during the hold", async ()
 });
 
 test("candidate never lifts the hold", async () => {
-  for (const file of ["src/app/carousel/page.tsx", "src/app/page.tsx", "src/lib/seo/site.ts", "src/lib/seo/structured-data.ts", "src/app/sitemap.ts"]) {
+  for (const file of ["src/app/carousel/page.tsx", "src/app/page.tsx", "src/lib/seo/site.ts", "src/lib/seo/structured-data.ts"]) {
     const source = await read(file);
     assert.doesNotMatch(source, /index\s*:\s*true/, file);
     assert.doesNotMatch(source, /robots\s*:/, `${file} must not set robots itself`);

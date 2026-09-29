@@ -1,3 +1,5 @@
+> **הוחלף:** דוח זה מתאר את הגרסה הראשונה של המועמד (עם `sitemap.ts`). לפי ההמלצה העדכנית במאסטר, ה-Sitemap הוסר משלב 1. המקור המחייב: `docs/seo/SEO-GO-NO-GO.md` (גרסה 2).
+
 # דוח מועמד SEO טכני — Preview בלבד
 
 תאריך: 29.9.2026. ענף: `claude/gallery-seo-candidate-20260929`. בסיס: `master` = `fac1678` (Production, לא שונה).
