@@ -257,14 +257,20 @@ export default function CarouselPageClient() {
             <p className="carousel-brand-status" role="status">
               {brandLabel}: {visibleItems.length} מוצרים בקטלוג בסינון הנבחר
             </p>
-            <div className="carousel-selection" dir="rtl" data-testid="carousel-selection">
-              <p className="carousel-selection-line">
-                {selectionSummary({ brandLabel, allBrands: activeBrand === "all", category: activeCategory, total: visibleItems.length }).selection}
-              </p>
-              <p className="carousel-selection-help">
-                {selectionSummary({ brandLabel, allBrands: activeBrand === "all", category: activeCategory, total: visibleItems.length }).help}
-              </p>
-            </div>
+            {(() => {
+              const summary = selectionSummary({ brandLabel, allBrands: activeBrand === "all", category: activeCategory, total: visibleItems.length });
+              return (
+                <div className="carousel-selection" dir="rtl" data-testid="carousel-selection">
+                  <p className="carousel-selection-line carousel-sr-only">{summary.selection}</p>
+                  <div className="carousel-chips" aria-hidden="true">
+                    <span className="carousel-chip"><span className="carousel-chip-key">מותג</span> {summary.brand}</span>
+                    <span className="carousel-chip"><span className="carousel-chip-key">קטגוריה</span> {summary.categoryLabel}</span>
+                    <span className="carousel-chip carousel-chip--count">{summary.countText}</span>
+                  </div>
+                  <p className="carousel-selection-help">{summary.help}</p>
+                </div>
+              );
+            })()}
             {visibleItems.length > 0 ? (
               <CarouselGrid
                 items={visibleItems}

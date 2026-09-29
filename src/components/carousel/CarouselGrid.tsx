@@ -255,7 +255,8 @@ export function CarouselGrid({ items, navVariant = "side", onOpenItem, onOpenTec
   const first = Math.min(total, activeIndex * perPage + 1);
   const last = Math.min(total, (activeIndex + 1) * perPage);
   const slideText = pages.length > 0 ? `שקופית ${Math.min(activeIndex + 1, pages.length)} מתוך ${pages.length}` : "";
-  const positionText = total === 0 ? "" : `${first === last ? `מוצר ${first} מתוך ${total}` : `מוצרים ${first}–${last} מתוך ${total}`} · ${slideText}`;
+  const rangeText = total === 0 ? "" : first === last ? `מוצר ${first} מתוך ${total}` : `מוצרים ${first}–${last} מתוך ${total}`;
+  const progressPct = pages.length > 0 ? Math.round((Math.min(activeIndex + 1, pages.length) / pages.length) * 100) : 0;
   const edgeText = pages.length <= 1 ? "" : isBeginning ? "תחילת הרשימה" : isEnd ? "סוף הרשימה" : "";
   const prevDisabled = isBeginning;
   const nextDisabled = isEnd;
@@ -272,8 +273,12 @@ export function CarouselGrid({ items, navVariant = "side", onOpenItem, onOpenTec
       {pages.length > 0 && <>
       {navVariant === "side" && (
         <p className="carousel-position carousel-position--top" role="status" aria-live="polite" data-testid="carousel-position">
-          {positionText}{edgeText ? ` · ${edgeText}` : ""}
+          <span className="carousel-position-main">{rangeText}</span>
+          <span className="carousel-position-meta"> · {slideText}{edgeText ? ` · ${edgeText}` : ""}</span>
         </p>
+      )}
+      {navVariant === "side" && (
+        <div className="carousel-progress" aria-hidden="true"><span style={{ width: `${progressPct}%` }} /></div>
       )}
       {navVariant === "side" && <>
       <button
@@ -347,7 +352,8 @@ export function CarouselGrid({ items, navVariant = "side", onOpenItem, onOpenTec
           <button type="button" className="carousel-controls-btn" aria-label="מוצרים קודמים" aria-disabled={prevDisabled}
             disabled={prevDisabled} onClick={() => swiperInstance?.slidePrev()}><span aria-hidden="true">&#x203A;</span></button>
           <p className="carousel-position carousel-position--bar" role="status" aria-live="polite" data-testid="carousel-position">
-            <span>{positionText}</span>{edgeText && <span className="carousel-position-edge">{edgeText}</span>}
+            <span className="carousel-position-main">{rangeText}</span><span className="carousel-position-meta">{slideText}{edgeText ? ` · ${edgeText}` : ""}</span>
+            <span className="carousel-progress" aria-hidden="true"><span style={{ width: `${progressPct}%` }} /></span>
           </p>
           <button type="button" className="carousel-controls-btn" aria-label="מוצרים הבאים" aria-disabled={nextDisabled}
             disabled={nextDisabled} onClick={() => swiperInstance?.slideNext()}><span aria-hidden="true">&#x2039;</span></button>

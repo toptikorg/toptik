@@ -5,6 +5,10 @@ export interface SelectionSummary {
   selection: string;
   /** One short sentence explaining what the current filters show. */
   help: string;
+  /** The parts of `selection`, for the visual chips. */
+  brand: string;
+  categoryLabel: string;
+  countText: string;
 }
 
 // Plain-language description of the active filters, so the visitor can tell why
@@ -29,5 +33,5 @@ export function selectionSummary(input: {
   } else {
     help = `מוצגים רק מוצרי ${brandLabel} בקטגוריה "${categoryLabel}". לכל מוצרי המותג בחרו "כל המוצרים".`;
   }
-  return { selection, help };
+  return { selection, help, brand: brandPart, categoryLabel, countText: `${total} מוצרים` };
 }
