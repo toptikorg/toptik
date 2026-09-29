@@ -3457,56 +3457,55 @@ html.a11y-big-cursor * {
   font-weight: 500;
   line-height: 1.4;
 }
-.carousel-position--top { padding: 6px 12px 4px; }
 .carousel-position-main { font-weight: 600; }
 .carousel-position-meta { color: rgba(242, 230, 207, 0.72); font-size: 13px; }
-.carousel-position--bar { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; min-width: 0; }
-.carousel-position--bar .carousel-position-meta { display: block; }
 /* Thin progress line: how far along the list the visitor is. */
 .carousel-progress {
   display: block;
   direction: rtl;
-  width: min(220px, 60%);
+  width: 100%;
+  max-width: 220px;
   height: 3px;
-  margin: 0 auto 6px;
+  margin: 4px auto 0;
   border-radius: 2px;
   background: rgba(215, 170, 106, 0.22);
   overflow: hidden;
 }
 .carousel-progress > span { display: block; height: 100%; background: #d7aa6a; border-radius: 2px; transition: width 0.25s ease; }
-.carousel-position--bar .carousel-progress { width: 100%; margin: 2px 0 0; }
 @media (prefers-reduced-motion: reduce) { .carousel-progress > span { transition: none; } }
-.carousel-nav::after { content: ""; position: absolute; inset: -6px -10px; }
-.catalog-carousel[data-nav-variant="bar"] .swiper-pagination { display: none; }
-.catalog-carousel[data-nav-variant="bar"] .swiper { padding-bottom: 0; }
-.carousel-controls {
-  position: sticky;
-  bottom: 0;
-  z-index: 30;
+/* Prev/next live in their own quiet row above the products (like a browser's back/forward), never over a photo. */
+.carousel-navrow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 8px;
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
-  background: rgba(20, 15, 8, 0.94);
-  border-top: 1px solid rgba(215, 170, 106, 0.45);
+  justify-content: center;
+  gap: 10px;
+  max-width: 520px;
+  margin: 0 auto 10px;
+  padding: 0 12px;
 }
-.carousel-controls-btn {
-  min-width: 56px;
-  min-height: 48px;
-  border-radius: 24px;
-  border: 1px solid #d7aa6a;
-  background: #d7aa6a;
-  color: #241606;
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1;
+.carousel-navrow-info { flex: 1; min-width: 0; text-align: center; }
+.carousel-navrow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(215, 170, 106, 0.55);
+  border-radius: 999px;
+  background: rgba(215, 170, 106, 0.08);
+  color: #f2e6cf;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
 }
-.carousel-controls-btn:disabled { opacity: 0.35; cursor: default; }
-.carousel-controls-btn:focus-visible { outline: 3px solid #f2ece2; outline-offset: 2px; }
-.carousel-nav:focus-visible { outline: 3px solid #f2ece2; outline-offset: 2px; }
+.carousel-navrow-btn:hover:not(:disabled) { background: rgba(215, 170, 106, 0.2); }
+.carousel-navrow-btn:disabled { opacity: 0.35; cursor: default; }
+.carousel-navrow-btn:focus-visible { outline: 3px solid #f2ece2; outline-offset: 2px; }
+@media (max-width: 420px) { .carousel-navrow-label { display: none; } .carousel-navrow-btn { padding: 0; width: 44px; } }
 
 /* Active-selection summary: quiet chips (brand, category, count) plus one short helper line. */
 .carousel-selection { margin: 6px 12px 6px; text-align: center; color: #f2e6cf; }
@@ -3528,4 +3527,4 @@ html.a11y-big-cursor * {
 .carousel-chip-key { color: rgba(242, 230, 207, 0.62); font-weight: 500; }
 .carousel-chip--count { border-color: transparent; background: rgba(215, 170, 106, 0.2); color: #f7d9a4; }
 .carousel-selection-help { margin: 5px auto 0; max-width: 34em; font-size: 12.5px; font-weight: 400; line-height: 1.45; color: rgba(242, 230, 207, 0.7); }
-.catalog-carousel > p[role="status"]:not(.carousel-position) { margin: 4px 12px; text-align: center; font-size: 12.5px; color: rgba(242, 230, 207, 0.75); }
+.catalog-carousel > p[role="status"] { margin: 4px 12px; text-align: center; font-size: 12.5px; color: rgba(242, 230, 207, 0.75); }

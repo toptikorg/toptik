@@ -19,19 +19,20 @@ test("position indicator shows range and total, with list edges", () => {
   assert.match(grid, /aria-live="polite"/);
 });
 
-test("product arrows have their own accessible names, distinct from the modal angle arrows", () => {
-  assert.match(grid, /aria-label="מוצרים קודמים"/);
-  assert.match(grid, /aria-label="מוצרים הבאים"/);
-  assert.ok(!/aria-label="עמוד קודם"/.test(grid));
+test("prev/next sit in their own row above the products, with accessible names, and only move the carousel", () => {
+  assert.match(grid, /aria-label="הקודם"/);
+  assert.match(grid, /aria-label="הבא"/);
+  assert.match(grid, /className="carousel-navrow"/);
+  assert.match(grid, /swiperInstance\?\.slidePrev\(\)/);
+  assert.match(grid, /swiperInstance\?\.slideNext\(\)/);
+  assert.ok(!/history\.(back|forward|go)/.test(grid), "arrows must not touch browser history");
+  assert.ok(!/carousel-nav\b/.test(grid), "no arrows overlaid on the product cards");
+  // The row is rendered before the Swiper, i.e. above the photos.
+  assert.ok(grid.indexOf("carousel-navrow") < grid.indexOf("<Swiper\n"));
+  assert.match(css, /\.carousel-navrow-btn/);
+  assert.match(css, /min-height: 44px/);
   const modal = readFileSync("src/components/carousel/ProductModal.tsx", "utf8");
   assert.match(modal, /דפדף לזווית הבאה/);
-});
-
-test("both placement options exist and the default keeps the side arrows", () => {
-  assert.match(page, /searchParams\.get\("nav"\) === "bar" \? "bar" : "side"/);
-  assert.match(grid, /navVariant = "side"/);
-  assert.match(css, /\.carousel-controls-btn/);
-  assert.match(css, /min-height: 48px/);
 });
 
 test("brand default is untouched", () => {
