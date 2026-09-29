@@ -115,12 +115,11 @@ function CatalogCard({
           {description && <div className="catalog-card-description">{description}</div>}
         </div>
         <div className="catalog-card-actions">
+          {/* GAL-027: same tab, so one Back returns to the gallery URL (brand + category). */}
           {purchaseUrl && (
             <a
               className="catalog-card-buy-btn"
               href={purchaseUrl}
-              target="_blank"
-              rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               aria-label={`להמשך רכישה בחנות TopTik: ${item.title}`}
             >

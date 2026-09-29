@@ -6,7 +6,6 @@ import { enumerateColorVariants } from "@/lib/catalog-source/mandarina-scraper";
 import { enumerateBricsColorVariants } from "@/lib/catalog-source/brics-scraper";
 import { uploadRemoteImageToStorage, uploadVariantGalleries } from "@/lib/catalog-source/storage";
 import { toCarouselColors, toBricsCarouselColors } from "@/lib/carousel/colors";
-import { translateToHebrew } from "@/lib/catalog-source/translate";
 import { reviewedCopyFor } from "@/lib/carousel/reviewed-copy";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { supabaseEnv } from "@/lib/supabase/env";
@@ -146,7 +145,8 @@ export async function importSourceProduct(
         }
       }
 
-      const translatedDescription = await translateToHebrew(sourceProduct.description);
+      // GAL-009: no machine translation. Reviewed exact-SKU Hebrew copy wins;
+      // otherwise the manufacturer description is kept verbatim for review.
       const reviewedCopy = reviewedCopyFor(productCatalogNumber);
 
       const itemId = targetItemId ?? crypto.randomUUID();
@@ -155,7 +155,6 @@ export async function importSourceProduct(
         title: reviewedCopy?.title || sourceProduct.title || `${vendorConfig.label} ${catalogNumber}`,
         description: (
           reviewedCopy?.description ||
-          translatedDescription ||
           sourceProduct.description ||
           `ייבוא אוטומטי לפי מק״ט ${catalogNumber} ממקור ${vendorConfig.label}`
         ).slice(0, 2000),

@@ -701,7 +701,12 @@ async function tryShopifyProductData(sourceUrl: string): Promise<{ bodyHtml: str
   return { bodyHtml: null, colors: [] };
 }
 
-// ─── Google Translate fallback (anything left in English) ────────────────────
+// ─── DISABLED: former Google Translate fallback (GAL-009) ────────────────────
+// Machine translation is forbidden for public content. These helpers are kept
+// for history only: nothing calls them, the kill switch below stops them before
+// any network request even if one were called, and they write nothing.
+// tests/no-machine-translation.test.mjs fails if anything re-connects them.
+const MACHINE_TRANSLATION_ENABLED = false;
 
 // Letters-only test: an item that still contains [a-zA-Z] after the dictionary
 // pass needs a runtime translation. We preserve common technical tokens
@@ -715,6 +720,7 @@ function needsTranslation(text: string): boolean {
 
 // Retained but disconnected (GAL-009): no code path may call these.
 async function translateOne(text: string): Promise<string> {
+  if (!MACHINE_TRANSLATION_ENABLED) return text;
   try {
     const url =
       `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=he&dt=t&q=${encodeURIComponent(text)}`;

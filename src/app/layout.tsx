@@ -66,8 +66,10 @@ export const metadata: Metadata = {
   // the Shopify store on 2026-06-20; this Vercel app now lives on the
   // `landing` subdomain. See docs/LANDING-SUBDOMAIN.md.
   metadataBase: new URL("https://landing.toptik.co.il"),
-  title: "TopTik Collection — Move in Style. Travel with Purpose.",
-  description: "TopTik — דף נחיתה רשמי",
+  // Site-wide default (GAL-028). The gallery sets its own share metadata in
+  // src/app/carousel/page.tsx.
+  title: "TopTik | מזוודות, טרולי ותיקי נסיעות",
+  description: "מזוודות, טרולי ותיקי נסיעות של TopTik. הכירו את המוצרים לפני שתמשיכו לרכישה באתר TopTik.",
   // Keep the existing site public while content and SEO await release approval.
   robots: { index: false, follow: true },
 };

@@ -271,12 +271,11 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
               {resolvedAngle >= 0 ? `${resolvedAngle + 1} / ${count}` : imageState === "ready" ? "תמונת מוצר" : ""}
             </div>
             <div className="product-modal-actions">
+              {/* GAL-027: same tab, so one Back returns to the gallery URL (brand + category). */}
               {purchaseUrl && (
                 <a
                   className="product-modal-buy-btn"
                   href={purchaseUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   aria-label={`להמשך רכישה בחנות TopTik: ${item.title}`}
                 >

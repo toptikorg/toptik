@@ -32,6 +32,8 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 (via `@tail
 
 1. **Landing page** — `src/app/page.tsx` (server component) plus `src/app/MobileLayer.tsx` (the `<768px` overlay). The hero is a full-viewport `next/image` with separate desktop and mobile sources. Almost all of this page's styling is an inline `<style>` block inside `page.tsx`, **not** in `globals.css`.
 2. **Carousel / catalog** — the route is **`/carousel`** (`src/app/carousel/page.tsx` → `CarouselPageClient.tsx`), built on Swiper. Components live in `src/components/carousel/` (`CarouselGrid`, `CategoryNav`, `ProductModal`, `TechSpecsModal`, `ShatterTransition`, `HomeToCarouselCta`). Note the naming mismatch: CSS classes are `catalog-card-*` even though the route is `/carousel`. Carousel/catalog styling lives in `src/app/globals.css` (~2100 lines).
+   - **Purchase buttons** (card and modal) link to `purchaseUrlFor()` (`src/lib/carousel/purchase-links.ts`, Shopify cart permalinks) in the **same tab** (GAL-027): no `target="_blank"`, no `window.open`, so one Back returns to the gallery URL with its `brand`/`category` params. Guarded by `tests/purchase-navigation.test.mjs`.
+   - **Share/search metadata** (GAL-028) is set in `src/app/carousel/page.tsx`: owner-approved Hebrew title/description, canonical `https://landing.toptik.co.il/carousel`, Open Graph and Twitter card with `public/og/toptik-showroom-1200x630.jpg` (TopTik logo + real gallery products; provenance in `docs/OG-SHARE-IMAGE.md`). The `noindex, follow` hold stays. Guarded by `tests/share-metadata.test.mjs`.
 
 ## Feature flag
 
@@ -80,7 +82,7 @@ A session-gated control panel served on the **`admin.toptik.co.il`** subdomain. 
 
 `/api/admin/warm-tech-specs` (add `?force=1` to refresh all) scrapes and caches product specs into `carousel_items.tech_specs`. A Vercel cron runs it daily at 03:00 UTC (`vercel.json`). Auth: `x-admin-token` / `?token=`, or `Authorization: Bearer $CRON_SECRET`. Scraping goes through `safeSourceFetch()` (`src/lib/catalog-source/safe-fetch.ts`): HTTPS only, approved manufacturer hosts only (`source-allowlist.ts`), no internal addresses, every redirect re-validated.
 
-Scraped specs are **not machine-translated** (GAL-009): the Google Translate helpers in `product-details.ts` are disconnected and `tests/no-machine-translation.test.mjs` blocks any caller.
+**No machine translation, ever** (GAL-009): no Google Translate or other MT service for any public text (descriptions, titles, specs, metadata), not even as a draft. The old Google Translate helpers in `product-details.ts` are disabled (kill switch `MACHINE_TRANSLATION_ENABLED = false`, no caller), `catalog-source/translate.ts` is a disabled no-op that nothing imports, and `/api/admin/translate` returns 410. `tests/no-machine-translation.test.mjs` scans `src`, `scripts` and `supabase` and fails if anything reconnects them.
 
 The public `/api/product-details?url=` is **read-only** (GAL-025): it returns only specs already stored with an existing active product whose source URL is approved. It never fetches the URL and never writes to the database.
 
