@@ -1,5 +1,6 @@
 import { safeSourceFetch } from "./safe-fetch";
 import { approvedSourceUrl } from "./source-allowlist";
+import { colorNameForValue } from "@/lib/carousel/color-names";
 
 const DEFAULT_HEADERS = {
   "user-agent":
@@ -583,37 +584,16 @@ const COLOR_NAME_MAP: Record<string, string> = {
   espresso: "אספרסו", "fire red": "אדום אש", grafite: "גרפיט",
 };
 
-const COLOR_HEX_MAP: Record<string, string> = {
-  black: "#1a1a1a", white: "#f5f5f5", red: "#cc2222", blue: "#1e4d9c",
-  navy: "#1a2d5a", green: "#2d6e3a", yellow: "#f0c040", orange: "#e07020",
-  purple: "#6b3fa0", pink: "#e8789a", brown: "#7a4228", grey: "#888888",
-  gray: "#888888", beige: "#d4c4a8", taupe: "#8d7966", camel: "#c19a6b",
-  tan: "#c4a264", khaki: "#8e8060", ivory: "#fffff0", cream: "#fffdd0",
-  silver: "#c0c0c0", gold: "#d4a017", steel: "#6e7b8b", pirite: "#6e7060",
-  diva: "#a52828", stone: "#9e9e8e", sand: "#d4b896", teal: "#2e8b8b",
-  wine: "#6b1a2c", bordeaux: "#7c1c2c", burgundy: "#800020", latte: "#c4a882",
-  vanilla: "#f3e5ab", coral: "#e07060", rust: "#b74e1a", mustard: "#c8a028",
-  olive: "#6b7028", cobalt: "#0050a0", charcoal: "#3c3c3c",
-  ocean: "#1f4e6b", cappuccino: "#a58a6f", eucalyptus: "#6f8f7f",
-  espresso: "#4a342a", "fire red": "#c22b2b", grafite: "#555555",
-};
-
 function translateColorName(name: string): string {
   if (!VALUE_AND_FREE_TEXT_GLOSSARY_ENABLED) return name.trim();
-  const key = name.trim().toLowerCase();
-  if (COLOR_NAME_MAP[key]) return COLOR_NAME_MAP[key];
-  const words = key.split(/\s+/);
-  const translated = words.map((w) => COLOR_NAME_MAP[w] ?? w).join(" ");
-  return translated !== key ? translated : name;
+  // Whole value only — a colour is never split into words (owner decision 2026-09-29).
+  return COLOR_NAME_MAP[name.trim().toLowerCase()] ?? name;
 }
 
+// Swatch fill for a spec colour: exact, complete value from the documented
+// colour allowlist only — no word-by-word or partial match.
 function colorToHex(name: string): string | null {
-  const key = name.trim().toLowerCase();
-  if (COLOR_HEX_MAP[key]) return COLOR_HEX_MAP[key];
-  for (const word of key.split(/\s+/)) {
-    if (COLOR_HEX_MAP[word]) return COLOR_HEX_MAP[word];
-  }
-  return null;
+  return colorNameForValue(name).hex;
 }
 
 function extractColorsFromPageHtml(html: string): ColorSwatch[] {

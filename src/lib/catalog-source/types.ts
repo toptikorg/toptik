@@ -14,7 +14,10 @@ export interface SourceProduct {
 // One colour of a product, discovered by enumerating the sibling product pages
 // that share the same 5-char model token (every colour is its own MD product).
 export interface SourceColorVariant {
-  colorWord: string | null;   // English colour word parsed from the title (e.g. "steel")
+  // Bric's: the maker's complete colour value ("Black", "Racing Yellow").
+  // Mandarina: a colour word found in the page title — kept for de-duplication
+  // only; it never becomes a Hebrew name (./carousel/color-names rules).
+  colorWord: string | null;
   colorCode: string | null;   // global MD colour code — middle catalog segment (e.g. "465")
   title: string;
   catalogNumber: string | null;

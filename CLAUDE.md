@@ -86,6 +86,8 @@ A session-gated control panel served on the **`admin.toptik.co.il`** subdomain. 
 
 The scraper's fixed glossary may only render **field names** from the explicit `KEY_TRANSLATIONS` allowlist (Weight → משקל, Material → חומר, …). Values, bullet lines, sentences, materials and colour names keep the manufacturer's wording (`VALUE_AND_FREE_TEXT_GLOSSARY_ENABLED = false`); `tests/glossary-scope.test.mjs` enforces it.
 
+Gallery **colour names** (swatches, imports, Shopify export) come only from the closed allowlist in `src/lib/carousel/color-names.ts` (owner decision 2026-09-29): full Mandarina code, full Bric's/Porsche SKU or full exact maker value; no word splitting, no partial match, never a title or free text; every entry has a `source`; unknown colours keep the original code/value, flagged for review. Rules and sources: `docs/COLOR-NAMES.md`; guard: `tests/color-names.test.mjs`.
+
 The public `/api/product-details?url=` is **read-only** (GAL-025): it returns only specs already stored with an existing active product whose source URL is approved. It never fetches the URL and never writes to the database.
 
 `/api/debug-scrape` is closed (404, GAL-026). Scrape diagnostics live at `/api/admin/debug-scrape` (admin token + approved source + `safeSourceFetch`, read-only).

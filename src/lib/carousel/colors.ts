@@ -1,83 +1,31 @@
 import type { SourceColorVariant } from "@/lib/catalog-source/types";
 import type { CarouselColor, CarouselItem } from "./types";
-import { COLOR_HEX, COLOR_HEBREW, extractColorWord } from "./color-groups";
+import {
+  colorNameForBricsSku,
+  colorNameForMandarinaCode,
+  colorNameForValue,
+  type ColorNameResult,
+} from "./color-names";
 import { detectVendorFromCatalog } from "@/lib/catalog-source/vendor-detect";
 
-// Global Mandarina Duck colour codes — the middle segment of the catalog number
-// (P10·QMC01·`465`·TU). The code is stable across every model, so it's the most
-// reliable colour key. Derived from the live 28-product catalog; hex is an
-// approximate swatch fill. Extend as new codes are observed.
-export const MANDARINA_COLOR_CODES: Record<string, { he: string; hex: string }> = {
-  "465": { he: "פלדה", hex: "#6e7b8b" }, // steel
-  "09K": { he: "טאופ", hex: "#8d7966" }, // taupe
-  "024": { he: "פיריט", hex: "#6e7060" }, // pirite
-  A74: { he: "אויל", hex: "#3d4a1e" }, // oil
-  A89: { he: "לונר", hex: "#b8b8c0" }, // lunar
-  "29U": { he: "גרפיט", hex: "#555555" }, // graphite
-  "08Q": { he: "כחול", hex: "#1a2d5a" }, // dress blue
-  "05J": { he: "צהוב", hex: "#f0c040" }, // duck yellow
-  A92: { he: "מוארה", hex: "#6b6f76" }, // moire
-  A93: { he: "דיווה", hex: "#a52828" }, // diva
-  "651": { he: "שחור", hex: "#1a1a1a" }, // black
-  "07X": { he: "כחול עמוק", hex: "#1c3a6e" }, // deep blue
-  "02F": { he: "אמרלד", hex: "#2e7d52" }, // emerald
-  "24N": { he: "פנינה", hex: "#eae6da" }, // pearl
-  A82: { he: "אגוז פקאן", hex: "#8a5a3b" }, // pecan nut
-  A32: { he: "טורקיז נצנצים", hex: "#3fb8ae" }, // glitter green/turquoise
-  A83: { he: "שוקולד", hex: "#6b4b3e" }, // choco ice
-  A81: { he: "מוקה לבן", hex: "#d9cdbf" }, // white mocha
-};
+// Colour NAMES come only from the closed allowlist in ./color-names (owner
+// decision 2026-09-29): full code or full value, no word splitting, no partial
+// matching, never from a title or any free text. An unknown code stays as the
+// original code and is flagged for review.
 
-// Bric's colour codes — the SKU suffix (BXL58145·`078`). Kept SEPARATE from the
-// Mandarina table on purpose: the numeric codes collide (Mandarina 465 = steel,
-// Bric's 465 would be something else entirely), so the two must never share a
-// lookup. Derived from the colour names already scraped for this catalog.
-export const BRICS_COLOR_CODES: Record<string, { he: string; hex: string }> = {
-  "001": { he: "שחור", hex: "#1a1a1a" },
-  "006": { he: "כחול", hex: "#1f3a6e" },
-  "014": { he: "קרם", hex: "#e6dcc8" },
-  "050": { he: "נייבי", hex: "#1c2a4a" },
-  "078": { he: "זית", hex: "#6b6f4a" },
-  "101": { he: "שחור", hex: "#1a1a1a" },
-  "254": { he: "ורוד", hex: "#d98ba6" },
-};
-
-// Resolve a Hebrew name + swatch hex from the colour code (preferred, global)
-// or the colour word parsed from the title (fallback).
-export function resolveColorMeta(
-  colorWord: string | null,
-  colorCode: string | null,
-): { name: string; hex: string | null } {
-  const code = colorCode?.toUpperCase() ?? null;
-  if (code && MANDARINA_COLOR_CODES[code]) {
-    return { name: MANDARINA_COLOR_CODES[code].he, hex: MANDARINA_COLOR_CODES[code].hex };
+// Vendor-aware resolution from a catalog number. Mandarina catalog numbers carry
+// a global colour code; Bric's / Porsche Design are named only by the full SKU,
+// because their colour suffixes mean different colours in different
+// collections. When nothing matches, `name` is the bare colour code (or "צבע")
+// and `named` is false — callers that must not show a code can check it.
+export function resolveColorMetaForCatalog(catalogNumber: string | null | undefined): ColorNameResult {
+  const code = colorCodeFromCatalog(catalogNumber);
+  if (catalogNumber && detectVendorFromCatalog(catalogNumber) === "mandarina") {
+    return colorNameForMandarinaCode(code);
   }
-  const word = colorWord?.toLowerCase() ?? null;
-  if (word) {
-    return { name: COLOR_HEBREW[word] ?? colorWord!, hex: COLOR_HEX[word] ?? null };
-  }
-  return { name: code ?? "צבע", hex: null };
-}
-
-// Vendor-aware resolution from a catalog number: pick the colour table that
-// belongs to the brand that issued the number, then fall back to a colour word
-// in the title. `named` is false when nothing resolved and `name` is only the
-// raw code — callers that must not show a code can check it.
-export function resolveColorMetaForCatalog(
-  catalogNumber: string | null | undefined,
-  title: string | null | undefined,
-): { name: string; hex: string | null; named: boolean } {
-  const code = colorCodeFromCatalog(catalogNumber)?.toUpperCase() ?? null;
-  const table =
-    catalogNumber && detectVendorFromCatalog(catalogNumber) === "brics"
-      ? BRICS_COLOR_CODES
-      : MANDARINA_COLOR_CODES;
-  if (code && table[code]) return { ...table[code], name: table[code].he, named: true };
-  const word = title ? extractColorWord(title) : null;
-  if (word) {
-    return { name: COLOR_HEBREW[word.toLowerCase()] ?? word, hex: COLOR_HEX[word.toLowerCase()] ?? null, named: true };
-  }
-  return { name: code ?? "צבע", hex: null, named: false };
+  const bySku = colorNameForBricsSku(catalogNumber);
+  if (bySku.named) return bySku;
+  return { name: code ?? "צבע", hex: null, named: false, needsReview: code !== null, sourceValue: code };
 }
 
 // Map scraped colour variants → persisted colours, attaching the Supabase-hosted
@@ -92,13 +40,16 @@ export function toCarouselColors(
   for (const variant of variants) {
     const angles = galleryByHandle.get(variant.handle) ?? [];
     if (angles.length === 0) continue;
-    const { name, hex } = resolveColorMeta(variant.colorWord, variant.colorCode);
+    // Mandarina: named by the colour code only. The colour word the scraper
+    // found inside the page title is never used for the name (free text).
+    const { name, hex, sourceValue } = colorNameForMandarinaCode(variant.colorCode);
     const key = (variant.colorCode || variant.colorWord || variant.handle).toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     colors.push({
       name,
       hex,
+      sourceValue,
       colorCode: variant.colorCode,
       imagePath: angles[0],
       angles,
@@ -109,21 +60,16 @@ export function toCarouselColors(
   return colors;
 }
 
-// Bric's colour naming: the colour is a plain English word/phrase from the
-// Shopify "Color" option (Ocean, Bordeaux, Cappuccino...), and the colour code
-// is the SKU suffix (BOE58117·050). Never consult MANDARINA_COLOR_CODES here —
-// Bric's numeric codes can collide with Mandarina's and would resolve to the
-// wrong Hebrew name.
-function bricsColorMeta(colorWord: string | null): { name: string; hex: string | null } {
-  const word = colorWord?.trim().toLowerCase() ?? null;
-  if (!word) return { name: "צבע", hex: null };
-  if (COLOR_HEBREW[word]) return { name: COLOR_HEBREW[word], hex: COLOR_HEX[word] ?? null };
-  const translated = word
-    .split(/\s+/)
-    .map((w) => COLOR_HEBREW[w] ?? w)
-    .join(" ");
-  const hex = word.split(/\s+/).map((w) => COLOR_HEX[w]).find(Boolean) ?? null;
-  return { name: translated !== word ? translated : colorWord!, hex };
+// Bric's colour naming: the maker's complete colour value from the Shopify
+// "Color" option (Black, Olive, Racing Yellow...), matched as a whole value;
+// otherwise the full SKU. Never a word inside the value, never the Mandarina
+// table (Bric's codes collide with Mandarina's), never a guess.
+function bricsColorMeta(variant: SourceColorVariant): ColorNameResult {
+  const byValue = colorNameForValue(variant.colorWord);
+  if (byValue.named) return byValue;
+  const bySku = colorNameForBricsSku(variant.catalogNumber);
+  if (bySku.named) return { ...bySku, sourceValue: byValue.sourceValue ?? bySku.sourceValue };
+  return byValue;
 }
 
 export function toBricsCarouselColors(
@@ -135,13 +81,14 @@ export function toBricsCarouselColors(
   for (const variant of variants) {
     const angles = galleryByHandle.get(variant.handle) ?? [];
     if (angles.length === 0) continue;
-    const { name, hex } = bricsColorMeta(variant.colorWord);
+    const { name, hex, sourceValue } = bricsColorMeta(variant);
     const key = (variant.colorCode || variant.colorWord || variant.handle).toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     colors.push({
       name,
       hex,
+      sourceValue,
       colorCode: variant.colorCode,
       imagePath: angles[0],
       angles,
@@ -166,10 +113,12 @@ export function ensureOwnColor(
     colors.some((c) => c.imagePath === item.coverImagePath);
   if (hasOwn) return colors;
   // Vendor-aware: a Bric's suffix must not be read off the Mandarina table.
-  const { name, hex } = resolveColorMetaForCatalog(item.catalogNumber, item.title);
+  // The title is never consulted for the colour name.
+  const { name, hex, sourceValue } = resolveColorMetaForCatalog(item.catalogNumber);
   const own: CarouselColor = {
     name,
     hex,
+    sourceValue,
     colorCode: ownCode,
     imagePath: item.coverImagePath,
     angles: [item.coverImagePath],
@@ -186,8 +135,10 @@ export function ensureOwnColor(
 export interface ResolvedSwatch {
   key: string;
   itemId?: string; // the catalog item this colour IS (drives navigation on click)
-  name: string;
+  name: string; // Hebrew name from the allowlist, or the original colour code
   hex: string | null;
+  sourceValue?: string | null; // the maker's colour code/value the name came from
+  named?: boolean; // false ⇒ not in the allowlist; shown as the original code
   imagePath: string | null; // cover (= angles[0])
   angles: string[]; // this colour's full gallery — drives rotation while selected
   isCurrent: boolean;
@@ -253,17 +204,15 @@ export function buildModelSiblingSwatches(items: CarouselItem[]): Map<string, Re
       const code = (colorCodeFromCatalog(member.catalogNumber) ?? member.id).toUpperCase();
       if (seen.has(code)) continue;
       seen.add(code);
-      const { name, hex } = resolveColorMeta(
-        extractColorWord(member.title),
-        colorCodeFromCatalog(member.catalogNumber),
-      );
+      // Named from the catalog number only — never from the product title.
+      const { name, hex, sourceValue, named } = resolveColorMetaForCatalog(member.catalogNumber);
       const angles =
         member.angles.length > 0
           ? [...member.angles].sort((a, b) => a.angleOrder - b.angleOrder).map((a) => a.imagePath)
           : [member.coverImagePath];
       base.push({
         code,
-        swatch: { key: code, itemId: member.id, name, hex, imagePath: member.coverImagePath, angles },
+        swatch: { key: code, itemId: member.id, name, hex, sourceValue, named, imagePath: member.coverImagePath, angles },
       });
     }
     if (base.length < 2) continue; // need 2+ colours to form a selector

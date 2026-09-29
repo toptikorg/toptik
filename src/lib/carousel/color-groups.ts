@@ -1,46 +1,21 @@
 import type { CarouselItem } from "./types";
 import type { ColorSwatch } from "../catalog-source/product-details";
 
-export const COLOR_HEX: Record<string, string> = {
-  black: "#1a1a1a", white: "#f5f5f5", red: "#cc2222", blue: "#1e4d9c",
-  navy: "#1a2d5a", green: "#2d6e3a", yellow: "#f0c040", orange: "#e07020",
-  purple: "#6b3fa0", pink: "#e8789a", brown: "#7a4228", grey: "#888888",
-  gray: "#888888", beige: "#d4c4a8", taupe: "#8d7966", camel: "#c19a6b",
-  tan: "#c4a264", khaki: "#8e8060", ivory: "#fffff0", cream: "#fffdd0",
-  silver: "#c0c0c0", gold: "#d4a017", steel: "#6e7b8b", pirite: "#6e7060",
-  diva: "#a52828", stone: "#9e9e8e", sand: "#d4b896", teal: "#2e8b8b",
-  wine: "#6b1a2c", bordeaux: "#7c1c2c", burgundy: "#800020", latte: "#c4a882",
-  coral: "#e07060", rust: "#b74e1a", mustard: "#c8a028", olive: "#6b7028",
-  cobalt: "#0050a0", charcoal: "#3c3c3c", graphite: "#555555",
-  lunar: "#b8b8c0", oil: "#3d4a1e", aqua: "#00b2b2", petrol: "#1c4f5e",
-  midnight: "#191970", vanilla: "#f3e5ab", forest: "#2d5a2d",
-  emerald: "#2e7d52", pearl: "#eae6da", pecan: "#8a5a3b",
-  "pecan nut": "#8a5a3b", "deep blue": "#1c3a6e", "dress blue": "#1a2d5a",
-  // Bric's palette
-  ocean: "#1f4e6b", cappuccino: "#a58a6f", eucalyptus: "#6f8f7f",
-  espresso: "#4a342a", "fire red": "#c22b2b", grafite: "#555555",
-};
-
-export const COLOR_HEBREW: Record<string, string> = {
-  black: "שחור", white: "לבן", red: "אדום", blue: "כחול", green: "ירוק",
-  yellow: "צהוב", orange: "כתום", purple: "סגול", pink: "ורוד", brown: "חום",
-  grey: "אפור", gray: "אפור", navy: "נייבי", beige: "בז'", taupe: "טאופ",
-  camel: "גמל", tan: "שזוף", khaki: "חאקי", ivory: "שנהב", cream: "קרם",
-  silver: "כסף", gold: "זהב", steel: "פלדה", pirite: "פיריט", diva: "דיווה",
-  stone: "אבן", sand: "חול", teal: "טיל", wine: "יין", bordeaux: "בורדו",
-  burgundy: "בורגונדי", latte: "לאטה", vanilla: "וניל", forest: "יער",
-  coral: "אלמוג", rust: "חלודה", mustard: "חרדל", olive: "זית",
-  cobalt: "קובלט", charcoal: "פחם", graphite: "גרפיט",
-  lunar: "לונר", oil: "אויל", aqua: "אקווה", petrol: "פטרול",
-  midnight: "חצות", "dress blue": "כחול",
-  emerald: "אמרלד", pearl: "פנינה", pecan: "פקאן",
-  "pecan nut": "אגוז פקאן", "deep blue": "כחול עמוק",
-  // Bric's palette
-  ocean: "אוקיינוס", cappuccino: "קפוצ'ינו", eucalyptus: "אקליפטוס",
-  espresso: "אספרסו", "fire red": "אדום אש", grafite: "גרפיט",
-};
-
-const COLOR_WORDS = new Set(Object.keys(COLOR_HEX));
+// English colour words used ONLY to recognise that a title mentions a colour —
+// for grouping colour siblings and de-duplicating scraped variants. This list
+// never produces display text: Hebrew colour names come exclusively from the
+// allowlist in ./color-names, by full code or full value (owner decision
+// 2026-09-29; tests/color-names.test.mjs).
+const COLOR_WORDS = new Set([
+  "black", "white", "red", "blue", "navy", "green", "yellow", "orange",
+  "purple", "pink", "brown", "grey", "gray", "beige", "taupe", "camel",
+  "tan", "khaki", "ivory", "cream", "silver", "gold", "steel", "pirite",
+  "diva", "stone", "sand", "teal", "wine", "bordeaux", "burgundy", "latte",
+  "coral", "rust", "mustard", "olive", "cobalt", "charcoal", "graphite",
+  "lunar", "oil", "aqua", "petrol", "midnight", "vanilla", "forest",
+  "emerald", "pearl", "pecan", "pecan nut", "deep blue", "dress blue",
+  "ocean", "cappuccino", "eucalyptus", "espresso", "fire red", "grafite",
+]);
 
 function normalizeForFamily(title: string): string {
   return title
@@ -86,9 +61,10 @@ export function buildItemColorGroups(items: CarouselItem[]): Map<string, ColorSw
     const seen = new Set<string>();
     const swatches: ColorSwatch[] = members
       .filter(m => m.colorWord && !seen.has(m.colorWord) && (seen.add(m.colorWord), true))
+      // Diagnostic only: the detected word is shown as found, untranslated.
       .map(m => ({
-        name: COLOR_HEBREW[m.colorWord!] ?? m.colorWord!,
-        hex: COLOR_HEX[m.colorWord!] ?? null,
+        name: m.colorWord!,
+        hex: null,
         swatchUrl: null,
       }));
     if (swatches.length < 1) continue;

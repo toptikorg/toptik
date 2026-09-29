@@ -250,7 +250,7 @@ export function buildShopifyExportRows(items: CarouselItem[], origin: string): S
     // whose own colour was never scraped as a swatch came out blank). A bare
     // code is not a colour name, so it is left empty rather than shipped.
     const swatchName = baseCatalog ? colorByCatalog.get(catalogKey(baseCatalog)) : undefined;
-    const resolved = resolveColorMetaForCatalog(baseCatalog || null, item.title);
+    const resolved = resolveColorMetaForCatalog(baseCatalog || null);
     const color = swatchName && !isBareCode(swatchName) ? swatchName : resolved.named ? resolved.name : "";
 
     // Rows with no catalog number cannot be compared — keep each of them.

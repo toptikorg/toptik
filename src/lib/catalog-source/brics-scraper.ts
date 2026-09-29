@@ -396,7 +396,8 @@ export async function enumerateBricsColorVariants(
     seenColors.add(colorKey);
     const colorCode = colorCodeFromSku(sku);
     variants.push({
-      colorWord: colorValue.toLowerCase(),
+      // The maker's complete colour value, casing kept (source value, GAL-009).
+      colorWord: colorValue,
       colorCode,
       title: `${product.title} ${colorValue}`,
       catalogNumber: sku.toUpperCase(),
@@ -453,7 +454,7 @@ async function enumerateHuntColorVariants(
     seenColors.add(colorKey);
     const colorCode = bricsColorCode(sku);
     variants.push({
-      colorWord: colorKey,
+      colorWord: colorValue,
       colorCode,
       title: sibling.title,
       catalogNumber: normalizeSku(sku),

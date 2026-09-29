@@ -23,6 +23,7 @@ export interface CachedTechSpecs {
 export interface CarouselColor {
   name: string;               // Hebrew display name
   hex: string | null;         // swatch fill
+  sourceValue?: string | null; // maker's colour code/value the name came from (kept next to the Hebrew name)
   colorCode: string | null;   // global MD colour code (e.g. "465")
   imagePath: string;          // Supabase-hosted cover image in this colour (= angles[0])
   angles?: string[];          // Supabase-hosted gallery for this colour (rotation)
