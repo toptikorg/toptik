@@ -84,6 +84,8 @@ A session-gated control panel served on the **`admin.toptik.co.il`** subdomain. 
 
 **No machine translation, ever** (GAL-009): no Google Translate or other MT service for any public text (descriptions, titles, specs, metadata), not even as a draft. The old Google Translate helpers in `product-details.ts` are disabled (kill switch `MACHINE_TRANSLATION_ENABLED = false`, no caller), `catalog-source/translate.ts` is a disabled no-op that nothing imports, and `/api/admin/translate` returns 410. `tests/no-machine-translation.test.mjs` scans `src`, `scripts` and `supabase` and fails if anything reconnects them.
 
+The scraper's fixed glossary may only render **field names** from the explicit `KEY_TRANSLATIONS` allowlist (Weight → משקל, Material → חומר, …). Values, bullet lines, sentences, materials and colour names keep the manufacturer's wording (`VALUE_AND_FREE_TEXT_GLOSSARY_ENABLED = false`); `tests/glossary-scope.test.mjs` enforces it.
+
 The public `/api/product-details?url=` is **read-only** (GAL-025): it returns only specs already stored with an existing active product whose source URL is approved. It never fetches the URL and never writes to the database.
 
 `/api/debug-scrape` is closed (404, GAL-026). Scrape diagnostics live at `/api/admin/debug-scrape` (admin token + approved source + `safeSourceFetch`, read-only).

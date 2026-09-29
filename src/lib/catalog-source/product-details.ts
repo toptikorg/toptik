@@ -129,12 +129,21 @@ const MATERIAL_WORDS: Array<[RegExp, string]> = [
 
 function extractMaterialWord(text: string): string | null {
   for (const [pattern, hebrew] of MATERIAL_WORDS) {
-    if (pattern.test(text)) return hebrew;
+    const match = pattern.exec(text);
+    // GAL-009: a material is a value, not a field name — keep the maker's word.
+    if (match) return VALUE_AND_FREE_TEXT_GLOSSARY_ENABLED ? hebrew : match[0];
   }
   return null;
 }
 
-// ─── Hebrew translation ──────────────────────────────────────────────────────
+// ─── Hebrew glossary (GAL-009) ───────────────────────────────────────────────
+// Owner decision 2026-09-29: only a closed, explicit allowlist of FIELD NAMES
+// may be rendered in Hebrew (KEY_TRANSLATIONS below: Weight → משקל, ...).
+// Descriptions, sentences, bullet lines, values, materials and colour names
+// are never auto-converted: they keep the manufacturer's wording until a
+// reviewed Hebrew copy exists. The value / free-text maps below are DISABLED
+// and kept for history only. tests/glossary-scope.test.mjs enforces this.
+const VALUE_AND_FREE_TEXT_GLOSSARY_ENABLED = false;
 
 // Used for whole-line replacement of common Mandarina descriptive items
 // (typically bullet items under Exterior:/Interior:). Keys are lowercase.
@@ -268,6 +277,7 @@ const VALUE_PHRASE_TRANSLATIONS: Array<[RegExp, string]> = [
 ];
 
 function translateValue(text: string): string {
+  if (!VALUE_AND_FREE_TEXT_GLOSSARY_ENABLED) return text.trim();
   let out = text;
   for (const [re, hebrew] of VALUE_PHRASE_TRANSLATIONS) {
     out = out.replace(re, hebrew);
@@ -290,6 +300,7 @@ function translateKey(label: string): string {
 
 // Translate a whole-line bullet item (e.g. "1 zip pocket", "Double compartment").
 function translateLineItem(line: string): string {
+  if (!VALUE_AND_FREE_TEXT_GLOSSARY_ENABLED) return line.trim();
   let s = line.trim();
   const lower = s.toLowerCase();
   if (LINE_TRANSLATIONS[lower] !== undefined) return LINE_TRANSLATIONS[lower];
@@ -440,7 +451,9 @@ function parseStructuredBody(html: string): ParsedBody {
     // Bare line — only keep if it's a known full-line translation (e.g. "Italian leather")
     const lower = raw.toLowerCase();
     if (LINE_TRANSLATIONS[lower] !== undefined) {
-      const t = LINE_TRANSLATIONS[lower];
+      // The list still decides which bare lines are kept (and which are
+      // dropped as noise); the line itself stays in the maker's wording.
+      const t = VALUE_AND_FREE_TEXT_GLOSSARY_ENABLED ? LINE_TRANSLATIONS[lower] : LINE_TRANSLATIONS[lower] && raw.trim();
       if (!t) continue;
       // Italian leather / Calf leather etc. → interior (lining-like) if Interior section active, else composition
       if (bullet === "interior") out.interior.push({ label: t, value: "" });
@@ -586,6 +599,7 @@ const COLOR_HEX_MAP: Record<string, string> = {
 };
 
 function translateColorName(name: string): string {
+  if (!VALUE_AND_FREE_TEXT_GLOSSARY_ENABLED) return name.trim();
   const key = name.trim().toLowerCase();
   if (COLOR_NAME_MAP[key]) return COLOR_NAME_MAP[key];
   const words = key.split(/\s+/);
