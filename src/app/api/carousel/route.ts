@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCarouselPayload } from "@/lib/carousel/repository";
+import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
+import { appendSamsoniteItems } from "@/lib/carousel/samsonite-catalog";
 
 // Always serve the CURRENT catalog — no edge/browser caching. A product added
 // or edited in the admin must appear immediately; the previous aggressive edge
@@ -10,8 +12,14 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const payload = await getCarouselPayload();
-    return NextResponse.json(payload, {
+    // Read inactive identities too so the reviewed supplement cannot revive a
+    // product explicitly hidden by an editor. Never expose those rows publicly.
+    const payload = await getCarouselPayload({ includeInactive: true });
+    const publicPayload = isUnavailableCarouselPayload(payload) ? payload : {
+      ...payload,
+      items: appendSamsoniteItems(payload.items).filter(item => item.isActive),
+    };
+    return NextResponse.json(publicPayload, {
       headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" },
     });
   } catch (error) {

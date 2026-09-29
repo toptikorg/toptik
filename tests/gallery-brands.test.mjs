@@ -8,7 +8,7 @@ const read = path => readFile(new URL(path, root), "utf8");
 const load = async path => import(`data:text/javascript;base64,${Buffer.from(
   stripTypeScriptTypes(await read(path)),
 ).toString("base64")}`);
-const { brandForItem, availableBrands, defaultBrand, parseBrandParam, filterByBrand, urlWithBrand } =
+const { brandForItem, availableBrands, publicCollectionItems, defaultBrand, parseBrandParam, filterByBrand, urlWithBrand } =
   await load("src/lib/carousel/brands.ts");
 const { filterByCategory } = await load("src/lib/carousel/categories.ts");
 const copy = JSON.parse(await read("src/lib/carousel/reviewed-copy.json"));
@@ -30,8 +30,10 @@ test("all 25 curated SKUs have exact brand evidence, including when legacy specs
     counts.set(declared, (counts.get(declared) ?? 0) + 1);
   }
   assert.deepEqual(Object.fromEntries(counts), { "Mandarina Duck": 12, "Bric's": 11, "Porsche Design": 2 });
-  assert.deepEqual(availableBrands(items).map(brand => brand.key), ["mandarina-duck", "brics", "porsche-design"]);
+  assert.deepEqual(availableBrands(items).map(brand => brand.key), ["mandarina-duck", "brics"]);
   assert.ok(!availableBrands(items).some(brand => brand.key === "samsonite"));
+  assert.equal(publicCollectionItems(items).length, 23);
+  assert.equal(items.length, 25, "public selection never deletes original records");
 });
 
 test("unknown and conflicting identities never silently become Mandarina products", () => {
@@ -58,7 +60,7 @@ test("default and URL selections use only available brands", () => {
   }
   assert.equal(defaultBrand(brands), "mandarina-duck");
   assert.equal(parseBrandParam(" BRICS ", brands), "brics");
-  assert.equal(parseBrandParam("porsche-design", brands), "porsche-design");
+  assert.equal(parseBrandParam("porsche-design", brands), "mandarina-duck");
   assert.equal(parseBrandParam("all", brands), "all");
   assert.equal(defaultBrand(availableBrands(items.filter(item => brandForItem(item).key === "brics"))), "all");
   assert.equal(parseBrandParam("mandarina-duck", []), "all");
@@ -84,7 +86,7 @@ test("brand then category filtering preserves each item's identity, order, image
 });
 
 test("brand URLs retain category, arbitrary query parameters and hash, including explicit all", () => {
-  for (const brand of ["all", "brics", "mandarina-duck", "porsche-design"]) {
+  for (const brand of ["all", "brics", "mandarina-duck"]) {
     const original = "https://landing.toptik.co.il/carousel?category=carryon&utm_source=test&brand=old&x=1&x=2#details";
     const url = new URL(urlWithBrand(original, brand));
     assert.equal(url.origin, "https://landing.toptik.co.il");
@@ -98,12 +100,13 @@ test("brand URLs retain category, arbitrary query parameters and hash, including
   }
 });
 
-test("page wires the native labeled select, URL restoration, combined filtering and meaningful empty state", async () => {
+test("page wires the labeled brand control, URL restoration, combined filtering and meaningful empty state", async () => {
   const source = await read("src/app/carousel/CarouselPageClient.tsx");
-  assert.match(source, /<label className="carousel-brand-picker">/);
-  assert.match(source, /בחרו מותג/);
-  assert.match(source, /<select[\s\S]*?value=\{activeBrand\}[\s\S]*?onChange=\{event => onChangeBrand\(event.target.value\)\}/);
-  assert.match(source, /aria-controls="carousel-brand-results"/);
+  assert.match(source, /<BrandPicker/);
+  assert.match(source, /onChange=\{onChangeBrand\}/);
+  assert.match(source, /id="carousel-brand-help"/);
+  assert.match(source, /לחצו על שם המותג בראש הגלריה/);
+  assert.match(source, /publicCollectionItems\(/);
   assert.match(source, /filterByCategory\(filterByBrand\(activeItems, activeBrand\), activeCategory\)/);
   assert.match(source, /window\.addEventListener\("popstate", onPopState\)/);
   assert.match(source, /window\.removeEventListener\("popstate", onPopState\)/);
@@ -112,8 +115,5 @@ test("page wires the native labeled select, URL restoration, combined filtering 
   assert.match(source, /onClick=\{\(\) => onChangeCategory\("all"\)\}/);
   assert.doesNotMatch(source, /<option[^>]*value="samsonite"/);
   const css = await read("src/app/globals.css");
-  assert.match(css, /\.carousel-brand-picker:focus-within \.carousel-brand-current/);
-  assert.match(css, /\.carousel-brand-select\s*\{[^}]*height: 44px/s);
-  assert.match(css, /\.carousel-brand-select\s*\{[^}]*opacity: 0/s);
   assert.match(css, /\.brand-wordmark\s*\{[^}]*letter-spacing: 5px[^}]*font-size: 13px[^}]*color: #caa46e[^}]*margin-bottom: 8px/s);
 });

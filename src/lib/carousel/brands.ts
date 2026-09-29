@@ -3,6 +3,10 @@ import type { CarouselItem } from "./types";
 export type BrandKey = string;
 export interface GalleryBrand { key: BrandKey; label: string }
 
+// Public collection selection approved by the owner on 2026-09-29.
+// This is a presentation policy, not a deletion or a brand-identity rewrite.
+const PUBLIC_BRAND_KEYS = new Set(["mandarina-duck", "brics", "samsonite"]);
+
 const NAMED_BRANDS: Record<string, GalleryBrand> = {
   "mandarina duck": { key: "mandarina-duck", label: "Mandarina Duck" },
   "מנדרינה דאק": { key: "mandarina-duck", label: "Mandarina Duck" },
@@ -78,9 +82,16 @@ export function availableBrands(items: CarouselItem[]): GalleryBrand[] {
   for (const item of items) {
     if (!item.isActive) continue;
     const brand = brandForItem(item);
-    if (brand && !brands.has(brand.key)) brands.set(brand.key, brand);
+    if (brand && PUBLIC_BRAND_KEYS.has(brand.key) && !brands.has(brand.key)) brands.set(brand.key, brand);
   }
   return [...brands.values()];
+}
+
+export function publicCollectionItems(items: CarouselItem[]): CarouselItem[] {
+  return items.filter(item => {
+    const brand = brandForItem(item);
+    return item.isActive && brand !== null && PUBLIC_BRAND_KEYS.has(brand.key);
+  });
 }
 
 export function defaultBrand(brands: GalleryBrand[]): BrandKey {

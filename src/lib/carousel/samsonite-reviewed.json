@@ -1,0 +1,2910 @@
+{
+  "snapshotAt": "2026-09-29T05:49:48.245Z",
+  "publicSource": "https://www.toptik.co.il/products.json?limit=250",
+  "records": [
+    {
+      "sku": "KJ114007",
+      "variantId": "50223213150458",
+      "title": "מזוודת טרולי Samsonite Upscape 55 ס״מ Easy Access, ירוק",
+      "description": "גישה לציוד העבודה בלי לחפש בין הבגדים: Upscape Easy Access בגובה 55 ס״מ ובצבע ירוק כוללת תא קדמי למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳. נפחה 42 ליטר, המתרחבים ל־48 ליטר, ומשקלה 2.6 ק״ג. מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/upscape-spinner-expandable-easy-access-55cm-climbing-ivy/150700-9199.html",
+        "https://www.toptik.co.il/products/samsonite-upscape-55-easy-access-climbing-ivy-kj114007"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-98c41065e411.jpg?v=1788460879",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-98c41065e411.jpg?v=1788460879",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-810441acdc67.jpg?v=1788460879",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-66c6053e1d81.jpg?v=1788460879",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-7b513d30f7ec.jpg?v=1788460879",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-1fc0ab50f822.jpg?v=1788460878",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-6d7f7c7d5049.jpg?v=1788460878"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150700"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "150700-9199"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "42/48 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KJ114001",
+      "variantId": "50223212790010",
+      "title": "מזוודת טרולי Samsonite Upscape 55 ס״מ, ירוק",
+      "description": "אריזה קומפקטית עם מקום לתוספות: Upscape בגובה 55 ס״מ ובצבע ירוק מתרחבת מעומק 20 ל־23 ס״מ ומגיעה לנפח של 45 ליטר. משקלה העצמי 2.3 ק״ג, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. הדגם כולל מעטפת פוליפרופילן, גלגלים כפולים ומנעול TSA.",
+      "sourceUrls": [
+        "https://www.samsonite.com.au/upscape/spinner-55-exp/ss-143108-9199.html",
+        "https://www.toptik.co.il/products/samsonite-upscape-55-climbing-ivy-kj114001"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-67f729f02ad0.jpg?v=1788460868",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-67f729f02ad0.jpg?v=1788460868",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-77d5c91ef5e4.jpg?v=1788460868",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-841619b4c721.jpg?v=1788460867",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-d93295efea20.jpg?v=1788460867",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-5b34059c2298.jpg?v=1788460867",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-bece2e8fedba.jpg?v=1788460868"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "143108"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "143108-9199"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "נפח בהרחבה",
+          "value": "45 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KJ111001",
+      "variantId": "50223210692858",
+      "title": "מזוודת טרולי Samsonite Upscape 55 ס״מ, כחול",
+      "description": "אריזה קומפקטית עם מקום לתוספות: Upscape בגובה 55 ס״מ ובצבע כחול מתרחבת מעומק 20 ל־23 ס״מ ומגיעה לנפח של 45 ליטר. משקלה העצמי 2.3 ק״ג, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. הדגם כולל מעטפת פוליפרופילן, גלגלים כפולים ומנעול TSA.",
+      "sourceUrls": [
+        "https://www.samsonite.com.au/upscape/spinner-55-exp/ss-143108-9199.html",
+        "https://www.toptik.co.il/products/samsonite-upscape-55-nautical-blue-kj111001"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-5df1860e864e.jpg?v=1788461185",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-5df1860e864e.jpg?v=1788461185",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-90c1a6412649.jpg?v=1788461185",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-13011ee1e37b.jpg?v=1788461185",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-9488c0499c63.jpg?v=1788461185",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-7a724855009a.jpg?v=1788461185",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/08-26a91b0a3d62.jpg?v=1788461185",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/09-9f1d89d6f5ff.jpg?v=1788461185",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/10-e627921b3730.jpg?v=1788461185"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "143108"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "נפח בהרחבה",
+          "value": "45 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KJ109001",
+      "variantId": "50223209677050",
+      "title": "מזוודת טרולי Samsonite Upscape 55 ס״מ, שחור",
+      "description": "אריזה קומפקטית עם מקום לתוספות: Upscape בגובה 55 ס״מ ובצבע שחור מתרחבת מעומק 20 ל־23 ס״מ ומגיעה לנפח של 45 ליטר. משקלה העצמי 2.3 ק״ג, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. הדגם כולל מעטפת פוליפרופילן, גלגלים כפולים ומנעול TSA.",
+      "sourceUrls": [
+        "https://www.samsonite.com.au/upscape/spinner-55-exp/ss-143108-9199.html",
+        "https://www.toptik.co.il/products/samsonite-upscape-55-black-kj109001"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-868538ee7e64.jpg?v=1788460841",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-868538ee7e64.jpg?v=1788460841",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-a0ab88f4dc24.jpg?v=1788460841",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-f10994ced914.jpg?v=1788460841",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-40726b6f3c5e.jpg?v=1788460841",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-b20531c82f41.jpg?v=1788460841",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-13ac4fc9340e.jpg?v=1788460841"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "143108"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "נפח בהרחבה",
+          "value": "45 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KJ106007",
+      "variantId": "50223208595706",
+      "title": "מזוודת טרולי Samsonite Upscape 55 ס״מ Easy Access, צהוב",
+      "description": "גישה לציוד העבודה בלי לחפש בין הבגדים: Upscape Easy Access בגובה 55 ס״מ ובצבע צהוב כוללת תא קדמי למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳. נפחה 42 ליטר, המתרחבים ל־48 ליטר, ומשקלה 2.6 ק״ג. מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/upscape-spinner-expandable-easy-access-55cm-yellow/150700-1924.html?cgid=verbolia_yellow-spinner",
+        "https://www.toptik.co.il/products/samsonite-upscape-55-easy-access-yellow-kj106007"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-a7fe11d2e4f4.jpg?v=1788460829",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-a7fe11d2e4f4.jpg?v=1788460829",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-e0e4927817b1.jpg?v=1788460828",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-328f07ea0b28.jpg?v=1788460828",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-52087b8fa052.jpg?v=1788460829",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-86d5a5a4f46c.jpg?v=1788460829"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150700"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "150700-1924"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "42/48 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL974005",
+      "variantId": "50223208005882",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ Easy Access, ליים",
+      "description": "גישה נוחה לציוד העבודה: Intuo Easy Access בגובה 55 ס״מ ובצבע ליים כוללת תא קדמי למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳. נפחה 42 ליטר, המתרחבים ל־48 ליטר, ומידות הבסיס הן 55 × 40 × 23 ס״מ. הדגם כולל מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-55-20-exp-easy-access-55cm--black/150720-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-lime-kl974005"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-c3c7b3a97828.jpg?v=1788460816",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-c3c7b3a97828.jpg?v=1788460816",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-e7f8fee901a8.jpg?v=1788460816",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-783ace93c82f.jpg?v=1788460815",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-5513b18ac48c.jpg?v=1788460815",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-ae5c6746c65f.jpg?v=1788460816",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-671062d4eef2.jpg?v=1788460815"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150720"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "42/48 ליטר"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL974004",
+      "variantId": "50223207547130",
+      "title": "מזוודת Samsonite Intuo 81 ס״מ, ליים",
+      "description": "לנסיעה עם ציוד רב: Intuo בגובה 81 ס״מ ובצבע ליים מציעה 132 ליטר, המתרחבים ל־144 ליטר, במשקל עצמי של 4.1 ק״ג. המזוודה עשויה פוליפרופילן וכוללת מנעול TSA ובטנה נשלפת לשטיפה בין נסיעות. העומק גדל מ־33 ל־36 ס״מ בהרחבה, נתון שכדאי להביא בחשבון באחסון.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-81cm--black/146916-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-81-lime-kl974004"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-63c7f472a51c.jpg?v=1788460805",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-63c7f472a51c.jpg?v=1788460805",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-bdcfa8fff9c5.jpg?v=1788460805",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-b4f05a32f914.jpg?v=1788460805",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-28174146b924.jpg?v=1788460805",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-5327fa3a1d7b.jpg?v=1788460804"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146916"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "81 × 54 × 33 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "81 × 54 × 36 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "132/144 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "4.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL974003",
+      "variantId": "50223206400250",
+      "title": "מזוודת Samsonite Intuo 75 ס״מ, ליים",
+      "description": "לאריזה מרווחת עם אפשרות להוסיף ציוד: Intuo בגובה 75 ס״מ ובצבע ליים מציעה 105 ליטר, המתרחבים ל־115 ליטר. משקלה העצמי 3.6 ק״ג, והגלגלים הכפולים מסייעים בתנועה. מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-75cm--black/146915-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-75-lime-kl974003"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-11c9764fbc6a.jpg?v=1788460795",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-11c9764fbc6a.jpg?v=1788460795",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-e212629a452c.jpg?v=1788460795",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-83760d7de23b.jpg?v=1788460795",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-cfd4047010f5.jpg?v=1788460795",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-a92c48786c4a.jpg?v=1788460795"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146915"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "75 × 52 × 31 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "75 × 52 × 34 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "105/115 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL974002",
+      "variantId": "50223206072570",
+      "title": "מזוודת Samsonite Intuo 69 ס״מ, ליים",
+      "description": "למי שמחפשים מזוודה בגודל ביניים: Intuo בגובה 69 ס״מ ובצבע ליים מציעה 79 ליטר, המתרחבים ל־87 ליטר, במשקל עצמי של 3.1 ק״ג. גלגלים כפולים מסייעים בתנועה, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. מנעול TSA ומעטפת פוליפרופילן משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-69cm--black/146914-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-69-lime-kl974002"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-b4b4373cfc8f.jpg?v=1788460786",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-b4b4373cfc8f.jpg?v=1788460786",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-705b06cd2fdc.jpg?v=1788460786",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-cd41f49bd83f.jpg?v=1788460786",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-5dd4e1a4c0c3.jpg?v=1788460786",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-7fce81367634.jpg?v=1788460786"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146914"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "69 × 48 × 28 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "69 × 48 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "79/87 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL974001",
+      "variantId": "50223205056762",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ, ליים",
+      "description": "אריזה קומפקטית עם מקום לתוספות: Intuo בגובה 55 ס״מ ובצבע ליים מציעה 39 ליטר, המתרחבים ל־45 ליטר, במשקל עצמי של 2.3 ק״ג. גלגלים כפולים מסייעים בתנועה והבטנה הנשלפת ניתנת לשטיפה. לפני טיסה יש לבדוק את מידות כבודת היד, כולל ההרחבה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-55cm--black/146913-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-lime-kl974001"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-76d58c2d918b.jpg?v=1788460776",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-76d58c2d918b.jpg?v=1788460776",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-77c6f80320c6.jpg?v=1788460776",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-8c0114d5a90d.jpg?v=1788460776",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-b70d9d5a0212.jpg?v=1788460776",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-6edcbc01d0f1.jpg?v=1788460778",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-448a2774c75a.jpg?v=1788460776"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146913"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "39/45 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KT009004",
+      "variantId": "50149301584122",
+      "title": "תיק גב Samsonite Guardit Classy 2.0 למחשב 15.6 אינץ׳, שחור",
+      "description": "לארגון ציוד העבודה בנשיאה יומיומית: Guardit Classy 2.0 השחור כולל תאים למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳, ארגונית קדמית וכיס לבקבוק. נפחו 22.5 ליטר ומשקלו 0.7 ק״ג. התיק עשוי פוליאסטר ממוחזר וכולל שרוול לחיבור למזוודה לנסיעות.",
+      "sourceUrls": [
+        "https://www.samsonite.com.sg/guardit-classy-20/lptbackpack-156/ss-158243-1041.html",
+        "https://www.toptik.co.il/products/samsonite-guardit-classy-2-0-15-6-black-kt009004"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-434523dce72c.jpg?v=1787400995",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-434523dce72c.jpg?v=1787400995",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-f76bb26d074c.jpg?v=1787400995",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-b5be5c7ac12a.jpg?v=1787400995",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-addab4f4a64a.jpg?v=1787400995",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-0ca393794f90.jpg?v=1787400995",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-f90a274b479e.jpg?v=1787400995",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-c6e002233c7c.jpg?v=1787400995",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/08-4a9b14cb2b71.jpg?v=1787400995"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "158243"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "158243-1041"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "44 × 30 × 20 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "22.5 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "0.7 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO704007",
+      "variantId": "50148832903418",
+      "title": "מזוודת Samsonite Urbify 78 ס״מ, ירוק אורן",
+      "description": "לאריזה מרווחת עם מקום לתוספות: Urbify בגובה 78 ס״מ ובצבע ירוק אורן מציעה 107 ליטר, המתרחבים ל־115 ליטר, במשקל עצמי של 3.1 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. הדגם עשוי פוליאסטר ממוחזר וכולל מנעול TSA008.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-78cm-pine-green/150717-1693.html?cgid=D745",
+        "https://www.toptik.co.il/products/samsonite-urbify-78-pine-green-ko704007"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-33c0d90c158c.jpg?v=1787391518",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-33c0d90c158c.jpg?v=1787391518",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-674426d8ccf1.jpg?v=1787391518",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-338d5df1238d.jpg?v=1787391518",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-d74179729293.jpg?v=1787391518",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-2cba776b69b1.jpg?v=1787391518",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-9445e6bbef0a.jpg?v=1787391518"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150717"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "150717-1693"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "78 × 48 × 30 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "78 × 48 × 34 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "107/115 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO701007",
+      "variantId": "50148832313594",
+      "title": "מזוודת Samsonite Urbify 78 ס״מ, כחול נייבי",
+      "description": "לאריזה מרווחת עם מקום לתוספות: Urbify בגובה 78 ס״מ ובצבע כחול נייבי מציעה 107 ליטר, המתרחבים ל־115 ליטר, במשקל עצמי של 3.1 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. הדגם עשוי פוליאסטר ממוחזר וכולל מנעול TSA008.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-78cm-pine-green/150717-1693.html?cgid=D745",
+        "https://www.toptik.co.il/products/samsonite-urbify-78-navy-blue-ko701007"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-13235c4f7850.jpg?v=1787391503",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-13235c4f7850.jpg?v=1787391503",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-0a10e516876c.jpg?v=1787391503",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-14e9e82c99a3.jpg?v=1787391503",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-50fc88108de8.jpg?v=1787391503",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-b56d61ed3cc5.jpg?v=1787391503",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-852779e04de9.jpg?v=1787391503"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150717"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "78 × 48 × 30 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "78 × 48 × 34 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "107/115 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO776007",
+      "variantId": "50148831887610",
+      "title": "מזוודת Samsonite Urbify 78 ס״מ, לבה",
+      "description": "לאריזה מרווחת עם מקום לתוספות: Urbify בגובה 78 ס״מ ובצבע לבה מציעה 107 ליטר, המתרחבים ל־115 ליטר, במשקל עצמי של 3.1 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. הדגם עשוי פוליאסטר ממוחזר וכולל מנעול TSA008.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-78cm-pine-green/150717-1693.html?cgid=D745",
+        "https://www.toptik.co.il/products/samsonite-urbify-78-lava-ko776007"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-221082b998d7.jpg?v=1787391489",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-221082b998d7.jpg?v=1787391489",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-d5450e0dfce6.jpg?v=1787391489",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-65fe59a8d67f.jpg?v=1787391489",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-b1d7e153ccc0.jpg?v=1787391489",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-9fb9bfde2477.jpg?v=1787391489",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-ea2ab500ea69.jpg?v=1787391489"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150717"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "78 × 48 × 30 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "78 × 48 × 34 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "107/115 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO709007",
+      "variantId": "50148831789306",
+      "title": "מזוודת Samsonite Urbify 78 ס״מ, שחור",
+      "description": "לאריזה מרווחת עם מקום לתוספות: Urbify בגובה 78 ס״מ ובצבע שחור מציעה 107 ליטר, המתרחבים ל־115 ליטר, במשקל עצמי של 3.1 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. הדגם עשוי פוליאסטר ממוחזר וכולל מנעול TSA008.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-78cm-pine-green/150717-1693.html?cgid=D745",
+        "https://www.toptik.co.il/products/samsonite-urbify-78-black-ko709007"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-5a011ea39137.jpg?v=1787391474",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-5a011ea39137.jpg?v=1787391474",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-293152897786.jpg?v=1787391475",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-3013faf3010e.jpg?v=1787391475",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-c117d41de1f6.jpg?v=1787391475",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-fe06734dca7a.jpg?v=1787391474",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-eb2b6a2353a9.jpg?v=1787391475"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150717"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "78 × 48 × 30 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "78 × 48 × 34 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "107/115 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO704006",
+      "variantId": "50148831363322",
+      "title": "מזוודת Samsonite Urbify 68 ס״מ, ירוק אורן",
+      "description": "לנסיעה עם נפח אריזה בינוני: Urbify בגובה 68 ס״מ ובצבע ירוק אורן מציעה 68 ליטר, המתרחבים ל־76 ליטר, במשקל עצמי של 2.8 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. הדגם עשוי פוליאסטר ממוחזר וכולל מנעול TSA008.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-68cm-pine-green/150716-1693.html?cgid=verbolia_4-wheel-medium-suitcase",
+        "https://www.toptik.co.il/products/samsonite-urbify-68-pine-green-ko704006"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-44dbde5db166.jpg?v=1787391461",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-44dbde5db166.jpg?v=1787391461",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-9eabf7f2246f.jpg?v=1787391461",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-9005a20b9669.jpg?v=1787391460",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-7430937ee7db.jpg?v=1787391461",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-a8b86b9970e2.jpg?v=1787391460",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-4522ea48324e.jpg?v=1787391461"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150716"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "150716-1693"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "68 × 43 × 27 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "68 × 43 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "68/76 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.8 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO701006",
+      "variantId": "50148829266170",
+      "title": "מזוודת Samsonite Urbify 68 ס״מ, כחול נייבי",
+      "description": "לנסיעה עם נפח אריזה בינוני: Urbify בגובה 68 ס״מ ובצבע כחול נייבי מציעה 68 ליטר, המתרחבים ל־76 ליטר, במשקל עצמי של 2.8 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. הדגם עשוי פוליאסטר ממוחזר וכולל מנעול TSA008.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-68cm-pine-green/150716-1693.html?cgid=verbolia_4-wheel-medium-suitcase",
+        "https://www.toptik.co.il/products/samsonite-urbify-68-navy-blue-ko701006"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-3a74db62b8bc.jpg?v=1787391446",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-3a74db62b8bc.jpg?v=1787391446",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-1b1470a54110.jpg?v=1787391446",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-6678cfaa6b01.jpg?v=1787391446",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-254191def2a6.jpg?v=1787391446",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-84576432c782.jpg?v=1787391446",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-5404bc635e1b.jpg?v=1787391446"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150716"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "68 × 43 × 27 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "68 × 43 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "68/76 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.8 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO776006",
+      "variantId": "50148829036794",
+      "title": "מזוודת Samsonite Urbify 68 ס״מ, לבה",
+      "description": "לנסיעה עם נפח אריזה בינוני: Urbify בגובה 68 ס״מ ובצבע לבה מציעה 68 ליטר, המתרחבים ל־76 ליטר, במשקל עצמי של 2.8 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. הדגם עשוי פוליאסטר ממוחזר וכולל מנעול TSA008.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-68cm-pine-green/150716-1693.html?cgid=verbolia_4-wheel-medium-suitcase",
+        "https://www.toptik.co.il/products/samsonite-urbify-68-lava-ko776006"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-c5f624f8f848.jpg?v=1787391431",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-c5f624f8f848.jpg?v=1787391431",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-43b4e632567d.jpg?v=1787391431",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-09bfce4e80b1.jpg?v=1787391431",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-7338e9975960.jpg?v=1787391431",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-f8532542c46d.jpg?v=1787391431",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-bf0ab068d9bf.jpg?v=1787391431"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150716"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "68 × 43 × 27 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "68 × 43 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "68/76 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.8 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO709006",
+      "variantId": "50148827693306",
+      "title": "מזוודת Samsonite Urbify 68 ס״מ, שחור",
+      "description": "לנסיעה עם נפח אריזה בינוני: Urbify בגובה 68 ס״מ ובצבע שחור מציעה 68 ליטר, המתרחבים ל־76 ליטר, במשקל עצמי של 2.8 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. הדגם עשוי פוליאסטר ממוחזר וכולל מנעול TSA008.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-68cm-pine-green/150716-1693.html?cgid=verbolia_4-wheel-medium-suitcase",
+        "https://www.toptik.co.il/products/samsonite-urbify-68-black-ko709006"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-c8090df62684.jpg?v=1787391417",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-c8090df62684.jpg?v=1787391417",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-3e1e916ce150.jpg?v=1787391417",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-df0fb3656201.jpg?v=1787391417",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-d73ed75cafdf.jpg?v=1787391417",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-8c1946fa01b2.jpg?v=1787391417",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-09943df950a8.jpg?v=1787391417"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150716"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "68 × 43 × 27 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "68 × 43 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "68/76 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.8 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO704005",
+      "variantId": "50148827332858",
+      "title": "מזוודת טרולי Samsonite Urbify 55 ס״מ, ירוק אורן",
+      "description": "לאריזה קומפקטית וגמישה: Urbify בגובה 55 ס״מ ובצבע ירוק אורן מציעה 39 ליטר, המתרחבים ל־46 ליטר, במשקל עצמי של 2.3 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. עומקה 23 ס״מ לפני הרחבה, ולכן יש לבדוק התאמה לתנאי הכבודה בטיסה.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-55cm-pine-green/150715-1693.html?cgid=verbolia_cabin-luggage-for-leisure",
+        "https://www.toptik.co.il/products/samsonite-urbify-55-pine-green-ko704005"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-cadd6efb3656.jpg?v=1787391403",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-cadd6efb3656.jpg?v=1787391403",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-6ab82b14f127.jpg?v=1787391403",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-d02118500c8d.jpg?v=1787391402",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-e21fcc1d5058.jpg?v=1787391403",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-e0d00aa08532.jpg?v=1787391403",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-20766466996d.jpg?v=1787391402"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150715"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "150715-1693"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "39/46 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO701005",
+      "variantId": "50148826611962",
+      "title": "מזוודת טרולי Samsonite Urbify 55 ס״מ, כחול נייבי",
+      "description": "לאריזה קומפקטית וגמישה: Urbify בגובה 55 ס״מ ובצבע כחול נייבי מציעה 39 ליטר, המתרחבים ל־46 ליטר, במשקל עצמי של 2.3 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. עומקה 23 ס״מ לפני הרחבה, ולכן יש לבדוק התאמה לתנאי הכבודה בטיסה.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-55cm-pine-green/150715-1693.html?cgid=verbolia_cabin-luggage-for-leisure",
+        "https://www.toptik.co.il/products/samsonite-urbify-55-navy-blue-ko701005"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-7af0b6a28090.jpg?v=1787391387",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-7af0b6a28090.jpg?v=1787391387",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-f618e69fec9a.jpg?v=1787391387",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-4ef821a46671.jpg?v=1787391387",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-58776ab0e937.jpg?v=1787391387",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-ea1693677b2f.jpg?v=1787391387",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-a230e6adab51.jpg?v=1787391387"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150715"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "39/46 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO776005",
+      "variantId": "50148826317050",
+      "title": "מזוודת טרולי Samsonite Urbify 55 ס״מ, לבה",
+      "description": "לאריזה קומפקטית וגמישה: Urbify בגובה 55 ס״מ ובצבע לבה מציעה 39 ליטר, המתרחבים ל־46 ליטר, במשקל עצמי של 2.3 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. עומקה 23 ס״מ לפני הרחבה, ולכן יש לבדוק התאמה לתנאי הכבודה בטיסה.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-55cm-pine-green/150715-1693.html?cgid=verbolia_cabin-luggage-for-leisure",
+        "https://www.toptik.co.il/products/samsonite-urbify-55-lava-ko776005"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-b1eade795c9f.jpg?v=1787391373",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-b1eade795c9f.jpg?v=1787391373",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-d2296b066d9a.jpg?v=1787391373",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-1daee6b77f79.jpg?v=1787391373",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-4720fbc25a74.jpg?v=1787391373",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-169b55624897.jpg?v=1787391373",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-9679f0325fba.jpg?v=1787391373"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150715"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "39/46 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO709005",
+      "variantId": "50148825989370",
+      "title": "מזוודת טרולי Samsonite Urbify 55 ס״מ, שחור",
+      "description": "לאריזה קומפקטית וגמישה: Urbify בגובה 55 ס״מ ובצבע שחור מציעה 39 ליטר, המתרחבים ל־46 ליטר, במשקל עצמי של 2.3 ק״ג. כיס קדמי מאפשר לשמור פריטים זמינים, וארבעה גלגלים עם שיכוך מסייעים בתנועה. עומקה 23 ס״מ לפני הרחבה, ולכן יש לבדוק התאמה לתנאי הכבודה בטיסה.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/urbify-spinner-expandable-55cm-pine-green/150715-1693.html?cgid=verbolia_cabin-luggage-for-leisure",
+        "https://www.toptik.co.il/products/samsonite-urbify-55-black-ko709005"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-7efe142dbec5.jpg?v=1787391358",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-7efe142dbec5.jpg?v=1787391358",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-2994830f85ed.jpg?v=1787391358",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-4ad63f5c5712.jpg?v=1787391358",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-bc41973a4d50.jpg?v=1787391358",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-26686254ae3e.jpg?v=1787391359",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-95041ea0d8d1.jpg?v=1787391358"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150715"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "39/46 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO704011",
+      "variantId": "50148825759994",
+      "title": "תיק נסיעות Samsonite Urbify בשלוש דרכי נשיאה, ירוק אורן",
+      "description": "שלוש דרכי נשיאה לפי הדרך שלכם: תיק Urbify בצבע ירוק אורן נישא על הגב, על הצד או ביד. נפחו 24 ליטר ומשקלו 0.6 ק״ג, עם פוליאסטר ממוחזר וארגון פנימי לציוד. מידותיו 25 × 40 × 20 ס״מ; לפני אחסון מתחת למושב יש לבדוק את מגבלות חברת התעופה.",
+      "sourceUrls": [
+        "https://www.samsonite.se/urbify-3-way-bag---underseater--pine-green/155268-1693.html",
+        "https://www.toptik.co.il/products/samsonite-urbify-3-pine-green-ko704011"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-933809418011.jpg?v=1787391344",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-933809418011.jpg?v=1787391344",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-bb31b7e87dd8.jpg?v=1787391344",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-34ee267ada7a.jpg?v=1787391344",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-12ab2976167c.jpg?v=1787391344",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-60b9d11094a8.jpg?v=1787391344",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-0f6e5cbbb64a.jpg?v=1787391344",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-27cba312d70d.jpg?v=1787391344",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/08-7d60ce0b5b4e.jpg?v=1787391344",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/09-f9953da8f87b.jpg?v=1787391344",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/10-0760ec595908.jpg?v=1787391344"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "155268"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "155268-1693"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "25 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "24 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "0.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO701011",
+      "variantId": "50148825530618",
+      "title": "תיק נסיעות Samsonite Urbify בשלוש דרכי נשיאה, כחול נייבי",
+      "description": "שלוש דרכי נשיאה לפי הדרך שלכם: תיק Urbify בצבע כחול נייבי נישא על הגב, על הצד או ביד. נפחו 24 ליטר ומשקלו 0.6 ק״ג, עם פוליאסטר ממוחזר וארגון פנימי לציוד. מידותיו 25 × 40 × 20 ס״מ; לפני אחסון מתחת למושב יש לבדוק את מגבלות חברת התעופה.",
+      "sourceUrls": [
+        "https://www.samsonite.se/urbify-3-way-bag---underseater--pine-green/155268-1693.html",
+        "https://www.toptik.co.il/products/samsonite-urbify-3-navy-blue-ko701011"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-1f587fcd34d0.jpg?v=1787391330",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-1f587fcd34d0.jpg?v=1787391330",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-7b8bf96e19f8.jpg?v=1787391330",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-7780ed9186ac.jpg?v=1787391330",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-3b660ecd8709.jpg?v=1787391330",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-0a5e94792027.jpg?v=1787391330",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-2643672d3556.jpg?v=1787391330",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-e1380c22e015.jpg?v=1787391330",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/08-ef35f0481618.jpg?v=1787391330",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/09-6a15ee6b88c4.jpg?v=1787391330",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/10-6f97a65f16dc.jpg?v=1787391330"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "155268"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "25 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "24 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "0.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KO709011",
+      "variantId": "50148825497850",
+      "title": "תיק נסיעות Samsonite Urbify בשלוש דרכי נשיאה, שחור",
+      "description": "שלוש דרכי נשיאה לפי הדרך שלכם: תיק Urbify בצבע שחור נישא על הגב, על הצד או ביד. נפחו 24 ליטר ומשקלו 0.6 ק״ג, עם פוליאסטר ממוחזר וארגון פנימי לציוד. מידותיו 25 × 40 × 20 ס״מ; לפני אחסון מתחת למושב יש לבדוק את מגבלות חברת התעופה.",
+      "sourceUrls": [
+        "https://www.samsonite.se/urbify-3-way-bag---underseater--pine-green/155268-1693.html",
+        "https://www.toptik.co.il/products/samsonite-urbify-3-black-ko709011"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-75d5c31a980c.jpg?v=1787391316",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-75d5c31a980c.jpg?v=1787391316",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-c55ba2ccb4ef.jpg?v=1787391316",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-d3bbd523d608.jpg?v=1787391316",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-dc4d4e962325.jpg?v=1787391316",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-286b8a37ca8f.jpg?v=1787391316",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-06e6dc74d587.jpg?v=1787391316",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-d816a0e43326.jpg?v=1787391316",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/08-1bbb33530cb5.jpg?v=1787391317",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/09-2d5127d9f607.jpg?v=1787391316",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/10-068498c0ed09.jpg?v=1787391316"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "155268"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "25 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "24 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "0.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KJ17176004",
+      "variantId": "50148820910330",
+      "title": "מזוודת Samsonite Upscape 81 ס״מ, לבה",
+      "description": "לאריזה בנפח גדול: Upscape בגובה 81 ס״מ ובצבע לבה מציעה 133 ליטר, המתרחבים ל־145 ליטר, במשקל עצמי של 3.9 ק״ג. גלגלים עם שיכוך מסייעים בתנועה, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. מעטפת הפוליפרופילן ומנעול TSA משלימים את המזוודה.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/upscape-spinner-81-30-exp-81cm-lava/143111-1489.html",
+        "https://www.toptik.co.il/products/samsonite-upscape-81-lava-kj17176004"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-e8195e7013d3.jpg?v=1787391304",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-e8195e7013d3.jpg?v=1787391304",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-49df9d6713bd.jpg?v=1787391303",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-e65a6ac18bb8.jpg?v=1787391303",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-6216347b310f.jpg?v=1787391303",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-a4aa30a9c2bc.jpg?v=1787391303",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-71db17100b3c.jpg?v=1787391303"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "143111"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "143111-1489"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "81 × 54 × 34 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "81 × 54 × 37 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "133/145 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.9 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KJ106001",
+      "variantId": "50148820517114",
+      "title": "מזוודת טרולי Samsonite Upscape 55 ס״מ, צהוב",
+      "description": "אריזה קומפקטית עם מקום לתוספות: Upscape בגובה 55 ס״מ ובצבע צהוב מתרחבת מעומק 20 ל־23 ס״מ ומגיעה לנפח של 45 ליטר. משקלה העצמי 2.3 ק״ג, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. הדגם כולל מעטפת פוליפרופילן, גלגלים כפולים ומנעול TSA.",
+      "sourceUrls": [
+        "https://www.samsonite.com.au/upscape/spinner-55-exp/ss-143108-9199.html",
+        "https://www.toptik.co.il/products/samsonite-upscape-55-yellow-kj106001"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-ba502588f6d8.jpg?v=1787391289",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-ba502588f6d8.jpg?v=1787391289",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-2e0962493461.jpg?v=1787391289",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-1c68c9572828.jpg?v=1787391289",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-67d46aee8326.jpg?v=1787391289",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-83ec2153b890.jpg?v=1787391289"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "143108"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "נפח בהרחבה",
+          "value": "45 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KJ344007",
+      "variantId": "50148820320506",
+      "title": "מזוודת Samsonite Respark 79 ס״מ, מרווה בהירה",
+      "description": "לאריזה מרווחת וגמישה: Respark בגובה 79 ס״מ ובצבע מרווה בהירה מציעה 124 ליטר, המתרחבים ל־140 ליטר, במשקל עצמי של 3.6 ק״ג. רצועות ההידוק והארגון הפנימי מסייעים לסדר את התכולה. הדגם עשוי פוליאסטר ממוחזר וכולל ארבעה גלגלים עם שיכוך ומנעול TSA עם כבל.",
+      "sourceUrls": [
+        "https://www.samsonite.de/respark-spinner-79-29-exp-79cm-light-sage/143331-2570.html",
+        "https://www.toptik.co.il/products/samsonite-respark-79-light-sage-kj344007"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-a6e6ae5e0138.jpg?v=1787391277",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-a6e6ae5e0138.jpg?v=1787391277",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-a21e811baeb7.jpg?v=1787391278",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-83622e7f357b.jpg?v=1787391277",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-2ab04f64c385.jpg?v=1787391277",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-2d08a49cc581.jpg?v=1787391278",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-fc4883a1dfee.jpg?v=1787391278"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "143331"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "143331-2570"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "79 × 48 × 31 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "79 × 48 × 35 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "124/140 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KL924004",
+      "variantId": "50148820025594",
+      "title": "מזוודת Samsonite Intuo 81 ס״מ, ירוק זית",
+      "description": "לנסיעה עם ציוד רב: Intuo בגובה 81 ס״מ ובצבע ירוק זית מציעה 132 ליטר, המתרחבים ל־144 ליטר, במשקל עצמי של 4.1 ק״ג. המזוודה עשויה פוליפרופילן וכוללת מנעול TSA ובטנה נשלפת לשטיפה בין נסיעות. העומק גדל מ־33 ל־36 ס״מ בהרחבה, נתון שכדאי להביא בחשבון באחסון.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-81cm--black/146916-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-81-olive-green-kl924004"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-aecd59413a8e.jpg?v=1787391262",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-aecd59413a8e.jpg?v=1787391262",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-3f5cf7b559ba.jpg?v=1787391261",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-76cc155b375b.jpg?v=1787391262",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-48576c6409ca.jpg?v=1787391262",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-d8d4b077b6aa.jpg?v=1787391261",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-852bc116be51.jpg?v=1787391262"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146916"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "81 × 54 × 33 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "81 × 54 × 36 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "132/144 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "4.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL966004",
+      "variantId": "50148819796218",
+      "title": "מזוודת Samsonite Intuo 81 ס״מ, צהוב הדרים",
+      "description": "לנסיעה עם ציוד רב: Intuo בגובה 81 ס״מ ובצבע צהוב הדרים מציעה 132 ליטר, המתרחבים ל־144 ליטר, במשקל עצמי של 4.1 ק״ג. המזוודה עשויה פוליפרופילן וכוללת מנעול TSA ובטנה נשלפת לשטיפה בין נסיעות. העומק גדל מ־33 ל־36 ס״מ בהרחבה, נתון שכדאי להביא בחשבון באחסון.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-81cm--black/146916-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-81-citrus-kl966004"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-b415bda3ba4e.jpg?v=1787391248",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-b415bda3ba4e.jpg?v=1787391248",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-eb709f4f9642.jpg?v=1787391248",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-bceeb37eb7ff.jpg?v=1787391248",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-ee69250e0cfd.jpg?v=1787391248",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-a3faf5cca49b.jpg?v=1787391248",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-e2569dbc1daf.jpg?v=1787391248"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146916"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "81 × 54 × 33 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "81 × 54 × 36 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "132/144 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "4.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL901004",
+      "variantId": "50148819665146",
+      "title": "מזוודת Samsonite Intuo 81 ס״מ, כחול לילה",
+      "description": "לנסיעה עם ציוד רב: Intuo בגובה 81 ס״מ ובצבע כחול לילה מציעה 132 ליטר, המתרחבים ל־144 ליטר, במשקל עצמי של 4.1 ק״ג. המזוודה עשויה פוליפרופילן וכוללת מנעול TSA ובטנה נשלפת לשטיפה בין נסיעות. העומק גדל מ־33 ל־36 ס״מ בהרחבה, נתון שכדאי להביא בחשבון באחסון.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-81cm--black/146916-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-81-blue-nights-kl901004"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-432f62498d3c.jpg?v=1787391235",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-432f62498d3c.jpg?v=1787391235",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-64db96e2bca2.jpg?v=1787391234",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-8b84210b865f.jpg?v=1787391235",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-8d066867dece.jpg?v=1787391234",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-cb54cc5928ae.jpg?v=1787391235",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-56719b955fdf.jpg?v=1787391235"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146916"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "81 × 54 × 33 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "81 × 54 × 36 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "132/144 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "4.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL909004",
+      "variantId": "50148819599610",
+      "title": "מזוודת Samsonite Intuo 81 ס״מ, שחור",
+      "description": "לנסיעה עם ציוד רב: Intuo בגובה 81 ס״מ ובצבע שחור מציעה 132 ליטר, המתרחבים ל־144 ליטר, במשקל עצמי של 4.1 ק״ג. המזוודה עשויה פוליפרופילן וכוללת מנעול TSA ובטנה נשלפת לשטיפה בין נסיעות. העומק גדל מ־33 ל־36 ס״מ בהרחבה, נתון שכדאי להביא בחשבון באחסון.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-81cm--black/146916-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-81-black-kl909004"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-18329518c7a6.jpg?v=1787391221",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-18329518c7a6.jpg?v=1787391221",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-9a37c7ec3fac.jpg?v=1787391221",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-91ed6decaaa4.jpg?v=1787391221",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-51a9b831a42c.jpg?v=1787391221",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-36d8ac8260ae.jpg?v=1787391221",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-720d0b2e3992.jpg?v=1787391221"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146916"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "146916-1041"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "81 × 54 × 33 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "81 × 54 × 36 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "132/144 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "4.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL924003",
+      "variantId": "50148818583802",
+      "title": "מזוודת Samsonite Intuo 75 ס״מ, ירוק זית",
+      "description": "לאריזה מרווחת עם אפשרות להוסיף ציוד: Intuo בגובה 75 ס״מ ובצבע ירוק זית מציעה 105 ליטר, המתרחבים ל־115 ליטר. משקלה העצמי 3.6 ק״ג, והגלגלים הכפולים מסייעים בתנועה. מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-75cm--black/146915-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-75-olive-green-kl924003"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-a10f81fa23c4.jpg?v=1787391206",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-a10f81fa23c4.jpg?v=1787391206",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-1f58b37164e9.jpg?v=1787391206",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-bc8384eb66e2_893f4744-0014-4049-a41c-dde536e82df7.jpg?v=1787391206",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-2c66e858c7b3.jpg?v=1787391206",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-7e8dcfad1873.jpg?v=1787391206",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-04a92b4e4a1b.jpg?v=1787391206"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146915"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "75 × 52 × 31 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "75 × 52 × 34 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "105/115 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL966003",
+      "variantId": "50148818551034",
+      "title": "מזוודת Samsonite Intuo 75 ס״מ, צהוב הדרים",
+      "description": "לאריזה מרווחת עם אפשרות להוסיף ציוד: Intuo בגובה 75 ס״מ ובצבע צהוב הדרים מציעה 105 ליטר, המתרחבים ל־115 ליטר. משקלה העצמי 3.6 ק״ג, והגלגלים הכפולים מסייעים בתנועה. מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-75cm--black/146915-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-75-citrus-kl966003"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-e4a259119dc1.jpg?v=1787391192",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-e4a259119dc1.jpg?v=1787391192",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-39bcfd7d1450.jpg?v=1787391192",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-16c3773e6c32.jpg?v=1787391192",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-62f895e3828c.jpg?v=1787391192",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-1ca807770296.jpg?v=1787391192",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-fb4b914dc8b4.jpg?v=1787391192"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146915"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "75 × 52 × 31 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "75 × 52 × 34 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "105/115 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL901003",
+      "variantId": "50148818419962",
+      "title": "מזוודת Samsonite Intuo 75 ס״מ, כחול לילה",
+      "description": "לאריזה מרווחת עם אפשרות להוסיף ציוד: Intuo בגובה 75 ס״מ ובצבע כחול לילה מציעה 105 ליטר, המתרחבים ל־115 ליטר. משקלה העצמי 3.6 ק״ג, והגלגלים הכפולים מסייעים בתנועה. מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-75cm--black/146915-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-75-blue-nights-kl901003"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-1b81870ff105.jpg?v=1787391178",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-1b81870ff105.jpg?v=1787391178",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-2557465fee9f.jpg?v=1787391179",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-1e8d51b6ec6b_c31b969b-1cf4-4681-936b-0ec7d251d64c.jpg?v=1787391178",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-dc618de0183f.jpg?v=1787391178",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-6eb2eb2eb3e4.jpg?v=1787391178",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-2296c68c3e33.jpg?v=1787391178"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146915"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "75 × 52 × 31 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "75 × 52 × 34 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "105/115 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL909003",
+      "variantId": "50148818092282",
+      "title": "מזוודת Samsonite Intuo 75 ס״מ, שחור",
+      "description": "לאריזה מרווחת עם אפשרות להוסיף ציוד: Intuo בגובה 75 ס״מ ובצבע שחור מציעה 105 ליטר, המתרחבים ל־115 ליטר. משקלה העצמי 3.6 ק״ג, והגלגלים הכפולים מסייעים בתנועה. מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-75cm--black/146915-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-75-black-kl909003"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-15be8b387932.jpg?v=1787391165",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-15be8b387932.jpg?v=1787391165",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-0f0b6d5d298a.jpg?v=1787391165",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-bcaec3aabe75_30b722c6-af10-48ad-9276-33cd19ea6ac6.jpg?v=1787391164",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-1a42f2f33c6d.jpg?v=1787391165",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-2540f3cbed21.jpg?v=1787391165",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-35caddb2b626.jpg?v=1787391165"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146915"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "146915-1041"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "75 × 52 × 31 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "75 × 52 × 34 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "105/115 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL924002",
+      "variantId": "50148817633530",
+      "title": "מזוודת Samsonite Intuo 69 ס״מ, ירוק זית",
+      "description": "למי שמחפשים מזוודה בגודל ביניים: Intuo בגובה 69 ס״מ ובצבע ירוק זית מציעה 79 ליטר, המתרחבים ל־87 ליטר, במשקל עצמי של 3.1 ק״ג. גלגלים כפולים מסייעים בתנועה, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. מנעול TSA ומעטפת פוליפרופילן משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-69cm--black/146914-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-69-olive-green-kl924002"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-52fb196f7d07.jpg?v=1787391151",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-52fb196f7d07.jpg?v=1787391151",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-4835a620fc49.jpg?v=1787391151",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-bc8384eb66e2.jpg?v=1787391151",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-de2dcb32865c.jpg?v=1787391151",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-aa417670ab3b.jpg?v=1787391151",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-db896a9d17e1.jpg?v=1787391151"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146914"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "69 × 48 × 28 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "69 × 48 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "79/87 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL966002",
+      "variantId": "50148817142010",
+      "title": "מזוודת Samsonite Intuo 69 ס״מ, צהוב הדרים",
+      "description": "למי שמחפשים מזוודה בגודל ביניים: Intuo בגובה 69 ס״מ ובצבע צהוב הדרים מציעה 79 ליטר, המתרחבים ל־87 ליטר, במשקל עצמי של 3.1 ק״ג. גלגלים כפולים מסייעים בתנועה, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. מנעול TSA ומעטפת פוליפרופילן משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-69cm--black/146914-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-69-citrus-kl966002"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-1070a31e2d71.jpg?v=1787391137",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-1070a31e2d71.jpg?v=1787391137",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-7828c91f4b13.jpg?v=1787391137",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-d983c444fb24.jpg?v=1787391137",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-b8429a110924.jpg?v=1787391137",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-bb9112697425.jpg?v=1787391137",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-67d46cc10e68.jpg?v=1787391137"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146914"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "69 × 48 × 28 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "69 × 48 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "79/87 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL901002",
+      "variantId": "50148816879866",
+      "title": "מזוודת Samsonite Intuo 69 ס״מ, כחול לילה",
+      "description": "למי שמחפשים מזוודה בגודל ביניים: Intuo בגובה 69 ס״מ ובצבע כחול לילה מציעה 79 ליטר, המתרחבים ל־87 ליטר, במשקל עצמי של 3.1 ק״ג. גלגלים כפולים מסייעים בתנועה, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. מנעול TSA ומעטפת פוליפרופילן משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-69cm--black/146914-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-69-blue-nights-kl901002"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-03005865c66b.jpg?v=1787391124",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-03005865c66b.jpg?v=1787391124",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-c8e61be4f25d.jpg?v=1787391124",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-1e8d51b6ec6b.jpg?v=1787391124",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-eee9029156d4.jpg?v=1787391124",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-28628c8769f0.jpg?v=1787391124",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-fdb3c64115bb.jpg?v=1787391124"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146914"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "69 × 48 × 28 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "69 × 48 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "79/87 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL909002",
+      "variantId": "50148816486650",
+      "title": "מזוודת Samsonite Intuo 69 ס״מ, שחור",
+      "description": "למי שמחפשים מזוודה בגודל ביניים: Intuo בגובה 69 ס״מ ובצבע שחור מציעה 79 ליטר, המתרחבים ל־87 ליטר, במשקל עצמי של 3.1 ק״ג. גלגלים כפולים מסייעים בתנועה, והבטנה הנשלפת ניתנת לשטיפה בין נסיעות. מנעול TSA ומעטפת פוליפרופילן משלימים את הדגם.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-69cm--black/146914-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-69-black-kl909002"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-24de3d2a3488.jpg?v=1787391110",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-24de3d2a3488.jpg?v=1787391110",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-3438c8861d32.jpg?v=1787391110",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-bcaec3aabe75.jpg?v=1787391110",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-e2b5556a0146.jpg?v=1787391110",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-bec644f8c810.jpg?v=1787391110",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-8f248f8c4ae8.jpg?v=1787391110"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146914"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "146914-1041"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "69 × 48 × 28 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "69 × 48 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "79/87 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL924001",
+      "variantId": "50148816388346",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ, ירוק זית",
+      "description": "אריזה קומפקטית עם מקום לתוספות: Intuo בגובה 55 ס״מ ובצבע ירוק זית מציעה 39 ליטר, המתרחבים ל־45 ליטר, במשקל עצמי של 2.3 ק״ג. גלגלים כפולים מסייעים בתנועה והבטנה הנשלפת ניתנת לשטיפה. לפני טיסה יש לבדוק את מידות כבודת היד, כולל ההרחבה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-55cm--black/146913-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-olive-green-kl924001"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-b299e3bb552c.jpg?v=1787391097",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-b299e3bb552c.jpg?v=1787391097",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-9d52dd9e9720.jpg?v=1787391096",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-e1e7e9d1fecd.jpg?v=1787391097",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-f445e12d412f.jpg?v=1787391097",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-6ec0100a4c7d.jpg?v=1787391097",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-1321d11fc2a3.jpg?v=1787391097"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146913"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "39/45 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL924005",
+      "variantId": "50148816027898",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ Easy Access, ירוק זית",
+      "description": "גישה נוחה לציוד העבודה: Intuo Easy Access בגובה 55 ס״מ ובצבע ירוק זית כוללת תא קדמי למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳. נפחה 42 ליטר, המתרחבים ל־48 ליטר, ומידות הבסיס הן 55 × 40 × 23 ס״מ. הדגם כולל מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-55-20-exp-easy-access-55cm--olive-green/150720-1635.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-olive-green-kl924005"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-becb8bbed5b3.jpg?v=1787391083",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-becb8bbed5b3.jpg?v=1787391083",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-1100a790e4fd.jpg?v=1787391083",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-65a79a3400c9.jpg?v=1787391083",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-4ce9abef8294.jpg?v=1787391083",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-bf983764cd95.jpg?v=1787391083",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-1b983b9f84b9.jpg?v=1787391083"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150720"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "150720-1635"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "42/48 ליטר"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL966005",
+      "variantId": "50148815929594",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ Easy Access, צהוב הדרים",
+      "description": "גישה נוחה לציוד העבודה: Intuo Easy Access בגובה 55 ס״מ ובצבע צהוב הדרים כוללת תא קדמי למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳. נפחה 42 ליטר, המתרחבים ל־48 ליטר, ומידות הבסיס הן 55 × 40 × 23 ס״מ. הדגם כולל מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-55-20-exp-easy-access-55cm--black/150720-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-citrus-kl966005"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-e553819f7f5d.jpg?v=1787391069",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-e553819f7f5d.jpg?v=1787391069",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-f34e8aecf993.jpg?v=1787391069",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-002c093ef078.jpg?v=1787391069",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-0bf80444cfb3.jpg?v=1787391069",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-b7a83a391b9b.jpg?v=1787391069",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-08cb0e421a71.jpg?v=1787391069",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-dba438fdd5e4.jpg?v=1787391069"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150720"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "42/48 ליטר"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL901005",
+      "variantId": "50148815700218",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ Easy Access, כחול לילה",
+      "description": "גישה נוחה לציוד העבודה: Intuo Easy Access בגובה 55 ס״מ ובצבע כחול לילה כוללת תא קדמי למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳. נפחה 42 ליטר, המתרחבים ל־48 ליטר, ומידות הבסיס הן 55 × 40 × 23 ס״מ. הדגם כולל מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-55-20-exp-easy-access-55cm--black/150720-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-blue-nights-kl901005"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-627a95d91a14.jpg?v=1787391055",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-627a95d91a14.jpg?v=1787391055",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-8759b4846190.jpg?v=1787391055",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-64dcb1d85876.jpg?v=1787391055",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-d8218fe424bf.jpg?v=1787391055",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-3dd3d3e7f9de.jpg?v=1787391055",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-09d34761f82b.jpg?v=1787391055"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150720"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "42/48 ליטר"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL909005",
+      "variantId": "50148815536378",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ Easy Access, שחור",
+      "description": "גישה נוחה לציוד העבודה: Intuo Easy Access בגובה 55 ס״מ ובצבע שחור כוללת תא קדמי למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳. נפחה 42 ליטר, המתרחבים ל־48 ליטר, ומידות הבסיס הן 55 × 40 × 23 ס״מ. הדגם כולל מעטפת פוליפרופילן, מנעול TSA ובטנה נשלפת לשטיפה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-55-20-exp-easy-access-55cm--black/150720-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-black-kl909005"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-0ad954fe2130.jpg?v=1787391041",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-0ad954fe2130.jpg?v=1787391041",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-3bb4567cd19b.jpg?v=1787391041",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-d6081b931117.jpg?v=1787391041",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-d8b213f1e18d.jpg?v=1787391041",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-d0c6d1db23ac.jpg?v=1787391042",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-27acf3f3e391.jpg?v=1787391042"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "150720"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "150720-1041"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 26 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "42/48 ליטר"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL966001",
+      "variantId": "50148815339770",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ, צהוב הדרים",
+      "description": "אריזה קומפקטית עם מקום לתוספות: Intuo בגובה 55 ס״מ ובצבע צהוב הדרים מציעה 39 ליטר, המתרחבים ל־45 ליטר, במשקל עצמי של 2.3 ק״ג. גלגלים כפולים מסייעים בתנועה והבטנה הנשלפת ניתנת לשטיפה. לפני טיסה יש לבדוק את מידות כבודת היד, כולל ההרחבה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-55cm--black/146913-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-citrus-kl966001"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-33a34f8178fa.jpg?v=1787391027",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-33a34f8178fa.jpg?v=1787391027",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-048b4a989475.jpg?v=1787391027",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-22d7f3fc4189.jpg?v=1787391027",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-dc8b3ad7ff2f.jpg?v=1787391027",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-4d7cd544d996.jpg?v=1787391027",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-e4fc30d5894c.jpg?v=1787391027",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-90c69c9e807e.jpg?v=1787391027",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/08-7fbe0fbceb17.jpg?v=1787391027",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/09-c87ff14bd72a.jpg?v=1787391027",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/10-32d873980591.jpg?v=1787391027"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146913"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "39/45 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL901001",
+      "variantId": "50148815208698",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ, כחול לילה",
+      "description": "אריזה קומפקטית עם מקום לתוספות: Intuo בגובה 55 ס״מ ובצבע כחול לילה מציעה 39 ליטר, המתרחבים ל־45 ליטר, במשקל עצמי של 2.3 ק״ג. גלגלים כפולים מסייעים בתנועה והבטנה הנשלפת ניתנת לשטיפה. לפני טיסה יש לבדוק את מידות כבודת היד, כולל ההרחבה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-55cm--black/146913-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-blue-nights-kl901001"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-6c5d3e2d4a03.jpg?v=1787391013",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-6c5d3e2d4a03.jpg?v=1787391013",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-1f9dc2bf8558.jpg?v=1787391013",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-c9f043cff0bd.jpg?v=1787391013",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-2f8c2f2f1431.jpg?v=1787391013",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-6beb55853a21.jpg?v=1787391013",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-0ec5cfb4740c.jpg?v=1787391013"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146913"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "39/45 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "KL909001",
+      "variantId": "50148815044858",
+      "title": "מזוודת טרולי Samsonite Intuo 55 ס״מ, שחור",
+      "description": "אריזה קומפקטית עם מקום לתוספות: Intuo בגובה 55 ס״מ ובצבע שחור מציעה 39 ליטר, המתרחבים ל־45 ליטר, במשקל עצמי של 2.3 ק״ג. גלגלים כפולים מסייעים בתנועה והבטנה הנשלפת ניתנת לשטיפה. לפני טיסה יש לבדוק את מידות כבודת היד, כולל ההרחבה.",
+      "sourceUrls": [
+        "https://www.samsonite.fi/intuo-spinner-expandable-55cm--black/146913-1041.html",
+        "https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf",
+        "https://www.toptik.co.il/products/samsonite-intuo-55-black-kl909001"
+      ],
+      "category": "carryon",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-842af530ede1.jpg?v=1787391000",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-842af530ede1.jpg?v=1787391000",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-921df497da4b.jpg?v=1787391000",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-0f27c8281403.jpg?v=1787391001",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-e69b7233600d.jpg?v=1787391000",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-e079eeff6d62.jpg?v=1787391000",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-20a618d484da.jpg?v=1787391000"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "146913"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "146913-1041"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "55 × 40 × 20 ס״מ"
+        },
+        {
+          "label": "מידות בהרחבה",
+          "value": "55 × 40 × 23 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "39/45 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.3 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליפרופילן"
+        }
+      ]
+    },
+    {
+      "sku": "S281006",
+      "variantId": "50148814749946",
+      "title": "מזוודת Samsonite C-Lite 86 ס״מ, לבנדר",
+      "description": "לנסיעה עם ציוד רב: C-Lite בגובה 86 ס״מ ובצבע לבנדר מציעה 144 ליטר במשקל עצמי של 3.6 ק״ג, עם מעטפת Curv מפוליפרופילן ארוג. ארבעה גלגלים כפולים, רצועות ומחיצת אריזה מסייעים בתנועה ובסידור התכולה. יש לבדוק את מידות הכבודה המותרות לפני הטיסה.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/c-lite-spinner-86cm-lavender/122863-1491.html",
+        "https://www.toptik.co.il/products/samsonite-c-lite-86-lavender-s281006"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-ed7a6e3065b6.jpg?v=1787390986",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-ed7a6e3065b6.jpg?v=1787390986",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-4ef5bfae627c.jpg?v=1787390986",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-dfa1d9be65e2.jpg?v=1787390986",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-f53bd1e7268f.jpg?v=1787390986",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-cde46dddde56.jpg?v=1787390986",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-9196e1e821eb.jpg?v=1787390986"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "122863"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "122863-1491"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "86 × 58 × 36 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "144 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "3.6 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "Curv, פוליפרופילן ארוג"
+        }
+      ]
+    },
+    {
+      "sku": "S209004",
+      "variantId": "50148812325114",
+      "title": "מזוודת Samsonite C-Lite 75 ס״מ, שחור",
+      "description": "לאריזה מרווחת במשקל עצמי של 2.8 ק״ג: C-Lite בגובה 75 ס״מ ובצבע שחור מציעה נפח של 94 ליטר ומעטפת Curv מפוליפרופילן ארוג. ארבעה גלגלים כפולים מסייעים בתנועה, והרצועות ומחיצת האריזה שומרות על חלוקה מסודרת של התכולה. הדגם כולל מנעול TSA.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/c-lite-spinner-75cm-black/122861-1041.html",
+        "https://www.toptik.co.il/products/samsonite-c-lite-75-black-s209004"
+      ],
+      "category": "suitcase",
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-dad558bf536c.jpg?v=1787390971",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-dad558bf536c.jpg?v=1787390971",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-10232bd782d6.jpg?v=1787390971",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-87d0ca795be8.jpg?v=1787390971",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-90e64f3b70f0.jpg?v=1787390971",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-fb8d368f8758.jpg?v=1787390971",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-396ffeaab69d.jpg?v=1787390971"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "122861"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "122861-1041"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "75 × 51 × 31 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "94 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "2.8 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "Curv, פוליפרופילן ארוג"
+        }
+      ]
+    },
+    {
+      "sku": "KI100005",
+      "variantId": "50148812062970",
+      "title": "תיק גב Samsonite Biz2Go למחשב 15.6 אינץ׳, אדום טרקוטה",
+      "description": "ליום עבודה ולנסיעה: Biz2Go בצבע אדום טרקוטה כולל תאים למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳, לצד ארגון פנימי לאביזרים. נפחו 22.5 ליטר ומשקלו 1.1 ק״ג; שרוול לחיבור למזוודה ורצועות גב ארגונומיות מסייעים בנשיאה. התיק עשוי פוליאסטר ממוחזר.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/biz2go-bp-daytrip--radiant-yellow/142144-4702.html",
+        "https://www.toptik.co.il/products/samsonite-biz2go-15-6-terracotta-red-ki100005"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-8432c47aa632.jpg?v=1787390957",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-8432c47aa632.jpg?v=1787390957",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-28fb060b9b53.jpg?v=1787390956",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-1daecd7f2df0.jpg?v=1787390956",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-e8e509ab8776.jpg?v=1787390956",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-88dad7b83964.jpg?v=1787390956",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-74c83a936039.jpg?v=1787390957"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "142144"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "44 × 33 × 20 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "22.5 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "1.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KI106005",
+      "variantId": "50148798071034",
+      "title": "תיק גב Samsonite Biz2Go למחשב 15.6 אינץ׳, צהוב",
+      "description": "ליום עבודה ולנסיעה: Biz2Go בצבע צהוב כולל תאים למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳, לצד ארגון פנימי לאביזרים. נפחו 22.5 ליטר ומשקלו 1.1 ק״ג; שרוול לחיבור למזוודה ורצועות גב ארגונומיות מסייעים בנשיאה. התיק עשוי פוליאסטר ממוחזר.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/biz2go-bp-daytrip--radiant-yellow/142144-4702.html",
+        "https://www.toptik.co.il/products/samsonite-biz2go-15-6-radiant-yellow-ki106005"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-1a5af1063b6c.jpg?v=1787390942",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-1a5af1063b6c.jpg?v=1787390942",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-259b0971a80f.jpg?v=1787390942",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-501eb7620390.jpg?v=1787390942",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-c4aafdd6c341.jpg?v=1787390942",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-d725c12d1f3d.jpg?v=1787390942"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "142144"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "142144-4702"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "44 × 33 × 20 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "22.5 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "1.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KI139005",
+      "variantId": "50148797808890",
+      "title": "תיק גב Samsonite Biz2Go למחשב 15.6 אינץ׳, גרפיט/משמש",
+      "description": "ליום עבודה ולנסיעה: Biz2Go בצבע גרפיט/משמש כולל תאים למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳, לצד ארגון פנימי לאביזרים. נפחו 22.5 ליטר ומשקלו 1.1 ק״ג; שרוול לחיבור למזוודה ורצועות גב ארגונומיות מסייעים בנשיאה. התיק עשוי פוליאסטר ממוחזר.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/biz2go-bp-daytrip--graphite-apricot/142144-A574.html",
+        "https://www.toptik.co.il/products/samsonite-biz2go-15-6-graphite-apricot-ki139005"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-6f34f94a00b1.jpg?v=1787390929",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-6f34f94a00b1.jpg?v=1787390929",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-03f10ebd6d53.jpg?v=1787390930",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-46b4f6910edf.jpg?v=1787390929",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-076a28c7adc8.jpg?v=1787390929",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-322307393913.jpg?v=1787390929",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-40c6d1ebeaa8.jpg?v=1787390929"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "142144"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "142144-A574"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "44 × 33 × 20 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "22.5 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "1.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KI104005",
+      "variantId": "50148797645050",
+      "title": "תיק גב Samsonite Biz2Go למחשב 15.6 אינץ׳, ירוק אדמה",
+      "description": "ליום עבודה ולנסיעה: Biz2Go בצבע ירוק אדמה כולל תאים למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳, לצד ארגון פנימי לאביזרים. נפחו 22.5 ליטר ומשקלו 1.1 ק״ג; שרוול לחיבור למזוודה ורצועות גב ארגונומיות מסייעים בנשיאה. התיק עשוי פוליאסטר ממוחזר.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/biz2go-bp-daytrip--radiant-yellow/142144-4702.html",
+        "https://www.toptik.co.il/products/samsonite-biz2go-15-6-earth-green-ki104005"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-350f29c58399.jpg?v=1787390914",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-350f29c58399.jpg?v=1787390914",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-bb6c6e2eace4.jpg?v=1787390914",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-32a7f6136b60.jpg?v=1787390914",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-e97e8e8866a3.jpg?v=1787390914",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-34cbef1f37c5.jpg?v=1787390914"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "142144"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "44 × 33 × 20 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "22.5 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "1.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KI101004",
+      "variantId": "50148797350138",
+      "title": "תיק גב Samsonite Biz2Go למחשב 15.6 אינץ׳, כחול עמוק",
+      "description": "ליום עבודה ולנסיעה: Biz2Go בצבע כחול עמוק מפריד בין מחשב עד 15.6 אינץ׳, טאבלט עד 10.5 אינץ׳ ואביזרים. נפחו 22.5 ליטר, משקלו 1.2 ק״ג ועומקו 19.5 ס״מ; שרוול החיבור למזוודה מאפשר לשאת את הציוד יחד. רצועות גב ארגונומיות ופרטים מחזירי אור משלימים את התיק.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/biz2go-laptop-backpack-15.6---deep-blue/142143-1277.html",
+        "https://www.toptik.co.il/products/samsonite-biz2go-15-6-deep-blue-ki101004"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-5d66785ca5d7.jpg?v=1787390901",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-5d66785ca5d7.jpg?v=1787390901",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-66a9a0537839.jpg?v=1787390901",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-1a5f1ce40c46.jpg?v=1787390901",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-2ee32fbbee36.jpg?v=1787390901",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-88c1d253a9d3.jpg?v=1787390901",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-f85beff695c1.jpg?v=1787390901"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "142143"
+        },
+        {
+          "label": "מק״ט יצרן",
+          "value": "142143-1277"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "44 × 33 × 19.5 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "22.5 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "1.2 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    },
+    {
+      "sku": "KI109005",
+      "variantId": "50148797251834",
+      "title": "תיק גב Samsonite Biz2Go למחשב 15.6 אינץ׳, שחור",
+      "description": "ליום עבודה ולנסיעה: Biz2Go בצבע שחור כולל תאים למחשב עד 15.6 אינץ׳ ולטאבלט עד 10.5 אינץ׳, לצד ארגון פנימי לאביזרים. נפחו 22.5 ליטר ומשקלו 1.1 ק״ג; שרוול לחיבור למזוודה ורצועות גב ארגונומיות מסייעים בנשיאה. התיק עשוי פוליאסטר ממוחזר.",
+      "sourceUrls": [
+        "https://www.samsonite.co.uk/biz2go-bp-daytrip--radiant-yellow/142144-4702.html",
+        "https://www.toptik.co.il/products/samsonite-biz2go-15-6-black-ki109005"
+      ],
+      "category": null,
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-81312f03fc86.jpg?v=1787390887",
+      "imagePaths": [
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-81312f03fc86.jpg?v=1787390887",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-c52c3dc4672e.jpg?v=1787390887",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-2039de577a82.jpg?v=1787390887",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-a4efc4681b27.jpg?v=1787390887",
+        "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-0113e76538cd.jpg?v=1787390887"
+      ],
+      "specs": [
+        {
+          "label": "מותג",
+          "value": "Samsonite"
+        },
+        {
+          "label": "דגם יצרן",
+          "value": "142144"
+        },
+        {
+          "label": "מידות (גובה × רוחב × עומק)",
+          "value": "44 × 33 × 20 ס״מ"
+        },
+        {
+          "label": "נפח",
+          "value": "22.5 ליטר"
+        },
+        {
+          "label": "משקל עצמי",
+          "value": "1.1 ק״ג"
+        },
+        {
+          "label": "חומר",
+          "value": "פוליאסטר ממוחזר"
+        }
+      ]
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { CarouselItem } from "@/lib/carousel/types";
 import type { ResolvedSwatch } from "@/lib/carousel/colors";
 import { trimmedProductSrc, MODAL_IMG_WIDTH } from "@/lib/carousel/trim-src";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
+import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
 import { ReliableProductImage, type ProductImageState } from "./ReliableProductImage";
 
 type ProductModalProps = {
@@ -137,6 +138,7 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
   const resolvedAngle = resolvedPath ? gallery.indexOf(resolvedPath) : -1;
   const catalogLabel = item.catalogNumber ? `דגם ${item.catalogNumber}` : "דגם";
   const purchaseUrl = purchaseUrlFor(item.catalogNumber);
+  const description = descriptionWithoutCatalogNumber(item.description, item.catalogNumber);
 
   const next = () => setAngleIdx((i) => (count ? (i + 1) % count : 0));
   const prev = () => setAngleIdx((i) => (count ? (i - 1 + count) % count : 0));
@@ -264,7 +266,7 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
           <div className="product-modal-meta">
             <div className="product-modal-catalog">{catalogLabel}</div>
             <div className="product-modal-title">{item.title}</div>
-            {item.description && <div className="product-modal-description">{item.description}</div>}
+            {description && <div className="product-modal-description">{description}</div>}
             <div className="product-modal-angle">
               {resolvedAngle >= 0 ? `${resolvedAngle + 1} / ${count}` : imageState === "ready" ? "תמונת מוצר" : ""}
             </div>

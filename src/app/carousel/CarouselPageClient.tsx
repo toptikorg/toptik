@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CarouselGrid } from "@/components/carousel/CarouselGrid";
+import BrandPicker from "@/components/carousel/BrandPicker";
 import { CategoryNav } from "@/components/carousel/CategoryNav";
 import { ProductModal } from "@/components/carousel/ProductModal";
 import { TechSpecsModal } from "@/components/carousel/TechSpecsModal";
@@ -18,6 +19,7 @@ import {
   availableBrands,
   filterByBrand,
   parseBrandParam,
+  publicCollectionItems,
   urlWithBrand,
 } from "@/lib/carousel/brands";
 import {
@@ -140,7 +142,7 @@ export default function CarouselPageClient() {
           deduped.set(signature, item);
         }
       });
-    return [...deduped.values()];
+    return publicCollectionItems([...deduped.values()]);
   }, [payload.items]);
 
   const brands = useMemo(() => availableBrands(activeItems), [activeItems]);
@@ -214,21 +216,12 @@ export default function CarouselPageClient() {
       />
       <header className="carousel-header">
         <div className="carousel-title-block">
-          <label className="carousel-brand-picker">
-            <span className="carousel-brand-label">בחרו מותג</span>
-            <span className="brand-wordmark carousel-brand-current" aria-hidden="true">{brandLabel}</span>
-            <select
-              className="carousel-brand-select"
-              value={activeBrand}
-              onChange={event => onChangeBrand(event.target.value)}
-              disabled={isLoading || galleryUnavailable}
-              title="בחרו מותג"
-              aria-controls="carousel-brand-results"
-            >
-              <option value="all">כל המותגים</option>
-              {brands.map(brand => <option key={brand.key} value={brand.key}>{brand.label}</option>)}
-            </select>
-          </label>
+          <BrandPicker
+            brands={brands}
+            value={activeBrand}
+            onChange={onChangeBrand}
+            disabled={isLoading || galleryUnavailable}
+          />
           <h1 className="collection-title">קולקציה <span>נבחרת</span></h1>
         </div>
         <div className="carousel-header-actions">
@@ -239,6 +232,8 @@ export default function CarouselPageClient() {
       </header>
 
       <p className="carousel-showroom-note" dir="rtl">
+        <span id="carousel-brand-help">לבחירת מותג אחר ולצפייה בקולקציה שלו, לחצו על שם המותג בראש הגלריה.</span>
+        <br />
         להכיר את המוצר לפני שבוחרים: הגדילו את התמונות, עברו בין זוויות הצילום ובחנו את הפרטים והמידות הזמינים לכל דגם. כך תוכלו להשוות מה מתאים לנסיעה שלכם. מצאתם את הדגם המתאים? המחיר והשלמת הרכישה מחכים לכם בחנות TopTik.
       </p>
 

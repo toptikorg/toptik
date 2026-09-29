@@ -8,6 +8,7 @@ import { CarouselItem } from "@/lib/carousel/types";
 import { buildModelSiblingSwatches, resolveItemSwatches, type ResolvedSwatch } from "@/lib/carousel/colors";
 import { trimmedProductSrc, CARD_IMG_WIDTH, MODAL_IMG_WIDTH } from "@/lib/carousel/trim-src";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
+import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
 import { productImageIdentity } from "@/lib/carousel/product-image";
 import { ReliableProductImage, type ProductImageState } from "./ReliableProductImage";
 
@@ -98,6 +99,7 @@ function CatalogCard({
   const imageReady = imageState === "ready";
   const catalog = extractCatalogNumber(item);
   const purchaseUrl = purchaseUrlFor(item.catalogNumber);
+  const description = descriptionWithoutCatalogNumber(item.description, catalog);
 
   return (
     <article
@@ -110,7 +112,7 @@ function CatalogCard({
         {catalog && <div className="catalog-card-catalog">מספר קטלוגי: {catalog}</div>}
         <div className="catalog-card-main">
           <div className="catalog-card-title">{item.title}</div>
-          {item.description && <div className="catalog-card-description">{item.description}</div>}
+          {description && <div className="catalog-card-description">{description}</div>}
         </div>
         <div className="catalog-card-actions">
           {purchaseUrl && (

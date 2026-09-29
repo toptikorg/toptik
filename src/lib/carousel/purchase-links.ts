@@ -1,4 +1,5 @@
 import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
+import samsoniteVariantIds from "./samsonite-variants.json";
 
 // Per-SKU Shopify VARIANT IDs — from the owner's "Products_urls" sheet
 // (2026-08-17). Keys are normalized catalog keys (letters+digits, uppercase,
@@ -11,6 +12,8 @@ import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
 // form is the CART PERMALINK, /cart/<variantId>:<qty>, which adds the item and
 // jumps straight into checkout, skipping the storefront entirely.
 const VARIANT_IDS: Record<string, string> = {
+  // Exact public Shopify variant identities verified on 2026-09-29.
+  ...samsoniteVariantIds,
   P10SZV2405J: "42465754808570",
   P10JNV0508Q: "42466128494842",
   P10JNV05465: "42624928415994",

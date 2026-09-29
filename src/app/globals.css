@@ -543,6 +543,7 @@ body {
 
 .carousel-header {
   position: relative;
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -577,45 +578,11 @@ body {
   margin-bottom: 8px;
 }
 
-.carousel-brand-picker {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  max-width: 100%;
-}
-
-.carousel-brand-current {
-  text-transform: uppercase;
-}
-
-.carousel-brand-select {
-  /* Native keyboard/touch control overlays the unchanged visual wordmark. */
-  position: absolute;
-  inset-inline: 0;
-  top: calc(50% - 4px);
-  transform: translateY(-50%);
-  width: 100%;
-  height: 44px;
-  opacity: 0;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  font: inherit;
-  cursor: pointer;
-}
-
-.carousel-brand-select option {
-  background: #171310;
-  color: #f2ece2;
-}
-
-.carousel-brand-picker:focus-within .carousel-brand-current,
 .carousel-brand-empty button:focus-visible {
   outline: 2px solid #f2ece2;
   outline-offset: 3px;
 }
 
-.carousel-brand-label,
 .carousel-brand-status {
   position: absolute;
   width: 1px;
