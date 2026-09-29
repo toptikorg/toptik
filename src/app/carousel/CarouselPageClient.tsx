@@ -231,11 +231,8 @@ export default function CarouselPageClient() {
         </div>
       </header>
 
-      <p className="carousel-showroom-note" dir="rtl">
-        <span id="carousel-brand-help">לבחירת מותג אחר ולצפייה בקולקציה שלו, לחצו על שם המותג בראש הגלריה.</span>
-        <br />
-        להכיר את המוצר לפני שבוחרים: הגדילו את התמונות, עברו בין זוויות הצילום ובחנו את הפרטים והמידות הזמינים לכל דגם. כך תוכלו להשוות מה מתאים לנסיעה שלכם. מצאתם את הדגם המתאים? רכשו באתר או בואו לבקר ברשת חנויות TopTik.
-      </p>
+      {/* Visible explanations removed; the dynamic status line above the products replaces them. */}
+      <span id="carousel-brand-help" className="carousel-a11y-hidden">לבחירת מותג אחר ולצפייה בקולקציה שלו, לחצו על שם המותג בראש הגלריה.</span>
 
       {isLoading ? (
         <div className="carousel-loading">טוען מוצרים...</div>
