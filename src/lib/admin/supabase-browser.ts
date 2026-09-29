@@ -1,7 +1,7 @@
 "use client";
 
 import { createBrowserClient } from "@supabase/ssr";
-import { hasSupabasePublicEnv, supabaseEnv } from "@/lib/supabase/env";
+import { hasSupabasePublicEnv, supabasePublicEnv } from "@/lib/supabase/public-env";
 
 /**
  * Cookie-bound Supabase client for Client Components (sign-in, sign-out,
@@ -12,5 +12,5 @@ export function createPanelBrowserClient() {
   if (!hasSupabasePublicEnv()) {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
   }
-  return createBrowserClient(supabaseEnv.publicUrl!, supabaseEnv.publicAnonKey!);
+  return createBrowserClient(supabasePublicEnv.publicUrl!, supabasePublicEnv.publicAnonKey!);
 }

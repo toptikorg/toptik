@@ -1,20 +1,12 @@
+import "server-only";
 import { createClient } from "@supabase/supabase-js";
-import { hasSupabaseAdminEnv, hasSupabasePublicEnv, supabaseEnv } from "@/lib/supabase/env";
+import { hasSupabasePublicEnv, supabasePublicEnv } from "@/lib/supabase/public-env";
 
+// Public, RLS-limited server client. The service-role client lives in
+// ./service-role.ts so public routes cannot reach it, even indirectly.
 export function createSupabaseServerClient() {
   if (!hasSupabasePublicEnv()) {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
   }
-  return createClient(supabaseEnv.publicUrl!, supabaseEnv.publicAnonKey!);
-}
-
-export function createSupabaseServiceRoleClient() {
-  if (!hasSupabaseAdminEnv()) {
-    throw new Error(
-      "Missing Supabase admin env vars. Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, ADMIN_PANEL_TOKEN",
-    );
-  }
-  return createClient(supabaseEnv.publicUrl!, supabaseEnv.serviceRoleKey!, {
-    auth: { persistSession: false },
-  });
+  return createClient(supabasePublicEnv.publicUrl!, supabasePublicEnv.publicAnonKey!);
 }

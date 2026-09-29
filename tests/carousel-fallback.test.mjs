@@ -7,19 +7,23 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const moduleFrom = (source) => import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`);
 const fallbackSource = await read('src/lib/carousel/fallback-data.ts');
 const { fallbackCarouselPayload, isUnavailableCarouselPayload, CAROUSEL_UNAVAILABLE_MESSAGE } = await moduleFrom(fallbackSource);
+// Public read (repository.ts) and admin save (repository-admin.ts) are separate
+// modules so public routes cannot reach the service-role client.
 const repository = await read('src/lib/carousel/repository.ts');
+const repositoryAdmin = await read('src/lib/carousel/repository-admin.ts');
 const readStart = repository.indexOf('export async function getCarouselPayload');
-const saveStart = repository.indexOf('export async function saveCarouselPayload');
-assert.ok(readStart > 0 && saveStart > readStart);
+const saveStart = repositoryAdmin.indexOf('export async function saveCarouselPayload');
+assert.ok(readStart > 0 && saveStart > 0);
+assert.ok(!repository.includes('saveCarouselPayload'), 'save path must not live in the public read module');
 const { makeReader, makeSaver } = await moduleFrom(`
   export function makeReader(deps) {
     const { hasSupabasePublicEnv, createSupabaseServerClient, fallbackCarouselPayload, applyReviewedCopy } = deps;
-    ${repository.slice(readStart, saveStart).replace(/^export /gm, '')}
+    ${repository.slice(readStart).replace(/^export /gm, '')}
     return getCarouselPayload;
   }
   export function makeSaver(deps) {
     const { isUnavailableCarouselPayload, adminCarouselPayloadSchema, createSupabaseServiceRoleClient, applyReviewedCopy } = deps;
-    ${repository.slice(saveStart).replace(/^export /gm, '')}
+    ${repositoryAdmin.slice(saveStart).replace(/^export /gm, '')}
     return saveCarouselPayload;
   }
 `);

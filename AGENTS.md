@@ -5,28 +5,23 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:deployment-workflow -->
-# Deployment workflow — DO NOT improvise
+# Deployment workflow — owner approval required
 
-**Production URL the user verifies on:** the landing page lives on **`https://landing.toptik.co.il`** (since 2026-06-20 the apex `toptik.co.il` was returned to the Shopify store — do NOT verify the landing page there anymore). Deploys from `master`, ~90 s. The legacy `https://toptik-iota.vercel.app` still serves the same production deployment and is the fallback verify URL. Cutover record + DNS values: `docs/LANDING-SUBDOMAIN.md`.
+**Authority:** the owner's project instructions (`AGENTS.md` in the TopTik project folder) and the Drive master log `קובץ עדכון - toptik-iota.vercel.app/carousel` override this file. Read the master's latest entries before any change; if this file disagrees with them, they win.
 
-**Vercel preview URLs are GATED by Vercel Authentication** (`https://toptik-git-<branch>-rordan-ais-projects.vercel.app` returns 401 to logged-out visitors). The user has explicitly asked NOT to be sent there to verify visuals — it caused a full day of wasted time.
+**Production URLs:** the gallery lives on **`https://landing.toptik.co.il`** (the apex `toptik.co.il` is the Shopify store). The legacy `https://toptik-iota.vercel.app` serves the same production deployment. Vercel project: `https://vercel.com/toptik/toptik` (team `toptik`). Cutover record: `docs/LANDING-SUBDOMAIN.md`.
 
-So the workflow for any visual / user-facing change is:
+**Preview deployments** are protected by Vercel Authentication and currently lack gallery data configuration (GAL-005 in the master log). A Preview marked Ready proves the build, not that the catalog works.
 
-1. Work on the session's designated feature branch (`claude/...` per the session prompt).
-2. Run `npm run build` locally — must pass.
-3. Fast-forward `master` to the feature branch HEAD, push `master`:
-   ```bash
-   git checkout master
-   git merge --ff-only origin/<feature-branch>
-   git push origin master
-   git checkout <feature-branch>   # stay on feature branch for next task
-   ```
-4. Tell the user: "production updates in ~90 s at `https://landing.toptik.co.il/<path>`" (legacy fallback: `https://toptik-iota.vercel.app/<path>`).
+Workflow for any code change:
 
-Optional long-term improvement (one-click, user-driven, NOT to be presented as a blocker): the user can disable Vercel Authentication on Preview at `https://vercel.com/rordan-ais-projects/toptik/settings/deployment-protection`. Until then, master is the only public path.
+1. **Branch.** Start a work branch (`claude/...`) from the exact current `origin/master` commit. Never build on a detached or dirty local folder, and never reset, clean or delete existing local work.
+2. **Tests.** Run `npm test`, `npm run lint` and `npm run build`. All must pass.
+3. **Preview.** Push only the work branch (never `master`, never force) and check its Vercel Preview.
+4. **Acceptance.** On the Preview, repeat the exact user action for every requested item (desktop and mobile width) and record expected vs actual, URL, commit and evidence.
+5. **Production.** Merge to `master` only after the owner explicitly approves that specific release. Completion then needs three separate proofs: the exact commit on `master`, the Vercel Production deployment Ready, and the public domain serving the change after a fresh load — followed by the same acceptance check on the live site.
 
-Never push commits to `master` that haven't first landed on the feature branch — that defeats the lint/build verification step. Always feature → ff-merge → push master.
+Keep the gallery `noindex, follow` hold: do not remove it, submit a sitemap or request indexing without the owner's explicit approval.
 <!-- END:deployment-workflow -->
 
 <!-- BEGIN:figma-export-rules -->

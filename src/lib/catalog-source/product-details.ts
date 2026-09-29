@@ -1,3 +1,6 @@
+import { safeSourceFetch } from "./safe-fetch";
+import { approvedSourceUrl } from "./source-allowlist";
+
 const DEFAULT_HEADERS = {
   "user-agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -634,7 +637,8 @@ function extractColorsFromPageHtml(html: string): ColorSwatch[] {
 // ─── Fetchers ────────────────────────────────────────────────────────────────
 
 async function fetchHtml(url: string): Promise<string> {
-  const res = await fetch(url, {
+  // Approved manufacturer HTTPS hosts only; redirects re-validated (GAL-025).
+  const res = await safeSourceFetch(url, {
     headers: DEFAULT_HEADERS,
     cache: "no-store",
     signal: AbortSignal.timeout(14000),
@@ -668,7 +672,7 @@ interface ShopifyProduct {
 async function tryShopifyProductData(sourceUrl: string): Promise<{ bodyHtml: string | null; colors: ColorSwatch[] }> {
   for (const jsonUrl of buildShopifyJsonUrls(sourceUrl)) {
     try {
-      const res = await fetch(jsonUrl, {
+      const res = await safeSourceFetch(jsonUrl, {
         headers: { ...DEFAULT_HEADERS, accept: "application/json" },
         cache: "no-store",
         signal: AbortSignal.timeout(10000),
@@ -709,6 +713,7 @@ function needsTranslation(text: string): boolean {
   return true;
 }
 
+// Retained but disconnected (GAL-009): no code path may call these.
 async function translateOne(text: string): Promise<string> {
   try {
     const url =
@@ -732,6 +737,7 @@ async function translateOne(text: string): Promise<string> {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function batchTranslateSpecs(specs: SpecSection[]): Promise<void> {
   const unique = new Set<string>();
   for (const section of specs) {
@@ -770,7 +776,9 @@ function dedupeItems(items: SpecItem[]): SpecItem[] {
 }
 
 export async function fetchProductDetails(sourceUrl: string): Promise<ProductDetails> {
-  if (!sourceUrl?.startsWith("http")) {
+  // Only approved manufacturer sources are fetched; anything else yields no
+  // details, so callers keep their existing cached specs (GAL-025).
+  if (!approvedSourceUrl(sourceUrl)) {
     return { specs: [], colors: [] };
   }
 
@@ -828,10 +836,11 @@ export async function fetchProductDetails(sourceUrl: string): Promise<ProductDet
     .filter((h) => sectionItems[h].length > 0)
     .map((h) => ({ heading: h, items: sectionItems[h] }));
 
-  // Final pass: any item still containing English (a phrase the dictionary
-  // doesn't cover) is sent through Google Translate so the modal is fully
-  // Hebrew. Cached at the fetch layer via force-cache.
-  await batchTranslateSpecs(specs);
+  // GAL-009: no automatic machine translation. Specs keep the manufacturer's
+  // wording (plus the fixed dictionary above); reviewed Hebrew copy is applied
+  // per exact SKU elsewhere. The retained translation helpers must never be
+  // called from here, import, warm-up, save or sync
+  // (tests/no-machine-translation.test.mjs).
 
   const colors = shopify.colors.length > 0 ? shopify.colors : extractColorsFromPageHtml(pageHtml);
 

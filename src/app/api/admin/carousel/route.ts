@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCarouselPayload, saveCarouselPayload } from "@/lib/carousel/repository";
+import { getCarouselPayload } from "@/lib/carousel/repository";
+import { saveCarouselPayload } from "@/lib/carousel/repository-admin";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { CAROUSEL_UNAVAILABLE_MESSAGE, isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 

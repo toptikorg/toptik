@@ -1,18 +1,15 @@
-const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const publicAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+import { hasSupabasePublicEnv, supabasePublicEnv } from "@/lib/supabase/public-env";
+
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const adminToken = process.env.ADMIN_PANEL_TOKEN?.trim();
 
+export { hasSupabasePublicEnv };
+
 export const supabaseEnv = {
-  publicUrl,
-  publicAnonKey,
+  ...supabasePublicEnv,
   serviceRoleKey,
   adminToken,
 };
-
-export function hasSupabasePublicEnv() {
-  return Boolean(supabaseEnv.publicUrl && supabaseEnv.publicAnonKey);
-}
 
 export function hasSupabaseAdminEnv() {
   return Boolean(

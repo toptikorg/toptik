@@ -5,7 +5,7 @@ import { uploadVariantGalleries } from "@/lib/catalog-source/storage";
 import { ensureOwnColor, toCarouselColors, toBricsCarouselColors } from "@/lib/carousel/colors";
 import { dominantHexFromUrl } from "@/lib/carousel/dominant-color";
 import type { CarouselColor } from "@/lib/carousel/types";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv, supabaseEnv } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";

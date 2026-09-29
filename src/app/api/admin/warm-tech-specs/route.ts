@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchProductDetails, type ProductDetails } from "@/lib/catalog-source/product-details";
 import { createCatalogSourceProvider } from "@/lib/catalog-source/provider";
 import { detectVendorFromCatalog } from "@/lib/catalog-source/vendor-detect";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv, supabaseEnv } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";

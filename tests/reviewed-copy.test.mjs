@@ -107,10 +107,11 @@ test("unverified products expose only identity specs and suppress stale modal fa
 
 test("production read/save and import paths actually use reviewed copy", async () => {
   const repository = await read("src/lib/carousel/repository.ts");
+  const repositoryAdmin = await read("src/lib/carousel/repository-admin.ts");
   assert.match(repository, /\.map\(\(item\) => applyReviewedCopy\(\{/);
-  assert.match(repository, /\.\.\.applyReviewedCopy\(item\)/);
+  assert.match(repositoryAdmin, /\.\.\.applyReviewedCopy\(item\)/);
   assert.match(repository, /techSpecs: item\.tech_specs \?\? null/);
-  assert.match(repository, /tech_specs: item\.techSpecs \?\? null/);
+  assert.match(repositoryAdmin, /tech_specs: item\.techSpecs \?\? null/);
   const importer = await read("src/lib/import/import-handler.ts");
   assert.match(importer, /reviewedCopyFor\(productCatalogNumber\)/);
   assert.match(importer, /reviewedCopy\?\.description/);
@@ -131,7 +132,7 @@ test("import through save preserves raw SKU identity while storage paths stay sa
     ${importBody}
     return importSourceProduct;
   }`);
-  const repositorySource = await read("src/lib/carousel/repository.ts");
+  const repositorySource = await read("src/lib/carousel/repository-admin.ts");
   const saveStart = repositorySource.indexOf("export async function saveCarouselPayload");
   assert.ok(saveStart >= 0);
   const saveBody = repositorySource.slice(saveStart).replace(/^export /gm, "");

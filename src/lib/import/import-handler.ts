@@ -8,7 +8,7 @@ import { uploadRemoteImageToStorage, uploadVariantGalleries } from "@/lib/catalo
 import { toCarouselColors, toBricsCarouselColors } from "@/lib/carousel/colors";
 import { translateToHebrew } from "@/lib/catalog-source/translate";
 import { reviewedCopyFor } from "@/lib/carousel/reviewed-copy";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { supabaseEnv } from "@/lib/supabase/env";
 import type { SourceColorVariant, SourceProduct } from "@/lib/catalog-source/types";
 import { CachedTechSpecs, CarouselColor, CarouselItem } from "@/lib/carousel/types";
