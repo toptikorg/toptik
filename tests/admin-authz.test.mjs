@@ -293,8 +293,10 @@ test("no route, page or server action reaches the service role without a gate", 
   const files = await walk(src);
   // Modules that reach the service-role client, directly or transitively.
   const importsByFile = new Map();
+  const sourceByFile = new Map();
   for (const file of files) {
     const source = await readFile(file, "utf8");
+    sourceByFile.set(file, source);
     importsByFile.set(file, valueImports(source).map((i) => ({ ...i, target: resolve(file, i.spec) })));
   }
   const privileged = new Set([path.join(src, "lib/supabase/service-role.ts")]);
@@ -307,11 +309,11 @@ test("no route, page or server action reaches the service role without a gate", 
       if (imports.some((i) => i.target && privileged.has(i.target))) { privileged.add(file); grew = true; }
     }
   }
-  const entryFiles = files.filter((f) => /\/(route|page)\.tsx?$/.test(f) || /["']use server["']/.test(""));
+  const entryFiles = files.filter((f) => /[\\/](route|page)\.tsx?$/.test(f) || /^\s*["']use server["']/m.test(sourceByFile.get(f) ?? ""));
   const problems = [];
   const table = [];
   for (const file of entryFiles) {
-    const source = await readFile(file, "utf8");
+    const source = sourceByFile.get(file) ?? "";
     if (/^\s*["']use server["']/m.test(source) && !GATES.test(source)) problems.push(`${rel(file)}: server action without gate`);
     const privNames = [];
     for (const imp of importsByFile.get(file)) {

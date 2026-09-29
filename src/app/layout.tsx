@@ -1,63 +1,58 @@
 import type { Metadata } from "next";
-import {
-  Italiana,
-  Great_Vibes,
-  Rubik,
-  Playfair_Display,
-  Assistant,
-  Poppins,
-  Heebo,
-} from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const italiana = Italiana({
-  subsets: ["latin"],
+const italiana = localFont({
+  src: "./fonts/Italiana-Regular.woff2",
   variable: "--font-italiana",
-  weight: ["400"],
+  weight: "400",
   display: "swap",
 });
 
-const greatVibes = Great_Vibes({
-  subsets: ["latin"],
+const greatVibes = localFont({
+  src: "./fonts/GreatVibes-Regular.woff2",
   variable: "--font-great-vibes",
-  weight: ["400"],
+  weight: "400",
   display: "swap",
 });
 
-const rubik = Rubik({
-  subsets: ["latin", "hebrew"],
+const rubik = localFont({
+  src: "./fonts/Rubik[wght].woff2",
   variable: "--font-rubik",
-  weight: ["400", "500", "600", "700"],
+  weight: "400 700",
   display: "swap",
 });
 
-const playfair = Playfair_Display({
-  subsets: ["latin"],
+const playfair = localFont({
+  src: "./fonts/PlayfairDisplay[wght].woff2",
   variable: "--font-playfair",
-  weight: ["400", "500", "600", "700"],
+  weight: "400 700",
   display: "swap",
 });
 
-const assistant = Assistant({
-  subsets: ["latin", "hebrew"],
+const assistant = localFont({
+  src: "./fonts/Assistant[wght].woff2",
   variable: "--font-assistant",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: "300 700",
   display: "swap",
 });
 
 // Used by the carousel "MANDARINA DUCK" wordmark (Poppins) and the
 // "קולקציה נבחרת" collection title (Heebo) — per the leather-background design.
-const poppins = Poppins({
-  subsets: ["latin"],
+const poppins = localFont({
+  src: [
+    { path: "./fonts/Poppins-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/Poppins-SemiBold.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/Poppins-Bold.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-poppins",
-  weight: ["500", "600", "700"],
   display: "swap",
 });
 
-const heebo = Heebo({
-  subsets: ["latin", "hebrew"],
+const heebo = localFont({
+  src: "./fonts/Heebo[wght].woff2",
   variable: "--font-heebo",
-  weight: ["300", "400", "500", "700"],
+  weight: "300 700",
   display: "swap",
 });
 
