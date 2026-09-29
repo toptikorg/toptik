@@ -10,6 +10,8 @@ import { trimmedProductSrc, CARD_IMG_WIDTH, MODAL_IMG_WIDTH } from "@/lib/carous
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
 import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
 import { productImageIdentity } from "@/lib/carousel/product-image";
+import { statusLine } from "@/lib/carousel/selection-summary";
+import type { CategoryKey } from "@/lib/carousel/categories";
 import { ReliableProductImage, type ProductImageState } from "./ReliableProductImage";
 
 import "swiper/css";
@@ -17,6 +19,8 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 type CarouselGridProps = {
+  brandLabel: string;
+  category: CategoryKey;
   items: CarouselItem[];
   /** Deprecated and ignored: the gallery no longer moves by itself. Kept so callers still compile. */
   autoplayMs?: number;
@@ -226,7 +230,7 @@ function CatalogCard({
   );
 }
 
-export function CarouselGrid({ items, onOpenItem, onOpenTechSpecs, onNavigateToItem }: CarouselGridProps) {
+export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTechSpecs, onNavigateToItem }: CarouselGridProps) {
   // Desktop shows 4 cards per slide (2×2); mobile shows 2 (stacked). Default to
   // the desktop count for SSR, then adjust on mount + on viewport changes.
   const [perPage, setPerPage] = useState(4);
@@ -253,10 +257,8 @@ export function CarouselGrid({ items, onOpenItem, onOpenTechSpecs, onNavigateToI
   const total = visibleItems.length;
   const first = Math.min(total, activeIndex * perPage + 1);
   const last = Math.min(total, (activeIndex + 1) * perPage);
-  const slideText = pages.length > 0 ? `שקופית ${Math.min(activeIndex + 1, pages.length)} מתוך ${pages.length}` : "";
-  const rangeText = total === 0 ? "" : first === last ? `מוצר ${first} מתוך ${total}` : `מוצרים ${first}–${last} מתוך ${total}`;
+  const status = statusLine({ brandLabel, category, first, last, total });
   const progressPct = pages.length > 0 ? Math.round((Math.min(activeIndex + 1, pages.length) / pages.length) * 100) : 0;
-  const edgeText = pages.length <= 1 ? "" : isBeginning ? "תחילת הרשימה" : isEnd ? "סוף הרשימה" : "";
   const prevDisabled = isBeginning;
   const nextDisabled = isEnd;
 
@@ -284,8 +286,7 @@ export function CarouselGrid({ items, onOpenItem, onOpenTechSpecs, onNavigateToI
         </button>
         <div className="carousel-navrow-info">
           <p className="carousel-position" role="status" aria-live="polite" data-testid="carousel-position">
-            <span className="carousel-position-main">{rangeText}</span>
-            <span className="carousel-position-meta"> · {slideText}{edgeText ? ` · ${edgeText}` : ""}</span>
+            {status}
           </p>
           <div className="carousel-progress" aria-hidden="true"><span style={{ width: `${progressPct}%` }} /></div>
         </div>

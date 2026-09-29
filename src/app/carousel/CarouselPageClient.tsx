@@ -28,7 +28,6 @@ import {
   filterByCategory,
   parseCategoryParam,
 } from "@/lib/carousel/categories";
-import { selectionSummary } from "@/lib/carousel/selection-summary";
 
 export default function CarouselPageClient() {
   const [payload, setPayload] = useState<CarouselPayload>(fallbackCarouselPayload);
@@ -252,23 +251,11 @@ export default function CarouselPageClient() {
             <p className="carousel-brand-status" role="status">
               {brandLabel}: {visibleItems.length} מוצרים בקטלוג בסינון הנבחר
             </p>
-            {(() => {
-              const summary = selectionSummary({ brandLabel, allBrands: activeBrand === "all", category: activeCategory, total: visibleItems.length });
-              return (
-                <div className="carousel-selection" dir="rtl" data-testid="carousel-selection">
-                  <p className="carousel-selection-line carousel-sr-only">{summary.selection}</p>
-                  <div className="carousel-chips" aria-hidden="true">
-                    <span className="carousel-chip"><span className="carousel-chip-key">מותג</span> {summary.brand}</span>
-                    <span className="carousel-chip"><span className="carousel-chip-key">קטגוריה</span> {summary.categoryLabel}</span>
-                    <span className="carousel-chip carousel-chip--count">{summary.countText}</span>
-                  </div>
-                  <p className="carousel-selection-help">{summary.help}</p>
-                </div>
-              );
-            })()}
             {visibleItems.length > 0 ? (
               <CarouselGrid
                 items={visibleItems}
+                brandLabel={brandLabel}
+                category={activeCategory}
                 onOpenItem={onOpenItem}
                 onOpenTechSpecs={onOpenTechSpecs}
                 onNavigateToItem={onNavigateToItem}

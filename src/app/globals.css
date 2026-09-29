@@ -3457,8 +3457,6 @@ html.a11y-big-cursor * {
   font-weight: 500;
   line-height: 1.4;
 }
-.carousel-position-main { font-weight: 600; }
-.carousel-position-meta { color: rgba(242, 230, 207, 0.72); font-size: 13px; }
 /* Thin progress line: how far along the list the visitor is. */
 .carousel-progress {
   display: block;
@@ -3507,24 +3505,4 @@ html.a11y-big-cursor * {
 .carousel-navrow-btn:focus-visible { outline: 3px solid #f2ece2; outline-offset: 2px; }
 @media (max-width: 420px) { .carousel-navrow-label { display: none; } .carousel-navrow-btn { padding: 0; width: 44px; } }
 
-/* Active-selection summary: quiet chips (brand, category, count) plus one short helper line. */
-.carousel-selection { margin: 6px 12px 6px; text-align: center; color: #f2e6cf; }
-.carousel-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.carousel-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-.carousel-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 11px;
-  border: 1px solid rgba(215, 170, 106, 0.38);
-  border-radius: 999px;
-  background: rgba(215, 170, 106, 0.08);
-  color: #f2e6cf;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-.carousel-chip-key { color: rgba(242, 230, 207, 0.62); font-weight: 500; }
-.carousel-chip--count { border-color: transparent; background: rgba(215, 170, 106, 0.2); color: #f7d9a4; }
-.carousel-selection-help { margin: 5px auto 0; max-width: 34em; font-size: 12.5px; font-weight: 400; line-height: 1.45; color: rgba(242, 230, 207, 0.7); }
 .catalog-carousel > p[role="status"] { margin: 4px 12px; text-align: center; font-size: 12.5px; color: rgba(242, 230, 207, 0.75); }
