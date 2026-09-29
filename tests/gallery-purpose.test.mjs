@@ -11,6 +11,6 @@ test("multi-brand gallery identifies TopTik and explains real viewing tools befo
   assert.doesNotMatch(source, /className="brand-wordmark">MANDARINA DUCK/);
   assert.match(source, /הגדילו את התמונות/);
   assert.match(source, /הפרטים והמידות הזמינים לכל דגם/);
-  assert.match(source, /המחיר והשלמת הרכישה מחכים לכם בחנות TopTik/);
+  assert.match(source, /רכשו באתר או בואו לבקר ברשת חנויות TopTik/);
   assert.doesNotMatch(source, /השוואה אוטומטית|סרטוני הדגמה לכל/);
 });
