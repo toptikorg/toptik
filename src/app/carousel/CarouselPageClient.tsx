@@ -28,6 +28,7 @@ import {
   filterByCategory,
   parseCategoryParam,
 } from "@/lib/carousel/categories";
+import { selectionSummary } from "@/lib/carousel/selection-summary";
 
 export default function CarouselPageClient() {
   const [payload, setPayload] = useState<CarouselPayload>(fallbackCarouselPayload);
@@ -256,6 +257,14 @@ export default function CarouselPageClient() {
             <p className="carousel-brand-status" role="status">
               {brandLabel}: {visibleItems.length} מוצרים בקטלוג בסינון הנבחר
             </p>
+            <div className="carousel-selection" dir="rtl" data-testid="carousel-selection">
+              <p className="carousel-selection-line">
+                {selectionSummary({ brandLabel, allBrands: activeBrand === "all", category: activeCategory, total: visibleItems.length }).selection}
+              </p>
+              <p className="carousel-selection-help">
+                {selectionSummary({ brandLabel, allBrands: activeBrand === "all", category: activeCategory, total: visibleItems.length }).help}
+              </p>
+            </div>
             {visibleItems.length > 0 ? (
               <CarouselGrid
                 items={visibleItems}

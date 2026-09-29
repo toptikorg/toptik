@@ -3490,3 +3490,8 @@ html.a11y-big-cursor * {
 .carousel-controls-btn:disabled { opacity: 0.35; cursor: default; }
 .carousel-controls-btn:focus-visible { outline: 3px solid #f2ece2; outline-offset: 2px; }
 .carousel-nav:focus-visible { outline: 3px solid #f2ece2; outline-offset: 2px; }
+
+/* Active-selection summary (which brand/category is shown, and how many products). */
+.carousel-selection { margin: 6px 12px 4px; text-align: center; color: #f2e6cf; }
+.carousel-selection-line { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.35; }
+.carousel-selection-help { margin: 2px 0 0; font-size: 13px; font-weight: 500; line-height: 1.4; color: #d7c3a0; }

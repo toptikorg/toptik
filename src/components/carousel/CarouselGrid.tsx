@@ -254,7 +254,8 @@ export function CarouselGrid({ items, navVariant = "side", onOpenItem, onOpenTec
   const total = visibleItems.length;
   const first = Math.min(total, activeIndex * perPage + 1);
   const last = Math.min(total, (activeIndex + 1) * perPage);
-  const positionText = total === 0 ? "" : first === last ? `מוצר ${first} מתוך ${total}` : `מוצרים ${first}–${last} מתוך ${total}`;
+  const slideText = pages.length > 0 ? `שקופית ${Math.min(activeIndex + 1, pages.length)} מתוך ${pages.length}` : "";
+  const positionText = total === 0 ? "" : `${first === last ? `מוצר ${first} מתוך ${total}` : `מוצרים ${first}–${last} מתוך ${total}`} · ${slideText}`;
   const edgeText = pages.length <= 1 ? "" : isBeginning ? "תחילת הרשימה" : isEnd ? "סוף הרשימה" : "";
   const prevDisabled = isBeginning;
   const nextDisabled = isEnd;
