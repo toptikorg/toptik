@@ -1,17 +1,20 @@
 import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
 import samsoniteVariantIds from "./samsonite-variants.json";
 import previewPackage from "./american-tourister-preview.json";
+import productHandles from "./shopify-product-handles.json";
 
 // Per-SKU Shopify VARIANT IDs — from the owner's "Products_urls" sheet
 // (2026-08-17). Keys are normalized catalog keys (letters+digits, uppercase,
 // Mandarina "-TU" suffix dropped), so "BAH08451.001" and "P10SZV24-05J-TU"
 // resolve regardless of dot/dash notation.
 //
-// The sheet's original "/checkout?quantity=1&id=…" links only worked on the
-// first click — on later visits Shopify bounced them to the storefront
-// homepage (where the site popup then traps the buyer). The documented stable
-// form is the CART PERMALINK, /cart/<variantId>:<qty>, which adds the item and
-// jumps straight into checkout, skipping the storefront entirely.
+// The purchase button opens the exact PRODUCT PAGE with the variant selected:
+//   https://www.toptik.co.il/products/<handle>?variant=<variantId>
+// It must never use the cart permalink /cart/<variantId>:1. That form replaced
+// the buyer's existing cart and jumped straight to checkout (found 2026-09-29),
+// so it is not allowed anywhere. The handle of every variant comes from the
+// public storefront itself (shopify-product-handles.json); it is never derived,
+// transliterated or guessed. A variant without a verified handle gets no link.
 const VARIANT_IDS: Record<string, string> = {
   // Exact public Shopify variant identities verified on 2026-09-29.
   ...samsoniteVariantIds,
@@ -49,6 +52,9 @@ const PREVIEW_PACKAGE_VARIANT_IDS: Record<string, string> = Object.fromEntries(
   previewPackage.records.map((record) => [normalizeCatalogKey(record.sku).replace(/TU$/, ""), record.variantId]),
 );
 
+type HandleRecord = { handle: string; productId: string; sku: string };
+const HANDLES = productHandles.variants as Record<string, HandleRecord>;
+
 export function purchaseUrlFor(catalogNumber: string | null | undefined): string | null {
   if (!catalogNumber) return null;
   const key = normalizeCatalogKey(catalogNumber).replace(/TU$/, "");
@@ -57,5 +63,6 @@ export function purchaseUrlFor(catalogNumber: string | null | undefined): string
     : Object.prototype.hasOwnProperty.call(PREVIEW_PACKAGE_VARIANT_IDS, key)
       ? PREVIEW_PACKAGE_VARIANT_IDS[key]
       : undefined;
-  return variantId ? `https://www.toptik.co.il/cart/${variantId}:1` : null;
+  if (!variantId || !Object.prototype.hasOwnProperty.call(HANDLES, variantId)) return null;
+  return `https://www.toptik.co.il/products/${encodeURIComponent(HANDLES[variantId].handle)}?variant=${variantId}`;
 }

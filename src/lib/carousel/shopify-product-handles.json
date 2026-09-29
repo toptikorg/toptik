@@ -1,0 +1,456 @@
+{
+  "verifiedAt": "2026-09-29",
+  "source": "GET https://www.toptik.co.il/products.json?limit=250&page=N and GET /products/<handle>.js (read-only, public storefront). Handle, product id and variant id are the storefront's own values; nothing is derived, transliterated or guessed.",
+  "variants": {
+    "42465754808570": {
+      "handle": "logoduck-i-טרולי",
+      "productId": "7550812619002",
+      "sku": "P10SZV2405J"
+    },
+    "42466128494842": {
+      "handle": "smile-go-trolley-m-i-טרולי",
+      "productId": "7550892507386",
+      "sku": "P10JNV0508Q"
+    },
+    "42624928415994": {
+      "handle": "טרולי-תרמיל-פלדה-smile-go-trolley-m",
+      "productId": "7586616934650",
+      "sku": "P10JNV05465"
+    },
+    "50083958882554": {
+      "handle": "bah08451-001",
+      "productId": "9375026446586",
+      "sku": "BAH08451.001"
+    },
+    "50083958980858": {
+      "handle": "bah08453-001",
+      "productId": "9375026544890",
+      "sku": "BAH08453.001"
+    },
+    "50083959046394": {
+      "handle": "bah08453-006",
+      "productId": "9375026610426",
+      "sku": "BAH08453.006"
+    },
+    "50083959111930": {
+      "handle": "bah08453-078",
+      "productId": "9375026675962",
+      "sku": "BAH08453.078"
+    },
+    "50083959177466": {
+      "handle": "bah08454-001",
+      "productId": "9375026741498",
+      "sku": "BAH08454.001"
+    },
+    "50083959243002": {
+      "handle": "bxl38124078",
+      "productId": "9375026807034",
+      "sku": "BXL38124078"
+    },
+    "50083959341306": {
+      "handle": "bxl38124101",
+      "productId": "9375026905338",
+      "sku": "BXL38124101"
+    },
+    "50083959406842": {
+      "handle": "bxl58117-101",
+      "productId": "9375026970874",
+      "sku": "BXL58117.101"
+    },
+    "50083959505146": {
+      "handle": "bxl58145-050",
+      "productId": "9375027069178",
+      "sku": "BXL58145.050"
+    },
+    "50083959603450": {
+      "handle": "bxl58145-078",
+      "productId": "9375027134714",
+      "sku": "BXL58145.078"
+    },
+    "50083959668986": {
+      "handle": "bxl58145-101",
+      "productId": "9375027200250",
+      "sku": "BXL58145.101"
+    },
+    "50083959767290": {
+      "handle": "ori05500-024",
+      "productId": "9375027298554",
+      "sku": "ORI05500.024"
+    },
+    "50083959832826": {
+      "handle": "ori05500-909",
+      "productId": "9375027364090",
+      "sku": "ORI05500.909"
+    },
+    "50083959898362": {
+      "handle": "p10gxv24a32",
+      "productId": "9375027429626",
+      "sku": "P10GXV24A32"
+    },
+    "50083959963898": {
+      "handle": "p10oun01-a89-tu",
+      "productId": "9375027495162",
+      "sku": "P10OUN01-A89-TU"
+    },
+    "50083959996666": {
+      "handle": "p10ouv24-a89-tu",
+      "productId": "9375027527930",
+      "sku": "P10OUV24-A89-TU"
+    },
+    "50083960291578": {
+      "handle": "p10szv24-a81-tu",
+      "productId": "9375027593466",
+      "sku": "P10SZV24-A81-TU"
+    },
+    "50083960389882": {
+      "handle": "p10szv24-a83-tu",
+      "productId": "9375027691770",
+      "sku": "P10SZV24-A83-TU"
+    },
+    "50083960717562": {
+      "handle": "p10ujn01-a92-tu",
+      "productId": "9375027790074",
+      "sku": "P10UJN01-A92-TU"
+    },
+    "50083960783098": {
+      "handle": "p10ujv24-a92-tu",
+      "productId": "9375027855610",
+      "sku": "P10UJV24-A92-TU"
+    },
+    "50148793024762": {
+      "handle": "american-tourister-at-work-nxt-17-3-black-mk609005",
+      "productId": "9382878904570",
+      "sku": "MK609005"
+    },
+    "50148794433786": {
+      "handle": "american-tourister-deep-dive-55-black-grey-1062-55black",
+      "productId": "9382879428858",
+      "sku": "1062-55BLACK"
+    },
+    "50148794892538": {
+      "handle": "american-tourister-deep-dive-55-navy-blue-2694-55navy-blue",
+      "productId": "9382879691002",
+      "sku": "2694-55NAVY BLUE"
+    },
+    "50148794990842": {
+      "handle": "american-tourister-deep-dive-55-teal-lime-4815-55teal-lime",
+      "productId": "9382879756538",
+      "sku": "4815-55TEAL LIME"
+    },
+    "50148795678970": {
+      "handle": "american-tourister-deep-dive-black-grey-1062-66black-gre",
+      "productId": "9382880018682",
+      "sku": "1062-66BLACK GRE"
+    },
+    "50148796170490": {
+      "handle": "american-tourister-deep-dive-black-grey-1062-77black-gre",
+      "productId": "9382880116986",
+      "sku": "1062-77BLACK GRE"
+    },
+    "50148796465402": {
+      "handle": "american-tourister-deep-dive-navy-blue-2694-66navy-blue",
+      "productId": "9382880182522",
+      "sku": "2694-66NAVY BLUE"
+    },
+    "50148796498170": {
+      "handle": "american-tourister-deep-dive-navy-blue-2694-77navy-blue",
+      "productId": "9382880215290",
+      "sku": "2694-77NAVY BLUE"
+    },
+    "50148796530938": {
+      "handle": "american-tourister-deep-dive-teal-lime-4815-66teal-lime",
+      "productId": "9382880248058",
+      "sku": "4815-66TEAL LIME"
+    },
+    "50148796629242": {
+      "handle": "american-tourister-deep-dive-teal-lime-4815-77teal-lime",
+      "productId": "9382880313594",
+      "sku": "4815-77TEAL LIME"
+    },
+    "50148797251834": {
+      "handle": "samsonite-biz2go-15-6-black-ki109005",
+      "productId": "9382880641274",
+      "sku": "KI109005"
+    },
+    "50148797350138": {
+      "handle": "samsonite-biz2go-15-6-deep-blue-ki101004",
+      "productId": "9382880706810",
+      "sku": "KI101004"
+    },
+    "50148797645050": {
+      "handle": "samsonite-biz2go-15-6-earth-green-ki104005",
+      "productId": "9382880837882",
+      "sku": "KI104005"
+    },
+    "50148797808890": {
+      "handle": "samsonite-biz2go-15-6-graphite-apricot-ki139005",
+      "productId": "9382880936186",
+      "sku": "KI139005"
+    },
+    "50148798071034": {
+      "handle": "samsonite-biz2go-15-6-radiant-yellow-ki106005",
+      "productId": "9382881100026",
+      "sku": "KI106005"
+    },
+    "50148812062970": {
+      "handle": "samsonite-biz2go-15-6-terracotta-red-ki100005",
+      "productId": "9382883000570",
+      "sku": "KI100005"
+    },
+    "50148812325114": {
+      "handle": "samsonite-c-lite-75-black-s209004",
+      "productId": "9382883098874",
+      "sku": "S209004"
+    },
+    "50148814749946": {
+      "handle": "samsonite-c-lite-86-lavender-s281006",
+      "productId": "9382883229946",
+      "sku": "S281006"
+    },
+    "50148815044858": {
+      "handle": "samsonite-intuo-55-black-kl909001",
+      "productId": "9382883393786",
+      "sku": "KL909001"
+    },
+    "50148815208698": {
+      "handle": "samsonite-intuo-55-blue-nights-kl901001",
+      "productId": "9382883524858",
+      "sku": "KL901001"
+    },
+    "50148815339770": {
+      "handle": "samsonite-intuo-55-citrus-kl966001",
+      "productId": "9382883590394",
+      "sku": "KL966001"
+    },
+    "50148815536378": {
+      "handle": "samsonite-intuo-55-easy-access-black-kl909005",
+      "productId": "9382883688698",
+      "sku": "KL909005"
+    },
+    "50148815700218": {
+      "handle": "samsonite-intuo-55-easy-access-blue-nights-kl901005",
+      "productId": "9382883819770",
+      "sku": "KL901005"
+    },
+    "50148815929594": {
+      "handle": "samsonite-intuo-55-easy-access-citrus-kl966005",
+      "productId": "9382883918074",
+      "sku": "KL966005"
+    },
+    "50148816027898": {
+      "handle": "samsonite-intuo-55-easy-access-olive-green-kl924005",
+      "productId": "9382883983610",
+      "sku": "KL924005"
+    },
+    "50148816388346": {
+      "handle": "samsonite-intuo-55-olive-green-kl924001",
+      "productId": "9382884081914",
+      "sku": "KL924001"
+    },
+    "50148816486650": {
+      "handle": "samsonite-intuo-69-black-kl909002",
+      "productId": "9382884147450",
+      "sku": "KL909002"
+    },
+    "50148816879866": {
+      "handle": "samsonite-intuo-69-blue-nights-kl901002",
+      "productId": "9382884245754",
+      "sku": "KL901002"
+    },
+    "50148817142010": {
+      "handle": "samsonite-intuo-69-citrus-kl966002",
+      "productId": "9382884344058",
+      "sku": "KL966002"
+    },
+    "50148817633530": {
+      "handle": "samsonite-intuo-69-olive-green-kl924002",
+      "productId": "9382884507898",
+      "sku": "KL924002"
+    },
+    "50148818092282": {
+      "handle": "samsonite-intuo-75-black-kl909003",
+      "productId": "9382884606202",
+      "sku": "KL909003"
+    },
+    "50148818419962": {
+      "handle": "samsonite-intuo-75-blue-nights-kl901003",
+      "productId": "9382884770042",
+      "sku": "KL901003"
+    },
+    "50148818551034": {
+      "handle": "samsonite-intuo-75-citrus-kl966003",
+      "productId": "9382884802810",
+      "sku": "KL966003"
+    },
+    "50148818583802": {
+      "handle": "samsonite-intuo-75-olive-green-kl924003",
+      "productId": "9382884835578",
+      "sku": "KL924003"
+    },
+    "50148819599610": {
+      "handle": "samsonite-intuo-81-black-kl909004",
+      "productId": "9382884966650",
+      "sku": "KL909004"
+    },
+    "50148819665146": {
+      "handle": "samsonite-intuo-81-blue-nights-kl901004",
+      "productId": "9382885032186",
+      "sku": "KL901004"
+    },
+    "50148819796218": {
+      "handle": "samsonite-intuo-81-citrus-kl966004",
+      "productId": "9382885097722",
+      "sku": "KL966004"
+    },
+    "50148820025594": {
+      "handle": "samsonite-intuo-81-olive-green-kl924004",
+      "productId": "9382885196026",
+      "sku": "KL924004"
+    },
+    "50148820320506": {
+      "handle": "samsonite-respark-79-light-sage-kj344007",
+      "productId": "9382885294330",
+      "sku": "KJ344007"
+    },
+    "50148820517114": {
+      "handle": "samsonite-upscape-55-yellow-kj106001",
+      "productId": "9382885425402",
+      "sku": "KJ106001"
+    },
+    "50148820910330": {
+      "handle": "samsonite-upscape-81-lava-kj17176004",
+      "productId": "9382885556474",
+      "sku": "KJ17176004"
+    },
+    "50148825497850": {
+      "handle": "samsonite-urbify-3-black-ko709011",
+      "productId": "9382885851386",
+      "sku": "KO709011"
+    },
+    "50148825530618": {
+      "handle": "samsonite-urbify-3-navy-blue-ko701011",
+      "productId": "9382885884154",
+      "sku": "KO701011"
+    },
+    "50148825759994": {
+      "handle": "samsonite-urbify-3-pine-green-ko704011",
+      "productId": "9382886015226",
+      "sku": "KO704011"
+    },
+    "50148825989370": {
+      "handle": "samsonite-urbify-55-black-ko709005",
+      "productId": "9382886080762",
+      "sku": "KO709005"
+    },
+    "50148826317050": {
+      "handle": "samsonite-urbify-55-lava-ko776005",
+      "productId": "9382886244602",
+      "sku": "KO776005"
+    },
+    "50148826611962": {
+      "handle": "samsonite-urbify-55-navy-blue-ko701005",
+      "productId": "9382886375674",
+      "sku": "KO701005"
+    },
+    "50148827332858": {
+      "handle": "samsonite-urbify-55-pine-green-ko704005",
+      "productId": "9382886506746",
+      "sku": "KO704005"
+    },
+    "50148827693306": {
+      "handle": "samsonite-urbify-68-black-ko709006",
+      "productId": "9382886605050",
+      "sku": "KO709006"
+    },
+    "50148829036794": {
+      "handle": "samsonite-urbify-68-lava-ko776006",
+      "productId": "9382886768890",
+      "sku": "KO776006"
+    },
+    "50148829266170": {
+      "handle": "samsonite-urbify-68-navy-blue-ko701006",
+      "productId": "9382886899962",
+      "sku": "KO701006"
+    },
+    "50148831363322": {
+      "handle": "samsonite-urbify-68-pine-green-ko704006",
+      "productId": "9382887096570",
+      "sku": "KO704006"
+    },
+    "50148831789306": {
+      "handle": "samsonite-urbify-78-black-ko709007",
+      "productId": "9382887227642",
+      "sku": "KO709007"
+    },
+    "50148831887610": {
+      "handle": "samsonite-urbify-78-lava-ko776007",
+      "productId": "9382887293178",
+      "sku": "KO776007"
+    },
+    "50148832313594": {
+      "handle": "samsonite-urbify-78-navy-blue-ko701007",
+      "productId": "9382887424250",
+      "sku": "KO701007"
+    },
+    "50148832903418": {
+      "handle": "samsonite-urbify-78-pine-green-ko704007",
+      "productId": "9382887522554",
+      "sku": "KO704007"
+    },
+    "50149301584122": {
+      "handle": "samsonite-guardit-classy-2-0-15-6-black-kt009004",
+      "productId": "9382960103674",
+      "sku": "KT009004"
+    },
+    "50223205056762": {
+      "handle": "samsonite-intuo-55-lime-kl974001",
+      "productId": "9403434959098",
+      "sku": "KL974001"
+    },
+    "50223206072570": {
+      "handle": "samsonite-intuo-69-lime-kl974002",
+      "productId": "9403435352314",
+      "sku": "KL974002"
+    },
+    "50223206400250": {
+      "handle": "samsonite-intuo-75-lime-kl974003",
+      "productId": "9403435647226",
+      "sku": "KL974003"
+    },
+    "50223207547130": {
+      "handle": "samsonite-intuo-81-lime-kl974004",
+      "productId": "9403436007674",
+      "sku": "KL974004"
+    },
+    "50223208005882": {
+      "handle": "samsonite-intuo-55-easy-access-lime-kl974005",
+      "productId": "9403436466426",
+      "sku": "KL974005"
+    },
+    "50223208595706": {
+      "handle": "samsonite-upscape-55-easy-access-yellow-kj106007",
+      "productId": "9403437023482",
+      "sku": "KJ106007"
+    },
+    "50223209677050": {
+      "handle": "samsonite-upscape-55-black-kj109001",
+      "productId": "9403437809914",
+      "sku": "KJ109001"
+    },
+    "50223210692858": {
+      "handle": "samsonite-upscape-55-nautical-blue-kj111001",
+      "productId": "9403438530810",
+      "sku": "KJ111001"
+    },
+    "50223212790010": {
+      "handle": "samsonite-upscape-55-climbing-ivy-kj114001",
+      "productId": "9403440005370",
+      "sku": "KJ114001"
+    },
+    "50223213150458": {
+      "handle": "samsonite-upscape-55-easy-access-climbing-ivy-kj114007",
+      "productId": "9403440365818",
+      "sku": "KJ114007"
+    }
+  }
+}
