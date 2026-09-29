@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCarouselPayload } from "@/lib/carousel/repository";
 import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { appendSamsoniteItems } from "@/lib/carousel/samsonite-catalog";
+import { appendPreviewPackageItems } from "@/lib/carousel/preview-packages";
 
 // Always serve the CURRENT catalog — no edge/browser caching. A product added
 // or edited in the admin must appear immediately; the previous aggressive edge
@@ -17,7 +18,8 @@ export async function GET() {
     const payload = await getCarouselPayload({ includeInactive: true });
     const publicPayload = isUnavailableCarouselPayload(payload) ? payload : {
       ...payload,
-      items: appendSamsoniteItems(payload.items).filter(item => item.isActive),
+      // Preview-only packages are appended on Vercel Preview deployments only.
+      items: appendPreviewPackageItems(appendSamsoniteItems(payload.items)).filter(item => item.isActive),
     };
     return NextResponse.json(publicPayload, {
       headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" },

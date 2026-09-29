@@ -1,5 +1,6 @@
 import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
 import samsoniteVariantIds from "./samsonite-variants.json";
+import previewPackage from "./american-tourister-preview.json";
 
 // Per-SKU Shopify VARIANT IDs — from the owner's "Products_urls" sheet
 // (2026-08-17). Keys are normalized catalog keys (letters+digits, uppercase,
@@ -41,9 +42,20 @@ const VARIANT_IDS: Record<string, string> = {
 
 // Checkout URL for an item's catalog number, or null when no verified store
 // listing is mapped. Callers must not display a purchase action in that case.
+// Exact Shopify variant identities of the Preview-only package
+// (preview-packages.ts). Kept apart from VARIANT_IDS: those products are only
+// ever listed on a Preview deployment, so on Production these IDs are inert.
+const PREVIEW_PACKAGE_VARIANT_IDS: Record<string, string> = Object.fromEntries(
+  previewPackage.records.map((record) => [normalizeCatalogKey(record.sku).replace(/TU$/, ""), record.variantId]),
+);
+
 export function purchaseUrlFor(catalogNumber: string | null | undefined): string | null {
   if (!catalogNumber) return null;
   const key = normalizeCatalogKey(catalogNumber).replace(/TU$/, "");
-  const variantId = VARIANT_IDS[key];
+  const variantId = Object.prototype.hasOwnProperty.call(VARIANT_IDS, key)
+    ? VARIANT_IDS[key]
+    : Object.prototype.hasOwnProperty.call(PREVIEW_PACKAGE_VARIANT_IDS, key)
+      ? PREVIEW_PACKAGE_VARIANT_IDS[key]
+      : undefined;
   return variantId ? `https://www.toptik.co.il/cart/${variantId}:1` : null;
 }

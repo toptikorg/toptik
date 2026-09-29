@@ -1,0 +1,651 @@
+{
+ "snapshotAt": "2026-09-29T12:32:16.068Z",
+ "publicSource": "GET https://www.toptik.co.il/products.json?limit=250&page=N (read-only)",
+ "gate": "VERCEL_ENV=preview only — never appended on Production (src/lib/carousel/preview-packages.ts)",
+ "brand": "American Tourister",
+ "records": [
+  {
+   "sku": "4815-77TEAL LIME",
+   "variantId": "50148796629242",
+   "productId": "9382880313594",
+   "title": "מזוודה גדולה American Tourister Deep Dive – טורקיז/ליים",
+   "description": "מזוודה גדולה ורכה לנסיעות ארוכות: Deep Dive של American Tourister בגובה 80 ס״מ ובצבע טורקיז/ליים. הנפח 108 ליטר ומתרחב ל־118 ליטר, והמשקל 4.05 ק״ג. בד פוליאסטר, ארבעה גלגלים ומנעול צירופים קבוע עם TSA.",
+   "sourceUrls": [
+    "https://www.americantourister.es/deep-dive-maleta-spinner-expansible-4-ruedas-l-teal-lime/132505-4815.html",
+    "https://www.toptik.co.il/products/american-tourister-deep-dive-teal-lime-4815-77teal-lime"
+   ],
+   "category": "suitcase",
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-fc7458631f44.jpg?v=1787390845",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-fc7458631f44.jpg?v=1787390845",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-92ae23188452.jpg?v=1787390845",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-309c990ed408.jpg?v=1787390845",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-1265a3b4ca20.jpg?v=1787390845",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-6b776d9e5279.jpg?v=1787390845",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-92ed96ed458f.jpg?v=1787390845"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "Deep Dive"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "132505"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "132505-4815"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "80 × 45.5 × 32.5 ס״מ"
+    },
+    {
+     "label": "מידות בהרחבה",
+     "value": "80 × 45.5 × 34.5 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "108/118 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "4.05 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "מנעול",
+     "value": "מנעול צירופים קבוע עם TSA"
+    },
+    {
+     "label": "גלגלים",
+     "value": "4"
+    }
+   ]
+  },
+  {
+   "sku": "4815-66TEAL LIME",
+   "variantId": "50148796530938",
+   "productId": "9382880248058",
+   "title": "מזוודה בינונית American Tourister Deep Dive – טורקיז/ליים",
+   "description": "מזוודה בינונית ורכה: Deep Dive של American Tourister בגובה 68 ס״מ ובצבע טורקיז/ליים. הנפח 69 ליטר ומתרחב ל־74 ליטר, והמשקל 3.33 ק״ג. בד פוליאסטר, ארבעה גלגלים ומנעול צירופים קבוע עם TSA.",
+   "sourceUrls": [
+    "https://www.americantourister.at/en/deep-dive-spinner-expandable-4-wheels-m-teal-lime/132504-4815.html",
+    "https://www.toptik.co.il/products/american-tourister-deep-dive-teal-lime-4815-66teal-lime"
+   ],
+   "category": "suitcase",
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-68794a501cb2.jpg?v=1787390830",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-68794a501cb2.jpg?v=1787390830",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-be1582c98925.jpg?v=1787390830",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-48304047536a.jpg?v=1787390830",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-fef74501af28.jpg?v=1787390830",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-7cbd255921eb.jpg?v=1787390830",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-a319a6a79a42.jpg?v=1787390830"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "Deep Dive"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "132504"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "132504-4815"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "68 × 44 × 28 ס״מ"
+    },
+    {
+     "label": "מידות בהרחבה",
+     "value": "68 × 44 × 30 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "69/74 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "3.33 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "מנעול",
+     "value": "מנעול צירופים קבוע עם TSA"
+    },
+    {
+     "label": "גלגלים",
+     "value": "4"
+    }
+   ]
+  },
+  {
+   "sku": "2694-77NAVY BLUE",
+   "variantId": "50148796498170",
+   "productId": "9382880215290",
+   "title": "מזוודה גדולה American Tourister Deep Dive – כחול נייבי/כחול",
+   "description": "מזוודה גדולה ורכה לנסיעות ארוכות: Deep Dive של American Tourister בגובה 80 ס״מ ובצבע כחול נייבי/כחול. הנפח 108 ליטר ומתרחב ל־118 ליטר, והמשקל 4.05 ק״ג. בד פוליאסטר, ארבעה גלגלים ומנעול צירופים קבוע עם TSA.",
+   "sourceUrls": [
+    "https://www.americantourister.es/deep-dive-maleta-spinner-expansible-4-ruedas-l-teal-lime/132505-4815.html",
+    "https://www.toptik.co.il/products/american-tourister-deep-dive-navy-blue-2694-77navy-blue"
+   ],
+   "category": "suitcase",
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-3bcc1eeda99e.jpg?v=1787390815",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-3bcc1eeda99e.jpg?v=1787390815",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-official_set-34a7aaaab1e8_8ab61e72-4b4f-4f58-b8f9-666015ba528f.jpg?v=1787397125",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-navy_wheel_handle_full-49c19d347116_e940c082-006a-446f-9802-c0f201394571.jpg?v=1787397125",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-navy_interior-bcc8cc8f3521_2e9fb332-58b9-4ca4-8fd8-4aeba598fe77.jpg?v=1787397125"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "Deep Dive"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "132505"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "132505-2694"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "80 × 45.5 × 32.5 ס״מ"
+    },
+    {
+     "label": "מידות בהרחבה",
+     "value": "80 × 45.5 × 34.5 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "108/118 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "4.05 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "מנעול",
+     "value": "מנעול צירופים קבוע עם TSA"
+    },
+    {
+     "label": "גלגלים",
+     "value": "4"
+    }
+   ]
+  },
+  {
+   "sku": "2694-66NAVY BLUE",
+   "variantId": "50148796465402",
+   "productId": "9382880182522",
+   "title": "מזוודה בינונית American Tourister Deep Dive – כחול נייבי/כחול",
+   "description": "מזוודה בינונית ורכה: Deep Dive של American Tourister בגובה 68 ס״מ ובצבע כחול נייבי/כחול. הנפח 69 ליטר ומתרחב ל־74 ליטר, והמשקל 3.33 ק״ג. בד פוליאסטר, ארבעה גלגלים ומנעול צירופים קבוע עם TSA.",
+   "sourceUrls": [
+    "https://www.americantourister.at/en/deep-dive-spinner-expandable-4-wheels-m-teal-lime/132504-4815.html",
+    "https://www.toptik.co.il/products/american-tourister-deep-dive-navy-blue-2694-66navy-blue"
+   ],
+   "category": "suitcase",
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-8a776c3442e6.jpg?v=1787390807",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-8a776c3442e6.jpg?v=1787390807",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-official_set-34a7aaaab1e8_b7d7efee-7d4b-41b7-a985-7f1e0e0115a9.jpg?v=1787397117",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-navy_wheel_handle_full-49c19d347116_1e723797-af52-4d16-a2b6-912b9d35f0de.jpg?v=1787397117",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-navy_interior-bcc8cc8f3521_a318fc6d-a4fa-4ee9-aa27-86607fb2dc08.jpg?v=1787397117"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "Deep Dive"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "132504"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "132504-2694"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "68 × 44 × 28 ס״מ"
+    },
+    {
+     "label": "מידות בהרחבה",
+     "value": "68 × 44 × 30 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "69/74 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "3.33 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "מנעול",
+     "value": "מנעול צירופים קבוע עם TSA"
+    },
+    {
+     "label": "גלגלים",
+     "value": "4"
+    }
+   ]
+  },
+  {
+   "sku": "1062-77BLACK GRE",
+   "variantId": "50148796170490",
+   "productId": "9382880116986",
+   "title": "מזוודה גדולה American Tourister Deep Dive – שחור/אפור",
+   "description": "מזוודה גדולה ורכה לנסיעות ארוכות: Deep Dive של American Tourister בגובה 80 ס״מ ובצבע שחור/אפור. הנפח 108 ליטר ומתרחב ל־118 ליטר, והמשקל 4.05 ק״ג. בד פוליאסטר, ארבעה גלגלים ומנעול צירופים קבוע עם TSA.",
+   "sourceUrls": [
+    "https://www.americantourister.es/deep-dive-maleta-spinner-expansible-4-ruedas-l-teal-lime/132505-4815.html",
+    "https://www.toptik.co.il/products/american-tourister-deep-dive-black-grey-1062-77black-gre"
+   ],
+   "category": "suitcase",
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-c2687469a778.jpg?v=1787390799",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-c2687469a778.jpg?v=1787390799",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-72a2b9829388.jpg?v=1787390798",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-d6a9a2f9349b.jpg?v=1787390798",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-bd0ed78b7e61.jpg?v=1787390798",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-f876f8845d26.jpg?v=1787390798",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-40c23c4c1c5a.jpg?v=1787390798",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-59603a47cf1e.jpg?v=1787390798"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "Deep Dive"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "132505"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "132505-1062"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "80 × 45.5 × 32.5 ס״מ"
+    },
+    {
+     "label": "מידות בהרחבה",
+     "value": "80 × 45.5 × 34.5 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "108/118 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "4.05 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "מנעול",
+     "value": "מנעול צירופים קבוע עם TSA"
+    },
+    {
+     "label": "גלגלים",
+     "value": "4"
+    }
+   ]
+  },
+  {
+   "sku": "1062-66BLACK GRE",
+   "variantId": "50148795678970",
+   "productId": "9382880018682",
+   "title": "מזוודה בינונית American Tourister Deep Dive – שחור/אפור",
+   "description": "מזוודה בינונית ורכה: Deep Dive של American Tourister בגובה 68 ס״מ ובצבע שחור/אפור. הנפח 69 ליטר ומתרחב ל־74 ליטר, והמשקל 3.33 ק״ג. בד פוליאסטר, ארבעה גלגלים ומנעול צירופים קבוע עם TSA.",
+   "sourceUrls": [
+    "https://www.americantourister.at/en/deep-dive-spinner-expandable-4-wheels-m-teal-lime/132504-4815.html",
+    "https://www.toptik.co.il/products/american-tourister-deep-dive-black-grey-1062-66black-gre"
+   ],
+   "category": "suitcase",
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-47eeaa2f221d.jpg?v=1787390787",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-47eeaa2f221d.jpg?v=1787390787",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-f0047fec61ef.jpg?v=1787390787",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-9f196d85b330.jpg?v=1787390787",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-bb7db1dae485.jpg?v=1787390787",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-9bf58ce4b7d7.jpg?v=1787390787"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "Deep Dive"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "132504"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "132504-1062"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "68 × 44 × 28 ס״מ"
+    },
+    {
+     "label": "מידות בהרחבה",
+     "value": "68 × 44 × 30 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "69/74 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "3.33 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "מנעול",
+     "value": "מנעול צירופים קבוע עם TSA"
+    },
+    {
+     "label": "גלגלים",
+     "value": "4"
+    }
+   ]
+  },
+  {
+   "sku": "4815-55TEAL LIME",
+   "variantId": "50148794990842",
+   "productId": "9382879756538",
+   "title": "טרולי 55 ס״מ American Tourister Deep Dive – טורקיז/ליים",
+   "description": "טרולי רך במידות 55 × 40 × 20 ס״מ: Deep Dive של American Tourister בצבע טורקיז/ליים. נפח 38 ליטר ומשקל 2.59 ק״ג. בד פוליאסטר, ארבעה גלגלים ומנעול צירופים קבוע עם TSA.",
+   "sourceUrls": [
+    "https://www.americantourister.es/deep-dive-maleta-spinner-4-ruedas-55cm-teal-lime/132503-4815.html",
+    "https://www.toptik.co.il/products/american-tourister-deep-dive-55-teal-lime-4815-55teal-lime"
+   ],
+   "category": "carryon",
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-58be706a967b.jpg?v=1787390773",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-58be706a967b.jpg?v=1787390773",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-1464ea581a1c.jpg?v=1787390774",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-5a80065e3f0a.jpg?v=1787390773",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-df46b993f1a4.jpg?v=1787390773",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-4eae23008a79.jpg?v=1787390773",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-50a1d0825901.jpg?v=1787390774"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "Deep Dive"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "132503"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "132503-4815"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "55 × 40 × 20 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "38 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "2.59 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "מנעול",
+     "value": "מנעול צירופים קבוע עם TSA"
+    },
+    {
+     "label": "גלגלים",
+     "value": "4"
+    }
+   ]
+  },
+  {
+   "sku": "2694-55NAVY BLUE",
+   "variantId": "50148794892538",
+   "productId": "9382879691002",
+   "title": "טרולי 55 ס״מ American Tourister Deep Dive – כחול נייבי/כחול",
+   "description": "טרולי רך במידות 55 × 40 × 20 ס״מ: Deep Dive של American Tourister בצבע כחול נייבי/כחול. נפח 38 ליטר ומשקל 2.59 ק״ג. בד פוליאסטר, ארבעה גלגלים ומנעול צירופים קבוע עם TSA.",
+   "sourceUrls": [
+    "https://www.americantourister.es/deep-dive-maleta-spinner-4-ruedas-55cm-teal-lime/132503-4815.html",
+    "https://www.toptik.co.il/products/american-tourister-deep-dive-55-navy-blue-2694-55navy-blue"
+   ],
+   "category": "carryon",
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-494228960055.jpg?v=1787390759",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-494228960055.jpg?v=1787390759",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-official_set-34a7aaaab1e8.jpg?v=1787397109",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-navy_wheel_handle_full-49c19d347116.jpg?v=1787397109",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/07-navy_interior-bcc8cc8f3521.jpg?v=1787397109"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "Deep Dive"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "132503"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "132503-2694"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "55 × 40 × 20 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "38 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "2.59 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "מנעול",
+     "value": "מנעול צירופים קבוע עם TSA"
+    },
+    {
+     "label": "גלגלים",
+     "value": "4"
+    }
+   ]
+  },
+  {
+   "sku": "1062-55BLACK",
+   "variantId": "50148794433786",
+   "productId": "9382879428858",
+   "title": "טרולי 55 ס״מ American Tourister Deep Dive – שחור/אפור",
+   "description": "טרולי רך במידות 55 × 40 × 20 ס״מ: Deep Dive של American Tourister בצבע שחור/אפור. נפח 38 ליטר ומשקל 2.59 ק״ג. בד פוליאסטר, ארבעה גלגלים ומנעול צירופים קבוע עם TSA.",
+   "sourceUrls": [
+    "https://www.americantourister.es/deep-dive-maleta-spinner-4-ruedas-55cm-teal-lime/132503-4815.html",
+    "https://www.toptik.co.il/products/american-tourister-deep-dive-55-black-grey-1062-55black"
+   ],
+   "category": "carryon",
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-7348fe077a75.jpg?v=1787390750",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-7348fe077a75.jpg?v=1787390750",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-52fce7c98bcb.jpg?v=1787390751",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-a9ba0f3423e0.jpg?v=1787390750",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-20ea00309870.jpg?v=1787390750",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-2062713fa7b5.jpg?v=1787390750"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "Deep Dive"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "132503"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "132503-1062"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "55 × 40 × 20 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "38 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "2.59 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "מנעול",
+     "value": "מנעול צירופים קבוע עם TSA"
+    },
+    {
+     "label": "גלגלים",
+     "value": "4"
+    }
+   ]
+  },
+  {
+   "sku": "MK609005",
+   "variantId": "50148793024762",
+   "productId": "9382878904570",
+   "title": "תיק גב למחשב 17.3 אינץ׳ American Tourister At Work NXT – שחור",
+   "description": "תיק גב לעבודה ולנסיעות: At Work NXT של American Tourister בצבע שחור, עם תא ייעודי למחשב עד 17.3 אינץ׳ ותא נפרד לטאבלט. נפח 38 ליטר, מידות 50 × 33 × 28 ס״מ ומשקל 0.9 ק״ג. שרוול לחיבור לידית המזוודה, מחזיק לבקבוק ופרטים מחזירי אור.",
+   "sourceUrls": [
+    "https://www.americantourister.co.uk/at-work-nxt-laptop-backpack-17.3-black/160125-1041.html",
+    "https://www.toptik.co.il/products/american-tourister-at-work-nxt-17-3-black-mk609005"
+   ],
+   "category": null,
+   "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-cf3605ce2df0.jpg?v=1787390738",
+   "imagePaths": [
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/01-cf3605ce2df0.jpg?v=1787390738",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/02-e51893d60e8b.jpg?v=1787390738",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-481a82f995c0.jpg?v=1787390738",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/04-7119d253bf5c.jpg?v=1787390738",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/05-9aae18daf3e7.jpg?v=1787390738",
+    "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/06-f9444b602c94.jpg?v=1787390738"
+   ],
+   "specs": [
+    {
+     "label": "מותג",
+     "value": "American Tourister"
+    },
+    {
+     "label": "סדרה",
+     "value": "At Work NXT"
+    },
+    {
+     "label": "דגם יצרן",
+     "value": "160125"
+    },
+    {
+     "label": "מק״ט יצרן",
+     "value": "160125-1041"
+    },
+    {
+     "label": "מידות (גובה × רוחב × עומק)",
+     "value": "50 × 33 × 28 ס״מ"
+    },
+    {
+     "label": "נפח",
+     "value": "38 ליטר"
+    },
+    {
+     "label": "משקל עצמי",
+     "value": "0.9 ק״ג"
+    },
+    {
+     "label": "חומר",
+     "value": "פוליאסטר"
+    },
+    {
+     "label": "תא מחשב",
+     "value": "תא ייעודי למחשב עד 17.3 אינץ׳ ותא לטאבלט"
+    }
+   ]
+  }
+ ]
+}

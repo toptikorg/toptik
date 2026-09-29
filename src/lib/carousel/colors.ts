@@ -169,6 +169,10 @@ export function modelCodeFromCatalog(catalogNumber: string | null | undefined): 
   // Split on Bric's dot too (BXL58145.101 → base "BXL58145"), so every colour of
   // a model shares one model code (Mandarina P10SZV24-05J-TU → "SZV24").
   const head = catalogNumber.toUpperCase().split(/[-_/.]/)[0] ?? "";
+  // TopTik's American Tourister SKUs start with the maker's COLOUR code
+  // (4815-77TEAL LIME, 4815-55TEAL LIME): an all-digit head is a colour, not a
+  // model, and grouping on it would present sizes as colours.
+  if (/^\d+$/.test(head)) return null;
   const stripped = head.replace(/^P\d+/, "");
   return stripped.length >= 4 ? stripped : null;
 }

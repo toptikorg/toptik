@@ -32,6 +32,7 @@ function openingTag(source, className) {
 async function purchaseLinksModule() {
   const source = await read("src/lib/carousel/purchase-links.ts");
   const json = await read("src/lib/carousel/samsonite-variants.json");
+  const previewPackage = await read("src/lib/carousel/american-tourister-preview.json");
   const vendorDetect = await read("src/lib/catalog-source/vendor-detect.ts");
   // Use the real normaliser, lifted out of its module unchanged.
   const normaliser = vendorDetect.match(/export function normalizeCatalogKey\([\s\S]*?\n\}/)?.[0];
@@ -39,6 +40,7 @@ async function purchaseLinksModule() {
   const patched = source
     .replace(/import \{ normalizeCatalogKey \} from "@\/lib\/catalog-source\/vendor-detect";/, normaliser.replace(/^export /, ""))
     .replace(/import samsoniteVariantIds from "\.\/samsonite-variants\.json";/, `const samsoniteVariantIds = ${json};`)
+    .replace(/import previewPackage from "\.\/american-tourister-preview\.json";/, `const previewPackage = ${previewPackage};`)
     .replace(/^const VARIANT_IDS/m, "export const VARIANT_IDS");
   assert.notEqual(patched, source);
   return moduleFrom(patched);
@@ -88,6 +90,9 @@ test("the purchase URL is the verified cart permalink and variant IDs are unchan
   assert.equal(purchaseUrlFor("P10SZV24-A83-TU"), "https://www.toptik.co.il/cart/50083960389882:1");
   assert.equal(purchaseUrlFor("KJ114001"), "https://www.toptik.co.il/cart/50223212790010:1");
   assert.equal(purchaseUrlFor("UNKNOWN-SKU"), null);
+  // Preview-only package: exact variant from the package, never a guess.
+  assert.equal(purchaseUrlFor("4815-77TEAL LIME"), "https://www.toptik.co.il/cart/50148796629242:1");
+  assert.equal(purchaseUrlFor("MJ7014903"), null, "not in the Preview package (unverified maker spec)");
   assert.equal(purchaseUrlFor(null), null);
   for (const [key, variantId] of entries) {
     assert.equal(purchaseUrlFor(key), `https://www.toptik.co.il/cart/${variantId}:1`, key);

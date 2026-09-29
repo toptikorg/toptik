@@ -6,6 +6,7 @@ const source = await readFile(new URL('../src/app/api/carousel/route.ts', import
 const body = source.slice(source.indexOf('export async function GET')).replace(/^export /gm, '');
 const code = stripTypeScriptTypes(`export function makeGet(deps) {
   const { getCarouselPayload, appendSamsoniteItems, isUnavailableCarouselPayload } = deps;
+  const appendPreviewPackageItems = deps.appendPreviewPackageItems ?? (items => items);
   const NextResponse = { json: (body, options) => ({ body, options }) };
   ${body}
   return GET;
