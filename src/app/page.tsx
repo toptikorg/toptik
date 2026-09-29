@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import homePageImage from "../../images/images_from_mandarina/Home_page.png";
 import MobileLayer from "./MobileLayer";
@@ -40,6 +41,11 @@ const bbCategories = [
     ),
   },
 ];
+
+// Canonical host only; indexing directives stay noindex, follow (root layout).
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function Home() {
   const carouselEnabled = isCarouselEnabled();
