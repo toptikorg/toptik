@@ -45,7 +45,8 @@ test("contextual product cards are server-selected by exact active SKU and safe 
   const card = await read("src/components/carousel/ArticleProductCard.tsx");
   const serverCards = await read("src/components/editorial/ArticleProductCards.tsx");
   assert.match(serverCards, /await getCarouselPayload\(\)/);
-  assert.match(serverCards, /candidate\.isActive && candidate\.catalogNumber === sku/);
+  assert.match(serverCards, /normalizeCatalogKey\(candidate\.catalogNumber\) === key/);
+  assert.match(serverCards, /matches\.length === 1 \? matches\[0\] : undefined/);
   assert.match(serverCards, /purchaseUrlFor\(item\.catalogNumber\)/);
   assert.match(card, /if \(!purchaseUrl \|\| hidden\) return null;/);
   assert.match(card, /interactive=\{false\}/);
