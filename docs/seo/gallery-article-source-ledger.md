@@ -138,3 +138,13 @@ The two latest article pages passed browser verification on the Vercel Preview f
 - `samsonite-c-lite-75-vs-86`: comparison table and both product images rendered; `S209004` opened `samsonite-c-lite-75-black-s209004?variant=50148812325114`, and `S281006` opened `samsonite-c-lite-86-lavender-s281006?variant=50148814749946`; both live product pages displayed the matching SKU; Back returned to the article after each.
 
 This is Preview QA only. Neither article has been merged or verified on the live Gallery Production domain. Site-wide `noindex, follow` remains active; no sitemap or Search Console submission was made. The 30-article target remains incomplete.
+
+### Full article-card QA update — 2026-09-30 (Preview only)
+
+Rechecked the updated PR #12 Preview at commit `6764202` (`https://toptik-8dxclydw4-toptik.vercel.app`). The archive contains 10 active candidate routes; the two blocked Mandarina Duck drafts remain excluded. Across the 10 pages, all 21 visible product cards rendered, all 21 product images decoded successfully, and all 21 purchase cards were clicked in the browser.
+
+For every card, the live Shopify destination used the mapped product handle and exact variant ID, the destination page displayed the expected SKU, and one browser Back returned to the originating article. `BAH08451.001` initially appeared absent during an early page-load check; after waiting for the product page to finish loading, the exact SKU was visible and the route passed. No cart, checkout, or purchase action was taken.
+
+Production remains unchanged. The two checked `/journal/...` routes return 404 on `landing.toptik.co.il`; the standalone article pages are Preview-only, not published. This does not negate the separately recorded embedded content on `/carousel`. PR #12 remains open, and `noindex, follow` remains active.
+
+Still NOT TESTED: physical iPhone/Safari and Android/Chrome, live Production article routes, user behavior/analytics, and Google indexing. The inventory remains 12 routes (10 candidates and 2 release-blocked drafts); the 30-article goal is not complete. No SEO gate was opened and no sitemap/Search Console submission was made.
