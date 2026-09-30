@@ -1,6 +1,6 @@
 import { ArticleProductCard } from "@/components/carousel/ArticleProductCard";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
-import { getCarouselPayload } from "@/lib/carousel/repository";
+import { getPublicCarouselPayload } from "@/lib/carousel/public-payload";
 import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
 
 /**
@@ -10,7 +10,7 @@ import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
  * than appearing only after a browser-side /api/carousel request.
  */
 export async function ArticleProductCards({ skus }: { skus: readonly string[] }) {
-  const { items } = await getCarouselPayload();
+  const { items } = await getPublicCarouselPayload();
   const cards = skus.flatMap((sku) => {
     const key = normalizeCatalogKey(sku);
     const matches = items.filter((candidate) =>
