@@ -184,6 +184,37 @@ export async function fetchProductSnapshot(productGid: string): Promise<ShopifyP
   return { ...product, variants };
 }
 
+export type ShopifyCatalogSeedSnapshot = ShopifyProductSnapshot & {
+  media: Array<{ id: string; alt: string | null; mediaContentType: string; status: string;
+    image?: { url: string; altText: string | null; width: number; height: number } | null }>;
+};
+
+/** Bounded read for the reviewed seed only; never accepts arbitrary GraphQL. */
+export async function fetchCatalogSeedProductSnapshot(productGid: string): Promise<ShopifyCatalogSeedSnapshot | null> {
+  if (!/^gid:\/\/shopify\/Product\/\d+$/.test(productGid)) throw new Error("CATALOG_SEED_PRODUCT_ID_INVALID");
+  const { publicationId } = getConfig();
+  if (publicationId !== "gid://shopify/Publication/79538258170") throw new Error("CATALOG_SEED_PUBLICATION_MISMATCH");
+  const result = await graphql<{ product: (Omit<ShopifyCatalogSeedSnapshot, "seoTitle" | "seoDescription" | "variants" | "media"> & {
+    seo: { title: string | null; description: string | null } | null;
+    variants: { nodes: ShopifyVariant[]; pageInfo: { hasNextPage: boolean } };
+    media: { nodes: ShopifyCatalogSeedSnapshot["media"]; pageInfo: { hasNextPage: boolean } };
+  }) | null }>(`query GalleryReviewedSeedProduct($id: ID!, $publicationId: ID!) {
+    product(id: $id) {
+      id handle title descriptionHtml status updatedAt seo { title description }
+      publishedOnPublication(publicationId: $publicationId)
+      variants(first: 2) { nodes { id sku } pageInfo { hasNextPage } }
+      media(first: 50) { nodes { id alt mediaContentType status ... on MediaImage { image { url altText width height } } } pageInfo { hasNextPage } }
+    }
+  }`, { id: productGid, publicationId });
+  if (!result.product) return null;
+  const product = result.product;
+  if (product.variants.pageInfo.hasNextPage || product.media.pageInfo.hasNextPage) throw new Error("CATALOG_SEED_SNAPSHOT_LIMIT");
+  return { id: product.id, handle: product.handle, title: product.title, descriptionHtml: product.descriptionHtml,
+    seoTitle: product.seo?.title ?? null, seoDescription: product.seo?.description ?? null,
+    status: product.status, updatedAt: product.updatedAt, publishedOnPublication: product.publishedOnPublication,
+    variants: product.variants.nodes, media: product.media.nodes };
+}
+
 /** One-time, bounded scan to enqueue existing products for exact-SKU bootstrap. */
 export async function fetchShopifyBootstrapProducts(limit = 5000): Promise<Array<{ id: string; updatedAt: string; deliveryId: string }>> {
   const products: Array<{ id: string; updatedAt: string; deliveryId: string }> = [];
