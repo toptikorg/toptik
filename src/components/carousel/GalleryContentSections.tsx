@@ -115,7 +115,6 @@ export function GalleryContentSections() {
             <tr><th scope="row">מידות</th><td dir="ltr">55×40×20</td><td dir="ltr">55×40×23</td></tr>
             <tr><th scope="row">בהרחבה</th><td dir="ltr">55×40×23</td><td dir="ltr">55×40×26</td></tr>
             <tr><th scope="row">נפח (סגור/מורחב)</th><td>39/45 ל׳</td><td>42/48 ל׳</td></tr>
-            <tr><th scope="row">משקל</th><td>2.3 ק״ג</td><td>3 ק״ג</td></tr>
           </tbody>
         </table>
       </div>
@@ -154,10 +153,6 @@ export function GalleryContentSections() {
         בהרחבה 81×54×36 ס״מ. מחירים, מלאי ורכישה — ב<a className="gallery-info-link" href={`${STORE_ORIGIN}/`}>חנות TopTik</a>.
       </p>
       <div className="gallery-info-cards"><ArticleProductCard sku="KL974004" /></div>
-      <p className="gallery-info-text gallery-info-note">
-        מקורות הנתונים: עמודי המוצר הרשמיים של Samsonite שמהם שמור המפרט בגלריה (samsonite.fi,
-        samsonite.co.uk, samsonite.com.au); אומת 30.09.2026.
-      </p>
     </section>
   );
 }
