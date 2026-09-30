@@ -175,11 +175,17 @@ test("import through save preserves raw SKU identity while storage paths stay sa
       ]);
 
       let savedRows;
-      const db = { from(table) { return {
-        upsert(rows) {
+      const db = {
+        async rpc(name, input) {
+          assert.equal(name, "save_gallery_items_with_copy_cas", "migrated imports use the atomic save path");
+          savedRows = input.p_items;
+          assert.deepEqual(input.p_expected_versions, Object.fromEntries(savedRows.map(row => [row.id, null])), "new imported items must have an explicit absent baseline");
+          return { data: savedRows.map(row => ({ id: row.id })), error: null };
+        },
+        from(table) { return {
+        upsert() {
           if (table === "carousel_items") {
-            savedRows = rows;
-            return { select: async () => ({ data: rows.map(row => ({ id: row.id })), error: null }) };
+            assert.fail("migrated import must not bypass the atomic copy/outbox save");
           }
           return Promise.resolve({ error: null });
         },

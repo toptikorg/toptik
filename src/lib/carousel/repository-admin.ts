@@ -28,9 +28,11 @@ export async function saveCarouselPayload(input: unknown) {
   let { data: priorContentRows, error: priorContentError } = await supabase
     .from("carousel_items")
     .select("id,title,description,catalog_number,seo_title,seo_description,copy_updated_at");
+  let syncSchemaAvailable = !priorContentError;
   // A draft deployment can run against a database before its additive sync
   // migration. Preserve the existing editor read/write path in that case.
   if (priorContentError && /seo_title|copy_updated_at|column|schema cache/i.test(priorContentError.message)) {
+    syncSchemaAvailable = false;
     const legacy = await supabase.from("carousel_items").select("id,title,description,catalog_number");
     priorContentRows = legacy.data as typeof priorContentRows;
     priorContentError = legacy.error;
@@ -45,6 +47,12 @@ export async function saveCarouselPayload(input: unknown) {
     seo_description: string | null;
     copy_updated_at: string;
   }>).map(row => [row.id, row]));
+  const incomingIds = new Set(normalizedItems.map(item => item.id));
+  if (syncSchemaAvailable && [...priorContent.keys()].some(id => !incomingIds.has(id))) {
+    // This canary supports copy changes. Deleting a bound row would invalidate
+    // its identity/audit history; deletion needs the later archive protocol.
+    throw new Error("SYNC_GALLERY_DELETE_REQUIRES_ARCHIVE");
+  }
 
   const itemsToSave = normalizedItems.map((item, index) => {
     const previous = priorContent.get(item.id);
@@ -56,6 +64,9 @@ export async function saveCarouselPayload(input: unknown) {
       (previous.seo_title ?? null) !== (seoTitle ?? null) ||
       (previous.seo_description ?? null) !== (seoDescription ?? null);
     const submittedVersion = inputItem.copyUpdatedAt;
+    if (syncSchemaAvailable && previous && copyChanged && !submittedVersion) {
+      throw new Error("SYNC_COPY_VERSION_REQUIRED");
+    }
     if (previous && submittedVersion && previous.copy_updated_at &&
         Date.parse(submittedVersion) !== Date.parse(previous.copy_updated_at) && copyChanged) {
       throw new Error("SYNC_COPY_STALE_EDIT_RELOAD");
@@ -131,27 +142,40 @@ export async function saveCarouselPayload(input: unknown) {
 
   let itemsError: { message: string } | null = null;
   let upsertedItems: { id: string }[] | null = null;
-  for (const rows of rowVariants) {
-    const result = await supabase
-      .from("carousel_items")
-      .upsert(rows, { onConflict: "id" })
-      .select("id");
+  if (syncSchemaAvailable) {
+    // The database checks these versions under row locks and commits copy plus
+    // its durable outbox together. Once the sync schema exists, a missing RPC
+    // must fail closed; falling back to UPSERT would reintroduce lost updates.
+    const expectedVersions = Object.fromEntries([
+      ...[...priorContent.values()].map(item => [item.id, item.copy_updated_at]),
+      ...itemsToSave.filter(item => !priorContent.has(item.id)).map(item => [item.id, null]),
+    ]);
+    const result = await supabase.rpc("save_gallery_items_with_copy_cas", {
+      p_items: itemsToSave.map(fullRow), p_expected_versions: expectedVersions,
+    });
     itemsError = result.error;
     upsertedItems = result.data;
-    if (!result.error) break;
-    // Only retry with a smaller row when the failure is a missing column.
-    if (!/column|does not exist|schema cache/i.test(result.error.message)) break;
+  } else {
+    for (const rows of rowVariants) {
+      const result = await supabase
+        .from("carousel_items")
+        .upsert(rows, { onConflict: "id" })
+        .select("id");
+      itemsError = result.error;
+      upsertedItems = result.data;
+      if (!result.error) break;
+      // Only retry with a smaller row when the failure is a missing column.
+      if (!/column|does not exist|schema cache/i.test(result.error.message)) break;
+    }
   }
 
   if (itemsError) throw itemsError;
 
   const validItemIds = new Set((upsertedItems ?? []).map((row: { id: string }) => row.id));
 
-  const { data: existingItems } = await supabase.from("carousel_items").select("id");
   const incomingItemIds = new Set(itemsToSave.map((item) => item.id));
-  const itemIdsToDelete = (existingItems ?? [])
-    .filter((row: { id: string }) => !incomingItemIds.has(row.id))
-    .map((row: { id: string }) => row.id);
+  const itemIdsToDelete = syncSchemaAvailable ? [] : [...priorContent.keys()]
+    .filter(id => !incomingItemIds.has(id));
 
   if (itemIdsToDelete.length > 0) {
     const { error: deleteItemsError } = await supabase
@@ -192,6 +216,9 @@ export async function saveCarouselPayload(input: unknown) {
 
   // Mirror only actual Gallery-owned copy edits to the private outbox. A batch
   // "save all" with unchanged copy must not generate a wave of Shopify writes.
+  // The migrated database already committed its outbox atomically above.
+  // Retain the legacy compatibility path only before the sync migration.
+  if (!syncSchemaAvailable) {
   const changedCopyIds = new Set(itemsToSave.filter(item => {
     const previous = priorContent.get(item.id);
     return !previous || previous.title !== item.title ||
@@ -252,6 +279,7 @@ export async function saveCarouselPayload(input: unknown) {
     if (outboxError && !/does not exist|schema cache|could not find the table/i.test(outboxError.message)) {
       throw new Error("Gallery content saved, but Shopify sync enqueue failed. Retry the save after checking the sync queue.");
     }
+  }
   }
 
   return { ok: true };

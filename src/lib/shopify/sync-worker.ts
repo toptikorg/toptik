@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   fetchProductSnapshot,
@@ -31,6 +31,13 @@ function eventProductGid(event: InboxEvent): string | null {
 
 function galleryCopy(row: GalleryCopyRow): VisibleProductCopy {
   return { title: row.title, description: row.description ?? "", seoTitle: row.seo_title, seoDescription: row.seo_description };
+}
+
+function assertCanarySnapshotIdentity(product: ShopifyProductSnapshot, binding: BindingRow): void {
+  if (product.id !== binding.product_gid || product.variants.length !== 1 ||
+      product.variants[0].id !== binding.variant_gid || normalizeSyncSku(product.variants[0].sku) !== binding.catalog_key) {
+    throw new Error("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT");
+  }
 }
 
 function hashCopy(payload: VisibleProductCopy): string {
@@ -67,6 +74,9 @@ async function updateExactProductBindings(supabase: SupabaseClient, event: Inbox
   const canaryVariants = product.variants.filter(variant => isSyncCanarySku(variant.sku, canarySku));
   if (canaryVariants.length === 0) return { reviewCount: 0, product: null as ShopifyProductSnapshot | null };
   if (canaryVariants.length > 1) throw new Error("SYNC_CANARY_VARIANT_AMBIGUOUS");
+  // Shopify copy belongs to the product, not a variant. A one-SKU canary
+  // must not change copy shared by unselected sibling variants.
+  if (product.variants.length !== 1) throw new Error("SYNC_CANARY_PRODUCT_HAS_MULTIPLE_VARIANTS");
   const { data: allItems, error: itemError } = await supabase.from("carousel_items").select("id,catalog_number");
   if (itemError || !allItems) throw new Error("SYNC_GALLERY_CATALOG_READ_FAILED");
   const { data: previousBindings, error: bindingReadError } = await supabase.from("shopify_gallery_bindings")
@@ -176,6 +186,7 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
   if (merged.shopifyChanged) {
     const latest = await fetchProductSnapshot(binding.product_gid);
     if (!latest) throw new Error("SYNC_SHOPIFY_PRODUCT_MISSING");
+    assertCanarySnapshotIdentity(latest, binding);
     const latestCopy = visibleCopyFromProduct(latest);
     if (JSON.stringify(latestCopy) !== JSON.stringify(shopifyCopy)) {
       shopifyCopy = latestCopy;
@@ -186,7 +197,7 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
       await writeConflictAudit(supabase, binding, merged, galleryCopy(galleryRow), shopifyCopy, galleryRow.copy_updated_at, latest.updatedAt);
       if (merged.shopifyChanged) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
     } else {
-      await writeShopifyVisibleCopy(binding.product_gid, merged.shopifyCopy);
+      await writeShopifyVisibleCopy(binding.product_gid, merged.shopifyCopy, latest);
     }
   }
 
@@ -200,6 +211,7 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
 
   const latestProduct = await fetchProductSnapshot(binding.product_gid);
   if (!latestProduct) throw new Error("SYNC_SHOPIFY_PRODUCT_MISSING");
+  assertCanarySnapshotIdentity(latestProduct, binding);
   const verifiedShopifyCopy = visibleCopyFromProduct(latestProduct);
   const verifiedGalleryCopy = galleryCopy(await readGalleryCopyRow(supabase, binding));
   if (JSON.stringify(verifiedShopifyCopy) !== JSON.stringify(merged.shopifyCopy) ||
@@ -219,9 +231,30 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
   if (stateWriteError) throw new Error("SYNC_STATE_WRITE_FAILED");
 }
 
+async function withProductReconciliationLease<T>(supabase: SupabaseClient, productGid: string, action: () => Promise<T>): Promise<T> {
+  const owner = randomUUID();
+  const { data: acquired, error } = await supabase.rpc("acquire_shopify_reconciliation_lease", {
+    p_product_gid: productGid, p_owner: owner,
+  });
+  if (error) throw new Error("SYNC_RECONCILIATION_LEASE_FAILED");
+  if (acquired !== true) throw new Error("SYNC_RECONCILIATION_BUSY");
+  try {
+    return await action();
+  } finally {
+    const { error: releaseError } = await supabase.rpc("release_shopify_reconciliation_lease", {
+      p_product_gid: productGid, p_owner: owner,
+    });
+    if (releaseError) console.error("Shopify reconciliation lease release failed", { code: "SYNC_RECONCILIATION_LEASE_RELEASE_FAILED" });
+  }
+}
+
 async function processOneInboxEvent(supabase: SupabaseClient, event: InboxEvent) {
   const productGid = eventProductGid(event);
   if (!productGid) throw new Error("SYNC_PRODUCT_GID_INVALID");
+  return withProductReconciliationLease(supabase, productGid, () => reconcileInboxEvent(supabase, event, productGid));
+}
+
+async function reconcileInboxEvent(supabase: SupabaseClient, event: InboxEvent, productGid: string) {
   const canarySku = configuredSyncCanarySku(process.env.SHOPIFY_SYNC_CANARY_SKU);
   if (!canarySku) throw new Error("SYNC_CANARY_NOT_CONFIGURED");
   const result = await updateExactProductBindings(supabase, event, productGid, canarySku);
@@ -249,8 +282,13 @@ async function processOneOutboxRow(supabase: SupabaseClient, row: OutboxRow, can
   if (error) throw new Error("SYNC_BINDING_READ_FAILED");
   const binding = bindingData as BindingRow | null;
   if (!binding || binding.carousel_item_id !== row.carousel_item_id) throw new Error("SYNC_BINDING_MISSING_OR_CONFLICTED");
+  return withProductReconciliationLease(supabase, binding.product_gid, () => reconcileOutboxRow(supabase, row, binding));
+}
+
+async function reconcileOutboxRow(supabase: SupabaseClient, row: OutboxRow, binding: BindingRow) {
   const product = await fetchProductSnapshot(binding.product_gid);
   if (!product) throw new Error("SYNC_SHOPIFY_PRODUCT_MISSING");
+  if (product.variants.length !== 1) throw new Error("SYNC_CANARY_PRODUCT_HAS_MULTIPLE_VARIANTS");
   const variant = product.variants.find(candidate => candidate.id === binding.variant_gid);
   if (!variant || normalizeSyncSku(variant.sku) !== row.catalog_key) throw new Error("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT");
   const oneBinding = await singleBindingForProduct(supabase, binding.product_gid, row.catalog_key);
@@ -266,7 +304,7 @@ async function processOneOutboxRow(supabase: SupabaseClient, row: OutboxRow, can
   return "synced";
 }
 
-async function processQueue<T extends { id: string }>(supabase: SupabaseClient, rpcName: "claim_shopify_webhook_events" | "claim_shopify_gallery_outbox", processor: (row: T) => Promise<string>) {
+async function processQueue<T extends { id: string; attempts?: number }>(supabase: SupabaseClient, rpcName: "claim_shopify_webhook_events" | "claim_shopify_gallery_outbox", processor: (row: T) => Promise<string>) {
   const { data, error } = await supabase.rpc(rpcName, { p_limit: BATCH_SIZE });
   if (error) throw new Error(`SYNC_QUEUE_CLAIM_FAILED_${rpcName === "claim_shopify_webhook_events" ? "EVENT" : "OUTBOX"}`);
   let processed = 0, reviewed = 0, failed = 0;
@@ -277,8 +315,14 @@ async function processQueue<T extends { id: string }>(supabase: SupabaseClient, 
     } catch (error) {
       const code = safeErrorCode(error);
       const table = rpcName === "claim_shopify_webhook_events" ? "shopify_webhook_events" : "shopify_gallery_content_outbox";
-      const status = isSyncReviewCode(code) ? "review" : "failed";
-      const { error: markError } = await supabase.from(table).update({ status, processed_at: rpcName === "claim_shopify_webhook_events" && status === "review" ? new Date().toISOString() : null, last_error: code }).eq("id", row.id);
+      const busy = code === "SYNC_RECONCILIATION_BUSY";
+      const status = busy ? "pending" : isSyncReviewCode(code) ? "review" : "failed";
+      const failureUpdate = busy
+        ? { status, attempts: Math.max(0, (row.attempts ?? 1) - 1), claimed_at: null, last_error: code }
+        : rpcName === "claim_shopify_webhook_events"
+        ? { status, processed_at: status === "review" ? new Date().toISOString() : null, last_error: code }
+        : { status, last_error: code };
+      const { error: markError } = await supabase.from(table).update(failureUpdate).eq("id", row.id);
       if (markError) throw new Error("SYNC_FAILED_ROW_STATUS_WRITE_FAILED");
       if (status === "review") reviewed++; else failed++;
     }

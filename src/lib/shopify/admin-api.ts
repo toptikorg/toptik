@@ -1,4 +1,5 @@
 import "server-only";
+import { createShopifyClientCredentialsProvider } from "./client-credentials";
 
 export type ShopifyVariant = { id: string; sku: string | null };
 export type ShopifyProductSnapshot = {
@@ -36,6 +37,13 @@ type ShopifyBootstrapPage = {
 };
 
 type GraphqlError = { message?: string; extensions?: { code?: string } };
+
+let tokenProviderCache: {
+  domain: string;
+  clientId: string;
+  clientSecret: string;
+  getAccessToken: () => Promise<string>;
+} | null = null;
 
 const PRODUCT_QUERY = `
   query GallerySyncProduct($id: ID!, $publicationId: ID!, $after: String) {
@@ -76,18 +84,19 @@ const BOOTSTRAP_PRODUCTS_QUERY = `
 
 function getConfig() {
   const domain = process.env.SHOPIFY_SHOP_DOMAIN?.trim().toLowerCase();
-  const token = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+  const clientId = process.env.SHOPIFY_CLIENT_ID?.trim();
+  const clientSecret = process.env.SHOPIFY_CLIENT_SECRET;
   const publicationId = process.env.SHOPIFY_ONLINE_STORE_PUBLICATION_ID?.trim();
   const version = process.env.SHOPIFY_API_VERSION?.trim() || "2026-07";
   if (!domain || !/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(domain)) {
     throw new Error("SHOPIFY_CONFIG_SHOP_DOMAIN_INVALID");
   }
-  if (!token) throw new Error("SHOPIFY_CONFIG_ADMIN_TOKEN_MISSING");
+  if (!clientId || !clientSecret) throw new Error("SHOPIFY_CONFIG_CLIENT_CREDENTIALS_MISSING");
   if (!publicationId || !/^gid:\/\/shopify\/Publication\/\d+$/.test(publicationId)) {
     throw new Error("SHOPIFY_CONFIG_PUBLICATION_ID_INVALID");
   }
   if (!/^20\d{2}-(01|04|07|10)$/.test(version)) throw new Error("SHOPIFY_CONFIG_API_VERSION_INVALID");
-  return { domain, token, publicationId, version };
+  return { domain, clientId, clientSecret, publicationId, version };
 }
 
 export function isShopifySyncConfigured(): boolean {
@@ -104,7 +113,17 @@ export function configuredShopifyDomain(): string {
 }
 
 async function graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
-  const { domain, token, version } = getConfig();
+  const { domain, clientId, clientSecret, version } = getConfig();
+  if (!tokenProviderCache || tokenProviderCache.domain !== domain ||
+      tokenProviderCache.clientId !== clientId || tokenProviderCache.clientSecret !== clientSecret) {
+    tokenProviderCache = {
+      domain,
+      clientId,
+      clientSecret,
+      getAccessToken: createShopifyClientCredentialsProvider({ shopDomain: domain, clientId, clientSecret }),
+    };
+  }
+  const token = await tokenProviderCache.getAccessToken();
   const url = `https://${domain}/admin/api/${version}/graphql.json`;
   const response = await fetch(url, {
     method: "POST",
@@ -219,20 +238,35 @@ export function visibleCopyFromProduct(product: Pick<ShopifyProductSnapshot, "ti
   };
 }
 
-export function buildShopifyVisibleCopyInput(productGid: string, copy: ShopifyVisibleCopy) {
-  return {
-    id: productGid,
-    title: copy.title,
-    descriptionHtml: galleryTextToShopifyHtml(copy.description),
-    seo: { title: copy.seoTitle, description: copy.seoDescription },
-  };
+type ShopifyCopySnapshot = Pick<ShopifyProductSnapshot, "id" | "title" | "descriptionHtml" | "seoTitle" | "seoDescription">;
+type ShopifyCopyPatch = {
+  id: string;
+  title?: string;
+  descriptionHtml?: string;
+  seo?: { title?: string | null; description?: string | null };
+};
+
+/** Send only changed fields. Untouched Shopify rich HTML must never be rewritten. */
+export function buildShopifyVisibleCopyInput(productGid: string, copy: ShopifyVisibleCopy, current: ShopifyCopySnapshot): ShopifyCopyPatch {
+  if (current.id !== productGid) throw new Error("SYNC_SHOPIFY_PRODUCT_IDENTITY_CONFLICT");
+  const previous = visibleCopyFromProduct(current);
+  const patch: ShopifyCopyPatch = { id: productGid };
+  if (copy.title !== previous.title) patch.title = copy.title;
+  if (copy.description !== previous.description) patch.descriptionHtml = galleryTextToShopifyHtml(copy.description);
+  const seo: NonNullable<ShopifyCopyPatch["seo"]> = {};
+  if (copy.seoTitle !== previous.seoTitle) seo.title = copy.seoTitle;
+  if (copy.seoDescription !== previous.seoDescription) seo.description = copy.seoDescription;
+  if (Object.keys(seo).length) patch.seo = seo;
+  return patch;
 }
 
-export async function writeShopifyVisibleCopy(productGid: string, copy: ShopifyVisibleCopy): Promise<void> {
+export async function writeShopifyVisibleCopy(productGid: string, copy: ShopifyVisibleCopy, current: ShopifyCopySnapshot): Promise<void> {
+  const product = buildShopifyVisibleCopyInput(productGid, copy, current);
+  if (Object.keys(product).length === 1) return;
   const result = await graphql<{
     productUpdate: { product: null | { id: string }; userErrors: Array<{ code?: string | null; message: string }> };
   }>(UPDATE_PRODUCT_COPY_MUTATION, {
-    product: buildShopifyVisibleCopyInput(productGid, copy),
+    product,
   });
   const errors = result.productUpdate?.userErrors ?? [];
   if (errors.length) throw new Error("SHOPIFY_PRODUCT_COPY_WRITE_REJECTED");

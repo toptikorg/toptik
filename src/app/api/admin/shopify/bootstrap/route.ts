@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
     const product = await fetchProductSnapshot(productGid);
     if (!product) return NextResponse.json({ error: "Shopify product was not found" }, { status: 404 });
     const canaryVariants = product.variants.filter(variant => isSyncCanarySku(variant.sku, canarySku));
-    if (canaryVariants.length !== 1) {
-      return NextResponse.json({ error: "Product must contain exactly one variant for the configured canary SKU" }, { status: 409 });
+    if (canaryVariants.length !== 1 || product.variants.length !== 1) {
+      return NextResponse.json({ error: "Canary product must have a single variant matching the configured SKU" }, { status: 409 });
     }
     const supabase = createSupabaseServiceRoleClient();
     const domain = configuredShopifyDomain();

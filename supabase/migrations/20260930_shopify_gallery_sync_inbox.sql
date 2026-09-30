@@ -89,6 +89,124 @@ create table if not exists public.shopify_gallery_sync_state (
   synced_at timestamptz not null default now()
 );
 
+-- Reconciliation includes external HTTP calls, so a row-claim transaction alone
+-- cannot serialize two inbox/outbox workers for the same Shopify product.
+-- The lease is longer than every sync route's hard 60-second runtime budget.
+create table if not exists public.shopify_gallery_reconciliation_leases (
+  product_gid text primary key,
+  owner uuid not null,
+  expires_at timestamptz not null
+);
+alter table public.shopify_gallery_reconciliation_leases enable row level security;
+
+create or replace function public.acquire_shopify_reconciliation_lease(p_product_gid text, p_owner uuid)
+returns boolean language plpgsql security definer set search_path = public, pg_temp as $$
+declare affected integer;
+begin
+  if p_product_gid !~ '^gid://shopify/Product/[0-9]+$' or p_owner is null then return false; end if;
+  -- Share this short transaction lock with the atomic Gallery save. Either its
+  -- edit commits first, or it observes the active lease and asks for a retry.
+  perform pg_advisory_xact_lock(hashtext('toptik-gallery-copy-sync'));
+  insert into public.shopify_gallery_reconciliation_leases(product_gid, owner, expires_at)
+  values (p_product_gid, p_owner, now() + interval '5 minutes')
+  on conflict (product_gid) do update set owner = excluded.owner, expires_at = excluded.expires_at
+  where shopify_gallery_reconciliation_leases.expires_at <= now();
+  get diagnostics affected = row_count;
+  return affected = 1;
+end;
+$$;
+
+create or replace function public.release_shopify_reconciliation_lease(p_product_gid text, p_owner uuid)
+returns void language sql security definer set search_path = public, pg_temp as $$
+  delete from public.shopify_gallery_reconciliation_leases
+  where product_gid = p_product_gid and owner = p_owner;
+$$;
+
+-- Save copy and its durable delivery record together. Version validation and
+-- writes happen under the same item row locks; a preflight SELECT in JS is not
+-- sufficient because a worker can change the row before a later UPSERT.
+create or replace function public.save_gallery_items_with_copy_cas(p_items jsonb, p_expected_versions jsonb)
+returns table(id uuid) language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  incoming jsonb;
+  previous public.carousel_items%rowtype;
+  saved public.carousel_items%rowtype;
+  exists_before boolean;
+  expected_version text;
+  columns_sql text;
+  projected_columns_sql text;
+  content jsonb;
+  previous_content jsonb;
+  sku_key text;
+begin
+  if jsonb_typeof(p_items) is distinct from 'array' or jsonb_typeof(p_expected_versions) is distinct from 'object'
+    or jsonb_array_length(p_items) > 5000 then
+    raise exception 'SYNC_GALLERY_SAVE_INPUT_INVALID';
+  end if;
+  if (select count(*) <> count(distinct value->>'id') from jsonb_array_elements(p_items)) then
+    raise exception 'SYNC_GALLERY_SAVE_DUPLICATE_ID';
+  end if;
+  if exists (
+    select 1 from jsonb_object_keys(p_expected_versions) expected(item_id)
+    where not exists (select 1 from jsonb_array_elements(p_items) item where item.value->>'id' = expected.item_id)
+  ) then raise exception 'SYNC_GALLERY_DELETE_REQUIRES_ARCHIVE'; end if;
+  perform pg_advisory_xact_lock(hashtext('toptik-gallery-copy-sync'));
+  if exists (
+    select 1 from public.shopify_gallery_reconciliation_leases lease
+    join public.shopify_gallery_bindings binding on binding.product_gid = lease.product_gid
+    join jsonb_array_elements(p_items) item on (item.value->>'id')::uuid = binding.carousel_item_id
+    where lease.expires_at > now()
+  ) then raise exception 'SYNC_COPY_BUSY_RETRY'; end if;
+
+  for incoming in select value from jsonb_array_elements(p_items) order by value->>'id' loop
+    if not (incoming ? 'id') or not (p_expected_versions ? (incoming->>'id')) then
+      raise exception 'SYNC_COPY_VERSION_REQUIRED';
+    end if;
+    select * into previous from public.carousel_items item where item.id = (incoming->>'id')::uuid for update;
+    exists_before := found;
+    expected_version := p_expected_versions->>(incoming->>'id');
+    if (exists_before and (expected_version is null or previous.copy_updated_at <> expected_version::timestamptz))
+      or (not exists_before and expected_version is not null) then
+      raise exception 'SYNC_COPY_STALE_EDIT_RELOAD';
+    end if;
+    -- The allowlist is fixed, while pg_attribute filters optional metadata
+    -- columns absent in older deployments. Never alter unrelated table fields.
+    select string_agg(format('%I', keys.key), ', ' order by keys.key),
+           string_agg(format('record.%I', keys.key), ', ' order by keys.key)
+      into columns_sql, projected_columns_sql
+    from jsonb_object_keys(incoming) keys(key)
+    join pg_attribute attr on attr.attrelid = 'public.carousel_items'::regclass
+      and attr.attname = keys.key and not attr.attisdropped and attr.attnum > 0
+    where keys.key = any(array['id','title','description','seo_title','seo_description','copy_updated_at',
+      'catalog_number','source_url','cover_image_path','display_order','is_active','color',
+      'dimensions','weight','sizes','available_colors','colors','tech_specs'])
+      and (not exists_before or keys.key <> 'id');
+    if exists_before then
+      execute format('update public.carousel_items set (%s) = (select %s from jsonb_populate_record(null::public.carousel_items, $1) record) where id = $2 returning *',
+        columns_sql, projected_columns_sql) using incoming, previous.id into saved;
+    else
+      execute format('insert into public.carousel_items (%s) select %s from jsonb_populate_record(null::public.carousel_items, $1) record returning *',
+        columns_sql, projected_columns_sql) using incoming into saved;
+    end if;
+    content := jsonb_build_object('title',saved.title,'description',coalesce(saved.description,''),
+      'seoTitle',saved.seo_title,'seoDescription',saved.seo_description);
+    previous_content := case when exists_before then jsonb_build_object('title',previous.title,
+      'description',coalesce(previous.description,''),'seoTitle',previous.seo_title,'seoDescription',previous.seo_description) else null end;
+    sku_key := regexp_replace(upper(coalesce(saved.catalog_number,'')), '[^A-Z0-9]', '', 'g');
+    if sku_key ~ '^P[0-9]{2}.*TU$' then sku_key := left(sku_key,length(sku_key)-2); end if;
+    if content is distinct from previous_content and sku_key <> '' then
+      insert into public.shopify_gallery_content_outbox
+        (carousel_item_id,catalog_key,content_hash,payload,status,attempts,created_at,last_error)
+      values (saved.id,sku_key,encode(pg_catalog.sha256(pg_catalog.convert_to(content::text,'UTF8')),'hex'),content,'pending',0,now(),null)
+      on conflict (carousel_item_id,content_hash) do update set payload=excluded.payload,
+        catalog_key=excluded.catalog_key,status='pending',attempts=0,created_at=now(),claimed_at=null,synced_at=null,last_error=null;
+    end if;
+    id := saved.id;
+    return next;
+  end loop;
+end;
+$$;
+
 -- Keep independent pre-sync snapshots so existing copy differences are never
 -- mistaken for new edits and overwritten during the first live bootstrap.
 alter table public.shopify_gallery_sync_state
@@ -314,15 +432,41 @@ as $$
 $$;
 
 revoke all on function public.claim_shopify_webhook_events(integer) from public, anon, authenticated;
+revoke all on function public.acquire_shopify_reconciliation_lease(text, uuid) from public, anon, authenticated;
+revoke all on function public.release_shopify_reconciliation_lease(text, uuid) from public, anon, authenticated;
+revoke all on function public.save_gallery_items_with_copy_cas(jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.claim_shopify_gallery_outbox(integer) from public, anon, authenticated;
 revoke all on function public.upsert_shopify_gallery_binding(text, uuid, text, text, text, boolean, timestamptz) from public, anon, authenticated;
 revoke all on function public.deactivate_shopify_gallery_product(text, timestamptz) from public, anon, authenticated;
 revoke all on function public.deactivate_shopify_gallery_keys(text, text[], timestamptz) from public, anon, authenticated;
 grant execute on function public.claim_shopify_webhook_events(integer) to service_role;
+grant execute on function public.acquire_shopify_reconciliation_lease(text, uuid) to service_role;
+grant execute on function public.release_shopify_reconciliation_lease(text, uuid) to service_role;
+grant execute on function public.save_gallery_items_with_copy_cas(jsonb, jsonb) to service_role;
 grant execute on function public.claim_shopify_gallery_outbox(integer) to service_role;
 grant execute on function public.upsert_shopify_gallery_binding(text, uuid, text, text, text, boolean, timestamptz) to service_role;
 grant execute on function public.deactivate_shopify_gallery_product(text, timestamptz) to service_role;
 grant execute on function public.deactivate_shopify_gallery_keys(text, text[], timestamptz) to service_role;
+
+-- Do not depend on Supabase's project-specific default privileges. Workers use
+-- direct PostgREST table access as well as the security-definer RPCs above.
+revoke all on table public.shopify_webhook_events,
+  public.shopify_gallery_bindings, public.shopify_gallery_content_outbox,
+  public.shopify_gallery_sync_state, public.shopify_gallery_sync_conflicts,
+  public.shopify_gallery_reconciliation_leases from public, anon, authenticated, service_role;
+grant usage on schema public to service_role;
+grant select, insert, update on table public.shopify_webhook_events,
+  public.shopify_gallery_content_outbox, public.shopify_gallery_sync_state to service_role;
+grant select on table public.shopify_gallery_bindings to service_role;
+grant select, insert on table public.shopify_gallery_sync_conflicts to service_role;
+-- Binding/projection changes and lease ownership remain RPC-only.
+revoke all on table public.shopify_gallery_public_links from public, anon, authenticated, service_role;
+grant select on table public.shopify_gallery_public_links to anon, authenticated, service_role;
+-- Preserve any pre-existing admin privileges, and guarantee the narrower
+-- direct read/CAS-copy update access needed by the sync worker itself.
+grant select on table public.carousel_items to service_role;
+grant update (title, description, seo_title, seo_description, copy_updated_at)
+  on table public.carousel_items to service_role;
 
 -- Deliberately create no policies for the inbox, bindings, outbox, sync state,
 -- or conflict audit: only service_role may read/write them.
