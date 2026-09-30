@@ -11,8 +11,10 @@ export async function getPublicCarouselPayload() {
   const payload = await getCarouselPayload({ includeInactive: true });
   if (isUnavailableCarouselPayload(payload)) return payload;
 
-  return {
-    ...payload,
-    items: appendSamsoniteItems(payload.items).filter((item) => item.isActive),
-  };
+  let items = appendSamsoniteItems(payload.items).filter((item) => item.isActive);
+  if (process.env.VERCEL_ENV === "production" && process.env.SHOPIFY_TYPED_SPEC_SYNC === "enabled_v1") {
+    const { applyPublicTypedSpecs } = await import("@/lib/shopify/typed-spec-public");
+    items = await applyPublicTypedSpecs(items);
+  }
+  return { ...payload, items };
 }

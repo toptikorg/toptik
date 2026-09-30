@@ -1,4 +1,6 @@
 import "server-only";
+import type { Identity as TypedSpecIdentity, ProvenanceResolver, SpecSnapshot as TypedSpecSnapshot } from "./typed-spec-adapter";
+import type { Operation as TypedSpecOperation } from "./typed-spec-core";
 import { createShopifyClientCredentialsProvider } from "./client-credentials";
 import { plainDescriptionToHtml, descriptionTextFromHtml, descriptionPairsEquivalent, assertSafeDescriptionHtml } from "./description-document";
 
@@ -122,7 +124,7 @@ function graphqlErrorCode(code: unknown): string {
   return /^[A-Z0-9_]{1,64}$/.test(normalized) ? `SHOPIFY_GRAPHQL_${normalized}` : "SHOPIFY_GRAPHQL_ERROR";
 }
 
-async function graphql<T>(query: string, variables: Record<string, unknown>, timeoutMs = 15_000): Promise<T> {
+async function graphql<T>(query: string, variables: Record<string, unknown>, timeoutMs = 15_000, deadline?: number): Promise<T> {
   const { domain, clientId, clientSecret, version } = getConfig();
   if (!tokenProviderCache || tokenProviderCache.domain !== domain ||
       tokenProviderCache.clientId !== clientId || tokenProviderCache.clientSecret !== clientSecret) {
@@ -133,12 +135,24 @@ async function graphql<T>(query: string, variables: Record<string, unknown>, tim
       getAccessToken: createShopifyClientCredentialsProvider({ shopDomain: domain, clientId, clientSecret }),
     };
   }
-  const token = await tokenProviderCache.getAccessToken();
+  if (deadline !== undefined && Date.now() >= deadline) throw new Error("SPEC_TIME_BUDGET");
+  const tokenPromise = tokenProviderCache.getAccessToken();
+  let token: string;
+  if (deadline !== undefined) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      // Only the read-only token exchange may outlive this wait; no product mutation starts afterward.
+      token = await Promise.race([tokenPromise, new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("SPEC_TIME_BUDGET")), Math.max(1, deadline - Date.now()));
+      })]);
+    } finally { if (timer) clearTimeout(timer); }
+    if (Date.now() >= deadline) throw new Error("SPEC_TIME_BUDGET");
+  } else token = await tokenPromise;
   const url = `https://${domain}/admin/api/${version}/graphql.json`;
   const response = await fetch(url, {
     method: "POST",
     redirect: "manual",
-    signal: AbortSignal.timeout(Math.max(1, Math.min(15_000, timeoutMs))),
+    signal: AbortSignal.timeout(Math.max(1, Math.min(15_000, timeoutMs, deadline === undefined ? 15_000 : deadline - Date.now()))),
     headers: { "content-type": "application/json", "x-shopify-access-token": token },
     body: JSON.stringify({ query, variables }),
   });
@@ -150,6 +164,26 @@ async function graphql<T>(query: string, variables: Record<string, unknown>, tim
   }
   if (!payload.data) throw new Error("SHOPIFY_GRAPHQL_DATA_MISSING");
   return payload.data;
+}
+
+/** Dedicated typed-spec adapters. Same existing product scopes; never an arbitrary query executor. */
+export async function fetchTypedSpecSnapshot(identity: TypedSpecIdentity & { productHandle: string }, provenance: ProvenanceResolver, timeoutMs = 8_000): Promise<TypedSpecSnapshot> {
+  const deadline = Date.now() + Math.max(1, Math.min(8_000, timeoutMs));
+  const { buildSpecReadRequest, parseSpecReadResponse } = await import("./typed-spec-adapter");
+  const request = buildSpecReadRequest(identity);
+  if (getConfig().publicationId !== request.variables.publicationId) throw new Error("SPEC_PUBLICATION_MISMATCH");
+  const result = await graphql<{ product?: { handle: string; status: string; publishedOnPublication: boolean } }>(request.query, request.variables, timeoutMs, deadline);
+  if (!result.product || result.product.handle !== identity.productHandle || result.product.status !== "ACTIVE" || result.product.publishedOnPublication !== true) throw new Error("SPEC_IDENTITY_CHANGED");
+  return parseSpecReadResponse({ data: result }, identity, provenance);
+}
+export async function writeTypedSpecFields(snapshot: TypedSpecSnapshot, operations: TypedSpecOperation[], deadline = Date.now() + 15_000): Promise<void> {
+  if (process.env.VERCEL_ENV !== "production" || process.env.SHOPIFY_TYPED_SPEC_SYNC !== "enabled_v1") throw new Error("SPEC_DISABLED");
+  const { buildSpecWriteRequest, parseSpecWriteResponse } = await import("./typed-spec-adapter");
+  if (operations.some(operation => operation.intent === "clear")) throw new Error("SPEC_CLEAR_DISABLED_V1");
+  const request = buildSpecWriteRequest(snapshot, operations);
+  if (!request) return;
+  const result = await graphql<Record<string, unknown>>(request.query, request.variables, 15_000, deadline);
+  parseSpecWriteResponse({ data: result }, request);
 }
 
 export async function fetchProductSnapshot(productGid: string): Promise<ShopifyProductSnapshot | null> {

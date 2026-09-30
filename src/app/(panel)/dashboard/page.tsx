@@ -32,6 +32,15 @@ export default async function DashboardPage() {
         </div>
 
         <nav className="admin-grid" aria-label="תפריט ניהול">
+          {process.env.VERCEL_ENV === "production" && process.env.SHOPIFY_TYPED_SPEC_SYNC === "enabled_v1" && (
+            <Link href="/dashboard/specs" className="admin-tile">
+              <span className="admin-tile-icon"><GalleryIcon /></span>
+              <span className="admin-tile-body">
+                <span className="admin-tile-title">מפרט מוצרים</span>
+                <span className="admin-tile-desc">חומר, מידות ומשקל עצמי · עדכון משותף לגלריה ולחנות</span>
+              </span>
+            </Link>
+          )}
           <Link href="/settings" className="admin-tile">
             <span className="admin-tile-icon">
               <SettingsIcon />
