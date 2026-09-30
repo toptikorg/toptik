@@ -26,6 +26,7 @@ const importCatalogSchema = z.object({
 type VendorConfig = {
   label: string;
   storageFolder: string;
+  newItemsActive?: boolean;
   enumerateVariants: (product: SourceProduct) => Promise<SourceColorVariant[]>;
   mapColors: (
     variants: SourceColorVariant[],
@@ -49,6 +50,15 @@ const VENDOR_CONFIG: Record<CatalogVendor, VendorConfig> = {
         catalogNumber: product.catalogNumber,
       }),
     mapColors: toBricsCarouselColors,
+  },
+  samsonite: {
+    label: "Samsonite",
+    storageFolder: "samsonite",
+    // New manufacturer imports stay out of the public gallery until an admin
+    // reviews the exact SKU's images and activates the item.
+    newItemsActive: false,
+    enumerateVariants: async () => [],
+    mapColors: toCarouselColors,
   },
 };
 
@@ -76,12 +86,16 @@ export async function importSourceProduct(
       const storageCatalogNumber = productCatalogNumber.replace(/[^A-Za-z0-9._-]/g, "-");
 
       const uploadedUrls: string[] = [];
+      const imageReferer = vendor === "samsonite" && sourceProduct.sourceUrl
+        ? `${new URL(sourceProduct.sourceUrl).origin}/`
+        : undefined;
       for (const [index, imageUrl] of sourceProduct.imageUrls.entries()) {
         try {
           const publicUrl = await uploadRemoteImageToStorage(
             `imports/${vendorConfig.storageFolder}/${storageCatalogNumber}`,
             imageUrl,
             index,
+            imageReferer,
           );
           uploadedUrls.push(publicUrl);
         } catch (error) {
@@ -158,7 +172,7 @@ export async function importSourceProduct(
         sourceUrl: sourceProduct.sourceUrl,
         coverImagePath: uploadedUrls[0],
         displayOrder: 1,
-        isActive: true,
+        isActive: targetItemId ? true : vendorConfig.newItemsActive ?? true,
         color: sourceProduct.color || null,
         dimensions: sourceProduct.dimensions || null,
         weight: sourceProduct.weight || null,

@@ -4,6 +4,8 @@ import { z } from "zod";
 import { importSourceProduct } from "@/lib/import/import-handler";
 import { fetchMandarinaByUrl } from "@/lib/catalog-source/mandarina-scraper";
 import { fetchBricsByUrl } from "@/lib/catalog-source/brics-scraper";
+import { fetchSamsoniteByUrl } from "@/lib/catalog-source/samsonite-scraper";
+import { SAMSONITE_SOURCE_HOSTS } from "@/lib/catalog-source/samsonite-parsing";
 import type { SourceProduct } from "@/lib/catalog-source/types";
 import type { CatalogVendor } from "@/lib/catalog-source/provider";
 
@@ -26,10 +28,16 @@ type UrlSource = {
   vendor: CatalogVendor;
 };
 
-// Only the two brand sites are supported. Products from anywhere else are
+// Only approved source sites are supported. Products from anywhere else are
 // entered manually in the admin (cover + angle images + description +
 // dimensions) rather than scraped from arbitrary hosts.
 const URL_SOURCES: UrlSource[] = [
+  {
+    label: "Samsonite",
+    matches: (host) => SAMSONITE_SOURCE_HOSTS.includes(host as (typeof SAMSONITE_SOURCE_HOSTS)[number]),
+    fetch: fetchSamsoniteByUrl,
+    vendor: "samsonite",
+  },
   {
     label: "Mandarina Duck",
     matches: (host) => host.endsWith("mandarinaduck.com"),
@@ -62,7 +70,7 @@ export async function POST(req: NextRequest) {
     const source = URL_SOURCES.find((entry) => entry.matches(host));
     if (!source) {
       throw new Error(
-        `כתובת לא נתמכת (${host}). ייבוא לפי כתובת נתמך רק ל-mandarinaduck.com ו-bricstore.com. למוצרים ממקורות אחרים השתמש בהזנה ידנית.`,
+        `כתובת לא נתמכת (${host}). ייבוא לפי כתובת נתמך רק באתרי היצרן המאושרים: mandarinaduck.com, bricstore.com ו-Samsonite.`,
       );
     }
 

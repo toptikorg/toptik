@@ -11,10 +11,11 @@ import { PRODUCT_CATEGORIES, categorizeItem, type ProductCategory } from "@/lib/
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
 const BATCH_IMPORT_INCREMENT = 5;
-type Vendor = "mandarina" | "brics";
+type Vendor = "mandarina" | "brics" | "samsonite";
 const VENDOR_OPTIONS: Array<{ value: Vendor; label: string; example: string }> = [
   { value: "mandarina", label: "Mandarina Duck", example: "P10QMC01-465-TU" },
   { value: "brics", label: "Bric's", example: "BOE58117.050" },
+  { value: "samsonite", label: "Samsonite", example: "150700-9199" },
 ];
 
 type ImportFeedbackTone = "info" | "success" | "error";
@@ -43,10 +44,11 @@ export default function AdminPage() {
   const [batchCatalogInputs, setBatchCatalogInputs] = useState<Record<Vendor, string[]>>({
     mandarina: Array.from({ length: BATCH_IMPORT_INITIAL }, () => ""),
     brics: Array.from({ length: BATCH_IMPORT_INITIAL }, () => ""),
+    samsonite: Array.from({ length: BATCH_IMPORT_INITIAL }, () => ""),
   });
   const [batchImportStatuses, setBatchImportStatuses] = useState<
     Record<Vendor, Record<number, BatchImportStatus>>
-  >({ mandarina: {}, brics: {} });
+  >({ mandarina: {}, brics: {}, samsonite: {} });
   const [batchImportingVendor, setBatchImportingVendor] = useState<Vendor | null>(null);
   const isBatchImporting = batchImportingVendor !== null;
   const [urlImportValue, setUrlImportValue] = useState("");
@@ -180,6 +182,7 @@ export default function AdminPage() {
   function vendorForItem(item: CarouselPayload["items"][number]): Vendor {
     const explicit = itemVendorMap[item.id];
     if (explicit) return explicit;
+    if (item.sourceUrl?.includes("samsonite.")) return "samsonite";
     return item.sourceUrl?.includes("bricstore") ? "brics" : "mandarina";
   }
 
@@ -661,9 +664,8 @@ export default function AdminPage() {
     }));
   }
 
-  // Import a product straight from a product-page URL (supported sources:
-  // mandarinaduck.com / bricstore.com). Imports and saves in one action, like
-  // the batch flow.
+  // Import a product straight from a product-page URL on an approved source.
+  // Imports and saves in one action, like the batch flow.
   async function onImportByUrl() {
     const url = urlImportValue.trim();
     if (!url) {
@@ -724,7 +726,7 @@ export default function AdminPage() {
       return;
     }
     // The catalog number decides the vendor (the select is a hint only).
-    const vendor = detectVendorFromCatalog(itemCatalogNumber);
+    const vendor = detectVendorFromCatalog(itemCatalogNumber, vendorForItem(item));
 
     try {
       setItemImportingMap((current) => ({ ...current, [itemId]: true }));
@@ -806,11 +808,11 @@ export default function AdminPage() {
       const succeededCatalogs: string[] = [];
       for (const row of filledRows) {
         // Each row is routed by its own content: a full URL is scraped directly
-        // (mandarinaduck.com / bricstore.com), a catalog number goes through the
-        // vendor source-chain (detected from the number). So a single batch can
-        // mix catalogs and URLs — the section is just a starting point.
+        // from an approved source; a catalog number uses the detected vendor
+        // (or the selected section for formats without an identifying prefix).
         const rowIsUrl = isUrlValue(row.catalogNumber);
-        const rowLabel = rowIsUrl ? "כתובת" : vendorLabel(detectVendorFromCatalog(row.catalogNumber));
+        const detectedVendor = detectVendorFromCatalog(row.catalogNumber, vendor);
+        const rowLabel = rowIsUrl ? "כתובת" : vendorLabel(detectedVendor);
         setVendorBatchStatuses(vendor, (current) => ({
           ...current,
           [row.index]: { tone: "info", message: `מייבא מ-${rowLabel}...` },
@@ -820,7 +822,7 @@ export default function AdminPage() {
           const data = rowIsUrl
             ? await importByUrlFromSource(row.catalogNumber)
             : await importCatalogNumberFromSource(
-                detectVendorFromCatalog(row.catalogNumber),
+                detectedVendor,
                 row.catalogNumber,
               );
           const result = upsertImportedItem(workingPayload, data);
@@ -1001,10 +1003,10 @@ export default function AdminPage() {
               </button>
             </div>
             <p className="admin-import-note">
-              הדבק כתובת של עמוד מוצר והמערכת תייבא אותו עם כל הפרטים (תמונות מכל הזוויות,
-              צבעים, מפרט טכני ותיאור מתורגם). אתרים נתמכים:{" "}
-              <span dir="ltr">mandarinaduck.com · bricstore.com</span>. למוצרים ממקורות אחרים
-              השתמש בהזנה ידנית (הוסף מוצר → העלאת תמונות + מידות + תיאור).
+              הדבק כתובת של עמוד מוצר באתר יצרן נתמך. המערכת תבדוק התאמת מק״ט, תאסוף
+              תמונות ומפרט שנמצאו ותציג חיווי לפני השמירה. נתמכים: Mandarina Duck,
+              Bric&apos;s ו-Samsonite. באתר Samsonite הייבוא מתבצע רק כשהעמוד מאשר את
+              המק״ט המדויק.
             </p>
             <div className="admin-url-import-row">
               <input
@@ -1013,7 +1015,7 @@ export default function AdminPage() {
                   setUrlImportValue(e.target.value);
                   setUrlImportStatus(null);
                 }}
-                placeholder="https://bricstore.com/products/..."
+                placeholder="https://www.samsonite.co.uk/.../150700-9199.html"
                 dir="ltr"
                 disabled={isUrlImporting}
                 onKeyDown={(e) => {
@@ -1049,12 +1051,11 @@ export default function AdminPage() {
                 </div>
                 <p className="admin-import-note">
                   הכנס מק״טים (למשל <span dir="ltr">{vendorOption.example}</span>) או טען
-                  קובץ אקסל, ולחץ &quot;ייבא ושמור הכל&quot;. המערכת מזהה אוטומטית לכל מק״ט
-                  אם הוא Mandarina Duck או Bric&apos;s — אפשר לערבב, ולא משנה מאיזה סקשן
-                  מייבאים. כל צורת כתיבה מתקבלת (עם/בלי נקודות ומקפים). <b>אפשר גם להדביק
-                  בשורה כתובת URL מלאה של מוצר</b> (<span dir="ltr">mandarinaduck.com ·
-                  bricstore.com</span>) והיא תיסרק ישירות. ליד כל שורה יוצג חיווי
-                  הצלחה/כישלון מפורט.
+                  קובץ אקסל, ולחץ &quot;ייבא ושמור הכל&quot;. המערכת מזהה מק״טים של
+                  Mandarina Duck, Bric&apos;s ו-Samsonite; פורמט לא מזוהה מטופל לפי
+                  סקשן המותג שבו יובא. אפשר גם להדביק כתובת מוצר מלאה מאתר יצרן נתמך.
+                  מוצרים חדשים של Samsonite נשמרים כלא פעילים עד לבדיקת תמונות המק״ט
+                  והפעלה ידנית. ליד כל שורה יוצג חיווי הצלחה/כישלון.
                 </p>
                 <div className="admin-batch-grid">
                   {vendorInputs.map((value, index) => {
@@ -1319,7 +1320,7 @@ export default function AdminPage() {
                     </label>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, justifyContent: "flex-end" }}>
                       <span className="admin-import-note" style={{ margin: 0 }}>
-                        ייבוא אוטומטי לפי המק״ט שלמעלה (Mandarina / Bric&apos;s):
+                        ייבוא אוטומטי לפי המק״ט שלמעלה (Mandarina / Bric&apos;s / Samsonite):
                       </span>
                       <button
                         type="button"

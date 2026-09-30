@@ -69,7 +69,8 @@ A session-gated control panel served on the **`admin.toptik.co.il`** subdomain. 
 
 ## Catalog import
 
-- Import (`POST /api/admin/import/mandarina`): scrape Mandarina Duck by catalog number (`src/lib/catalog-source/`, `MandarinaDuckScraperProvider`) → download images → re-upload to the Supabase storage bucket **`carousel-media`** → keep the source description verbatim unless an exact-SKU reviewed copy exists (no machine translation, GAL-009) → prefetch & cache tech specs. It returns a **draft** item; the admin must "save all" (`saveCarouselPayload`) to persist it.
+- Import (`POST /api/admin/import/{mandarina|brics|samsonite}`): authenticated admin route. Mandarina Duck and Bric's use their existing source providers. Samsonite accepts an exact six-digit model plus four-character color SKU (for example `150700-9199`), searches only the approved Samsonite manufacturer hosts, and requires matching Product JSON-LD SKU before extracting same-host Samsonite product-catalog images. Direct Samsonite product URLs must end in that exact manufacturer SKU. Search-result text alone is never considered proof of identity.
+- The shared import flow downloads source images and re-hosts them in Supabase **`carousel-media`**, prefetches cached specs, and returns a prepared `CarouselItem` through the existing save flow. New Samsonite items are saved inactive until an admin reviews the exact-SKU/color images and activates them; re-importing an existing item preserves its existing active flag. Samsonite color-family enumeration is not yet implemented; import covers only the exact SKU/color page. The legacy `translateToHebrew` hook is disconnected by GAL-009, so imported source copy must not be described as automatically translated.
 
 ## Image pipeline
 
