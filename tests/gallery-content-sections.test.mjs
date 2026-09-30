@@ -36,6 +36,16 @@ test("section stays out of the catalogue mechanics and out of robots directives"
   assert.ok(!/https:\/\/(?!www\.toptik)/.test(component.replace(/samsonite\.(fi|co\.uk|com\.au)/g, "")), "no external links besides the store");
 });
 
+test("every row links to its verified Shopify product page (handle ends with the SKU)", () => {
+  const rows = [...component.matchAll(/sku: "([A-Z0-9]+)", storeHandle: "([a-z0-9-]+)"/g)];
+  assert.equal(rows.length, 20);
+  for (const [, sku, handle] of rows) {
+    assert.ok(handle.endsWith("-" + sku.toLowerCase()), `${sku} handle must end with its SKU: ${handle}`);
+  }
+  assert.match(component, /href=\{`\$\{STORE_ORIGIN\}\/products\/\$\{row\.storeHandle\}`\}>\{row\.name\}<\/a>/, "anchor text is the model name, not click-here");
+  assert.ok(!/לחץ כאן|לחצו כאן/.test(component));
+});
+
 test("tables are readable on phones: horizontal scroll region, accessible names", () => {
   assert.match(css, /\.gallery-info-tablewrap \{ overflow-x: auto/);
   assert.match(component, /role="region" aria-label="טבלת מידות לפי מק״ט" tabIndex=\{0\}/);

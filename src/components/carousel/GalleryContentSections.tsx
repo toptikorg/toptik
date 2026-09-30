@@ -13,6 +13,8 @@ import { STORE_ORIGIN } from "@/lib/seo/site";
 
 type Row = {
   sku: string;
+  /** Verified Shopify product handle: checked live against the product JSON (variant SKU match), 30.09.2026. */
+  storeHandle: string;
   name: string;
   dims: string;
   expanded: string;
@@ -21,27 +23,31 @@ type Row = {
 };
 
 const CARRYON_55_ROWS: readonly Row[] = [
-  { sku: "KL909001", name: "Intuo 55, שחור", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
-  { sku: "KL901001", name: "Intuo 55, כחול לילה", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
-  { sku: "KL924001", name: "Intuo 55, ירוק זית", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
-  { sku: "KL966001", name: "Intuo 55, צהוב הדרים", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
-  { sku: "KL974001", name: "Intuo 55, ליים", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
-  { sku: "KL909005", name: "Intuo 55 Easy Access, שחור", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
-  { sku: "KL901005", name: "Intuo 55 Easy Access, כחול לילה", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
-  { sku: "KL924005", name: "Intuo 55 Easy Access, ירוק זית", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
-  { sku: "KL966005", name: "Intuo 55 Easy Access, צהוב הדרים", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
-  { sku: "KL974005", name: "Intuo 55 Easy Access, ליים", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
-  { sku: "KJ109001", name: "Upscape 55, שחור", dims: "55×40×20", expanded: "55×40×23", volume: "45 ל׳ בהרחבה", material: "פוליפרופילן" },
-  { sku: "KJ111001", name: "Upscape 55, כחול", dims: "55×40×20", expanded: "55×40×23", volume: "45 ל׳ בהרחבה", material: "פוליפרופילן" },
-  { sku: "KJ114001", name: "Upscape 55, ירוק", dims: "55×40×20", expanded: "55×40×23", volume: "45 ל׳ בהרחבה", material: "פוליפרופילן" },
-  { sku: "KJ106001", name: "Upscape 55, צהוב", dims: "55×40×20", expanded: "55×40×23", volume: "45 ל׳ בהרחבה", material: "פוליפרופילן" },
-  { sku: "KJ114007", name: "Upscape 55 Easy Access, ירוק", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
-  { sku: "KJ106007", name: "Upscape 55 Easy Access, צהוב", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
-  { sku: "KO709005", name: "Urbify 55, שחור", dims: "55×40×23", expanded: "55×40×26", volume: "39/46 ל׳", material: "פוליאסטר ממוחזר" },
-  { sku: "KO701005", name: "Urbify 55, כחול נייבי", dims: "55×40×23", expanded: "55×40×26", volume: "39/46 ל׳", material: "פוליאסטר ממוחזר" },
-  { sku: "KO704005", name: "Urbify 55, ירוק אורן", dims: "55×40×23", expanded: "55×40×26", volume: "39/46 ל׳", material: "פוליאסטר ממוחזר" },
-  { sku: "KO776005", name: "Urbify 55, לבה", dims: "55×40×23", expanded: "55×40×26", volume: "39/46 ל׳", material: "פוליאסטר ממוחזר" },
+  { sku: "KL909001", storeHandle: "samsonite-intuo-55-black-kl909001", name: "Intuo 55, שחור", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
+  { sku: "KL901001", storeHandle: "samsonite-intuo-55-blue-nights-kl901001", name: "Intuo 55, כחול לילה", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
+  { sku: "KL924001", storeHandle: "samsonite-intuo-55-olive-green-kl924001", name: "Intuo 55, ירוק זית", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
+  { sku: "KL966001", storeHandle: "samsonite-intuo-55-citrus-kl966001", name: "Intuo 55, צהוב הדרים", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
+  { sku: "KL974001", storeHandle: "samsonite-intuo-55-lime-kl974001", name: "Intuo 55, ליים", dims: "55×40×20", expanded: "55×40×23", volume: "39/45 ל׳", material: "פוליפרופילן" },
+  { sku: "KL909005", storeHandle: "samsonite-intuo-55-easy-access-black-kl909005", name: "Intuo 55 Easy Access, שחור", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
+  { sku: "KL901005", storeHandle: "samsonite-intuo-55-easy-access-blue-nights-kl901005", name: "Intuo 55 Easy Access, כחול לילה", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
+  { sku: "KL924005", storeHandle: "samsonite-intuo-55-easy-access-olive-green-kl924005", name: "Intuo 55 Easy Access, ירוק זית", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
+  { sku: "KL966005", storeHandle: "samsonite-intuo-55-easy-access-citrus-kl966005", name: "Intuo 55 Easy Access, צהוב הדרים", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
+  { sku: "KL974005", storeHandle: "samsonite-intuo-55-easy-access-lime-kl974005", name: "Intuo 55 Easy Access, ליים", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
+  { sku: "KJ109001", storeHandle: "samsonite-upscape-55-black-kj109001", name: "Upscape 55, שחור", dims: "55×40×20", expanded: "55×40×23", volume: "45 ל׳ בהרחבה", material: "פוליפרופילן" },
+  { sku: "KJ111001", storeHandle: "samsonite-upscape-55-nautical-blue-kj111001", name: "Upscape 55, כחול", dims: "55×40×20", expanded: "55×40×23", volume: "45 ל׳ בהרחבה", material: "פוליפרופילן" },
+  { sku: "KJ114001", storeHandle: "samsonite-upscape-55-climbing-ivy-kj114001", name: "Upscape 55, ירוק", dims: "55×40×20", expanded: "55×40×23", volume: "45 ל׳ בהרחבה", material: "פוליפרופילן" },
+  { sku: "KJ106001", storeHandle: "samsonite-upscape-55-yellow-kj106001", name: "Upscape 55, צהוב", dims: "55×40×20", expanded: "55×40×23", volume: "45 ל׳ בהרחבה", material: "פוליפרופילן" },
+  { sku: "KJ114007", storeHandle: "samsonite-upscape-55-easy-access-climbing-ivy-kj114007", name: "Upscape 55 Easy Access, ירוק", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
+  { sku: "KJ106007", storeHandle: "samsonite-upscape-55-easy-access-yellow-kj106007", name: "Upscape 55 Easy Access, צהוב", dims: "55×40×23", expanded: "55×40×26", volume: "42/48 ל׳", material: "פוליפרופילן" },
+  { sku: "KO709005", storeHandle: "samsonite-urbify-55-black-ko709005", name: "Urbify 55, שחור", dims: "55×40×23", expanded: "55×40×26", volume: "39/46 ל׳", material: "פוליאסטר ממוחזר" },
+  { sku: "KO701005", storeHandle: "samsonite-urbify-55-navy-blue-ko701005", name: "Urbify 55, כחול נייבי", dims: "55×40×23", expanded: "55×40×26", volume: "39/46 ל׳", material: "פוליאסטר ממוחזר" },
+  { sku: "KO704005", storeHandle: "samsonite-urbify-55-pine-green-ko704005", name: "Urbify 55, ירוק אורן", dims: "55×40×23", expanded: "55×40×26", volume: "39/46 ל׳", material: "פוליאסטר ממוחזר" },
+  { sku: "KO776005", storeHandle: "samsonite-urbify-55-lava-ko776005", name: "Urbify 55, לבה", dims: "55×40×23", expanded: "55×40×26", volume: "39/46 ל׳", material: "פוליאסטר ממוחזר" },
 ];
+
+const INTUO_HANDLE: Record<string, string> = Object.fromEntries(
+  CARRYON_55_ROWS.filter((row) => row.sku.startsWith("KL9")).map((row) => [row.sku, row.storeHandle]),
+);
 
 const INTUO_COLORS: ReadonlyArray<{ color: string; base: string; easyAccess: string }> = [
   { color: "שחור", base: "KL909001", easyAccess: "KL909005" },
@@ -57,7 +63,7 @@ export function GalleryContentSections() {
       <h2 id="gallery-info-sizes" className="gallery-info-title">מדריך מידות לפי מק״ט: טרולי 55 ס״מ בגלריה</h2>
       <p className="gallery-info-text">
         הטבלה מרכזת את מידות היצרן של דגמי ה-55 ס״מ של Samsonite המוצגים בגלריה, כפי שהן מופיעות בעמודי
-        המוצר הרשמיים. ״בהרחבה״ — עומק הדגם כשרוכסן ההרחבה פתוח; נפח כפול (למשל 39/45 ל׳) — סגור/מורחב;
+        המוצר הרשמיים; שם כל דגם מקשר לעמוד המוצר שלו בחנות TopTik, שם המחיר והזמינות. ״בהרחבה״ — עומק הדגם כשרוכסן ההרחבה פתוח; נפח כפול (למשל 39/45 ל׳) — סגור/מורחב;
         בדגמי Upscape הבסיסיים היצרן מפרסם נפח בהרחבה בלבד. מידות מותרות בקבינה משתנות בין חברות
         התעופה — בדקו מול חברת התעופה לפני הטיסה.
       </p>
@@ -78,7 +84,7 @@ export function GalleryContentSections() {
             {CARRYON_55_ROWS.map((row) => (
               <tr key={row.sku}>
                 <th scope="row" dir="ltr">{row.sku}</th>
-                <td>{row.name}</td>
+                <td><a className="gallery-info-link" href={`${STORE_ORIGIN}/products/${row.storeHandle}`}>{row.name}</a></td>
                 <td dir="ltr">{row.dims}</td>
                 <td dir="ltr">{row.expanded}</td>
                 <td>{row.volume}</td>
@@ -132,8 +138,8 @@ export function GalleryContentSections() {
             {INTUO_COLORS.map((row) => (
               <tr key={row.color}>
                 <th scope="row">{row.color}</th>
-                <td dir="ltr">{row.base}</td>
-                <td dir="ltr">{row.easyAccess}</td>
+                <td dir="ltr"><a className="gallery-info-link" href={`${STORE_ORIGIN}/products/${INTUO_HANDLE[row.base]}`} aria-label={`Intuo 55 בצבע ${row.color} בחנות TopTik`}>{row.base}</a></td>
+                <td dir="ltr"><a className="gallery-info-link" href={`${STORE_ORIGIN}/products/${INTUO_HANDLE[row.easyAccess]}`} aria-label={`Intuo 55 Easy Access בצבע ${row.color} בחנות TopTik`}>{row.easyAccess}</a></td>
               </tr>
             ))}
           </tbody>

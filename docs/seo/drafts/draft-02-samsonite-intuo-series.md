@@ -33,3 +33,20 @@ Intuo היא סדרת מזוודות קשיחות של Samsonite מפוליפר�
 
 ---
 מקורות: עמודי המוצר הרשמיים של Samsonite (samsonite.fi), שמהם שמור המפרט בגלריה; אימות חי לדגם 150720. מידות מותרות בקבינה נקבעות על ידי כל חברת תעופה — בדקו לפני הטיסה.
+
+## קישורים מוצעים (מאומתים מול המוצר החי, 30.09.2026)
+
+| SKU | דגם | URL בחנות | הצדקה במשפט |
+|---|---|---|---|
+| KL909001 | Intuo 55, שחור | https://www.toptik.co.il/products/samsonite-intuo-55-black-kl909001 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+| KL901001 | Intuo 55, כחול לילה | https://www.toptik.co.il/products/samsonite-intuo-55-blue-nights-kl901001 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+| KL924001 | Intuo 55, ירוק זית | https://www.toptik.co.il/products/samsonite-intuo-55-olive-green-kl924001 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+| KL966001 | Intuo 55, צהוב הדרים | https://www.toptik.co.il/products/samsonite-intuo-55-citrus-kl966001 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+| KL974001 | Intuo 55, ליים | https://www.toptik.co.il/products/samsonite-intuo-55-lime-kl974001 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+| KL909005 | Intuo 55 Easy Access, שחור | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-black-kl909005 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+| KL901005 | Intuo 55 Easy Access, כחול לילה | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-blue-nights-kl901005 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+| KL924005 | Intuo 55 Easy Access, ירוק זית | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-olive-green-kl924005 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+| KL966005 | Intuo 55 Easy Access, צהוב הדרים | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-citrus-kl966005 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+| KL974005 | Intuo 55 Easy Access, ליים | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-lime-kl974005 | הדגם מופיע בטבלת הצבעים/הגרסאות של הסדרה; הקישור מוביל לעמוד המוצר |
+
+כל URL נבדק מול ה-JSON של המוצר החי (התאמת SKU בוריאנט). טקסט העוגן בפועל: שם הדגם והצבע, בתוך הטבלה.
