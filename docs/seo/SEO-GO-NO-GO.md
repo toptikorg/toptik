@@ -100,3 +100,16 @@ Search Console: נכס `www` בלבד ידוע. GA4: אין analytics בגלרי
 
 ## 11. NOT TESTED
 iPhone וגלישה נקייה; כניסת admin חי; שמירת עורך; rollback בפועל; 403 למשתמש בלי תפקיד מול Supabase אמיתי; חלון מפרט מלא ל-BXL38124101, BXL58145.*, Samsonite; יעד ההפניה של `/login` ב-landing/site; canonical לכל מאמר Shopify; חפיפה מול דפי מוצר ב-Shopify; Rich Results Test; GSC/GA4; אינדוקס תוכן שנטען בצד לקוח; השפעה על דירוגים; אימות עובדות תעופה.
+
+## 12. Superseding production release record — 2026-09-30
+
+The earlier NO-GO sections above are historical and are superseded for the public Gallery indexing release by this verified record:
+
+- Production is `master` `beeacc4b` (SEO/editorial release PR #12, `0094ff3`, plus the `/admin` metadata consistency fix PR #13, `beeacc4b`). Production deployment reached Vercel Ready.
+- Canonical public host: `https://landing.toptik.co.il`. The public `/`, `/carousel`, `/journal`, and all 11 publishable article routes return HTTP 200, self-canonical URLs, and `index, follow`. The 2 blocked article drafts remain excluded from the archive and sitemap.
+- The live sitemap returns HTTP 200 (`application/xml`) with 14 URLs: `/`, `/carousel`, `/journal`, and 11 articles. `robots.txt` allows public crawl, blocks `/api/`, and advertises the sitemap.
+- `site.toptik.co.il` and `toptik-iota.vercel.app` permanently redirect to the canonical host while preserving paths. `admin.toptik.co.il` remains separate.
+- Private surfaces are excluded consistently: `/admin`, `/login`, and `/dashboard` emit both `noindex, nofollow` meta and `X-Robots-Tag`; API paths retain the response header and are disallowed in robots.txt.
+- Search Console URL-prefix property `https://landing.toptik.co.il/` was verified through the deployed HTML meta tag. The sitemap submission now reports Success and 14 discovered pages. URL Inspection accepted indexing requests for `/`, `/carousel`, and `/journal`. Google's active smartphone crawl test for `/carousel` reported: crawl allowed, fetch successful, indexing allowed, declared canonical matches the canonical host.
+- These are crawl/index eligibility and request-submission results. They do not guarantee indexing, ranking, or search traffic. Search Console performance data is not yet available.
+- Outstanding separate operational items: the previously observed open `llm_usage_log` policy and ordinary-type Vercel secrets were not changed in this release; confirm their current state and handle separately. This note does not claim security is complete.
