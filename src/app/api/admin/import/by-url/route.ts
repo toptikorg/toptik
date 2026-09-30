@@ -6,6 +6,7 @@ import { fetchMandarinaByUrl } from "@/lib/catalog-source/mandarina-scraper";
 import { fetchBricsByUrl } from "@/lib/catalog-source/brics-scraper";
 import type { SourceProduct } from "@/lib/catalog-source/types";
 import type { CatalogVendor } from "@/lib/catalog-source/provider";
+import { runAdminManufacturerImport } from "@/lib/shopify/creation-import";
 
 // Import a product from a direct product-page URL. Only known sources are
 // allowed (SSRF guard) — the server fetches the URL, so an open fetch would be
@@ -74,11 +75,12 @@ export async function POST(req: NextRequest) {
     }
 
     const vendor = source.vendor;
-    const result = await importSourceProduct(
+    const result = await runAdminManufacturerImport(
       vendor,
       sourceProduct,
       targetItemId,
       sourceProduct.catalogNumber,
+      importSourceProduct,
     );
     return NextResponse.json(result);
   } catch (error) {

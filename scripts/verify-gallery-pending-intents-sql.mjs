@@ -37,6 +37,9 @@ export async function verifyPendingIntents(db, manifest) {
   for(const table of rawTables)await assert.rejects(db.query('select * from '+table),/permission denied/);await db.exec('reset role');checks+=5;}
  await db.exec('set role service_role');assert.deepEqual(await save(incomplete),incomplete);checks++;
  assert.deepEqual(await save(incomplete),incomplete);checks++;
+ const secondIncomplete=record(newInput());assert.deepEqual(await save(secondIncomplete),secondIncomplete);checks++;
+ const emptyKeys=(await db.query('select catalog_key from shopify_gallery_creation_intents where id in ($1,$2)',[incomplete.input.galleryItemId,secondIncomplete.input.galleryItemId])).rows;
+ assert.equal(emptyKeys.length,2);assert.ok(emptyKeys.every(row=>row.catalog_key===null));checks++;
  await db.exec('reset role');assert.deepEqual(await snapshot(),before);checks++;
  await rejects(()=>promote(incomplete),/DETAILS_REQUIRED/);
  const filled=complete();filled.galleryItemId=incomplete.input.galleryItemId;const r=record(filled,incomplete);

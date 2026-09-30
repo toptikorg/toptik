@@ -24,7 +24,7 @@ export const creationIntentInputSchema = z.object({
   copy: galleryCreationDraftSchema.shape.copy.extend({
     title: z.string().max(120).nullable(), description: z.string().max(50000).nullable(),
   }).strict(),
-  media: z.array(z.object({ url: z.string().max(2048), alt: z.string().max(200).nullable() }).strict()).max(10),
+  media: z.array(z.object({ url: z.string().max(2048), alt: z.string().max(200).nullable() }).strict()).max(30),
   commerce: galleryCreationDraftSchema.shape.commerce.extend({
     currency: z.string().regex(/^[A-Z]{3}$/).nullable(), requiresShipping: z.literal(true).nullable(),
     storeIntent: z.enum(["undecided", "draft", "publish_when_ready"]),
@@ -71,6 +71,9 @@ export type VerifiedManufacturerMapping = {
 };
 
 function fail(code: string): never { throw new Error(`SYNC_CREATION_INTENT_${code}`); }
+export function assertCreationIdentityAllowed(sku: string | null) {
+  if (sku && HELD.has(normalizeSyncSku(sku) ?? "")) fail("HELD_IDENTITY");
+}
 function sha(value: unknown) { return createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
 function fieldValues(input: CreationIntentInput): Record<IntentField, unknown> {
   return { shopifySku: input.shopifySku, manufacturerSku: input.manufacturerSku,
@@ -83,7 +86,7 @@ function assertInput(input: unknown): CreationIntentInput {
   const parsed = creationIntentInputSchema.safeParse(input);
   if (!parsed.success) fail("INPUT_INVALID");
   const value = parsed.data;
-  if ([value.shopifySku, value.manufacturerSku].some(sku => sku && HELD.has(normalizeSyncSku(sku) ?? ""))) fail("HELD_IDENTITY");
+  [value.shopifySku, value.manufacturerSku].forEach(assertCreationIdentityAllowed);
   if (value.copy.descriptionHtml !== null) {
     assertSafeDescriptionHtml(value.copy.descriptionHtml);
     if (value.copy.description === null || descriptionTextFromHtml(value.copy.descriptionHtml) !== value.copy.description) fail("DESCRIPTION_PAIR_MISMATCH");
@@ -144,7 +147,7 @@ export function saveCreationIntent(previous: CreationIntentRecord | null, input:
 }
 
 export type CreationReadinessReason = "store_sku" | "brand" | "title" | "description" | "media" |
-  "media_alt" | "selling_price" | "currency" | "tax_policy" | "shipping_policy" | "store_intent" |
+  "media_alt" | "media_limit" | "selling_price" | "currency" | "tax_policy" | "shipping_policy" | "store_intent" |
   "manufacturer_mapping_receipt" | "inventory" | "publication_not_supported_v1";
 /** Local details, proof readiness and public readiness are deliberately distinct. */
 export function assessCreationIntent(record: CreationIntentRecord) {
@@ -155,6 +158,7 @@ export function assessCreationIntent(record: CreationIntentRecord) {
   if (!input.copy.title?.trim() || input.copy.title.trim() === "מוצר חדש") draftBlockers.push("title");
   if (input.copy.description === null) draftBlockers.push("description");
   if (!input.media.length || input.media.some(item => !item.url)) draftBlockers.push("media");
+  if (input.media.length > 10) draftBlockers.push("media_limit");
   if (input.media.some(item => !item.alt?.trim())) draftBlockers.push("media_alt");
   if (!input.commerce.currency) draftBlockers.push("currency");
   if (input.commerce.requiresShipping !== true) draftBlockers.push("shipping_policy");

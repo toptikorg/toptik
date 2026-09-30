@@ -92,6 +92,7 @@ test('authorized admin GET returns 503 for unavailable data, not a saveable HTTP
   const body = route.slice(route.indexOf('export async function GET'), route.indexOf('export async function PUT')).replace(/^export /gm, '');
   const { makeGet } = await moduleFrom(`export function makeGet(deps) {
     const { getCarouselPayload, isUnavailableCarouselPayload, CAROUSEL_UNAVAILABLE_MESSAGE } = deps;
+    const visibleAdminCatalog = async value => value; // private-draft filtering is tested separately
     const requireAdminToken = () => null; // authorized request (central token gate)
     const NextResponse = { json: (body, options) => ({ body, status: options?.status ?? 200 }) };
     ${body}

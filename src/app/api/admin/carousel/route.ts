@@ -4,6 +4,7 @@ import { saveCarouselPayload } from "@/lib/carousel/repository-admin";
 import { requireAdminToken } from "@/lib/admin/admin-token";
 import { CAROUSEL_UNAVAILABLE_MESSAGE, isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { scheduleShopifySync } from "@/lib/shopify/schedule-sync";
+import { prepareExistingCatalogSave, visibleAdminCatalog } from "@/lib/shopify/creation-catalog-bridge";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     if (isUnavailableCarouselPayload(payload)) {
       return NextResponse.json({ error: CAROUSEL_UNAVAILABLE_MESSAGE }, { status: 503 });
     }
-    return NextResponse.json(payload);
+    return NextResponse.json(await visibleAdminCatalog(payload));
   } catch (error) {
     console.error("GET /api/admin/carousel failed", error);
     return NextResponse.json({ error: "Failed to load admin data" }, { status: 500 });
@@ -30,7 +31,10 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    await saveCarouselPayload(body);
+    const current = await getCarouselPayload({ includeInactive: true, rawAdmin: true });
+    if (isUnavailableCarouselPayload(current)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
+    const candidate = await prepareExistingCatalogSave(body, current);
+    await saveCarouselPayload(candidate);
     scheduleShopifySync();
     return NextResponse.json({ ok: true });
   } catch (error) {

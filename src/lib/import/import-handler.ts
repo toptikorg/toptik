@@ -12,6 +12,7 @@ import { reviewedCopyFor } from "@/lib/carousel/reviewed-copy";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import type { SourceColorVariant, SourceProduct } from "@/lib/catalog-source/types";
 import { CachedTechSpecs, CarouselColor, CarouselItem } from "@/lib/carousel/types";
+import { runAdminManufacturerImport } from "@/lib/shopify/creation-import";
 
 const importCatalogSchema = z.object({
   catalogNumber: z
@@ -153,7 +154,7 @@ export async function importSourceProduct(
           translatedDescription ||
           sourceProduct.description ||
           `ייבוא אוטומטי לפי מק״ט ${catalogNumber} ממקור ${vendorConfig.label}`
-        ).slice(0, 2000),
+        ),
         catalogNumber: productCatalogNumber,
         sourceUrl: sourceProduct.sourceUrl,
         coverImagePath: uploadedUrls[0],
@@ -217,7 +218,7 @@ export function createImportRouteHandler(vendor: CatalogVendor) {
 
       const provider = createCatalogSourceProvider(vendor);
       const sourceProduct = await provider.fetchByCatalogNumber(catalogNumber);
-      const result = await importSourceProduct(vendor, sourceProduct, targetItemId, catalogNumber);
+      const result = await runAdminManufacturerImport(vendor, sourceProduct, targetItemId, catalogNumber, importSourceProduct);
       return NextResponse.json(result);
     } catch (error) {
       console.error(`POST /api/admin/import/${vendor} failed`, error);

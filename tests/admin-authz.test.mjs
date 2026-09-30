@@ -344,7 +344,7 @@ test("no route, page or server action reaches the service role without a gate", 
   // The import route factory gates first.
   const importer = await read("src/lib/import/import-handler.ts");
   const factoryBody = importer.slice(importer.indexOf("export function createImportRouteHandler"));
-  assert.ok(factoryBody.indexOf("requireAdminToken(") > 0 && factoryBody.indexOf("requireAdminToken(") < factoryBody.indexOf("importSourceProduct("));
+  assert.ok(factoryBody.indexOf("requireAdminToken(") > 0 && factoryBody.indexOf("requireAdminToken(") < factoryBody.indexOf("runAdminManufacturerImport("));
   assert.deepEqual(problems, []);
   assert.ok(table.length >= 15, `expected the privileged entry points to be found (${table.length})`);
 });

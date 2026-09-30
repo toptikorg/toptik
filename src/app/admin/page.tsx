@@ -14,6 +14,7 @@ import {
 } from "@/lib/carousel/shopify-export";
 import { LANDING_URL } from "@/lib/admin/config";
 import ProductDescriptionEditor from "@/components/admin/ProductDescriptionEditor";
+import NewProductEditor from "@/components/admin/NewProductEditor";
 import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
 
 const STORAGE_KEY = "toptik_admin_token";
@@ -35,6 +36,7 @@ type ImportPreview = {
 type ImportedItemData = {
   item: CarouselPayload["items"][number];
   source: { catalogNumber: string; importedImages: number };
+  pendingCreation?: { id: string; revision: string; sourceChanged: boolean; replayed: boolean };
 };
 type BatchImportStatus = {
   tone: ImportFeedbackTone;
@@ -47,6 +49,7 @@ export default function AdminPage() {
   const [payload, setPayload] = useState<CarouselPayload>(fallbackCarouselPayload);
   const [status, setStatus] = useState<string>("טוען...");
   const [isSaving, setIsSaving] = useState(false);
+  const [creationSelection, setCreationSelection] = useState<{ id?: string; key: string; create?: boolean } | null>(null);
   const [isWarming, setIsWarming] = useState(false);
   const [batchCatalogInputs, setBatchCatalogInputs] = useState<Record<Vendor, string[]>>({
     mandarina: Array.from({ length: BATCH_IMPORT_INITIAL }, () => ""),
@@ -144,6 +147,7 @@ export default function AdminPage() {
     data: ImportedItemData,
     targetItemId?: string,
   ) {
+    if (data.pendingCreation) throw new Error("המוצר נשמר בטיוטות הפרטיות; יש להשלים את פרטיו לפני פרסום.");
     const next = structuredClone(current);
     const normalizedCatalog = normalizeCatalogNumber(data.source.catalogNumber);
     // Match an existing row ONLY by exact (separator-insensitive) catalog
@@ -167,6 +171,10 @@ export default function AdminPage() {
         id: existing.id,
         displayOrder: existing.displayOrder,
         isActive: existing.isActive,
+        copyUpdatedAt: existing.copyUpdatedAt,
+        descriptionHtml: data.item.descriptionHtml ?? plainDescriptionToHtml(data.item.description ?? ""),
+        seoTitle: data.item.seoTitle ?? existing.seoTitle,
+        seoDescription: data.item.seoDescription ?? existing.seoDescription,
         techSpecs: data.item.techSpecs ?? existing.techSpecs,
         colors: data.item.colors ?? existing.colors,
         angles: data.item.angles.map((angle) => ({
@@ -322,34 +330,7 @@ export default function AdminPage() {
   }
 
   function addItem() {
-    setPayload((current) => {
-      const next = structuredClone(current);
-      const itemId = crypto.randomUUID();
-      const newItem: CarouselPayload["items"][number] = {
-        id: itemId,
-        title: "מוצר חדש",
-        description: "",
-        seoTitle: "",
-        seoDescription: "",
-        catalogNumber: null,
-        sourceUrl: null,
-        coverImagePath: "/hero-web-airport.png",
-        displayOrder: 1,
-        isActive: true,
-        dimensions: null,
-        weight: null,
-        // Do not persist a guessed category before an editor identifies it.
-        techSpecs: { specs: [], colors: [], category: null },
-        // Manual entry starts with no angle images — upload cover + angles below.
-        angles: [],
-      };
-      // Insert at the TOP and renumber 1..N by current order, so the new product
-      // shows first AND every displayOrder stays a valid >=1 integer (the save
-      // schema rejects 0/negative).
-      const rest = [...next.items].sort((a, b) => a.displayOrder - b.displayOrder);
-      next.items = [newItem, ...rest].map((it, i) => ({ ...it, displayOrder: i + 1 }));
-      return next;
-    });
+    setCreationSelection({ key: crypto.randomUUID(), create: true });
   }
 
   function removeItem(itemId: string) {
@@ -744,6 +725,15 @@ export default function AdminPage() {
       }
       const data = (await res.json()) as ImportedItemData;
 
+      if (data.pendingCreation) {
+        setCreationSelection({ id: data.pendingCreation.id, key: data.pendingCreation.id });
+        setUrlImportValue("");
+        const message = `המוצר נשמר כטיוטה פרטית: ${data.item.title}. יש להשלים מק״ט חנות ופרטי מכירה באותו מסך.`
+          + (data.pendingCreation.sourceChanged ? " נתוני המקור השתנו; הטיוטה הקודמת ועריכות המנהל נשמרו ללא דריסה." : "");
+        setUrlImportStatus({ tone: "success", message }); setImportFeedback({ tone: "success", message });
+        return;
+      }
+
       const result = upsertImportedItem(payload, data);
       await persistPayload(result.next);
       setPayload(result.next);
@@ -857,6 +847,8 @@ export default function AdminPage() {
       let workingPayload = structuredClone(payload);
       const previews: ImportPreview[] = [];
       let successCount = 0;
+      let existingUpdates = 0;
+      const pendingIds: string[] = [];
 
       const failedRows: string[] = [];
       const failedDetails: Array<{ catalog: string; reason: string }> = [];
@@ -880,7 +872,8 @@ export default function AdminPage() {
                 detectVendorFromCatalog(row.catalogNumber),
                 row.catalogNumber,
               );
-          const result = upsertImportedItem(workingPayload, data);
+          const result = data.pendingCreation ? { next: workingPayload, mode: "pending" as const } : upsertImportedItem(workingPayload, data);
+          if (data.pendingCreation) pendingIds.push(data.pendingCreation.id); else existingUpdates += 1;
           workingPayload = result.next;
           successCount += 1;
           succeededCatalogs.push(row.catalogNumber);
@@ -894,7 +887,8 @@ export default function AdminPage() {
             ...current,
             [row.index]: {
               tone: "success",
-              message: `${result.mode === "updated" ? "עודכן מוצר קיים" : "נוצר מוצר חדש"} (${rowIsUrl ? data.source.catalogNumber : rowLabel})`,
+              message: `${result.mode === "pending" ? "נשמרה טיוטה פרטית להשלמת פרטים" : "עודכן מוצר קיים"} (${rowIsUrl ? data.source.catalogNumber : rowLabel})`
+                + (data.pendingCreation?.sourceChanged ? " — המקור השתנה; העריכות הקודמות נשמרו" : ""),
             },
           }));
         } catch (error) {
@@ -919,8 +913,8 @@ export default function AdminPage() {
         throw new Error("לא יובא אף מוצר. לא נשמרו שינויים.");
       }
 
-      await persistPayload(workingPayload);
-      setPayload(workingPayload);
+      if (existingUpdates) { await persistPayload(workingPayload); setPayload(workingPayload); }
+      if (pendingIds.length) setCreationSelection({ id: pendingIds[0], key: pendingIds[0] });
       setImportPreviews((current) => [...previews, ...current].slice(0, 8));
       setStatus(`נשמרו ${successCount} מוצרים מייבוא מרובה.`);
       setImportFeedback({
@@ -976,9 +970,7 @@ export default function AdminPage() {
         <header className="admin-header">
           <h1>TOPTIK Admin</h1>
           <div className="admin-header-actions">
-            <Link href="/admin/shopify/new-product" className="admin-back-link">
-              מוצר חדש — טיוטה לחנות
-            </Link>
+            <button disabled={Boolean(creationSelection) || isBatchImporting || isUrlImporting} onClick={() => setCreationSelection({ key: crypto.randomUUID() })} className="admin-back-link">טיוטות מוצרים</button>
             {failedImports.length > 0 && (
               <button
                 type="button"
@@ -994,6 +986,9 @@ export default function AdminPage() {
           </div>
         </header>
       )}
+
+      {authReady && creationSelection && <NewProductEditor key={creationSelection.key} adminToken={token}
+        initialId={creationSelection.id} createOnOpen={creationSelection.create} onClose={() => setCreationSelection(null)} />}
 
       {showFailedModal && (
         <div
@@ -1051,7 +1046,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {authReady && (
+      {authReady && !creationSelection && (
         <>
           <section className="admin-batch-import">
             <div className="admin-items-head">

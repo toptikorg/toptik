@@ -34,7 +34,7 @@ create policy creation_intent_private_read on public.shopify_gallery_creation_ma
 
 create or replace function public.assert_gallery_creation_intent_new(p_id uuid,p_sku text) returns void
 language plpgsql set search_path=pg_catalog,pg_temp as $$
-declare k text:=public.creation_catalog_key(p_sku);
+declare k text:=nullif(public.creation_catalog_key(p_sku),'');
 begin
  if p_id is null or (p_sku is not null and (p_sku<>btrim(p_sku) or length(p_sku) not between 2 and 64
   or p_sku !~ '^[A-Za-z0-9][A-Za-z0-9._ /-]*$' or k is null)) then raise exception 'SYNC_CREATION_INTENT_INPUT_INVALID'; end if;
@@ -63,7 +63,7 @@ begin
   or i->'commerce'->'inventory' is distinct from '{"status":"unknown"}'::jsonb
   or i->'commerce'->>'storeIntent' not in ('undecided','draft','publish_when_ready')
  then raise exception 'SYNC_CREATION_INTENT_INPUT_INVALID'; end if;
- v_id:=(i->>'galleryItemId')::uuid; s:=i->>'shopifySku'; m:=i->>'manufacturerSku'; k:=public.creation_catalog_key(s);
+ v_id:=(i->>'galleryItemId')::uuid; s:=i->>'shopifySku'; m:=i->>'manufacturerSku'; k:=nullif(public.creation_catalog_key(s),'');
  v_at:=(p_record->>'updatedAt')::timestamptz;
  if v_at is null or not isfinite(v_at) or v_at>clock_timestamp()+interval '30 seconds' or v_at<clock_timestamp()-interval '5 minutes'
   then raise exception 'SYNC_CREATION_INTENT_EDIT_TIME_INVALID'; end if;

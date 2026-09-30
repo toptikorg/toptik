@@ -35,7 +35,7 @@ function input(complete=false){const v={galleryItemId:randomUUID(),shopifySku:nu
  return complete?{...v,shopifySku:'NEW-'+randomUUID().slice(0,8),brand:"Bric's",copy:{...v.copy,title:'מזוודה אמיתית',description:'תיאור',descriptionHtml:'<p>תיאור</p>'},
  media:[{url:'https://cdn.shopify.com/s/files/1/exact.webp',alt:'צבע מדויק'}],commerce:{...v.commerce,currency:'ILS',requiresShipping:true,storeIntent:'draft'}}:v;}
 function fixture(){
- const tables={shopify_gallery_creation_intents:[],shopify_gallery_creation_mappings:[],carousel_items:[],shopify_gallery_copy_eligibility:[],shopify_gallery_bindings:[],shopify_gallery_creation_drafts:[]};
+ const tables={shopify_gallery_creation_intents:[],shopify_gallery_creation_mappings:[],shopify_gallery_creation_imports:[],carousel_items:[],shopify_gallery_copy_eligibility:[],shopify_gallery_bindings:[],shopify_gallery_creation_drafts:[]};
  const calls=[];let saveError=null;
  function builder(table){const filters=[];let single=false,offset=0,end=Infinity;const query={
   select(columns){calls.push({select:table,columns});return query;},eq(k,v){filters.push([k,v]);return query;},order(){return query;},range(a,b){offset=a;end=b;return query;},limit(n){end=n-1;return query;},abortSignal(signal){assert.equal(signal.aborted,false);return query;},maybeSingle(){single=true;return query;},
@@ -128,6 +128,6 @@ test('out-of-order UI load/save responses cannot overwrite current editor or cle
  const first=gate.run(()=>new Promise(resolve=>{a=resolve;}),data=>events.push(data),error=>events.push(error),()=>events.push('A-settled'));
  const second=gate.run(()=>new Promise(resolve=>{b=resolve;}),data=>events.push(data),error=>events.push(error),()=>events.push('B-settled'));
  b('B-current');await second;a('A-late');await first;assert.deepEqual(events,['B-current','B-settled']);
- const ui=readFileSync('src/app/admin/shopify/new-product/page.tsx','utf8');assert.match(ui,/<select disabled=\{busy\}/);assert.match(ui,/request\(API, "POST", \{ id: record\.input\.galleryItemId, expectedRevision: record\.revision \}/);
+ const ui=readFileSync('src/components/admin/NewProductEditor.tsx','utf8');assert.match(ui,/<select disabled=\{busy\}/);assert.match(ui,/request\(API, "POST", \{ id: record\.input\.galleryItemId, expectedRevision: record\.revision \}/);
  assert.match(ui,/busy \|\| frozen \|\| !enabled \? <p/);
 });

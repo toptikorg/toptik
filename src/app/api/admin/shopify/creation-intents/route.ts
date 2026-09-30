@@ -45,8 +45,11 @@ export async function GET(request: NextRequest) {
       const { data: creation, error } = await db.from("shopify_gallery_creation_drafts").select("id,stage,last_error,updated_at,product_gid,variant_gid")
         .eq("id", id).abortSignal(AbortSignal.timeout(5000)).maybeSingle();
       if (error) throw new Error("SYNC_CREATION_INTENT_STATUS_FAILED");
+      const { data: sourceImport, error: sourceError } = await db.from("shopify_gallery_creation_imports")
+        .select("raw_source,source_hash,created_at").eq("intent_id", id).abortSignal(AbortSignal.timeout(3000)).maybeSingle();
+      if (sourceError) throw new Error("SYNC_CREATION_IMPORT_READ_FAILED");
       return NextResponse.json({ enabled: Boolean(galleryDraftCreationMode()), item,
-        readiness: item ? assessCreationIntent(item.record) : null, creation }, { headers });
+        readiness: item ? assessCreationIntent(item.record) : null, creation, sourceImport }, { headers });
     }
     const { data, error } = await db.from("shopify_gallery_creation_intents")
       .select("id,revision,frozen_at,updated_at,title:record->input->copy->>title,sku:record->input->>shopifySku")
