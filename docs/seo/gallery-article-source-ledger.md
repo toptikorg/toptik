@@ -126,4 +126,15 @@ Official sources:
 
 The article compares the two exact gallery/store SKUs `S209004` and `S281006`. It does not include product weight, flight-size advice, or a packing-capacity promise. Store page/variant mapping is in `store-product-pages.json` and `samsonite-reviewed.json`.
 
-Both are drafts until the route, server-rendered product cards, image decoding, live Shopify SKU/variant, and Back behavior have passed Preview QA. They remain under the site-wide `noindex, follow` hold.
+At the time of drafting, both awaited route, server-rendered product-card, image-decoding, live Shopify SKU/variant, and Back verification. Their current QA status is recorded below. They remain under the site-wide `noindex, follow` hold.
+
+## Preview QA update — 2026-09-30
+
+The article inventory is now **12 routes: 10 release candidates and 2 blocked drafts**. This supersedes earlier counts of ten total drafts. The blocked Mandarina Duck articles remain excluded because their exact Shopify destinations are unverified.
+
+The two latest article pages passed browser verification on the Vercel Preview for commit `4c331ea` (`https://toptik-2831ubt9t-toptik.vercel.app`):
+
+- `brics-taormina-55-interior-and-features`: visible product image decoded; exact gallery SKU `BAH08451.001`; CTA opened the live Shopify product `bah08451-001` with variant `50083958882554`; live page displayed the same SKU; browser Back returned to the article.
+- `samsonite-c-lite-75-vs-86`: comparison table and both product images rendered; `S209004` opened `samsonite-c-lite-75-black-s209004?variant=50148812325114`, and `S281006` opened `samsonite-c-lite-86-lavender-s281006?variant=50148814749946`; both live product pages displayed the matching SKU; Back returned to the article after each.
+
+This is Preview QA only. Neither article has been merged or verified on the live Gallery Production domain. Site-wide `noindex, follow` remains active; no sitemap or Search Console submission was made. The 30-article target remains incomplete.
