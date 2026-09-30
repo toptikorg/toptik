@@ -126,6 +126,12 @@ Official sources:
 
 The article compares the two exact gallery/store SKUs `S209004` and `S281006`. It does not include product weight, flight-size advice, or a packing-capacity promise. Store page/variant mapping is in `store-product-pages.json` and `samsonite-reviewed.json`.
 
+### `samsonite-respark-79-recycled-materials`
+
+Official source: https://www.samsonite.de/respark-spinner-79-29-exp-79cm-light-sage/143331-2570.html
+
+Facts used: official manufacturer SKU 143331-2570; Light Sage; 79×48×31 cm, 79×48×35 cm expanded; 124/140 L; at least 80% post-consumer recycled PET in the exterior fabric and at least 95% in the lining, by weight. The copy limits the recycled-material statement to the named components and does not infer whole-product impact. Gallery/store SKU `KJ344007`; exact variant mapping is in `store-product-pages.json`.
+
 At the time of drafting, both awaited route, server-rendered product-card, image-decoding, live Shopify SKU/variant, and Back verification. Their current QA status is recorded below. They remain under the site-wide `noindex, follow` hold.
 
 ## Preview QA update — 2026-09-30

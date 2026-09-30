@@ -40,7 +40,7 @@ test("published product specifications contain no unverified weights or public s
   assert.doesNotMatch(teasers, /מקורות|בדקנו את המקורות/i);
   assert.doesNotMatch(articles, /מקורות הנתונים|אומת 30\.09\.2026/, "no editorial process note is rendered to visitors");
   assert.match(articles, /sourceUrls: \[/);
-  assert.ok(!/https:\/\/(?!www\.toptik\.co\.il|www\.samsonite\.(?:fi|co\.uk|com\.au)|www\.bricsmilano\.com|mandarinaduck\.com)/.test(articles), "facts link only to manufacturer pages or the store");
+  assert.ok(!/https:\/\/(?!www\.toptik\.co\.il|www\.samsonite\.(?:de|fi|co\.uk|com\.au)|www\.bricsmilano\.com|mandarinaduck\.com)/.test(articles), "facts link only to manufacturer pages or the store");
 });
 
 test("contextual product cards are server-selected by exact active SKU and safe store mapping", async () => {
@@ -77,11 +77,12 @@ test("journal article routes have live URLs, canonical metadata and truthful sch
   assert.match(articles, /KL909004/);
   assert.match(articles, /slug: "brics-x-collection-wheeled-pilot-case-bxl38124"/);
   const slugs = [...articles.matchAll(/slug: "([^"]+)"/g)].map((match) => match[1]);
-  assert.equal(slugs.length, 12, "twelve distinct evidence-backed article drafts are in the editorial inventory");
+  assert.equal(slugs.length, 13, "thirteen distinct evidence-backed article drafts are in the editorial inventory");
   assert.equal(new Set(slugs).size, slugs.length);
   for (const slug of ["brics-taormina-four-sizes-dimensions", "brics-x-collection-soft-trolley-55-vs-77", "samsonite-urbify-55-68-78-dimensions", "mandarina-logoduck-metal-trolley-beauty-case", "mandarina-eco-coated-large-interior-map", "mandarina-active-lux-shopper-pocket-layout", "brics-taormina-55-interior-and-features", "samsonite-c-lite-75-vs-86"]) {
     assert.ok(slugs.includes(slug), `missing drafted article ${slug}`);
   }
+  assert.ok(slugs.includes("samsonite-respark-79-recycled-materials"));
   assert.match(articles, /sourceUrls: \["https:\/\/www\.bricsmilano\.com\//);
 });
 

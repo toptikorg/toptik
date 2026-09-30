@@ -240,6 +240,17 @@ const samsoniteCLite75vs86Content: ReactNode = <>
   <ArticleProductCards skus={["S209004", "S281006"]} />
 </>;
 
+const samsoniteRespark79MaterialsContent: ReactNode = <>
+  <p>בעמוד הרשמי של Samsonite, Respark Spinner 79/29 מתואר כמזוודה מתרחבת בצבע Light Sage. הנה הנתונים של הדגם המדויק שמופיע בגלריה, לצד פירוט חומרי המיחזור כפי שהיצרן עצמו מגדיר אותם.</p>
+  <h2>מידות ונפח לפני ואחרי הרחבה</h2>
+  <p>המידות הן 79×48×31 ס״מ כשהמזוודה סגורה ו-79×48×35 ס״מ כשההרחבה פתוחה. Samsonite מציינת נפח של 124/140 ליטר. לכן, בבדיקת מקום אחסון או תנאי כבודה, חשוב להביא בחשבון גם את עומק ה-35 ס״מ במצב המורחב.</p>
+  <h2>מה כולל נתון החומר הממוחזר?</h2>
+  <p>לפי עמוד היצרן, הבד החיצוני מכיל לפחות 80% PET ממוחזר מפסולת צרכנית, והבטנה הפנימית לפחות 95% PET ממוחזר מאותו מקור. האחוזים מתייחסים לרכיבים האלה לפי משקל; הם אינם טענה שכל חלקי המזוודה עשויים מחומר ממוחזר או מדד להשפעה הסביבתית הכוללת שלה.</p>
+  <h2>הדגם בגלריה</h2>
+  <p>כרטיס המוצר מציג את המק״ט של TopTik עבור Respark 79 בגוון Light Sage. אפשר לפתוח את תמונות הדגם בגלריה, ואז לעבור לעמוד המוצר המדויק בחנות.</p>
+  <ArticleProductCards skus={["KJ344007"]} />
+</>;
+
 export const galleryArticles: readonly GalleryArticle[] = [
   {
     slug: "samsonite-carry-on-55-sku-dimensions",
@@ -428,6 +439,19 @@ export const galleryArticles: readonly GalleryArticle[] = [
       "https://www.samsonite.co.uk/c-lite-spinner-86cm-lavender/122863-1491.html",
     ],
     content: samsoniteCLite75vs86Content,
+  },
+  {
+    slug: "samsonite-respark-79-recycled-materials",
+    category: "מפרט לפי מק״ט",
+    title: "Samsonite Respark 79: מידות ההרחבה וחומרי הבד הממוחזרים",
+    description: "מידות, נפח והגדרת Samsonite לחומר הממוחזר בבד החיצוני ובבטנה של Respark Spinner 79/29 בגוון Light Sage.",
+    standfirst: "מפרט לפי דגם מדויק: מה משתנה כשההרחבה פתוחה, ואילו חלקים מקבלים אחוז PET ממוחזר לפי היצרן.",
+    publishedAt: "2026-09-30",
+    updatedAt: "2026-09-30",
+    readingMinutes: 2,
+    byline: "מערכת מגזין TopTik",
+    sourceUrls: ["https://www.samsonite.de/respark-spinner-79-29-exp-79cm-light-sage/143331-2570.html"],
+    content: samsoniteRespark79MaterialsContent,
   },
 ];
 
