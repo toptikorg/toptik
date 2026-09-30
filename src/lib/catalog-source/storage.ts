@@ -39,9 +39,10 @@ export async function uploadRemoteImageToStorage(
   pathPrefix: string,
   imageUrl: string,
   index: number,
+  referer = DOWNLOAD_HEADERS.referer,
 ): Promise<string> {
   const sourceRes = await fetch(imageUrl, {
-    headers: DOWNLOAD_HEADERS,
+    headers: { ...DOWNLOAD_HEADERS, referer },
     cache: "no-store",
     signal: AbortSignal.timeout(12000),
   });
