@@ -13,6 +13,8 @@ import {
   SHOPIFY_EXPORT_COLUMN_WIDTHS,
 } from "@/lib/carousel/shopify-export";
 import { LANDING_URL } from "@/lib/admin/config";
+import ProductDescriptionEditor from "@/components/admin/ProductDescriptionEditor";
+import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -296,7 +298,7 @@ export default function AdminPage() {
 
   function updateItemField(
     index: number,
-    field: "title" | "description" | "catalogNumber" | "displayOrder" | "isActive",
+    field: "title" | "description" | "seoTitle" | "seoDescription" | "catalogNumber" | "displayOrder" | "isActive",
     value: string | number | boolean,
   ) {
     setPayload((current) => {
@@ -308,7 +310,12 @@ export default function AdminPage() {
         const normalized = String(value).trim();
         item.catalogNumber = normalized ? normalized : null;
       }
-      else if (field === "description") item.description = String(value);
+      else if (field === "description") {
+        item.description = String(value);
+        item.descriptionHtml = plainDescriptionToHtml(String(value));
+      }
+      else if (field === "seoTitle") item.seoTitle = String(value);
+      else if (field === "seoDescription") item.seoDescription = String(value);
       else item.title = String(value);
       return next;
     });
@@ -322,6 +329,8 @@ export default function AdminPage() {
         id: itemId,
         title: "מוצר חדש",
         description: "",
+        seoTitle: "",
+        seoDescription: "",
         catalogNumber: null,
         sourceUrl: null,
         coverImagePath: "/hero-web-airport.png",
@@ -662,7 +671,7 @@ export default function AdminPage() {
         seenKeys.add(key);
         unique.push(normalizeRowValue(value));
       }
-      const MAX_BATCH_ROWS = 80; // the catalog payload is capped at 80 items
+      const MAX_BATCH_ROWS = 80; // bound manufacturer requests per import, not total catalog size
       const loaded = unique.slice(0, MAX_BATCH_ROWS);
       const padded =
         loaded.length < BATCH_IMPORT_INITIAL
@@ -1312,14 +1321,31 @@ export default function AdminPage() {
                         onChange={(e) => updateItemField(itemIndex, "title", e.target.value)}
                       />
                     </label>
+                    <ProductDescriptionEditor text={item.description ?? ""} html={item.descriptionHtml}
+                      onChange={({ text, html }) => setPayload(current => {
+                        const next = structuredClone(current);
+                        const changed = next.items.find(row => row.id === item.id);
+                        if (changed) { changed.description = text; changed.descriptionHtml = html; }
+                        return next;
+                      })} />
+                    <label>
+                      כותרת SEO לחנות
+                      <input
+                        value={item.seoTitle ?? ""}
+                        onChange={(e) => updateItemField(itemIndex, "seoTitle", e.target.value)}
+                        maxLength={512}
+                        placeholder="ריק = ללא כותרת SEO נפרדת; מומלץ לשמור קצר"
+                      />
+                    </label>
                     <label style={{ gridColumn: "1 / -1" }}>
-                      תיאור
+                      תיאור SEO לחנות
                       <textarea
-                        value={item.description ?? ""}
-                        onChange={(e) => updateItemField(itemIndex, "description", e.target.value)}
-                        rows={4}
+                        value={item.seoDescription ?? ""}
+                        onChange={(e) => updateItemField(itemIndex, "seoDescription", e.target.value)}
+                        rows={2}
+                        maxLength={5000}
                         style={{ width: "100%", resize: "vertical", font: "inherit" }}
-                        placeholder="תיאור המוצר (יופיע בכרטיסייה ובחלון המוצר)"
+                        placeholder="תיאור לחיפוש Google; ריק = ללא תיאור SEO נפרד"
                       />
                     </label>
                     <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: -4 }}>

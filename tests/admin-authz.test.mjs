@@ -286,7 +286,9 @@ function resolve(fromFile, spec) {
 const valueImports = (source) =>
   [...source.matchAll(/^import\s+(?!type\b)([^;]*?)\s+from\s+["']([^"']+)["'];?\s*$/gm)].map((m) => ({ clause: m[1], spec: m[2] }));
 
-const GATES = /\b(requireAdminUser|requireOwnerUser|requireAdminPage|requireOwnerPage|requireAdminToken|authStepUp|isValidSetupToken)\(/;
+// Signed third-party webhooks have their own HMAC/shop/topic gate. Keep it
+// explicit here so privileged inbox writes cannot appear before verification.
+const GATES = /\b(requireAdminUser|requireOwnerUser|requireAdminPage|requireOwnerPage|requireAdminToken|verifyProductWebhook|authStepUp|isValidSetupToken)\(/;
 const HARMLESS = new Set(["isVaultConfigured", "STEP_UP_COOKIE", "STEP_UP_MAX_AGE", "parseVaultInput", "authStepUp", "requireAdminUser", "requireOwnerUser"]);
 
 test("no route, page or server action reaches the service role without a gate", async () => {

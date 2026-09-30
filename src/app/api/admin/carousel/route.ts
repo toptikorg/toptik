@@ -3,13 +3,17 @@ import { getCarouselPayload } from "@/lib/carousel/repository";
 import { saveCarouselPayload } from "@/lib/carousel/repository-admin";
 import { requireAdminToken } from "@/lib/admin/admin-token";
 import { CAROUSEL_UNAVAILABLE_MESSAGE, isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
+import { scheduleShopifySync } from "@/lib/shopify/schedule-sync";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   const denied = requireAdminToken(req);
   if (denied) return denied;
 
   try {
-    const payload = await getCarouselPayload({ includeInactive: true });
+    const payload = await getCarouselPayload({ includeInactive: true, rawAdmin: true });
     if (isUnavailableCarouselPayload(payload)) {
       return NextResponse.json({ error: CAROUSEL_UNAVAILABLE_MESSAGE }, { status: 503 });
     }
@@ -27,6 +31,7 @@ export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
     await saveCarouselPayload(body);
+    scheduleShopifySync();
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("PUT /api/admin/carousel failed", error);

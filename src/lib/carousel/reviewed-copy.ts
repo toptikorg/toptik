@@ -43,6 +43,7 @@ function sameJsonValue(left: unknown, right: unknown): boolean {
 export function applyReviewedCopy<T extends {
   title: string;
   description?: string | null;
+  descriptionHtml?: string | null;
   catalogNumber?: string | null;
   techSpecs?: CachedTechSpecs | null;
 }>(item: T): T {
@@ -52,7 +53,7 @@ export function applyReviewedCopy<T extends {
   return {
     ...item,
     title: item.title === copy.expectedLegacyTitle ? copy.title : item.title,
-    description: (item.description ?? null) === copy.expectedLegacyDescription
+    description: item.descriptionHtml == null && (item.description ?? null) === copy.expectedLegacyDescription
       ? copy.description : item.description,
     ...(replaceSpecs ? {
       techSpecs: {

@@ -52,8 +52,15 @@ const PRODUCT_PAGES = storeProductPages as Record<string, { handle: string; vari
 // Product-page URL for an item's catalog number, or null when no verified
 // store listing is mapped. Callers must not display a purchase action in that
 // case, and must never guess a handle or variant.
-export function purchaseUrlFor(catalogNumber: string | null | undefined): string | null {
+export function purchaseUrlFor(
+  catalogNumber: string | null | undefined,
+  liveLink?: { handle: string; variantId: string; isPublished: boolean } | null,
+): string | null {
   if (!catalogNumber) return null;
+  if (liveLink) {
+    if (!liveLink.isPublished || !/^[a-z0-9][a-z0-9-]*$/.test(liveLink.handle) || !/^\d+$/.test(liveLink.variantId)) return null;
+    return `https://www.toptik.co.il/products/${liveLink.handle}?variant=${liveLink.variantId}`;
+  }
   const key = normalizeCatalogKey(catalogNumber).replace(/TU$/, "");
   const variantId = VARIANT_IDS[key];
   const page = PRODUCT_PAGES[key];

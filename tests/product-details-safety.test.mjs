@@ -173,7 +173,7 @@ test("the read path used by the public route only issues select queries", async 
   const repository = await read("src/lib/carousel/repository.ts");
   const readStart = repository.indexOf("export async function getCarouselPayload");
   const { makeReader } = await moduleFrom(`export function makeReader(deps) {
-    const { hasSupabasePublicEnv, createSupabaseServerClient, fallbackCarouselPayload, applyReviewedCopy } = deps;
+    const { hasSupabasePublicEnv, createSupabaseServerClient, fallbackCarouselPayload, applyReviewedCopy, normalizeSyncSku } = deps;
     ${repository.slice(readStart).replace(/^export /gm, "")}
     return getCarouselPayload;
   }`);
@@ -201,6 +201,7 @@ test("the read path used by the public route only issues select queries", async 
     createSupabaseServerClient: () => client,
     fallbackCarouselPayload: { unavailable: true, items: [], settings: {} },
     applyReviewedCopy: (value) => value,
+    normalizeSyncSku: (value) => value?.toUpperCase().replace(/[^A-Z0-9]/g, "") ?? null,
   });
   const payload = await getCarouselPayload({ includeInactive: true });
   assert.equal(payload.items.length, 1);

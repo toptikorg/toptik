@@ -3,6 +3,7 @@ import { CarouselPayload } from "@/lib/carousel/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { applyReviewedCopy } from "./reviewed-copy";
+import { normalizeSyncSku } from "@/lib/shopify/sync-rules";
 
 // Public, read-only catalog access (anon client + RLS). The service-role save
 // path lives in ./repository-admin.ts so public routes never import it.
@@ -17,11 +18,20 @@ type ItemRow = {
   id: string;
   title: string;
   description: string | null;
+  description_html?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  copy_updated_at?: string | null;
   catalog_number?: string | null;
   source_url?: string | null;
   cover_image_path: string;
   display_order: number;
   is_active: boolean;
+  color?: string | null;
+  dimensions?: string | null;
+  weight?: string | null;
+  sizes?: string[] | null;
+  available_colors?: string[] | null;
   tech_specs?: import("./types").CachedTechSpecs | null;
   colors?: import("./types").CarouselColor[] | null;
 };
@@ -36,6 +46,8 @@ type AngleRow = {
 
 type GetCarouselPayloadOptions = {
   includeInactive?: boolean;
+  /** Only authenticated admin routes may request stored copy and rich HTML. */
+  rawAdmin?: boolean;
 };
 
 export async function getCarouselPayload(
@@ -65,6 +77,23 @@ export async function getCarouselPayload(
     return fallbackCarouselPayload;
   }
 
+  // This table is a narrow public projection (SKU key + verified product URL
+  // + publication bit). If the sync migration is not installed yet, retain the
+  // audited static map in purchase-links.ts as a backwards-compatible fallback.
+  const { data: liveLinks } = await supabase
+    .from("shopify_gallery_public_links")
+    .select("catalog_key,product_handle,variant_id,is_published");
+  const liveLinksByKey = new Map((liveLinks ?? []).map((row: {
+    catalog_key: string;
+    product_handle: string;
+    variant_id: string;
+    is_published: boolean;
+  }) => [row.catalog_key, {
+    handle: row.product_handle,
+    variantId: row.variant_id,
+    isPublished: row.is_published,
+  }]));
+
   if (itemRows.length === 0) {
     // A successful empty read is distinct from the unavailable fallback above.
     return {
@@ -91,15 +120,27 @@ export async function getCarouselPayload(
   }
 
   return {
-    items: (itemRows as ItemRow[]).map((item) => applyReviewedCopy({
+    items: (itemRows as ItemRow[]).map((item) => ({
       id: item.id,
       title: item.title,
       description: item.description,
+      descriptionHtml: item.description_html ?? null,
+      seoTitle: item.seo_title ?? null,
+      seoDescription: item.seo_description ?? null,
+      copyUpdatedAt: item.copy_updated_at ?? null,
       catalogNumber: item.catalog_number ?? null,
+      shopifyLink: item.catalog_number
+        ? liveLinksByKey.get(normalizeSyncSku(item.catalog_number) ?? "") ?? null
+        : null,
       sourceUrl: item.source_url ?? null,
       coverImagePath: item.cover_image_path,
       displayOrder: item.display_order,
       isActive: item.is_active,
+      color: item.color ?? null,
+      dimensions: item.dimensions ?? null,
+      weight: item.weight ?? null,
+      sizes: item.sizes ?? null,
+      availableColors: item.available_colors ?? null,
       techSpecs: item.tech_specs ?? null,
       colors: item.colors ?? null,
       angles: (anglesByItem.get(item.id) ?? []).map((angle) => ({
@@ -109,7 +150,18 @@ export async function getCarouselPayload(
         imagePath: angle.image_path,
         angleOrder: angle.angle_order,
       })),
-    })),
+    })).map(item => {
+      // Public cards keep escaped text. Raw HTML is used by the authenticated
+      // editor only; rawAdmin is passed by the gated admin endpoint.
+      // Public supplement deduplication also needs inactive rows, so that
+      // independent option must never select the raw admin representation.
+      // Admin must round-trip raw stored fields: applying public legacy repairs
+      // here would turn an unrelated Save All into edits of other products.
+      if (options.rawAdmin) return item;
+      const publicItem = { ...applyReviewedCopy(item) };
+      Reflect.deleteProperty(publicItem, "descriptionHtml");
+      return publicItem;
+    }),
     settings: {
       autoplayMs: settingsRow?.autoplay_ms ?? fallbackCarouselPayload.settings.autoplayMs,
       transitionMode: settingsRow?.transition_mode ?? fallbackCarouselPayload.settings.transitionMode,

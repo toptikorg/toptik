@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
+import { descriptionHelpers } from "./helpers/description-module.mjs";
 
 const root = new URL("../", import.meta.url);
 const read = path => readFile(new URL(path, root), "utf8");
@@ -43,6 +44,14 @@ test("new manual edits and unknown or changed SKUs are preserved", () => {
   assert.equal(reviewedCopyFor(null), null);
   assert.equal(reviewedCopyFor("P10SZV24/A83/TU"), null);
   assert.equal(reviewedCopyFor("P10SZV24 A83 TU"), null);
+});
+
+test("legacy description repair cannot split an established rich description pair", () => {
+  const [sku, entry] = Object.entries(copy)[0];
+  const item = { catalogNumber: sku, title: 'manual', description: entry.expectedLegacyDescription,
+    descriptionHtml: '<p>Preserved rich document</p>' };
+  assert.equal(applyReviewedCopy(item).description, item.description);
+  assert.equal(applyReviewedCopy(item).descriptionHtml, item.descriptionHtml);
 });
 
 test("spec repair ignores JSON key order but preserves every new manual change", () => {
@@ -105,11 +114,11 @@ test("unverified products expose only identity specs and suppress stale modal fa
   }, "reviewed cached specs render even when the original source URL is absent");
 });
 
-test("production read/save and import paths actually use reviewed copy", async () => {
+test("public read and import apply reviewed copy while admin saves preserve submitted fields", async () => {
   const repository = await read("src/lib/carousel/repository.ts");
   const repositoryAdmin = await read("src/lib/carousel/repository-admin.ts");
-  assert.match(repository, /\.map\(\(item\) => applyReviewedCopy\(\{/);
-  assert.match(repositoryAdmin, /\.\.\.applyReviewedCopy\(item\)/);
+  assert.match(repository, /if \(options\.rawAdmin\) return item;[\s\S]*applyReviewedCopy\(item\)/);
+  assert.doesNotMatch(repositoryAdmin, /applyReviewedCopy/);
   assert.match(repository, /techSpecs: item\.tech_specs \?\? null/);
   assert.match(repositoryAdmin, /tech_specs: item\.techSpecs \?\? null/);
   const importer = await read("src/lib/import/import-handler.ts");
@@ -137,7 +146,7 @@ test("import through save preserves raw SKU identity while storage paths stay sa
   assert.ok(saveStart >= 0);
   const saveBody = repositorySource.slice(saveStart).replace(/^export /gm, "");
   const { createSaver } = await moduleFrom(`export function createSaver(deps) {
-    const { adminCarouselPayloadSchema, createSupabaseServiceRoleClient, applyReviewedCopy } = deps;
+    const { adminCarouselPayloadSchema, createSupabaseServiceRoleClient, applyReviewedCopy, normalizeSyncSku, gallerySyncHash, outboxPayload, plainDescriptionToHtml, descriptionTextFromHtml, assertSafeDescriptionHtml } = deps;
     const isUnavailableCarouselPayload = (input) => input?.unavailable === true;
     ${saveBody}
     return saveCarouselPayload;
@@ -175,20 +184,30 @@ test("import through save preserves raw SKU identity while storage paths stay sa
       ]);
 
       let savedRows;
-      const db = { from(table) { return {
-        upsert(rows) {
+      const db = {
+        async rpc(name, input) {
+          assert.equal(name, "save_gallery_items_with_copy_cas", "migrated imports use the atomic save path");
+          savedRows = input.p_items;
+          assert.deepEqual(input.p_expected_versions, Object.fromEntries(savedRows.map(row => [row.id, null])), "new imported items must have an explicit absent baseline");
+          return { data: savedRows.map(row => ({ id: row.id })), error: null };
+        },
+        from(table) { return {
+        upsert() {
           if (table === "carousel_items") {
-            savedRows = rows;
-            return { select: async () => ({ data: rows.map(row => ({ id: row.id })), error: null }) };
+            assert.fail("migrated import must not bypass the atomic copy/outbox save");
           }
           return Promise.resolve({ error: null });
         },
         select: async () => ({ data: [], error: null }),
       }; } };
       const save = createSaver({
+        ...descriptionHelpers,
         // This test isolates identity propagation, not the unchanged Zod schema.
         adminCarouselPayloadSchema: { parse: input => structuredClone(input) },
         createSupabaseServiceRoleClient: () => db, applyReviewedCopy,
+        normalizeSyncSku: value => value?.toUpperCase().replace(/[^A-Z0-9]/g, "") ?? null,
+        gallerySyncHash: () => "test-hash",
+        outboxPayload: value => ({ title: value.title, description: value.description ?? "", catalogNumber: value.catalogNumber ?? "" }),
       });
       await save({ items: [imported.item], settings: {
         autoplayMs: 3000, transitionMode: "curtain-fade",
@@ -202,9 +221,8 @@ test("import through save preserves raw SKU identity while storage paths stay sa
           const legacy = {...imported.item, catalogNumber:sku,
             techSpecs:structuredClone(reviewed.expectedLegacyTechSpecs)};
           await save({items:[legacy],settings:{autoplayMs:3000,transitionMode:"curtain-fade"}});
-          assert.deepEqual(savedRows[0].tech_specs,
-            {...legacy.techSpecs,colors:legacy.techSpecs?.colors ?? [],
-              specs:[{heading:"פרטי מוצר",items:reviewed.specs}]}, `${sku}: persisted in tech_specs`);
+          assert.deepEqual(savedRows[0].tech_specs, legacy.techSpecs,
+            `${sku}: admin save preserves submitted specs instead of repairing unrelated products`);
         }
       }
     }

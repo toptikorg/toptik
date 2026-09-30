@@ -9,7 +9,7 @@ import { CatalogCard } from "./CarouselGrid";
 // the image and exact Shopify link are present in the initial article HTML.
 export function ArticleProductCard({ item }: { item: CarouselItem }) {
   const [hidden, setHidden] = useState(false);
-  const purchaseUrl = purchaseUrlFor(item.catalogNumber);
+  const purchaseUrl = purchaseUrlFor(item.catalogNumber, item.shopifyLink);
   if (!purchaseUrl || hidden) return null;
 
   return (

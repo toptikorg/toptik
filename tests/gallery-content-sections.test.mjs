@@ -54,7 +54,7 @@ test("contextual product cards are server-selected by exact active SKU and safe 
   assert.match(publicPayload, /appendSamsoniteItems\(payload\.items\)\.filter\(\(item\) => item\.isActive\)/);
   assert.match(serverCards, /normalizeCatalogKey\(candidate\.catalogNumber\) === key/);
   assert.match(serverCards, /matches\.length === 1 \? matches\[0\] : undefined/);
-  assert.match(serverCards, /purchaseUrlFor\(item\.catalogNumber\)/);
+  assert.match(serverCards, /purchaseUrlFor\(item\.catalogNumber, item\.shopifyLink\)/);
   assert.match(card, /if \(!purchaseUrl \|\| hidden\) return null;/);
   assert.match(card, /interactive=\{false\}/);
   assert.doesNotMatch(card, /ProductModal|TechSpecsModal/);
