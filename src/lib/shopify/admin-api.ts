@@ -37,7 +37,7 @@ type ShopifyBootstrapPage = {
   };
 };
 
-type GraphqlError = { message?: string; extensions?: { code?: string } };
+type GraphqlError = { message?: string; extensions?: { code?: unknown } };
 
 let tokenProviderCache: {
   domain: string;
@@ -69,7 +69,7 @@ const UPDATE_PRODUCT_COPY_MUTATION = `
   mutation GallerySyncVisibleProductCopy($product: ProductUpdateInput!) {
     productUpdate(product: $product) {
       product { id title descriptionHtml seo { title description } updatedAt }
-      userErrors { field message code }
+      userErrors { field message }
     }
   }
 `;
@@ -113,6 +113,15 @@ export function configuredShopifyDomain(): string {
   return getConfig().domain;
 }
 
+function graphqlErrorCode(code: unknown): string {
+  if (typeof code !== "string" || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(code)) return "SHOPIFY_GRAPHQL_ERROR";
+  const normalized = code.replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+  // The worker accepts only bounded uppercase codes. Never include provider
+  // messages or arbitrary extension values in logs or persisted queue errors.
+  return /^[A-Z0-9_]{1,64}$/.test(normalized) ? `SHOPIFY_GRAPHQL_${normalized}` : "SHOPIFY_GRAPHQL_ERROR";
+}
+
 async function graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
   const { domain, clientId, clientSecret, version } = getConfig();
   if (!tokenProviderCache || tokenProviderCache.domain !== domain ||
@@ -137,8 +146,7 @@ async function graphql<T>(query: string, variables: Record<string, unknown>): Pr
   if (!response.ok) throw new Error(`SHOPIFY_API_HTTP_${response.status}`);
   const payload = await response.json() as { data?: T; errors?: GraphqlError[] };
   if (payload.errors?.length) {
-    const code = payload.errors[0]?.extensions?.code;
-    throw new Error(code ? `SHOPIFY_GRAPHQL_${code}` : "SHOPIFY_GRAPHQL_ERROR");
+    throw new Error(graphqlErrorCode(payload.errors[0]?.extensions?.code));
   }
   if (!payload.data) throw new Error("SHOPIFY_GRAPHQL_DATA_MISSING");
   return payload.data;
@@ -251,7 +259,7 @@ export async function writeShopifyVisibleCopy(productGid: string, copy: ShopifyV
   const product = buildShopifyVisibleCopyInput(productGid, copy, current);
   if (Object.keys(product).length === 1) return;
   const result = await graphql<{
-    productUpdate: { product: null | { id: string }; userErrors: Array<{ code?: string | null; message: string }> };
+    productUpdate: { product: null | { id: string }; userErrors: Array<{ field: string[] | null; message: string }> };
   }>(UPDATE_PRODUCT_COPY_MUTATION, {
     product,
   });
