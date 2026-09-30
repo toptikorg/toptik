@@ -115,7 +115,6 @@ export function GalleryContentSections() {
             <tr><th scope="row">מידות</th><td dir="ltr">55×40×20</td><td dir="ltr">55×40×23</td></tr>
             <tr><th scope="row">בהרחבה</th><td dir="ltr">55×40×23</td><td dir="ltr">55×40×26</td></tr>
             <tr><th scope="row">נפח (סגור/מורחב)</th><td>39/45 ל׳</td><td>42/48 ל׳</td></tr>
-            <tr><th scope="row">משקל</th><td>2.3 ק״ג</td><td>3 ק״ג</td></tr>
           </tbody>
         </table>
       </div>
