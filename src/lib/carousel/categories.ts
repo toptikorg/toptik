@@ -61,7 +61,8 @@ const REVIEWED_CATEGORY_BY_SKU: Record<string, ProductCategory | null> = {
   "BXL58145.078": "suitcase",
   "P10SZV24-05J-TU": "carryon",
   "P10SZV24-A83-TU": "carryon",
-  "P10UJV24-A92-TU": null,
+  // Shopify's exact SKU/title identify this as the expandable Logoduck+ Moire cabin trolley.
+  "P10UJV24-A92-TU": "carryon",
   "P10SZV24-A81-TU": "carryon",
   "P10OUV24-A89-TU": "carryon",
   "P10OUN01-A89-TU": null,
