@@ -63,11 +63,16 @@ test("existing nested metadata cannot re-enable indexing", async () => {
   await checkDirectory("src/app");
 });
 
-test("the isolated hold adds no product, editorial-admin or sitemap routes", async () => {
+test("the hold has no product/editorial-admin or sitemap routes, but allows the public journal", async () => {
   for (const path of [
     "src/app/carousel/products", "src/app/admin/seo", "src/app/api/admin/editorial",
     "src/app/sitemap.ts", "src/app/sitemap.xml", "public/sitemap.xml", "public/robots.txt",
   ]) {
     await assert.rejects(access(new URL(path, root)), { code: "ENOENT" }, `${path} must remain absent`);
   }
+  const archive = await read("src/app/journal/page.tsx");
+  const article = await read("src/app/journal/[slug]/page.tsx");
+  assert.match(archive, /href=\{`\/journal\/\$\{article\.slug\}`\}/, "archive exposes article URLs in ordinary anchors");
+  assert.match(article, /generateStaticParams/);
+  assert.doesNotMatch(article, /robots\s*:\s*\{\s*index\s*:\s*true/);
 });

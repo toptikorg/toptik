@@ -28,7 +28,9 @@ test("prev/next sit in their own row above the products, with accessible names, 
   assert.ok(!/history\.(back|forward|go)/.test(grid), "arrows must not touch browser history");
   assert.ok(!/carousel-nav\b/.test(grid), "no arrows overlaid on the product cards");
   // The row is rendered before the Swiper, i.e. above the photos.
-  assert.ok(grid.indexOf("carousel-navrow") < grid.indexOf("<Swiper\n"));
+  const navRowIndex = grid.indexOf('className="carousel-navrow"');
+  const swiperIndex = grid.indexOf("<Swiper", navRowIndex);
+  assert.ok(navRowIndex >= 0 && swiperIndex > navRowIndex);
   assert.match(css, /\.carousel-navrow-btn/);
   assert.match(css, /min-height: 44px/);
   const modal = readFileSync("src/components/carousel/ProductModal.tsx", "utf8");
