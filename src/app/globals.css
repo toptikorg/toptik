@@ -3531,5 +3531,7 @@ html.a11y-big-cursor * {
 /* Embedded product cards inside the editorial content: the gallery's own card,
    store button included, without overlays or dialogs. */
 .gallery-info-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin: 14px 0; }
-.gallery-info-card { width: min(420px, 100%); }
+/* Two cards share a desktop row (the Intuo base/Easy Access pair); below
+   ~740px each card takes its own row. */
+.gallery-info-card { flex: 1 1 360px; max-width: 420px; min-width: 0; }
 .gallery-info-card .catalog-card { margin: 0 auto; }
