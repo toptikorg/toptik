@@ -36,7 +36,9 @@ test("the moved 55 cm reference retains exactly the 20 verified gallery SKUs", (
 
 test("published product specifications contain no unverified weights or public source dump", () => {
   assert.doesNotMatch(articles, /\d+(?:\.\d+)?\s*ק״ג|\d+(?:\.\d+)?\s*kg/i);
+  assert.doesNotMatch(articles, /<th scope="row">משקל<\/th>/, "public article tables do not show a weight row");
   assert.doesNotMatch(teasers, /מקורות|בדקנו את המקורות/i);
+  assert.doesNotMatch(articles, /מקורות הנתונים|אומת 30\.09\.2026/, "no editorial process note is rendered to visitors");
   assert.match(articles, /sourceUrls: \[/);
   assert.ok(!/https:\/\/(?!www\.toptik\.co\.il|www\.samsonite\.(?:fi|co\.uk|com\.au)|www\.bricsmilano\.com|mandarinaduck\.com)/.test(articles), "facts link only to manufacturer pages or the store");
 });

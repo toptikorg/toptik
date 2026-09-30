@@ -28,3 +28,29 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # The regression suite (tests/*.test.mjs) compiles TypeScript sources with
+  # module.stripTypeScriptTypes(), which exists from Node 22.13. It runs in its
+  # own job on Node 22 so lint/build keep their proven Node 20 environment.
+  # `node --test` exits non-zero on any failing test, which fails this job.
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Check Node supports stripTypeScriptTypes (>= 22.13)
+        run: node -e "const [maj, min] = process.versions.node.split('.').map(Number); if (maj < 22 || (maj === 22 && min < 13)) { console.error('Node >= 22.13 required, got ' + process.version); process.exit(1); } console.log('Node ' + process.version)"
+
+      - name: Test
+        run: npm test

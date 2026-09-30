@@ -16,11 +16,11 @@ npm run build    # production build (next build --webpack)
 npm run start    # serve the production build
 npm run lint     # ESLint (flat config: eslint.config.mjs)
 npm test         # all unit/regression tests: node --test tests/*.test.mjs
-npm run verify   # lint + build; mirrors CI (.github/workflows/ci-quality.yml)
+npm run verify   # lint + build; mirrors the CI `quality` job (.github/workflows/ci-quality.yml)
 npm run backup:bundle  # full git bundle — Windows/PowerShell only
 ```
 
-- **Tests** live in `tests/*.test.mjs` and use the built-in Node test runner (Node 22.13+ for `stripTypeScriptTypes`; no extra framework). Run one file with `node --test tests/<name>.test.mjs`. CI (push/PR to `dev`/`master`/`main`) runs lint + build only, so run `npm test` yourself before every change. Verification = `npm test` + `npm run lint` + `npm run build`, then the Preview/acceptance steps in AGENTS.md.
+- **Tests** live in `tests/*.test.mjs` and use the built-in Node test runner (Node 22.13+ for `stripTypeScriptTypes`; no extra framework). Run one file with `node --test tests/<name>.test.mjs`. CI (push/PR to `dev`/`master`/`main`) runs two jobs: `quality` (lint + build, Node 20) and `tests` (`npm test`, Node 22 — since 2026-09-30; a failing test fails the job). Still run `npm test` yourself before every change. Verification = `npm test` + `npm run lint` + `npm run build`, then the Preview/acceptance steps in AGENTS.md.
 - Offline builds: `next/font/google` downloads fonts at build time. Where `fonts.googleapis.com` is blocked, `NEXT_FONT_GOOGLE_MOCKED_RESPONSES` may be used to check the structure only; a real-font build must still pass on Vercel.
 - **Do not run `npm run build` or delete `.next/` while `npm run dev` is running** — it wipes the dev server's manifests and breaks it. Stop the dev server first (see `.cursor/rules/dev_server_safety.md`).
 
