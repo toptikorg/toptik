@@ -60,6 +60,28 @@ export default function CarouselPageClient() {
     window.history.replaceState(window.history.state, "", urlWithBrand(window.location.href, key));
   }, []);
 
+  // GAL-027: the purchase button navigates to the store in the same tab. The
+  // brand and category already live in the URL; this keeps the scroll position
+  // too, so one Back drops the visitor exactly where they left the gallery.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = `carousel-scroll:${window.location.search}`;
+    const save = () => {
+      try { sessionStorage.setItem(key, String(window.scrollY)); } catch { /* private mode */ }
+    };
+    window.addEventListener("pagehide", save);
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    if (nav?.type === "back_forward") {
+      try {
+        const saved = Number(sessionStorage.getItem(key));
+        if (Number.isFinite(saved) && saved > 0) {
+          requestAnimationFrame(() => window.scrollTo(0, saved));
+        }
+      } catch { /* private mode */ }
+    }
+    return () => window.removeEventListener("pagehide", save);
+  }, []);
+
   useEffect(() => {
     const onPopState = () => {
       const params = new URL(window.location.href).searchParams;

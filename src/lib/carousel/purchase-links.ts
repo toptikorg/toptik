@@ -1,5 +1,6 @@
 import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
 import samsoniteVariantIds from "./samsonite-variants.json";
+import storeProductPages from "./store-product-pages.json";
 
 // Per-SKU Shopify VARIANT IDs — from the owner's "Products_urls" sheet
 // (2026-08-17). Keys are normalized catalog keys (letters+digits, uppercase,
@@ -39,11 +40,23 @@ const VARIANT_IDS: Record<string, string> = {
   P10UJV24A92: "50083960783098",
 };
 
-// Checkout URL for an item's catalog number, or null when no verified store
-// listing is mapped. Callers must not display a purchase action in that case.
+// GAL-027 (2026-09-30): the purchase button no longer sends the shopper into
+// the cart/checkout permalink. It opens the exact Shopify PRODUCT page of the
+// item, with the mapped variant preselected (?variant=), in the same tab, so
+// one Back returns to the gallery. The SKU→variant mapping above is unchanged
+// and remains the source of truth: store-product-pages.json was built by
+// scanning every live product's own JSON (94 variants, 30.09.2026) and each
+// entry's variant id was verified equal to VARIANT_IDS before being written.
+const PRODUCT_PAGES = storeProductPages as Record<string, { handle: string; variant: string }>;
+
+// Product-page URL for an item's catalog number, or null when no verified
+// store listing is mapped. Callers must not display a purchase action in that
+// case, and must never guess a handle or variant.
 export function purchaseUrlFor(catalogNumber: string | null | undefined): string | null {
   if (!catalogNumber) return null;
   const key = normalizeCatalogKey(catalogNumber).replace(/TU$/, "");
   const variantId = VARIANT_IDS[key];
-  return variantId ? `https://www.toptik.co.il/cart/${variantId}:1` : null;
+  const page = PRODUCT_PAGES[key];
+  if (!variantId || !page || page.variant !== variantId) return null;
+  return `https://www.toptik.co.il/products/${page.handle}?variant=${variantId}`;
 }

@@ -124,9 +124,8 @@ function CatalogCard({
           {purchaseUrl && (
             <a
               className="catalog-card-buy-btn"
+              /* GAL-027: same tab; one Back returns to the gallery */
               href={purchaseUrl}
-              target="_blank"
-              rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               aria-label={`להמשך רכישה בחנות TopTik: ${item.title}`}
             >
