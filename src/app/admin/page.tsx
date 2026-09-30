@@ -433,11 +433,16 @@ export default function AdminPage() {
     });
   }
 
-  // Translate a hand-entered description to Hebrew with the SAME engine the
-  // scraper uses, so a pasted English description ends up like an imported one.
+  // This translator accepts plain text only. Never flatten a saved rich document.
   async function onTranslateDescription(itemIndex: number) {
     const item = payload.items[itemIndex];
-    const text = (item.description ?? "").trim();
+    if (!item || translatingItemId !== null) return;
+    if (typeof item.descriptionHtml === "string") {
+      setStatus("תרגום אוטומטי אינו זמין לתיאור מעוצב. ניתן לערוך אותו ישירות.");
+      return;
+    }
+    const originalDescription = item.description;
+    const text = (originalDescription ?? "").trim();
     if (!text) {
       setStatus("אין טקסט לתרגום");
       return;
@@ -456,11 +461,17 @@ export default function AdminPage() {
       }
       const data = (await res.json()) as { text: string };
       setPayload((current) => {
+        // Identify the same product after the request, and preserve intervening
+        // edits (including a new rich document) instead of replacing them.
+        const currentIndex = current.items.findIndex((row) => row.id === item.id);
+        const currentItem = current.items[currentIndex];
+        if (!currentItem || typeof currentItem.descriptionHtml === "string" ||
+            currentItem.description !== originalDescription) return current;
         const next = structuredClone(current);
-        next.items[itemIndex].description = data.text;
+        next.items[currentIndex].description = data.text;
         return next;
       });
-      setStatus("התיאור תורגם לעברית");
+      setStatus("התרגום הסתיים. תיאור שנערך בזמן ההמתנה לא הוחלף.");
     } catch (error) {
       setStatus(resolveErrorMessage(error, "שגיאת תרגום"));
     } finally {
@@ -1291,6 +1302,7 @@ export default function AdminPage() {
 
             {sortedItems.map((item) => {
               const itemIndex = payload.items.findIndex((row) => row.id === item.id);
+              const hasRichDescription = typeof item.descriptionHtml === "string";
               return (
                 <article key={item.id} className="admin-item-card">
                   <div className="admin-item-head">
@@ -1352,12 +1364,15 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => onTranslateDescription(itemIndex)}
-                        disabled={translatingItemId === item.id || !(item.description ?? "").trim()}
+                        disabled={translatingItemId !== null || hasRichDescription || !(item.description ?? "").trim()}
+                        aria-describedby={`translate-note-${item.id}`}
                       >
                         {translatingItemId === item.id ? "מתרגם..." : "תרגם לעברית"}
                       </button>
-                      <span className="admin-import-note" style={{ margin: 0 }}>
-                        הדבק תיאור באנגלית ולחץ — אותו מנוע תרגום כמו בסקרייפינג.
+                      <span id={`translate-note-${item.id}`} className="admin-import-note" style={{ margin: 0 }}>
+                        {hasRichDescription
+                          ? "כדי לשמור על העיצוב, ערכו את התרגום ישירות בתיאור."
+                          : "תרגום אוטומטי לתיאור בטקסט רגיל."}
                       </span>
                     </div>
                     <label style={{ gridColumn: "1 / -1" }}>
