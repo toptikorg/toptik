@@ -36,13 +36,28 @@ test("section stays out of the catalogue mechanics and out of robots directives"
   assert.ok(!/https:\/\/(?!www\.toptik)/.test(component.replace(/samsonite\.(fi|co\.uk|com\.au)/g, "")), "no external links besides the store");
 });
 
-test("every row links to its verified Shopify product page (handle ends with the SKU)", () => {
+test("products are featured through the gallery's own card, not body text links", () => {
+  const card = readFileSync("src/components/carousel/ArticleProductCard.tsx", "utf8");
+  // Exact-SKU lookup in the live payload; nothing rendered without a certain match.
+  assert.match(card, /candidate\.isActive && candidate\.catalogNumber === sku/);
+  assert.match(card, /if \(!item \|\| hidden\) return null;/);
+  // The gallery's existing card and store button, with no dialogs/popups.
+  assert.match(card, /interactive=\{false\}/);
+  assert.ok(!/ProductModal|TechSpecsModal/.test(card), "no popups an extension could block");
+  const grid = readFileSync("src/components/carousel/CarouselGrid.tsx", "utf8");
+  assert.match(grid, /interactive && \(item\.sourceUrl/);
+  // Cards placed next to the paragraphs that discuss those products.
+  for (const sku of ["P10JNV05465", "KL909001", "KL909005", "KL974004"]) {
+    assert.match(component, new RegExp(`<ArticleProductCard sku="${sku}" \\/>`), `${sku} card embedded`);
+  }
+  // No plain product text-links in the article body.
+  assert.ok(!/products\/\$\{row/.test(component));
+  // Verified handle mapping is retained as documentation on each row.
   const rows = [...component.matchAll(/sku: "([A-Z0-9]+)", storeHandle: "([a-z0-9-]+)"/g)];
   assert.equal(rows.length, 20);
   for (const [, sku, handle] of rows) {
     assert.ok(handle.endsWith("-" + sku.toLowerCase()), `${sku} handle must end with its SKU: ${handle}`);
   }
-  assert.match(component, /href=\{`\$\{STORE_ORIGIN\}\/products\/\$\{row\.storeHandle\}`\}>\{row\.name\}<\/a>/, "anchor text is the model name, not click-here");
   assert.ok(!/לחץ כאן|לחצו כאן/.test(component));
 });
 

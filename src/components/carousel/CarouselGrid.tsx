@@ -83,7 +83,7 @@ function chunkItems(items: CarouselItem[], size: number) {
 }
 
 // Every card and every automatic image fallback belong to one exact item.
-function CatalogCard({
+export function CatalogCard({
   item,
   swatches,
   onOpenItem,
@@ -91,12 +91,16 @@ function CatalogCard({
   onNavigate,
   onImageUnavailable,
   onImageReady,
+  interactive = true,
 }: {
   item: CarouselItem;
   swatches: ResolvedSwatch[];
   onOpenItem: (item: CarouselItem) => void;
   onOpenTechSpecs: (item: CarouselItem) => void;
   onNavigate: (itemId: string) => void;
+  /** false = editorial embed: keep the image, details and store button, but no
+   *  overlays or dialogs of any kind (nothing an extension could block). */
+  interactive?: boolean;
   onImageUnavailable: (identity: string) => void;
   onImageReady: () => void;
 }) {
@@ -132,7 +136,7 @@ function CatalogCard({
               <span>להמשך רכישה בחנות TopTik</span>
             </a>
           )}
-          {(item.sourceUrl || (item.techSpecs?.specs?.length ?? 0) > 0) && (
+          {interactive && (item.sourceUrl || (item.techSpecs?.specs?.length ?? 0) > 0) && (
             <button
               className="catalog-card-tech-btn"
               onClick={(e) => {
@@ -152,13 +156,13 @@ function CatalogCard({
           onMouseEnter={() => { preloadAngleImages(item); preloadCardSwatches(swatches); }}
           onFocus={() => { preloadAngleImages(item); preloadCardSwatches(swatches); }}
           onTouchStart={() => { preloadAngleImages(item); preloadCardSwatches(swatches); }}
-          onClick={() => onOpenItem(item)}
-          role="button"
-          tabIndex={0}
-          aria-label={`פתח זוויות מוצר ${item.title}`}
-          onKeyDown={(event) => {
+          onClick={interactive ? () => onOpenItem(item) : undefined}
+          role={interactive ? "button" : undefined}
+          tabIndex={interactive ? 0 : undefined}
+          aria-label={interactive ? `פתח זוויות מוצר ${item.title}` : undefined}
+          onKeyDown={interactive ? (event) => {
             if (event.key === "Enter" || event.key === " ") onOpenItem(item);
-          }}
+          } : undefined}
         >
           <ReliableProductImage
             item={item}
@@ -173,7 +177,7 @@ function CatalogCard({
           />
 
           {/* top: view angles */}
-          <button
+          {interactive && <button
             className="catalog-card-cta catalog-card-cta--icon"
             onMouseEnter={(e) => {
               e.stopPropagation();
@@ -189,10 +193,10 @@ function CatalogCard({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/magnifier.png" alt="" aria-hidden="true" className="catalog-card-cta-icon" />
-          </button>
+          </button>}
 
           {/* bottom: colour swatches */}
-          {swatches.length > 0 && (
+          {interactive && swatches.length > 0 && (
             <div className="catalog-card-colors" dir="rtl">
               <span className="catalog-card-colors-label">צבעים</span>
               <div className="catalog-card-colors-dots">

@@ -1,4 +1,5 @@
 import { STORE_ORIGIN } from "@/lib/seo/site";
+import { ArticleProductCard } from "./ArticleProductCard";
 
 // Editorial content rendered after the products area. Server component: the
 // text and tables are part of the initial HTML, independent of the client
@@ -45,10 +46,6 @@ const CARRYON_55_ROWS: readonly Row[] = [
   { sku: "KO776005", storeHandle: "samsonite-urbify-55-lava-ko776005", name: "Urbify 55, לבה", dims: "55×40×23", expanded: "55×40×26", volume: "39/46 ל׳", material: "פוליאסטר ממוחזר" },
 ];
 
-const INTUO_HANDLE: Record<string, string> = Object.fromEntries(
-  CARRYON_55_ROWS.filter((row) => row.sku.startsWith("KL9")).map((row) => [row.sku, row.storeHandle]),
-);
-
 const INTUO_COLORS: ReadonlyArray<{ color: string; base: string; easyAccess: string }> = [
   { color: "שחור", base: "KL909001", easyAccess: "KL909005" },
   { color: "כחול לילה", base: "KL901001", easyAccess: "KL901005" },
@@ -63,7 +60,7 @@ export function GalleryContentSections() {
       <h2 id="gallery-info-sizes" className="gallery-info-title">מדריך מידות לפי מק״ט: טרולי 55 ס״מ בגלריה</h2>
       <p className="gallery-info-text">
         הטבלה מרכזת את מידות היצרן של דגמי ה-55 ס״מ של Samsonite המוצגים בגלריה, כפי שהן מופיעות בעמודי
-        המוצר הרשמיים; שם כל דגם מקשר לעמוד המוצר שלו בחנות TopTik, שם המחיר והזמינות. ״בהרחבה״ — עומק הדגם כשרוכסן ההרחבה פתוח; נפח כפול (למשל 39/45 ל׳) — סגור/מורחב;
+        המוצר הרשמיים. ״בהרחבה״ — עומק הדגם כשרוכסן ההרחבה פתוח; נפח כפול (למשל 39/45 ל׳) — סגור/מורחב;
         בדגמי Upscape הבסיסיים היצרן מפרסם נפח בהרחבה בלבד. מידות מותרות בקבינה משתנות בין חברות
         התעופה — בדקו מול חברת התעופה לפני הטיסה.
       </p>
@@ -84,7 +81,7 @@ export function GalleryContentSections() {
             {CARRYON_55_ROWS.map((row) => (
               <tr key={row.sku}>
                 <th scope="row" dir="ltr">{row.sku}</th>
-                <td><a className="gallery-info-link" href={`${STORE_ORIGIN}/products/${row.storeHandle}`}>{row.name}</a></td>
+                <td>{row.name}</td>
                 <td dir="ltr">{row.dims}</td>
                 <td dir="ltr">{row.expanded}</td>
                 <td>{row.volume}</td>
@@ -98,6 +95,7 @@ export function GalleryContentSections() {
         טרולי Mandarina Duck בגלריה (Smile &amp; Go בפלדה ובכחול, Logoduck+ Glitter בטורקיז) מוצגים
         בתמונות מכמה זוויות; מידות יצרן שמורות אינן זמינות להם כרגע, ולכן אינן בטבלה.
       </p>
+      <div className="gallery-info-cards"><ArticleProductCard sku="P10JNV05465" /></div>
 
       <h2 className="gallery-info-title">Samsonite Intuo: השוואה בין שתי הגרסאות</h2>
       <p className="gallery-info-text">
@@ -123,8 +121,13 @@ export function GalleryContentSections() {
       </div>
       <p className="gallery-info-text">
         כלומר: ה-Easy Access עמוקה ב-3 ס״מ ומוסיפה כ-3 ליטר נפח. אופן הפתיחה של כל גרסה מוצג
-        בתמונות הזוויות בגלריה ובעמוד היצרן. שתי הגרסאות זמינות בגלריה בחמישה צבעים:
+        בתמונות הזוויות בגלריה ובעמוד היצרן. כך הן נראות זו לצד זו, בשחור:
       </p>
+      <div className="gallery-info-cards">
+        <ArticleProductCard sku="KL909001" />
+        <ArticleProductCard sku="KL909005" />
+      </div>
+      <p className="gallery-info-text">שתי הגרסאות זמינות בגלריה בחמישה צבעים:</p>
       <div className="gallery-info-tablewrap" role="region" aria-label="צבעי Intuo בגלריה" tabIndex={0}>
         <table className="gallery-info-table">
           <thead>
@@ -138,8 +141,8 @@ export function GalleryContentSections() {
             {INTUO_COLORS.map((row) => (
               <tr key={row.color}>
                 <th scope="row">{row.color}</th>
-                <td dir="ltr"><a className="gallery-info-link" href={`${STORE_ORIGIN}/products/${INTUO_HANDLE[row.base]}`} aria-label={`Intuo 55 בצבע ${row.color} בחנות TopTik`}>{row.base}</a></td>
-                <td dir="ltr"><a className="gallery-info-link" href={`${STORE_ORIGIN}/products/${INTUO_HANDLE[row.easyAccess]}`} aria-label={`Intuo 55 Easy Access בצבע ${row.color} בחנות TopTik`}>{row.easyAccess}</a></td>
+                <td dir="ltr">{row.base}</td>
+                <td dir="ltr">{row.easyAccess}</td>
               </tr>
             ))}
           </tbody>
@@ -150,6 +153,7 @@ export function GalleryContentSections() {
         צבעים וגרסאות לפני שבוחרים. מהסדרה מוצגת גם Intuo 81 ס״מ (דגם 146916): ‏81×54×33 ס״מ,
         בהרחבה 81×54×36 ס״מ. מחירים, מלאי ורכישה — ב<a className="gallery-info-link" href={`${STORE_ORIGIN}/`}>חנות TopTik</a>.
       </p>
+      <div className="gallery-info-cards"><ArticleProductCard sku="KL974004" /></div>
       <p className="gallery-info-text gallery-info-note">
         מקורות הנתונים: עמודי המוצר הרשמיים של Samsonite שמהם שמור המפרט בגלריה (samsonite.fi,
         samsonite.co.uk, samsonite.com.au); אומת 30.09.2026.

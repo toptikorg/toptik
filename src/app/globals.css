@@ -3528,3 +3528,8 @@ html.a11y-big-cursor * {
 .gallery-info-table thead th { font-weight: 700; color: #f7d9a4; background: rgba(215, 170, 106, 0.1); position: sticky; top: 0; }
 .gallery-info-table tbody th { font-weight: 600; white-space: nowrap; }
 .gallery-info-table tbody tr:last-child th, .gallery-info-table tbody tr:last-child td { border-bottom: none; }
+/* Embedded product cards inside the editorial content: the gallery's own card,
+   store button included, without overlays or dialogs. */
+.gallery-info-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin: 14px 0; }
+.gallery-info-card { width: min(420px, 100%); }
+.gallery-info-card .catalog-card { margin: 0 auto; }
