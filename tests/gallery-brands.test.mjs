@@ -105,7 +105,7 @@ test("page wires the labeled brand control, URL restoration, combined filtering 
   assert.match(source, /<BrandPicker/);
   assert.match(source, /onChange=\{onChangeBrand\}/);
   assert.match(source, /id="carousel-brand-help"/);
-  assert.match(source, /לחצו על שם המותג בראש הגלריה/);
+  assert.match(source, /לחצו על שם המותג מעל הקולקציה/);
   assert.match(source, /publicCollectionItems\(/);
   assert.match(source, /filterByCategory\(filterByBrand\(activeItems, activeBrand\), activeCategory\)/);
   assert.match(source, /window\.addEventListener\("popstate", onPopState\)/);
