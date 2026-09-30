@@ -122,7 +122,7 @@ function graphqlErrorCode(code: unknown): string {
   return /^[A-Z0-9_]{1,64}$/.test(normalized) ? `SHOPIFY_GRAPHQL_${normalized}` : "SHOPIFY_GRAPHQL_ERROR";
 }
 
-async function graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+async function graphql<T>(query: string, variables: Record<string, unknown>, timeoutMs = 15_000): Promise<T> {
   const { domain, clientId, clientSecret, version } = getConfig();
   if (!tokenProviderCache || tokenProviderCache.domain !== domain ||
       tokenProviderCache.clientId !== clientId || tokenProviderCache.clientSecret !== clientSecret) {
@@ -138,7 +138,7 @@ async function graphql<T>(query: string, variables: Record<string, unknown>): Pr
   const response = await fetch(url, {
     method: "POST",
     redirect: "manual",
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(Math.max(1, Math.min(15_000, timeoutMs))),
     headers: { "content-type": "application/json", "x-shopify-access-token": token },
     body: JSON.stringify({ query, variables }),
   });
@@ -188,6 +188,58 @@ export type ShopifyCatalogSeedSnapshot = ShopifyProductSnapshot & {
   media: Array<{ id: string; alt: string | null; mediaContentType: string; status: string;
     image?: { url: string; altText: string | null; width: number; height: number } | null }>;
 };
+
+export type ShopifyOnboardingSnapshot = ShopifyCatalogSeedSnapshot & { vendor: string; productType: string };
+export type ShopifyOnboardingVariant = ShopifyVariant & { product: { id: string } };
+
+function onboardingReadTimeout(deadline: number): number {
+  const remaining = deadline - Date.now() - 3_000;
+  if (remaining <= 0) throw new Error("SYNC_ONBOARDING_TIME_BUDGET");
+  return Math.min(6_000, remaining);
+}
+
+/** Fresh bounded identity/media read for automatic PUBLIC single-variant intake. */
+export async function fetchPublicOnboardingProductSnapshot(productGid: string, deadline: number): Promise<ShopifyOnboardingSnapshot | null> {
+  if (!/^gid:\/\/shopify\/Product\/\d+$/.test(productGid)) throw new Error("SYNC_ONBOARDING_PRODUCT_ID_INVALID");
+  const { publicationId } = getConfig();
+  if (publicationId !== "gid://shopify/Publication/79538258170") throw new Error("SYNC_ONBOARDING_PUBLICATION_MISMATCH");
+  const result = await graphql<{ product: (Omit<ShopifyOnboardingSnapshot, "seoTitle" | "seoDescription" | "variants" | "media"> & {
+    seo: { title: string | null; description: string | null } | null;
+    variants: { nodes: ShopifyVariant[]; pageInfo: { hasNextPage: boolean } };
+    media: { nodes: ShopifyCatalogSeedSnapshot["media"]; pageInfo: { hasNextPage: boolean } };
+  }) | null }>(`query GalleryPublicOnboardingProduct($id: ID!, $publicationId: ID!) {
+    product(id: $id) {
+      id handle title descriptionHtml status updatedAt vendor productType seo { title description }
+      publishedOnPublication(publicationId: $publicationId)
+      variants(first: 2) { nodes { id sku } pageInfo { hasNextPage } }
+      media(first: 21) { nodes { id alt mediaContentType status ... on MediaImage { image { url altText width height } } } pageInfo { hasNextPage } }
+    }
+  }`, { id: productGid, publicationId }, onboardingReadTimeout(deadline));
+  const product = result.product;
+  if (!product) return null;
+  // Two variants / twenty-one media entries prove that policy is exceeded.
+  // Let policy exclude draft/other-brand products before rejecting their size.
+  return { id: product.id, handle: product.handle, title: product.title, descriptionHtml: product.descriptionHtml,
+    seoTitle: product.seo?.title ?? null, seoDescription: product.seo?.description ?? null,
+    status: product.status, updatedAt: product.updatedAt, publishedOnPublication: product.publishedOnPublication,
+    variants: product.variants.nodes, media: product.media.nodes, vendor: product.vendor, productType: product.productType };
+}
+
+/** No status/SKU search filter: draft and punctuation-colliding variants count too. */
+export async function fetchAllOnboardingVariantIdentities(deadline: number): Promise<ShopifyOnboardingVariant[]> {
+  const variants: ShopifyOnboardingVariant[] = [];
+  let after: string | null = null;
+  do {
+    const result: { productVariants: { nodes: ShopifyOnboardingVariant[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } } =
+      await graphql(`query GalleryOnboardingVariantIdentities($after: String) {
+        productVariants(first: 250, after: $after) { nodes { id sku product { id } } pageInfo { hasNextPage endCursor } }
+      }`, { after }, onboardingReadTimeout(deadline));
+    variants.push(...result.productVariants.nodes);
+    if (!result.productVariants.pageInfo.hasNextPage) return variants;
+    after = result.productVariants.pageInfo.endCursor;
+    if (!after || variants.length >= 5_000) throw new Error("SYNC_ONBOARDING_CATALOG_LIMIT");
+  } while (true);
+}
 
 /** Bounded read for the reviewed seed only; never accepts arbitrary GraphQL. */
 export async function fetchCatalogSeedProductSnapshot(productGid: string): Promise<ShopifyCatalogSeedSnapshot | null> {
