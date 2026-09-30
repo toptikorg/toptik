@@ -1,0 +1,322 @@
+{
+  "BAH08451001": {
+    "handle": "bah08451-001",
+    "variant": "50083958882554"
+  },
+  "BAH08453001": {
+    "handle": "bah08453-001",
+    "variant": "50083958980858"
+  },
+  "BAH08453006": {
+    "handle": "bah08453-006",
+    "variant": "50083959046394"
+  },
+  "BAH08453078": {
+    "handle": "bah08453-078",
+    "variant": "50083959111930"
+  },
+  "BAH08454001": {
+    "handle": "bah08454-001",
+    "variant": "50083959177466"
+  },
+  "BXL38124078": {
+    "handle": "bxl38124078",
+    "variant": "50083959243002"
+  },
+  "BXL38124101": {
+    "handle": "bxl38124101",
+    "variant": "50083959341306"
+  },
+  "BXL58117101": {
+    "handle": "bxl58117-101",
+    "variant": "50083959406842"
+  },
+  "BXL58145050": {
+    "handle": "bxl58145-050",
+    "variant": "50083959505146"
+  },
+  "BXL58145078": {
+    "handle": "bxl58145-078",
+    "variant": "50083959603450"
+  },
+  "BXL58145101": {
+    "handle": "bxl58145-101",
+    "variant": "50083959668986"
+  },
+  "KI100005": {
+    "handle": "samsonite-biz2go-15-6-terracotta-red-ki100005",
+    "variant": "50148812062970"
+  },
+  "KI101004": {
+    "handle": "samsonite-biz2go-15-6-deep-blue-ki101004",
+    "variant": "50148797350138"
+  },
+  "KI104005": {
+    "handle": "samsonite-biz2go-15-6-earth-green-ki104005",
+    "variant": "50148797645050"
+  },
+  "KI106005": {
+    "handle": "samsonite-biz2go-15-6-radiant-yellow-ki106005",
+    "variant": "50148798071034"
+  },
+  "KI109005": {
+    "handle": "samsonite-biz2go-15-6-black-ki109005",
+    "variant": "50148797251834"
+  },
+  "KI139005": {
+    "handle": "samsonite-biz2go-15-6-graphite-apricot-ki139005",
+    "variant": "50148797808890"
+  },
+  "KJ106001": {
+    "handle": "samsonite-upscape-55-yellow-kj106001",
+    "variant": "50148820517114"
+  },
+  "KJ106007": {
+    "handle": "samsonite-upscape-55-easy-access-yellow-kj106007",
+    "variant": "50223208595706"
+  },
+  "KJ109001": {
+    "handle": "samsonite-upscape-55-black-kj109001",
+    "variant": "50223209677050"
+  },
+  "KJ111001": {
+    "handle": "samsonite-upscape-55-nautical-blue-kj111001",
+    "variant": "50223210692858"
+  },
+  "KJ114001": {
+    "handle": "samsonite-upscape-55-climbing-ivy-kj114001",
+    "variant": "50223212790010"
+  },
+  "KJ114007": {
+    "handle": "samsonite-upscape-55-easy-access-climbing-ivy-kj114007",
+    "variant": "50223213150458"
+  },
+  "KJ17176004": {
+    "handle": "samsonite-upscape-81-lava-kj17176004",
+    "variant": "50148820910330"
+  },
+  "KJ344007": {
+    "handle": "samsonite-respark-79-light-sage-kj344007",
+    "variant": "50148820320506"
+  },
+  "KL901001": {
+    "handle": "samsonite-intuo-55-blue-nights-kl901001",
+    "variant": "50148815208698"
+  },
+  "KL901002": {
+    "handle": "samsonite-intuo-69-blue-nights-kl901002",
+    "variant": "50148816879866"
+  },
+  "KL901003": {
+    "handle": "samsonite-intuo-75-blue-nights-kl901003",
+    "variant": "50148818419962"
+  },
+  "KL901004": {
+    "handle": "samsonite-intuo-81-blue-nights-kl901004",
+    "variant": "50148819665146"
+  },
+  "KL901005": {
+    "handle": "samsonite-intuo-55-easy-access-blue-nights-kl901005",
+    "variant": "50148815700218"
+  },
+  "KL909001": {
+    "handle": "samsonite-intuo-55-black-kl909001",
+    "variant": "50148815044858"
+  },
+  "KL909002": {
+    "handle": "samsonite-intuo-69-black-kl909002",
+    "variant": "50148816486650"
+  },
+  "KL909003": {
+    "handle": "samsonite-intuo-75-black-kl909003",
+    "variant": "50148818092282"
+  },
+  "KL909004": {
+    "handle": "samsonite-intuo-81-black-kl909004",
+    "variant": "50148819599610"
+  },
+  "KL909005": {
+    "handle": "samsonite-intuo-55-easy-access-black-kl909005",
+    "variant": "50148815536378"
+  },
+  "KL924001": {
+    "handle": "samsonite-intuo-55-olive-green-kl924001",
+    "variant": "50148816388346"
+  },
+  "KL924002": {
+    "handle": "samsonite-intuo-69-olive-green-kl924002",
+    "variant": "50148817633530"
+  },
+  "KL924003": {
+    "handle": "samsonite-intuo-75-olive-green-kl924003",
+    "variant": "50148818583802"
+  },
+  "KL924004": {
+    "handle": "samsonite-intuo-81-olive-green-kl924004",
+    "variant": "50148820025594"
+  },
+  "KL924005": {
+    "handle": "samsonite-intuo-55-easy-access-olive-green-kl924005",
+    "variant": "50148816027898"
+  },
+  "KL966001": {
+    "handle": "samsonite-intuo-55-citrus-kl966001",
+    "variant": "50148815339770"
+  },
+  "KL966002": {
+    "handle": "samsonite-intuo-69-citrus-kl966002",
+    "variant": "50148817142010"
+  },
+  "KL966003": {
+    "handle": "samsonite-intuo-75-citrus-kl966003",
+    "variant": "50148818551034"
+  },
+  "KL966004": {
+    "handle": "samsonite-intuo-81-citrus-kl966004",
+    "variant": "50148819796218"
+  },
+  "KL966005": {
+    "handle": "samsonite-intuo-55-easy-access-citrus-kl966005",
+    "variant": "50148815929594"
+  },
+  "KL974001": {
+    "handle": "samsonite-intuo-55-lime-kl974001",
+    "variant": "50223205056762"
+  },
+  "KL974002": {
+    "handle": "samsonite-intuo-69-lime-kl974002",
+    "variant": "50223206072570"
+  },
+  "KL974003": {
+    "handle": "samsonite-intuo-75-lime-kl974003",
+    "variant": "50223206400250"
+  },
+  "KL974004": {
+    "handle": "samsonite-intuo-81-lime-kl974004",
+    "variant": "50223207547130"
+  },
+  "KL974005": {
+    "handle": "samsonite-intuo-55-easy-access-lime-kl974005",
+    "variant": "50223208005882"
+  },
+  "KO701005": {
+    "handle": "samsonite-urbify-55-navy-blue-ko701005",
+    "variant": "50148826611962"
+  },
+  "KO701006": {
+    "handle": "samsonite-urbify-68-navy-blue-ko701006",
+    "variant": "50148829266170"
+  },
+  "KO701007": {
+    "handle": "samsonite-urbify-78-navy-blue-ko701007",
+    "variant": "50148832313594"
+  },
+  "KO701011": {
+    "handle": "samsonite-urbify-3-navy-blue-ko701011",
+    "variant": "50148825530618"
+  },
+  "KO704005": {
+    "handle": "samsonite-urbify-55-pine-green-ko704005",
+    "variant": "50148827332858"
+  },
+  "KO704006": {
+    "handle": "samsonite-urbify-68-pine-green-ko704006",
+    "variant": "50148831363322"
+  },
+  "KO704007": {
+    "handle": "samsonite-urbify-78-pine-green-ko704007",
+    "variant": "50148832903418"
+  },
+  "KO704011": {
+    "handle": "samsonite-urbify-3-pine-green-ko704011",
+    "variant": "50148825759994"
+  },
+  "KO709005": {
+    "handle": "samsonite-urbify-55-black-ko709005",
+    "variant": "50148825989370"
+  },
+  "KO709006": {
+    "handle": "samsonite-urbify-68-black-ko709006",
+    "variant": "50148827693306"
+  },
+  "KO709007": {
+    "handle": "samsonite-urbify-78-black-ko709007",
+    "variant": "50148831789306"
+  },
+  "KO709011": {
+    "handle": "samsonite-urbify-3-black-ko709011",
+    "variant": "50148825497850"
+  },
+  "KO776005": {
+    "handle": "samsonite-urbify-55-lava-ko776005",
+    "variant": "50148826317050"
+  },
+  "KO776006": {
+    "handle": "samsonite-urbify-68-lava-ko776006",
+    "variant": "50148829036794"
+  },
+  "KO776007": {
+    "handle": "samsonite-urbify-78-lava-ko776007",
+    "variant": "50148831887610"
+  },
+  "KT009004": {
+    "handle": "samsonite-guardit-classy-2-0-15-6-black-kt009004",
+    "variant": "50149301584122"
+  },
+  "ORI05500024": {
+    "handle": "ori05500-024",
+    "variant": "50083959767290"
+  },
+  "ORI05500909": {
+    "handle": "ori05500-909",
+    "variant": "50083959832826"
+  },
+  "P10GXV24A32": {
+    "handle": "p10gxv24a32",
+    "variant": "50083959898362"
+  },
+  "P10JNV0508Q": {
+    "handle": "smile-go-trolley-m-i-%D7%98%D7%A8%D7%95%D7%9C%D7%99",
+    "variant": "42466128494842"
+  },
+  "P10JNV05465": {
+    "handle": "%D7%98%D7%A8%D7%95%D7%9C%D7%99-%D7%AA%D7%A8%D7%9E%D7%99%D7%9C-%D7%A4%D7%9C%D7%93%D7%94-smile-go-trolley-m",
+    "variant": "42624928415994"
+  },
+  "P10OUN01A89": {
+    "handle": "p10oun01-a89-tu",
+    "variant": "50083959963898"
+  },
+  "P10OUV24A89": {
+    "handle": "p10ouv24-a89-tu",
+    "variant": "50083959996666"
+  },
+  "P10SZV2405J": {
+    "handle": "logoduck-i-%D7%98%D7%A8%D7%95%D7%9C%D7%99",
+    "variant": "42465754808570"
+  },
+  "P10SZV24A81": {
+    "handle": "p10szv24-a81-tu",
+    "variant": "50083960291578"
+  },
+  "P10SZV24A83": {
+    "handle": "p10szv24-a83-tu",
+    "variant": "50083960389882"
+  },
+  "P10UJN01A92": {
+    "handle": "p10ujn01-a92-tu",
+    "variant": "50083960717562"
+  },
+  "P10UJV24A92": {
+    "handle": "p10ujv24-a92-tu",
+    "variant": "50083960783098"
+  },
+  "S209004": {
+    "handle": "samsonite-c-lite-75-black-s209004",
+    "variant": "50148812325114"
+  },
+  "S281006": {
+    "handle": "samsonite-c-lite-86-lavender-s281006",
+    "variant": "50148814749946"
+  }
+}

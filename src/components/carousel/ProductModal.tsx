@@ -274,9 +274,8 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
               {purchaseUrl && (
                 <a
                   className="product-modal-buy-btn"
-                  href={purchaseUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  /* GAL-027: same tab; one Back returns to the gallery */
+              href={purchaseUrl}
                   onClick={(e) => e.stopPropagation()}
                   aria-label={`להמשך רכישה בחנות TopTik: ${item.title}`}
                 >
