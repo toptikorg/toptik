@@ -160,14 +160,16 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
   let galleryRow = initialGallery ?? await readGalleryCopyRow(supabase, binding);
   let shopifyCopy: ShopifyVisibleCopy = visibleCopyFromProduct(product);
   const { data: state, error: stateError } = await supabase.from("shopify_gallery_sync_state")
-    .select("last_synced_payload").eq("catalog_key", binding.catalog_key).maybeSingle();
+    .select("last_synced_payload,gallery_baseline_payload,shopify_baseline_payload").eq("catalog_key", binding.catalog_key).maybeSingle();
   if (stateError) throw new Error("SYNC_STATE_READ_FAILED");
   const lastSynced = (state?.last_synced_payload ?? null) as VisibleProductCopy | null;
-  let merged = mergeVisibleProductCopy(galleryCopy(galleryRow), shopifyCopy, lastSynced, galleryRow.copy_updated_at, product.updatedAt);
+  const galleryBaseline = (state?.gallery_baseline_payload ?? lastSynced) as VisibleProductCopy | null;
+  const shopifyBaseline = (state?.shopify_baseline_payload ?? lastSynced) as VisibleProductCopy | null;
+  let merged = mergeVisibleProductCopy(
+    galleryCopy(galleryRow), shopifyCopy, lastSynced, galleryRow.copy_updated_at, product.updatedAt,
+    galleryBaseline, shopifyBaseline,
+  );
   await writeConflictAudit(supabase, binding, merged, galleryCopy(galleryRow), shopifyCopy, galleryRow.copy_updated_at, product.updatedAt);
-  if (merged.conflicts.some(conflict => conflict.winner === "review")) {
-    throw new Error("SYNC_COPY_INITIAL_CONFLICT");
-  }
 
   // Shopify's productUpdate mutation has no compare-and-swap token. Re-read
   // immediately before writing and abort if Shopify copy changed since merge.
@@ -177,19 +179,22 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
     const latestCopy = visibleCopyFromProduct(latest);
     if (JSON.stringify(latestCopy) !== JSON.stringify(shopifyCopy)) {
       shopifyCopy = latestCopy;
-      merged = mergeVisibleProductCopy(galleryCopy(galleryRow), shopifyCopy, lastSynced, galleryRow.copy_updated_at, latest.updatedAt);
+      merged = mergeVisibleProductCopy(
+        galleryCopy(galleryRow), shopifyCopy, lastSynced, galleryRow.copy_updated_at, latest.updatedAt,
+        galleryBaseline, shopifyBaseline,
+      );
       await writeConflictAudit(supabase, binding, merged, galleryCopy(galleryRow), shopifyCopy, galleryRow.copy_updated_at, latest.updatedAt);
       if (merged.shopifyChanged) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
     } else {
-      await writeShopifyVisibleCopy(binding.product_gid, merged.copy);
+      await writeShopifyVisibleCopy(binding.product_gid, merged.shopifyCopy);
     }
   }
 
   if (merged.galleryChanged) {
-    const newGalleryUpdatedAt = await saveGalleryCopy(supabase, galleryRow, merged.copy);
+    const newGalleryUpdatedAt = await saveGalleryCopy(supabase, galleryRow, merged.galleryCopy);
     galleryRow = { ...galleryRow, ...{
-      title: merged.copy.title, description: merged.copy.description || null,
-      seo_title: merged.copy.seoTitle, seo_description: merged.copy.seoDescription, copy_updated_at: newGalleryUpdatedAt,
+      title: merged.galleryCopy.title, description: merged.galleryCopy.description || null,
+      seo_title: merged.galleryCopy.seoTitle, seo_description: merged.galleryCopy.seoDescription, copy_updated_at: newGalleryUpdatedAt,
     } };
   }
 
@@ -197,11 +202,16 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
   if (!latestProduct) throw new Error("SYNC_SHOPIFY_PRODUCT_MISSING");
   const verifiedShopifyCopy = visibleCopyFromProduct(latestProduct);
   const verifiedGalleryCopy = galleryCopy(await readGalleryCopyRow(supabase, binding));
-  if (JSON.stringify(verifiedShopifyCopy) !== JSON.stringify(verifiedGalleryCopy)) throw new Error("SYNC_COPY_READBACK_MISMATCH");
+  if (JSON.stringify(verifiedShopifyCopy) !== JSON.stringify(merged.shopifyCopy) ||
+      JSON.stringify(verifiedGalleryCopy) !== JSON.stringify(merged.galleryCopy)) {
+    throw new Error("SYNC_COPY_READBACK_MISMATCH");
+  }
   const { error: stateWriteError } = await supabase.from("shopify_gallery_sync_state").upsert({
     catalog_key: binding.catalog_key,
     last_synced_payload: verifiedShopifyCopy,
     last_synced_hash: hashCopy(verifiedShopifyCopy),
+    gallery_baseline_payload: verifiedGalleryCopy,
+    shopify_baseline_payload: verifiedShopifyCopy,
     gallery_updated_at: galleryRow.copy_updated_at,
     shopify_updated_at: latestProduct.updatedAt,
     synced_at: new Date().toISOString(),

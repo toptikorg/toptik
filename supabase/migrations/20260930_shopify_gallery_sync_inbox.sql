@@ -82,13 +82,22 @@ create table if not exists public.shopify_gallery_sync_state (
   catalog_key text primary key,
   last_synced_payload jsonb not null,
   last_synced_hash text not null,
+  gallery_baseline_payload jsonb,
+  shopify_baseline_payload jsonb,
   gallery_updated_at timestamptz not null default now(),
   shopify_updated_at timestamptz not null default now(),
   synced_at timestamptz not null default now()
 );
 
--- Preserve both conflicting values for private audit; unresolved bootstrap
--- conflicts are explicitly held for review, never overwritten silently.
+-- Keep independent pre-sync snapshots so existing copy differences are never
+-- mistaken for new edits and overwritten during the first live bootstrap.
+alter table public.shopify_gallery_sync_state
+  add column if not exists gallery_baseline_payload jsonb,
+  add column if not exists shopify_baseline_payload jsonb;
+
+-- Preserve both values for private audit when concurrent edits collide.
+-- Initial side-specific snapshots prevent pre-existing copy differences from
+-- being mistaken for new edits during the first canary synchronization.
 create table if not exists public.shopify_gallery_sync_conflicts (
   id uuid primary key default gen_random_uuid(),
   conflict_key text not null unique,
