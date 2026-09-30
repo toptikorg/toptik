@@ -42,8 +42,10 @@ const bbCategories = [
   },
 ];
 
-// Canonical host only; indexing directives stay noindex, follow (root layout).
+// Canonical host only; the public landing page inherits index, follow from root layout.
 export const metadata: Metadata = {
+  title: "גלריית TopTik | מזוודות ותיקי נסיעות",
+  description: "הכירו את גלריית TopTik: מבחר מזוודות, טרולי ותיקי נסיעות ממותגים מובילים. עברו לגלריה כדי להשוות בין דגמים, צבעים ומפרטים.",
   alternates: { canonical: "/" },
 };
 
@@ -81,7 +83,7 @@ export default function Home() {
         {/* ─── TOP NAVBAR (restored to original) ─── */}
         <header className="navbar">
           <div className="brand">
-            <div className="title">TOPTIK COLLECTION</div>
+            <h1 className="title">TOPTIK COLLECTION</h1>
             <div className="slogan">Move in Style. Travel with Purpose.</div>
           </div>
 
@@ -278,6 +280,7 @@ export default function Home() {
           letter-spacing: 0.22em;
           font-size: clamp(16px, 2.2vw, 28px);
           color: var(--ink);
+          margin: 0;
           white-space: nowrap;
         }
         .brand .slogan {

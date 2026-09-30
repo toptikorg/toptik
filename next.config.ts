@@ -4,11 +4,29 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Temporary indexing hold for this Vercel app, including public assets.
-        // The separate Shopify store is not served by this configuration.
+        // Keep private/admin surfaces out of search while allowing public pages.
         source: "/:path*",
-        headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }],
+        has: [{ type: "host", value: "admin.toptik.co.il" }],
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
+      ...["admin", "dashboard", "settings", "setup", "login", "reset", "auth"].map((path) => ({
+        source: `/${path}/:path*`,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      })),
+      {
+        source: "/api/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
+  },
+  async redirects() {
+    return [
+      ...["site.toptik.co.il", "toptik-iota.vercel.app"].map((host) => ({
+        source: "/:path*",
+        has: [{ type: "host" as const, value: host }],
+        destination: "https://landing.toptik.co.il/:path*",
+        permanent: true,
+      })),
     ];
   },
   images: {

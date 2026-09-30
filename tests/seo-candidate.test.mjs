@@ -3,9 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 
-// SEO candidate, indexing hold still active: these tests pin what the candidate
-// is allowed to do (metadata, canonical, structured data
-// that mirrors visible content) and what it must not do (lift noindex).
+// SEO release: these tests pin canonical metadata and structured data that
+// mirrors visible content while public routes are indexable.
 const root = new URL("../", import.meta.url);
 const read = path => readFile(new URL(path, root), "utf8");
 
@@ -20,26 +19,28 @@ test("canonical host is landing.toptik.co.il and paths resolve against it", () =
   assert.equal(site.absoluteUrl("/carousel"), "https://landing.toptik.co.il/carousel");
 });
 
-test("phase 1 ships no sitemap: the file is absent and nothing advertises one", async () => {
-  await assert.rejects(read("src/app/sitemap.ts"), { code: "ENOENT" });
-  await assert.rejects(read("src/app/sitemap.xml"), { code: "ENOENT" });
-  await assert.rejects(read("public/sitemap.xml"), { code: "ENOENT" });
-  assert.equal(Object.hasOwn(site, "SITEMAP_PATHS"), false);
-});
-
-test("robots.txt still does not advertise the sitemap during the hold", async () => {
+test("robots.txt advertises the canonical sitemap", async () => {
   const source = await read("src/app/robots.ts");
-  assert.doesNotMatch(source, /sitemap\s*:/i);
+  assert.match(source, /sitemap:\s*"https:\/\/landing\.toptik\.co\.il\/sitemap\.xml"/);
 });
 
-test("candidate never lifts the hold", async () => {
-  for (const file of ["src/app/carousel/page.tsx", "src/app/page.tsx", "src/lib/seo/site.ts", "src/lib/seo/structured-data.ts"]) {
-    const source = await read(file);
-    assert.doesNotMatch(source, /index\s*:\s*true/, file);
-    assert.doesNotMatch(source, /robots\s*:/, `${file} must not set robots itself`);
-  }
+test("sitemap includes only canonical public routes and publishable article slugs", async () => {
+  const sitemap = await read("src/app/sitemap.ts");
+  assert.match(sitemap, /absoluteUrl\("\/"\)/);
+  assert.match(sitemap, /absoluteUrl\("\/carousel"\)/);
+  assert.match(sitemap, /absoluteUrl\("\/journal"\)/);
+  assert.match(sitemap, /publishableGalleryArticles\.map/);
+  assert.doesNotMatch(sitemap, /releaseBlocker|blocked/i);
+});
+
+test("public routes have no noindex directive; private surfaces remain explicitly excluded", async () => {
+  const layout = await read("src/app/layout.tsx");
+  assert.match(layout, /robots:\s*\{\s*index:\s*true,\s*follow:\s*true\s*\}/);
   const config = await read("next.config.ts");
-  assert.match(config, /X-Robots-Tag[\s\S]*noindex, follow/);
+  assert.doesNotMatch(config, /source:\s*"\/:path\*"\s*,\s*headers:\s*\[\{\s*key:\s*"X-Robots-Tag"/);
+  assert.match(config, /X-Robots-Tag[\s\S]*noindex, nofollow/);
+  const panel = await read("src/app/(panel)/layout.tsx");
+  assert.match(panel, /robots:\s*\{\s*index:\s*false,\s*follow:\s*false\s*\}/);
 });
 
 test("both public pages declare a same-page canonical path", async () => {

@@ -1,7 +1,4 @@
-// SEO constants for the gallery. The gallery stays noindex, follow: everything
-// here only prepares metadata so that a later, separately approved release can
-// lift the hold without further code changes. Nothing in this module changes
-// robots directives.
+// SEO constants for the public gallery and editorial routes.
 
 // Host decision (evidence in docs/seo/SEO-CANDIDATE-REPORT.md): the gallery's
 // canonical host is landing.toptik.co.il. site.toptik.co.il, admin.toptik.co.il
