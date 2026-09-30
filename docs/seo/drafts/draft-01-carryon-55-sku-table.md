@@ -34,3 +34,30 @@
 טרולי Mandarina Duck — Smile & Go (פלדה), Smile & Go (כחול), Logoduck+ Glitter (טורקיז): מוצגים בגלריה בתמונות מכמה זוויות; מידות יצרן אינן שמורות כרגע ולכן אינן מופיעות בטבלה. יושלמו רק ממקור יצרן רשמי.
 
 לצפייה בכל דגם מכל הזוויות: גלריית TopTik → מותג → קטגוריית "טרולי / Carry-on". לרכישה: חנות TopTik.
+
+## קישורים מוצעים (מאומתים מול המוצר החי, 30.09.2026)
+
+| SKU | דגם | URL בחנות | הצדקה במשפט |
+|---|---|---|---|
+| KL909001 | Intuo 55, שחור | https://www.toptik.co.il/products/samsonite-intuo-55-black-kl909001 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KL901001 | Intuo 55, כחול לילה | https://www.toptik.co.il/products/samsonite-intuo-55-blue-nights-kl901001 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KL924001 | Intuo 55, ירוק זית | https://www.toptik.co.il/products/samsonite-intuo-55-olive-green-kl924001 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KL966001 | Intuo 55, צהוב הדרים | https://www.toptik.co.il/products/samsonite-intuo-55-citrus-kl966001 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KL974001 | Intuo 55, ליים | https://www.toptik.co.il/products/samsonite-intuo-55-lime-kl974001 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KL909005 | Intuo 55 Easy Access, שחור | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-black-kl909005 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KL901005 | Intuo 55 Easy Access, כחול לילה | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-blue-nights-kl901005 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KL924005 | Intuo 55 Easy Access, ירוק זית | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-olive-green-kl924005 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KL966005 | Intuo 55 Easy Access, צהוב הדרים | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-citrus-kl966005 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KL974005 | Intuo 55 Easy Access, ליים | https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-lime-kl974005 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KJ109001 | Upscape 55, שחור | https://www.toptik.co.il/products/samsonite-upscape-55-black-kj109001 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KJ111001 | Upscape 55, כחול | https://www.toptik.co.il/products/samsonite-upscape-55-nautical-blue-kj111001 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KJ114001 | Upscape 55, ירוק | https://www.toptik.co.il/products/samsonite-upscape-55-climbing-ivy-kj114001 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KJ106001 | Upscape 55, צהוב | https://www.toptik.co.il/products/samsonite-upscape-55-yellow-kj106001 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KJ114007 | Upscape 55 Easy Access, ירוק | https://www.toptik.co.il/products/samsonite-upscape-55-easy-access-climbing-ivy-kj114007 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KJ106007 | Upscape 55 Easy Access, צהוב | https://www.toptik.co.il/products/samsonite-upscape-55-easy-access-yellow-kj106007 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KO709005 | Urbify 55, שחור | https://www.toptik.co.il/products/samsonite-urbify-55-black-ko709005 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KO701005 | Urbify 55, כחול נייבי | https://www.toptik.co.il/products/samsonite-urbify-55-navy-blue-ko701005 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KO704005 | Urbify 55, ירוק אורן | https://www.toptik.co.il/products/samsonite-urbify-55-pine-green-ko704005 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+| KO776005 | Urbify 55, לבה | https://www.toptik.co.il/products/samsonite-urbify-55-lava-ko776005 | שורת הטבלה מציגה את מידות הדגם; הקישור מוביל לרכישתו |
+
+כל URL נבדק מול ה-JSON של המוצר החי (התאמת SKU בוריאנט). שיטת ההצגה בפועל בכתבה (החלטת טל 30.09): לא קישור טקסט בגוף הכתבה אלא כרטיס המוצר הקיים של הגלריה, מוטמע ליד הפסקה הרלוונטית, עם כפתור "להמשך רכישה בחנות TopTik" הקיים (קישור variant ממופה ומאומת). כרטיסים מוטמעים: P10JNV05465. הרשימה למעלה נשארת כתיעוד המיפוי המאומת.

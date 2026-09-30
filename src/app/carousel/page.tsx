@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import CarouselPageClient from "./CarouselPageClient";
+import { GalleryContentSections } from "@/components/carousel/GalleryContentSections";
 import { isCarouselEnabled } from "@/lib/carousel/feature-flag";
 import {
   CAROUSEL_DESCRIPTION,
@@ -44,6 +45,7 @@ export default function CarouselPage() {
         dangerouslySetInnerHTML={{ __html: jsonLdString(carouselStructuredData()) }}
       />
       <CarouselPageClient />
+      <GalleryContentSections />
     </>
   );
 }

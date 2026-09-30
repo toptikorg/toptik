@@ -3506,3 +3506,32 @@ html.a11y-big-cursor * {
 @media (max-width: 420px) { .carousel-navrow-label { display: none; } .carousel-navrow-btn { padding: 0; width: 44px; } }
 
 .catalog-carousel > p[role="status"] { margin: 4px 12px; text-align: center; font-size: 12.5px; color: rgba(242, 230, 207, 0.75); }
+
+/* ─── Editorial content after the products area (manufacturer size tables) ─── */
+.gallery-info {
+  max-width: 860px;
+  margin: 28px auto 40px;
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+  color: #f2e6cf;
+}
+.gallery-info-title { margin: 26px 0 8px; font-size: 20px; font-weight: 700; color: #f7d9a4; }
+.gallery-info-text { margin: 8px 0; font-size: 14px; line-height: 1.65; color: rgba(242, 230, 207, 0.88); }
+.gallery-info-note { font-size: 12.5px; color: rgba(242, 230, 207, 0.66); }
+.gallery-info-link { color: #d7aa6a; text-decoration: underline; }
+.gallery-info-link:focus-visible { outline: 2px solid #f2ece2; outline-offset: 2px; }
+/* The table scrolls sideways on narrow screens instead of squeezing the text. */
+.gallery-info-tablewrap { overflow-x: auto; margin: 10px 0 4px; border: 1px solid rgba(215, 170, 106, 0.3); border-radius: 10px; }
+.gallery-info-tablewrap:focus-visible { outline: 2px solid #f2ece2; outline-offset: 2px; }
+.gallery-info-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px; line-height: 1.45; }
+.gallery-info-caption { padding: 8px 10px 2px; text-align: right; font-size: 12.5px; color: rgba(242, 230, 207, 0.66); caption-side: top; }
+.gallery-info-table th, .gallery-info-table td { padding: 7px 10px; text-align: right; border-bottom: 1px solid rgba(215, 170, 106, 0.18); }
+.gallery-info-table thead th { font-weight: 700; color: #f7d9a4; background: rgba(215, 170, 106, 0.1); position: sticky; top: 0; }
+.gallery-info-table tbody th { font-weight: 600; white-space: nowrap; }
+.gallery-info-table tbody tr:last-child th, .gallery-info-table tbody tr:last-child td { border-bottom: none; }
+/* Embedded product cards inside the editorial content: the gallery's own card,
+   store button included, without overlays or dialogs. */
+.gallery-info-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin: 14px 0; }
+/* Two cards share a desktop row (the Intuo base/Easy Access pair); below
+   ~740px each card takes its own row. */
+.gallery-info-card { flex: 1 1 360px; max-width: 420px; min-width: 0; }
+.gallery-info-card .catalog-card { margin: 0 auto; }
