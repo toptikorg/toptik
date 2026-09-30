@@ -48,6 +48,14 @@ The four synchronized fields cover the customer-visible store copy and product S
 
 ## Required setup and release gates
 
+### One-product production canary gate
+
+- The first live activation must set SHOPIFY_SYNC_CANARY_SKU to exactly one verified SKU. Missing, malformed, comma-separated, or semicolon-separated values disable the worker; no broad allowlist is accepted.
+- Webhook reconciliation and Gallery outbox writes are restricted to that normalized exact SKU. Other product events are acknowledged without catalog writes. Delete events for the canary are held for review and never deactivate it during the canary.
+- The bootstrap endpoint accepts one Shopify product ID, reads that product, verifies exactly one variant has the configured canary SKU, and queues only that product. It never scans or queues the whole Shopify catalog.
+- Keep the SKU canary active through both directions and live readback. Only after the one-SKU round-trip passes should a separately reviewed rollout change expand the eligible catalog.
+- The canary gate limits which product the worker can mutate; it does not replace correct Shopify app scopes, signed webhooks, server-side secrets, or Supabase protections.
+
 1. Install a first-party Shopify custom app with only the read/write product scopes needed for product snapshots and product-copy mutation. Keep tokens server-side as Vercel Secrets.
 2. Configure the expected `*.myshopify.com` domain, Admin API token, `SHOPIFY_WEBHOOK_SECRET`, Online Store publication GID, and API version. Never log or document secret values.
 3. Apply the candidate migration in an isolated Supabase project first; verify RLS/grants, RPC claim behavior, conflict deduplication, copy version checks, and the public projection with anon/authenticated/service-role roles.

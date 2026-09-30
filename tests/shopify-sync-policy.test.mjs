@@ -66,6 +66,10 @@ test("invalid concurrent timestamps use Shopify deterministically", () => {
 });
 
 test("ambiguous identity and concurrent update codes are reviewable; transient API errors can retry", () => {
+  assert.equal(isSyncReviewCode("SYNC_CANARY_DELETE_DISABLED"), true);
+  assert.equal(isSyncReviewCode("SYNC_CANARY_NOT_CONFIGURED"), true);
+  assert.equal(isSyncReviewCode("SYNC_CANARY_VARIANT_AMBIGUOUS"), true);
+  assert.equal(isSyncReviewCode("SYNC_SKU_OUTSIDE_CANARY"), true);
   assert.equal(isSyncReviewCode("SYNC_COPY_INITIAL_CONFLICT"), true);
   assert.equal(isSyncReviewCode("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT"), true);
   assert.equal(isSyncReviewCode("SYNC_PRODUCT_COPY_MAPPING_AMBIGUOUS"), true);

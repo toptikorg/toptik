@@ -26,6 +26,21 @@ export function normalizeSyncSku(raw: string | null | undefined): string | null 
   return /^P\d{2}/.test(key) && key.endsWith("TU") ? key.slice(0, -2) : key;
 }
 
+/**
+ * Production activation is intentionally restricted to one exact SKU until
+ * the first live round-trip is verified. Multiple values are rejected rather
+ * than interpreted as an allowlist.
+ */
+export function configuredSyncCanarySku(raw: string | null | undefined): string | null {
+  if (!raw?.trim() || /[,;\r\n]/.test(raw)) return null;
+  const key = normalizeSyncSku(raw);
+  return key && /^[A-Z0-9]+$/.test(key) ? key : null;
+}
+
+export function isSyncCanarySku(candidate: string | null | undefined, configured: string | null): boolean {
+  return configured !== null && normalizeSyncSku(candidate) === configured;
+}
+
 /** Return only one-to-one matches; never select a winner from duplicates. */
 export function matchExactSkus(
   galleryRows: GallerySkuRow[],

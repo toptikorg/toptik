@@ -6,7 +6,7 @@ import { stripTypeScriptTypes } from "node:module";
 const source = readFileSync("src/lib/shopify/sync-rules.ts", "utf8")
   .replace('import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";',
     'const normalizeCatalogKey = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");');
-const { matchExactSkus, normalizeSyncSku, shopifyProductGid, numericVariantId, staleBindingKeys } = await import(
+const { configuredSyncCanarySku, isSyncCanarySku, matchExactSkus, normalizeSyncSku, shopifyProductGid, numericVariantId, staleBindingKeys } = await import(
   `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString("base64")}`
 );
 
@@ -16,6 +16,18 @@ test("normalizes punctuation and only the approved Mandarina Duck TU suffix", ()
   assert.equal(normalizeSyncSku("BAH08453.001"), "BAH08453001");
   assert.equal(normalizeSyncSku("ABC-TU"), "ABCTU");
   assert.equal(normalizeSyncSku("  "), null);
+});
+
+test("sync canary accepts exactly one normalized SKU and denies missing or multiple values", () => {
+  const canary = configuredSyncCanarySku("P10SZV24-05J-TU");
+  assert.equal(canary, "P10SZV2405J");
+  assert.equal(configuredSyncCanarySku(null), null);
+  assert.equal(configuredSyncCanarySku(""), null);
+  assert.equal(configuredSyncCanarySku("SKU-1,SKU-2"), null);
+  assert.equal(configuredSyncCanarySku("SKU-1;SKU-2"), null);
+  assert.equal(isSyncCanarySku("P10SZV2405J", canary), true);
+  assert.equal(isSyncCanarySku("OTHER-SKU", canary), false);
+  assert.equal(isSyncCanarySku("P10SZV2405J", null), false);
 });
 
 test("creates matches only for unique exact normalized SKUs", () => {

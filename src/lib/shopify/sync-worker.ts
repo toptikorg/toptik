@@ -9,7 +9,7 @@ import {
   type ShopifyProductSnapshot,
   type ShopifyVisibleCopy,
 } from "./admin-api";
-import { matchExactSkus, normalizeSyncSku, numericVariantId, shopifyProductGid, staleBindingKeys } from "./sync-rules";
+import { configuredSyncCanarySku, isSyncCanarySku, matchExactSkus, normalizeSyncSku, numericVariantId, shopifyProductGid, staleBindingKeys } from "./sync-rules";
 import { isSyncReviewCode, mergeVisibleProductCopy, type VisibleProductCopy } from "./sync-policy";
 
 const BATCH_SIZE = 20;
@@ -51,35 +51,34 @@ function normalizedPayload(payload: unknown, catalogKey: string): VisibleProduct
   return { title: value.title.trim(), description: value.description, seoTitle: value.seoTitle, seoDescription: value.seoDescription };
 }
 
-async function deactivateProduct(supabase: SupabaseClient, productGid: string) {
-  const { error } = await supabase.rpc("deactivate_shopify_gallery_product", { p_product_gid: productGid });
-  if (error) throw new Error("SYNC_BINDING_DEACTIVATE_FAILED");
-}
-
-async function updateExactProductBindings(supabase: SupabaseClient, event: InboxEvent, productGid: string) {
+async function updateExactProductBindings(supabase: SupabaseClient, event: InboxEvent, productGid: string, canarySku: string) {
   if (event.topic === "products/delete") {
-    await deactivateProduct(supabase, productGid);
-    return { reviewCount: 0, product: null as ShopifyProductSnapshot | null };
+    // The one-SKU canary is for copy round-trips only; deletion is deliberately
+    // held for review and cannot deactivate a live Gallery binding.
+    const { data, error } = await supabase.from("shopify_gallery_bindings")
+      .select("catalog_key").eq("product_gid", productGid).eq("catalog_key", canarySku).limit(1);
+    if (error) throw new Error("SYNC_BINDING_READ_FAILED");
+    if (!data?.length) return { reviewCount: 0, product: null as ShopifyProductSnapshot | null };
+    throw new Error("SYNC_CANARY_DELETE_DISABLED");
   }
   const product = await fetchProductSnapshot(productGid);
-  if (!product) {
-    await deactivateProduct(supabase, productGid);
-    return { reviewCount: 0, product: null as ShopifyProductSnapshot | null };
-  }
+  if (!product) return { reviewCount: 0, product: null as ShopifyProductSnapshot | null };
   if (!/^[a-z0-9][a-z0-9-]*$/.test(product.handle)) throw new Error("SYNC_SHOPIFY_HANDLE_UNSAFE");
+  const canaryVariants = product.variants.filter(variant => isSyncCanarySku(variant.sku, canarySku));
+  if (canaryVariants.length === 0) return { reviewCount: 0, product: null as ShopifyProductSnapshot | null };
+  if (canaryVariants.length > 1) throw new Error("SYNC_CANARY_VARIANT_AMBIGUOUS");
   const { data: allItems, error: itemError } = await supabase.from("carousel_items").select("id,catalog_number");
   if (itemError || !allItems) throw new Error("SYNC_GALLERY_CATALOG_READ_FAILED");
   const { data: previousBindings, error: bindingReadError } = await supabase.from("shopify_gallery_bindings")
     .select("catalog_key,carousel_item_id,product_gid,variant_gid,product_handle,is_published,source_updated_at").eq("product_gid", productGid);
   if (bindingReadError) throw new Error("SYNC_BINDING_READ_FAILED");
-  const previous = (previousBindings ?? []) as BindingRow[];
-  const variantKeys = new Set(product.variants.map(v => normalizeSyncSku(v.sku)).filter((v): v is string => v !== null));
+  const previous = ((previousBindings ?? []) as BindingRow[]).filter(row => row.catalog_key === canarySku);
   const previousKeys = new Set(previous.map(row => row.catalog_key));
   const galleryItems = (allItems as Array<{id:string;catalog_number:string|null}>).filter(row => {
     const key = normalizeSyncSku(row.catalog_number);
-    return key !== null && (variantKeys.has(key) || previousKeys.has(key));
+    return key === canarySku || (key !== null && previousKeys.has(key));
   });
-  const result = matchExactSkus(galleryItems.map(row => ({ id: row.id, catalogNumber: row.catalog_number })), product.variants);
+  const result = matchExactSkus(galleryItems.map(row => ({ id: row.id, catalogNumber: row.catalog_number })), canaryVariants);
   const conflicts = result.reviews.map(review => `${review.reason}:${review.catalogKey ?? "none"}`);
   const protectedKeys = new Set(result.reviews.filter(r => r.reason === "duplicate_gallery_sku" || r.reason === "duplicate_shopify_sku")
     .map(r => r.catalogKey).filter((key): key is string => key !== null));
@@ -213,7 +212,9 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
 async function processOneInboxEvent(supabase: SupabaseClient, event: InboxEvent) {
   const productGid = eventProductGid(event);
   if (!productGid) throw new Error("SYNC_PRODUCT_GID_INVALID");
-  const result = await updateExactProductBindings(supabase, event, productGid);
+  const canarySku = configuredSyncCanarySku(process.env.SHOPIFY_SYNC_CANARY_SKU);
+  if (!canarySku) throw new Error("SYNC_CANARY_NOT_CONFIGURED");
+  const result = await updateExactProductBindings(supabase, event, productGid, canarySku);
   let copyAmbiguous = false;
   if (result.product && !result.reviewCount) {
     const binding = await singleBindingForProduct(supabase, productGid).catch(error => {
@@ -230,7 +231,8 @@ async function processOneInboxEvent(supabase: SupabaseClient, event: InboxEvent)
   return status;
 }
 
-async function processOneOutboxRow(supabase: SupabaseClient, row: OutboxRow) {
+async function processOneOutboxRow(supabase: SupabaseClient, row: OutboxRow, canarySku: string) {
+  if (!isSyncCanarySku(row.catalog_key, canarySku)) throw new Error("SYNC_SKU_OUTSIDE_CANARY");
   const { data: bindingData, error } = await supabase.from("shopify_gallery_bindings")
     .select("catalog_key,carousel_item_id,product_gid,variant_gid,product_handle,is_published,source_updated_at")
     .eq("catalog_key", row.catalog_key).maybeSingle();
@@ -275,8 +277,10 @@ async function processQueue<T extends { id: string }>(supabase: SupabaseClient, 
 }
 
 export async function processShopifySyncQueues(supabase: SupabaseClient) {
+  const canarySku = configuredSyncCanarySku(process.env.SHOPIFY_SYNC_CANARY_SKU);
+  if (!canarySku) throw new Error("SYNC_CANARY_NOT_CONFIGURED");
   const events = await processQueue<InboxEvent>(supabase, "claim_shopify_webhook_events", row => processOneInboxEvent(supabase, row));
-  const outbox = await processQueue<OutboxRow>(supabase, "claim_shopify_gallery_outbox", row => processOneOutboxRow(supabase, row));
+  const outbox = await processQueue<OutboxRow>(supabase, "claim_shopify_gallery_outbox", row => processOneOutboxRow(supabase, row, canarySku));
   return { events, outbox };
 }
 
