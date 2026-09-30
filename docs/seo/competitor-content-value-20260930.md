@@ -97,3 +97,9 @@ Prioritize a new article only if the live catalog and source ledger support it a
 ## Release status
 
 Research/documentation only. No article was added or published in this research step; no code, Shopify, Supabase, Vercel, Search Console, sitemap or `noindex` setting changed. Draft Gallery pages remain subject to their existing QA and release gates.
+
+## Superseding implementation and release status — 2026-09-30
+
+The competitor findings informed a restrained Gallery editorial format: product-specific manufacturer facts and comparisons, clear editorial navigation, and relevant gallery product cards whose purchase action leads to the exact Shopify product page. The article text is not a duplicate of the broad Shopify guides.
+
+11 publishable Gallery articles are live at `https://landing.toptik.co.il/journal`; two items without verified Shopify destinations remain blocked and are not exposed publicly. The production sitemap contains 14 public URLs and Search Console reports Success with 14 discovered pages. The Gallery property is verified, and indexing requests were accepted for the homepage, collection, and journal archive. Public routes are crawlable; `/admin`, account routes, and APIs remain noindex. Google controls when or whether each URL is indexed or ranked.
