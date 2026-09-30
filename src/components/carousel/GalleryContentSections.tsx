@@ -154,10 +154,6 @@ export function GalleryContentSections() {
         בהרחבה 81×54×36 ס״מ. מחירים, מלאי ורכישה — ב<a className="gallery-info-link" href={`${STORE_ORIGIN}/`}>חנות TopTik</a>.
       </p>
       <div className="gallery-info-cards"><ArticleProductCard sku="KL974004" /></div>
-      <p className="gallery-info-text gallery-info-note">
-        מקורות הנתונים: עמודי המוצר הרשמיים של Samsonite שמהם שמור המפרט בגלריה (samsonite.fi,
-        samsonite.co.uk, samsonite.com.au); אומת 30.09.2026.
-      </p>
     </section>
   );
 }
