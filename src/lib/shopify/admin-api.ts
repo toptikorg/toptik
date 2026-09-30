@@ -1,6 +1,6 @@
 import "server-only";
 import { createShopifyClientCredentialsProvider } from "./client-credentials";
-import { plainDescriptionToHtml, descriptionTextFromHtml, canonicalDescriptionHtml, assertSafeDescriptionHtml } from "./description-document";
+import { plainDescriptionToHtml, descriptionTextFromHtml, descriptionPairsEquivalent, assertSafeDescriptionHtml } from "./description-document";
 
 export type ShopifyVariant = { id: string; sku: string | null };
 export type ShopifyProductSnapshot = {
@@ -320,9 +320,9 @@ export function buildShopifyVisibleCopyInput(productGid: string, copy: ShopifyVi
   const previous = visibleCopyFromProduct(current);
   const patch: ShopifyCopyPatch = { id: productGid };
   if (copy.title !== previous.title) patch.title = copy.title;
-  const descriptionEdited = copy.description !== previous.description ||
-    (typeof copy.descriptionHtml === "string" &&
-      canonicalDescriptionHtml(copy.descriptionHtml) !== canonicalDescriptionHtml(current.descriptionHtml));
+  const descriptionEdited = typeof copy.descriptionHtml === "string"
+    ? !descriptionPairsEquivalent(copy, previous)
+    : copy.description !== previous.description;
   if (descriptionEdited) {
     const html = copy.descriptionHtml ?? galleryTextToShopifyHtml(copy.description);
     if (typeof copy.descriptionHtml === "string" && descriptionTextFromHtml(html) !== copy.description) {

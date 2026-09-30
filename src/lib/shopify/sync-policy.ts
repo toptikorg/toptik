@@ -1,4 +1,4 @@
-import { canonicalDescriptionHtml, plainDescriptionToHtml } from "./description-document";
+import { descriptionPairsEquivalent } from "./description-document";
 
 export type VisibleProductCopy = {
   title: string;
@@ -23,11 +23,8 @@ const fields = ["title", "seoTitle", "seoDescription"] as const;
 const nonEmpty = (value: string | null): boolean => Boolean(value?.trim());
 
 const hasDescriptionHtml = (copy: VisibleProductCopy): boolean => typeof copy.descriptionHtml === "string";
-const descriptionDocument = (copy: VisibleProductCopy): string => canonicalDescriptionHtml(
-  copy.descriptionHtml ?? plainDescriptionToHtml(copy.description),
-);
 const descriptionSame = (left: VisibleProductCopy, right: VisibleProductCopy): boolean =>
-  left.description === right.description && descriptionDocument(left) === descriptionDocument(right);
+  descriptionPairsEquivalent(left, right);
 
 /** Readback tolerates Shopify's equivalent HTML serialization, never removed structure. */
 export function visibleCopiesEquivalent(left: VisibleProductCopy, right: VisibleProductCopy): boolean {
@@ -43,8 +40,9 @@ function assignDescription(target: VisibleProductCopy, source: VisibleProductCop
 function descriptionChangedFrom(copy: VisibleProductCopy, baseline: VisibleProductCopy): boolean {
   // A version-1 baseline has no HTML evidence. Hydrate it from the current
   // snapshot instead of treating markup first observed after upgrade as an edit.
-  return copy.description !== baseline.description ||
-    (hasDescriptionHtml(copy) && hasDescriptionHtml(baseline) && !descriptionSame(copy, baseline));
+  return hasDescriptionHtml(copy) && hasDescriptionHtml(baseline)
+    ? !descriptionSame(copy, baseline)
+    : copy.description !== baseline.description;
 }
 
 /**

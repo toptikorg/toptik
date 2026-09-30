@@ -194,7 +194,7 @@ Evidence: workspace `outputs/toptik-verified78-copy-activation-live-20260930/`, 
 
 PR #23 subsequently published the rich-description translation guard as `701c12db42ae7d4b64367b9bfd4f82b25aaca04e`, Vercel `EamEME6rCB59gCecnykYhL1BCHPj`. It preserves rich markup and intervening edits instead of applying a stale plain translation. All 257 tests/lint/build and CI passed. The live authenticated editor interaction is **NOT TESTED**; a Ready build alone does not close that acceptance item.
 
-## Automatic admission of new public Shopify products — candidate, default off
+## Automatic admission of new public Shopify products — default-off design
 
 `SHOPIFY_SYNC_AUTOCREATE=published_shopify` adds a new-product admission lane inside the existing signed webhook queue and product lease. Absent/malformed values leave the lane off. It applies only when an exact product has no existing copy approval. Existing disabled approvals and deletion events cannot bypass their restrictions.
 
@@ -205,3 +205,17 @@ At most 20 images are read from exact Shopify CDN URLs, each at most 8 MiB and 1
 Permanent ambiguity enters review; transient source/media/network failures remain in the durable retry queue. Successful insertion or deliberate brand/draft exclusion acknowledges the event. A lost acknowledgement is retried against the recorded identity; no existing product is overwritten. Public catalog responses already use `no-store` and a current database read.
 
 Release requires executed SQL permission/rollback/idempotence fixtures, full application gates, an additive private migration, a default-off Production deployment, then explicit feature activation and live evidence. Code/Preview success must not be reported as a newly created live product. Rollback disables only `SHOPIFY_SYNC_AUTOCREATE` and preserves valid new rows/audit/copy approvals; existing copy synchronization stays active. Gallery→Shopify creation, shared media/spec edits, inventory and multi-variant cases remain separate work.
+
+### Activated configuration, 2026-09-30
+
+PR #24 published `d8a96f233dab3f5c3ecd4788654175ba5ae2163f`. The additive migration passed 92 executed PostgreSQL/PGlite checks and live service-only/RLS inspection. Full suite: 274 tests, lint/build and all PR checks passed. Code was first deployed with intake disabled, then `SHOPIFY_SYNC_AUTOCREATE=published_shopify` was enabled in Production; deployment `2Jt1yUSi31DWegxVkSAjWq3Zv8a8` is Ready. Existing 82 rows, settings, complete public catalog, 78 copy approvals and error queues remained unchanged at both release steps. **A genuine new product has not yet been created in this live acceptance**: all current eligible public products were already present. Do not use held items or a public dummy as proof.
+
+The Logoduck+ product description was separately corrected using its official manufacturer page. Shopify mutation at 14:11:03 UTC propagated automatically through delivery `e44c34f5-142a-5d8e-adfa-608500ac2862`, processed 14:11:15.543 UTC. Shop and Gallery accepted HTML are byte-identical. All other 81 rows/settings/protected commerce were retained. Actual modal → correct Shopify SKU/variant → Back passed on desktop and Chromium 390px; physical Safari is NOT TESTED. Five existing Shopify image alts were then separately corrected from XS to Logoduck+; live readback passed without replacing media. This is not automatic media-sync evidence.
+
+### List-formatting readback correction — prepared
+
+Shopify inserted five whitespace-only nodes around the four `li` elements in the accepted description. An independent structural verifier proved content, attributes, order and safety unchanged. The original strict verifier timeout was retained as evidence. A real worker regression also reproduced `SYNC_COPY_READBACK_MISMATCH` after an accepted Gallery→Shopify write with the same formatting.
+
+The narrow fix ignores only ASCII whitespace directly in plain `ul`/`ol` containers during comparison. Raw stored HTML and the text extractor remain unchanged. Inline word spacing, list structure/order/type, attributes, and `pre`/`code`/CSS-sensitive content remain significant. Differing derived plain text is accepted only when both strings exactly derive from their own equivalent rich document. Per-side readback baselines retain the actual raw representation, preventing repeated writes after an uncertain accepted response. No schema, permissions, catalog eligibility, commercial fields or indexing settings change.
+
+Live acceptance for this fix remains pending until its own Production release and an ordinary rich-description Gallery edit propagates without a review/readback error. Rollback is the preceding application release, preserving all product data and ledger evidence. Workspace evidence: `outputs/toptik-logoduck-description-correction-20260930/`, `outputs/toptik-logoduck-image-alts-20260930/` and `outputs/toptik-logoduck-description-browser-20260930.json`.
