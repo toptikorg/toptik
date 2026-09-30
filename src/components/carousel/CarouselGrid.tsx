@@ -108,7 +108,7 @@ export function CatalogCard({
   const [imageState, setImageState] = useState<ProductImageState>("loading");
   const imageReady = imageState === "ready";
   const catalog = extractCatalogNumber(item);
-  const purchaseUrl = purchaseUrlFor(item.catalogNumber);
+  const purchaseUrl = purchaseUrlFor(item.catalogNumber, item.shopifyLink);
   const description = descriptionWithoutCatalogNumber(item.description, catalog);
 
   return (

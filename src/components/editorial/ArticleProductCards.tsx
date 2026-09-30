@@ -27,7 +27,7 @@ export async function ArticleProductCards({
     // Fail closed: normalization accepts harmless punctuation differences,
     // but two active records with the same normalized SKU are ambiguous.
     const item = matches.length === 1 ? matches[0] : undefined;
-    if (!item || !item.coverImagePath || !purchaseUrlFor(item.catalogNumber)) return [];
+    if (!item || !item.coverImagePath || !purchaseUrlFor(item.catalogNumber, item.shopifyLink)) return [];
     return [{
       item,
       descriptionOverride: descriptionOverrides[key],

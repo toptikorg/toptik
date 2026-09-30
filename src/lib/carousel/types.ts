@@ -34,7 +34,12 @@ export interface CarouselItem {
   id: string;
   title: string;
   description: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  copyUpdatedAt?: string | null;
   catalogNumber?: string | null;
+  /** Live Shopify navigation binding, hydrated from the narrow public link projection. */
+  shopifyLink?: { handle: string; variantId: string; isPublished: boolean } | null;
   sourceUrl?: string | null;
   coverImagePath: string;
   displayOrder: number;
@@ -63,6 +68,9 @@ export interface AdminItemInput {
   id?: string;
   title: string;
   description?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  copyUpdatedAt?: string | null;
   catalogNumber?: string | null;
   sourceUrl?: string | null;
   displayOrder: number;

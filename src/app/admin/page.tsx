@@ -296,7 +296,7 @@ export default function AdminPage() {
 
   function updateItemField(
     index: number,
-    field: "title" | "description" | "catalogNumber" | "displayOrder" | "isActive",
+    field: "title" | "description" | "seoTitle" | "seoDescription" | "catalogNumber" | "displayOrder" | "isActive",
     value: string | number | boolean,
   ) {
     setPayload((current) => {
@@ -309,6 +309,8 @@ export default function AdminPage() {
         item.catalogNumber = normalized ? normalized : null;
       }
       else if (field === "description") item.description = String(value);
+      else if (field === "seoTitle") item.seoTitle = String(value);
+      else if (field === "seoDescription") item.seoDescription = String(value);
       else item.title = String(value);
       return next;
     });
@@ -322,6 +324,8 @@ export default function AdminPage() {
         id: itemId,
         title: "מוצר חדש",
         description: "",
+        seoTitle: "",
+        seoDescription: "",
         catalogNumber: null,
         sourceUrl: null,
         coverImagePath: "/hero-web-airport.png",
@@ -1320,6 +1324,26 @@ export default function AdminPage() {
                         rows={4}
                         style={{ width: "100%", resize: "vertical", font: "inherit" }}
                         placeholder="תיאור המוצר (יופיע בכרטיסייה ובחלון המוצר)"
+                      />
+                    </label>
+                    <label>
+                      כותרת SEO לחנות
+                      <input
+                        value={item.seoTitle ?? ""}
+                        onChange={(e) => updateItemField(itemIndex, "seoTitle", e.target.value)}
+                        maxLength={512}
+                        placeholder="ריק = ללא כותרת SEO נפרדת; מומלץ לשמור קצר"
+                      />
+                    </label>
+                    <label style={{ gridColumn: "1 / -1" }}>
+                      תיאור SEO לחנות
+                      <textarea
+                        value={item.seoDescription ?? ""}
+                        onChange={(e) => updateItemField(itemIndex, "seoDescription", e.target.value)}
+                        rows={2}
+                        maxLength={5000}
+                        style={{ width: "100%", resize: "vertical", font: "inherit" }}
+                        placeholder="תיאור לחיפוש Google; ריק = ללא תיאור SEO נפרד"
                       />
                     </label>
                     <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: -4 }}>

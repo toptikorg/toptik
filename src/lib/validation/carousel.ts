@@ -47,7 +47,10 @@ const cachedTechSpecsSchema = z.object({
 export const carouselItemInputSchema = z.object({
   id: z.string().uuid().optional(),
   title: z.string().min(1).max(120),
-  description: z.string().max(2000).nullable().optional(),
+  description: z.string().max(50000).nullable().optional(),
+  seoTitle: z.string().max(512).nullable().optional(),
+  seoDescription: z.string().max(5000).nullable().optional(),
+  copyUpdatedAt: z.string().max(64).nullable().optional(),
   catalogNumber: z.string().trim().min(2).max(64).nullable().optional(),
   sourceUrl: z.string().url().max(2000).nullable().optional(),
   displayOrder: z.number().int().min(1).max(9999),

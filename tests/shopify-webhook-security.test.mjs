@@ -47,10 +47,17 @@ test("rejects unsigned, oversized, malformed, and structurally invalid payloads"
   assert.deepEqual(verifyProductWebhook({ ...base, rawBody: noId, signature: createHmac("sha256", secret).update(noId).digest("base64") }), { ok: false, reason: "bad_payload" });
 });
 
-test("the database inbox deduplicates delivery ids and keeps sync tables private", () => {
+test("the database inbox deduplicates events and exposes only the safe product-link projection", () => {
   const migration = readFileSync("supabase/migrations/20260930_shopify_gallery_sync_inbox.sql", "utf8");
   assert.match(migration, /delivery_id text not null unique/i);
   assert.match(migration, /alter table public\.shopify_webhook_events enable row level security/i);
-  assert.match(migration, /Deliberately create no policies/i);
-  assert.doesNotMatch(migration, /create policy/i);
+  assert.match(migration, /Deliberately create no policies for the inbox, bindings, outbox, sync state/i);
+  assert.match(migration, /create policy "shopify_gallery_public_links_read"[\s\S]*?for select to anon, authenticated using \(true\)/i);
+  assert.doesNotMatch(migration, /create policy[^;]*on public\.(shopify_webhook_events|shopify_gallery_bindings|shopify_gallery_content_outbox|shopify_gallery_sync_state|shopify_gallery_sync_conflicts)/i);
+  assert.match(migration, /alter table public\.carousel_items[\s\S]*?add column if not exists seo_title/);
+  assert.match(migration, /create table if not exists public\.shopify_gallery_sync_conflicts[\s\S]*?winner text not null/);
+  assert.match(migration, /grant execute on function public\.claim_shopify_webhook_events\(integer\) to service_role/i);
+  assert.match(migration, /grant execute on function public\.deactivate_shopify_gallery_keys\(text, text\[\], timestamptz\) to service_role/i);
+  assert.match(migration, /case when p_is_published then p_product_handle else '' end/i);
+  assert.match(migration, /set is_published = false, product_handle = '', variant_id = '0'/i);
 });

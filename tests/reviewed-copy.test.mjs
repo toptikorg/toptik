@@ -137,7 +137,7 @@ test("import through save preserves raw SKU identity while storage paths stay sa
   assert.ok(saveStart >= 0);
   const saveBody = repositorySource.slice(saveStart).replace(/^export /gm, "");
   const { createSaver } = await moduleFrom(`export function createSaver(deps) {
-    const { adminCarouselPayloadSchema, createSupabaseServiceRoleClient, applyReviewedCopy } = deps;
+    const { adminCarouselPayloadSchema, createSupabaseServiceRoleClient, applyReviewedCopy, normalizeSyncSku, gallerySyncHash, outboxPayload } = deps;
     const isUnavailableCarouselPayload = (input) => input?.unavailable === true;
     ${saveBody}
     return saveCarouselPayload;
@@ -189,6 +189,9 @@ test("import through save preserves raw SKU identity while storage paths stay sa
         // This test isolates identity propagation, not the unchanged Zod schema.
         adminCarouselPayloadSchema: { parse: input => structuredClone(input) },
         createSupabaseServiceRoleClient: () => db, applyReviewedCopy,
+        normalizeSyncSku: value => value?.toUpperCase().replace(/[^A-Z0-9]/g, "") ?? null,
+        gallerySyncHash: () => "test-hash",
+        outboxPayload: value => ({ title: value.title, description: value.description ?? "", catalogNumber: value.catalogNumber ?? "" }),
       });
       await save({ items: [imported.item], settings: {
         autoplayMs: 3000, transitionMode: "curtain-fade",

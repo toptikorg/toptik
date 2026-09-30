@@ -3,6 +3,7 @@ import { CarouselPayload } from "@/lib/carousel/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { applyReviewedCopy } from "./reviewed-copy";
+import { normalizeSyncSku } from "@/lib/shopify/sync-rules";
 
 // Public, read-only catalog access (anon client + RLS). The service-role save
 // path lives in ./repository-admin.ts so public routes never import it.
@@ -17,6 +18,9 @@ type ItemRow = {
   id: string;
   title: string;
   description: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  copy_updated_at?: string | null;
   catalog_number?: string | null;
   source_url?: string | null;
   cover_image_path: string;
@@ -65,6 +69,23 @@ export async function getCarouselPayload(
     return fallbackCarouselPayload;
   }
 
+  // This table is a narrow public projection (SKU key + verified product URL
+  // + publication bit). If the sync migration is not installed yet, retain the
+  // audited static map in purchase-links.ts as a backwards-compatible fallback.
+  const { data: liveLinks } = await supabase
+    .from("shopify_gallery_public_links")
+    .select("catalog_key,product_handle,variant_id,is_published");
+  const liveLinksByKey = new Map((liveLinks ?? []).map((row: {
+    catalog_key: string;
+    product_handle: string;
+    variant_id: string;
+    is_published: boolean;
+  }) => [row.catalog_key, {
+    handle: row.product_handle,
+    variantId: row.variant_id,
+    isPublished: row.is_published,
+  }]));
+
   if (itemRows.length === 0) {
     // A successful empty read is distinct from the unavailable fallback above.
     return {
@@ -95,7 +116,13 @@ export async function getCarouselPayload(
       id: item.id,
       title: item.title,
       description: item.description,
+      seoTitle: item.seo_title ?? null,
+      seoDescription: item.seo_description ?? null,
+      copyUpdatedAt: item.copy_updated_at ?? null,
       catalogNumber: item.catalog_number ?? null,
+      shopifyLink: item.catalog_number
+        ? liveLinksByKey.get(normalizeSyncSku(item.catalog_number) ?? "") ?? null
+        : null,
       sourceUrl: item.source_url ?? null,
       coverImagePath: item.cover_image_path,
       displayOrder: item.display_order,

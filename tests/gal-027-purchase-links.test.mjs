@@ -48,6 +48,25 @@ test("unmapped or unknown SKUs get no purchase URL (no guessing)", () => {
   assert.equal(purchaseUrlFor(null), null);
 });
 
+test("live Shopify binding updates exact handle and variant, only while published", () => {
+  assert.equal(
+    purchaseUrlFor("SKU-NEW", { handle: "new-product-handle", variantId: "1234567890123", isPublished: true }),
+    "https://www.toptik.co.il/products/new-product-handle?variant=1234567890123",
+  );
+  assert.equal(
+    purchaseUrlFor("SKU-NEW", { handle: "new-product-handle", variantId: "1234567890123", isPublished: false }),
+    null,
+  );
+  assert.equal(
+    purchaseUrlFor("SKU-NEW", { handle: "https://attacker.example/path", variantId: "1234567890123", isPublished: true }),
+    null,
+  );
+  assert.equal(
+    purchaseUrlFor("SKU-NEW", { handle: "new-product-handle", variantId: "123x", isPublished: true }),
+    null,
+  );
+});
+
 test("purchase buttons open in the same tab, in the card and in the product modal", () => {
   for (const [name, source] of [["card", grid], ["modal", modal]]) {
     const buy = source.match(/href=\{purchaseUrl\}[^>]*>/s);

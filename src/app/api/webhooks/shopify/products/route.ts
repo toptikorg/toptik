@@ -2,21 +2,49 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyProductWebhook } from "@/lib/shopify/webhook-security";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
+import { scheduleShopifySync } from "@/lib/shopify/schedule-sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+const MAX_WEBHOOK_BYTES = 1_000_000;
+
+async function readBoundedBody(request: NextRequest): Promise<{ body: string; tooLarge: boolean }> {
+  const reader = request.body?.getReader();
+  if (!reader) return { body: "", tooLarge: false };
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_WEBHOOK_BYTES) {
+      await reader.cancel();
+      return { body: "", tooLarge: true };
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return { body: new TextDecoder().decode(bytes), tooLarge: false };
+}
 
 /**
  * Shopify product webhook inbox. It authenticates and durably deduplicates
  * events; it intentionally does not edit gallery records in the HTTP request.
- * A separately configured worker must reconcile exact SKUs from this queue.
+ * The scheduled worker reconciles exact SKU bindings and customer-visible copy.
  */
 export async function POST(request: NextRequest) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > 1_000_000) {
     return NextResponse.json({ error: "Webhook rejected" }, { status: 413 });
   }
-  const rawBody = await request.text();
+  const { body: rawBody, tooLarge } = await readBoundedBody(request);
+  if (tooLarge) return NextResponse.json({ error: "Webhook rejected" }, { status: 413 });
   const checked = verifyProductWebhook({
     rawBody,
     signature: request.headers.get("x-shopify-hmac-sha256"),
@@ -53,11 +81,15 @@ export async function POST(request: NextRequest) {
 
     // Shopify retries deliveries. The unique delivery id makes an already
     // accepted event an idempotent success without replaying its payload.
-    if (error?.code === "23505") return new NextResponse(null, { status: 200 });
+    if (error?.code === "23505") {
+      scheduleShopifySync();
+      return new NextResponse(null, { status: 200 });
+    }
     if (error) {
       console.error("Shopify webhook inbox insert failed", { code: error.code });
       return NextResponse.json({ error: "Webhook could not be queued" }, { status: 503 });
     }
+    scheduleShopifySync();
     return new NextResponse(null, { status: 200 });
   } catch (error) {
     console.error("Shopify webhook receiver unavailable", error instanceof Error ? error.name : "unknown");

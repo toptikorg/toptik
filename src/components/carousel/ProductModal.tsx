@@ -137,7 +137,7 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
   const displayed = gallery[safeIdx] ?? item.coverImagePath;
   const resolvedAngle = resolvedPath ? gallery.indexOf(resolvedPath) : -1;
   const catalogLabel = item.catalogNumber ? `דגם ${item.catalogNumber}` : "דגם";
-  const purchaseUrl = purchaseUrlFor(item.catalogNumber);
+  const purchaseUrl = purchaseUrlFor(item.catalogNumber, item.shopifyLink);
   const description = descriptionWithoutCatalogNumber(item.description, item.catalogNumber);
 
   const next = () => setAngleIdx((i) => (count ? (i + 1) % count : 0));

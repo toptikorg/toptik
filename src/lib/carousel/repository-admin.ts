@@ -2,6 +2,8 @@ import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { adminCarouselPayloadSchema } from "@/lib/validation/carousel";
 import { applyReviewedCopy } from "./reviewed-copy";
+import { gallerySyncHash, outboxPayload } from "@/lib/shopify/sync-worker";
+import { normalizeSyncSku } from "@/lib/shopify/sync-rules";
 
 // Admin-only write path (service role). Moved unchanged from ./repository.ts so
 // the public read path cannot reach the service-role client (GAL-025 / GAL-015).
@@ -23,6 +25,51 @@ export async function saveCarouselPayload(input: unknown) {
     })),
   }));
 
+  let { data: priorContentRows, error: priorContentError } = await supabase
+    .from("carousel_items")
+    .select("id,title,description,catalog_number,seo_title,seo_description,copy_updated_at");
+  // A draft deployment can run against a database before its additive sync
+  // migration. Preserve the existing editor read/write path in that case.
+  if (priorContentError && /seo_title|copy_updated_at|column|schema cache/i.test(priorContentError.message)) {
+    const legacy = await supabase.from("carousel_items").select("id,title,description,catalog_number");
+    priorContentRows = legacy.data as typeof priorContentRows;
+    priorContentError = legacy.error;
+  }
+  if (priorContentError) throw priorContentError;
+  const priorContent = new Map(((priorContentRows ?? []) as Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    catalog_number: string | null;
+    seo_title: string | null;
+    seo_description: string | null;
+    copy_updated_at: string;
+  }>).map(row => [row.id, row]));
+
+  const itemsToSave = normalizedItems.map((item, index) => {
+    const previous = priorContent.get(item.id);
+    const inputItem = parsed.items[index];
+    const seoTitle = inputItem.seoTitle === undefined ? previous?.seo_title ?? null : inputItem.seoTitle;
+    const seoDescription = inputItem.seoDescription === undefined ? previous?.seo_description ?? null : inputItem.seoDescription;
+    const copyChanged = !previous || previous.title !== item.title ||
+      (previous.description ?? null) !== (item.description ?? null) ||
+      (previous.seo_title ?? null) !== (seoTitle ?? null) ||
+      (previous.seo_description ?? null) !== (seoDescription ?? null);
+    const submittedVersion = inputItem.copyUpdatedAt;
+    if (previous && submittedVersion && previous.copy_updated_at &&
+        Date.parse(submittedVersion) !== Date.parse(previous.copy_updated_at) && copyChanged) {
+      throw new Error("SYNC_COPY_STALE_EDIT_RELOAD");
+    }
+    return {
+      ...item,
+      // Full-catalog saves from old clients/imports preserve SEO unless the
+      // caller explicitly supplied an SEO value (including an empty string).
+      seoTitle,
+      seoDescription,
+      copyUpdatedAt: copyChanged ? new Date().toISOString() : previous?.copy_updated_at ?? new Date().toISOString(),
+    };
+  });
+
   const { error: settingsError } = await supabase.from("carousel_settings").upsert(
     {
       id: 1,
@@ -35,10 +82,13 @@ export async function saveCarouselPayload(input: unknown) {
 
   // Full row incl. scraped side-data (colours + tech specs) so a "save all"
   // from the admin persists everything an import produced — not just images.
-  const fullRow = (item: (typeof normalizedItems)[number]) => ({
+  const fullRow = (item: (typeof itemsToSave)[number]) => ({
     id: item.id,
     title: item.title,
     description: item.description ?? null,
+    seo_title: item.seoTitle ?? null,
+    seo_description: item.seoDescription ?? null,
+    copy_updated_at: item.copyUpdatedAt,
     catalog_number: item.catalogNumber ?? null,
     source_url: item.sourceUrl ?? null,
     cover_image_path: item.coverImagePath,
@@ -56,9 +106,9 @@ export async function saveCarouselPayload(input: unknown) {
   // Progressive fallbacks for older DB schemas: drop the newest columns first
   // if the DB rejects them, so a save never fails outright on a lagging schema.
   const rowVariants = [
-    normalizedItems.map(fullRow),
+    itemsToSave.map(fullRow),
     // without colors/tech_specs/color/dimensions/weight/sizes/available_colors
-    normalizedItems.map((item) => ({
+    itemsToSave.map((item) => ({
       id: item.id,
       title: item.title,
       description: item.description ?? null,
@@ -69,7 +119,7 @@ export async function saveCarouselPayload(input: unknown) {
       is_active: item.isActive,
     })),
     // legacy: without catalog_number/source_url too
-    normalizedItems.map((item) => ({
+    itemsToSave.map((item) => ({
       id: item.id,
       title: item.title,
       description: item.description ?? null,
@@ -98,7 +148,7 @@ export async function saveCarouselPayload(input: unknown) {
   const validItemIds = new Set((upsertedItems ?? []).map((row: { id: string }) => row.id));
 
   const { data: existingItems } = await supabase.from("carousel_items").select("id");
-  const incomingItemIds = new Set(normalizedItems.map((item) => item.id));
+  const incomingItemIds = new Set(itemsToSave.map((item) => item.id));
   const itemIdsToDelete = (existingItems ?? [])
     .filter((row: { id: string }) => !incomingItemIds.has(row.id))
     .map((row: { id: string }) => row.id);
@@ -111,7 +161,7 @@ export async function saveCarouselPayload(input: unknown) {
     if (deleteItemsError) throw deleteItemsError;
   }
 
-  const angleRows = normalizedItems.flatMap((item) =>
+  const angleRows = itemsToSave.flatMap((item) =>
     item.angles.map((angle) => ({
       id: angle.id,
       item_id: item.id,
@@ -130,13 +180,77 @@ export async function saveCarouselPayload(input: unknown) {
 
   if (validItemIds.size > 0) {
     const { data: existingAngles } = await supabase.from("carousel_item_angles").select("id,item_id");
-    const incomingAngleIds = new Set(normalizedItems.flatMap((item) => item.angles.map((angle) => angle.id)));
+    const incomingAngleIds = new Set(itemsToSave.flatMap((item) => item.angles.map((angle) => angle.id)));
     const angleIdsToDelete = (existingAngles ?? [])
       .filter((row: { id: string; item_id: string }) => validItemIds.has(row.item_id) && !incomingAngleIds.has(row.id))
       .map((row: { id: string }) => row.id);
 
     if (angleIdsToDelete.length > 0) {
       await supabase.from("carousel_item_angles").delete().in("id", angleIdsToDelete);
+    }
+  }
+
+  // Mirror only actual Gallery-owned copy edits to the private outbox. A batch
+  // "save all" with unchanged copy must not generate a wave of Shopify writes.
+  const changedCopyIds = new Set(itemsToSave.filter(item => {
+    const previous = priorContent.get(item.id);
+    return !previous || previous.title !== item.title ||
+      (previous.description ?? null) !== (item.description ?? null) ||
+      (previous.seo_title ?? null) !== (item.seoTitle ?? null) ||
+      (previous.seo_description ?? null) !== (item.seoDescription ?? null);
+  }).map(item => item.id));
+  // Retry queue delivery after a previous transient outbox failure: if a
+  // binding exists but its last agreed payload differs, enqueue again even if
+  // this Save All did not itself change the copy.
+  const keyedItems = itemsToSave.flatMap(item => {
+    const catalogKey = normalizeSyncSku(item.catalogNumber);
+    return catalogKey ? [{ item, catalogKey }] : [];
+  });
+  if (keyedItems.length) {
+    const [bindingResult, stateResult] = await Promise.all([
+      supabase.from("shopify_gallery_bindings").select("catalog_key,carousel_item_id"),
+      supabase.from("shopify_gallery_sync_state").select("catalog_key,last_synced_payload"),
+    ]);
+    if (bindingResult.error && !/does not exist|schema cache|could not find the table/i.test(bindingResult.error.message)) throw new Error("Shopify sync binding read failed");
+    if (stateResult.error && !/does not exist|schema cache|could not find the table/i.test(stateResult.error.message)) throw new Error("Shopify sync state read failed");
+    const boundItemIds = new Set((bindingResult.data ?? []).map((row: { carousel_item_id: string }) => row.carousel_item_id));
+    const syncedByKey = new Map((stateResult.data ?? []).map((row: { catalog_key: string; last_synced_payload: unknown }) => [row.catalog_key, row.last_synced_payload]));
+    for (const { item, catalogKey } of keyedItems) {
+      if (!boundItemIds.has(item.id)) continue;
+      const content = { title: item.title, description: item.description ?? "", seoTitle: item.seoTitle ?? null, seoDescription: item.seoDescription ?? null };
+      const previousSynced = syncedByKey.get(catalogKey) as typeof content | undefined;
+      if (!previousSynced || gallerySyncHash(previousSynced) !== gallerySyncHash(content)) changedCopyIds.add(item.id);
+    }
+  }
+  const changedCopy = itemsToSave.filter(item => changedCopyIds.has(item.id));
+  const outboxRows = changedCopy.flatMap(item => {
+    const catalogKey = normalizeSyncSku(item.catalogNumber);
+    if (!catalogKey) return [];
+    const content = {
+      title: item.title,
+      description: item.description ?? "",
+      seoTitle: item.seoTitle ?? null,
+      seoDescription: item.seoDescription ?? null,
+    };
+    return [{
+      carousel_item_id: item.id,
+      catalog_key: catalogKey,
+      content_hash: gallerySyncHash(content),
+      payload: outboxPayload(content),
+      status: "pending",
+      attempts: 0,
+      created_at: new Date().toISOString(),
+      last_error: null,
+    }];
+  });
+  if (outboxRows.length) {
+    const { error: outboxError } = await supabase.from("shopify_gallery_content_outbox")
+      .upsert(outboxRows, { onConflict: "carousel_item_id,content_hash" });
+    // The migration is deployed separately. Keep the existing Gallery editor
+    // operational before setup; once the table exists, any other failure must
+    // surface because the downstream sync could otherwise be silently lost.
+    if (outboxError && !/does not exist|schema cache|could not find the table/i.test(outboxError.message)) {
+      throw new Error("Gallery content saved, but Shopify sync enqueue failed. Retry the save after checking the sync queue.");
     }
   }
 
