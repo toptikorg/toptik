@@ -39,17 +39,43 @@ export function descriptionTextFromHtml(html: string): string {
 /** Compare equivalent HTML without changing the original stored string. */
 export function canonicalDescriptionHtml(html: string): string {
   const fragment = parseFragment(html);
-  const canonicalize = (children: Node[]) => {
+  const canonicalize = (children: Node[], preserveWhitespace = false, parentTag?: string) => {
+    // Shopify pretty-prints list children. Ignore only ASCII whitespace nodes
+    // directly between li elements. Inline word spacing and block boundaries
+    // stay significant. CSS hooks and whitespace-sensitive elements fail closed.
+    const plainList = !preserveWhitespace && (parentTag === "ul" || parentTag === "ol") &&
+      children.every(node => node.nodeName === "#comment" ||
+        (isElement(node) && node.tagName === "li") ||
+        (node.nodeName === "#text" && /^[\t\n\f\r ]+$/.test((node as DefaultTreeAdapterTypes.TextNode).value)));
     for (let i = children.length - 1; i >= 0; i--) {
       const node = children[i];
       if (node.nodeName === "#comment") { children.splice(i, 1); continue; }
+      if (plainList && node.nodeName === "#text") { children.splice(i, 1); continue; }
       if (!isElement(node)) continue;
       node.attrs.sort((a, b) => `${a.namespace ?? ""}:${a.name}`.localeCompare(`${b.namespace ?? ""}:${b.name}`));
-      canonicalize(node.childNodes);
+      const sensitive = preserveWhitespace || node.tagName === "pre" || node.tagName === "code" ||
+        node.attrs.some(attr => ["class", "id", "style"].includes(attr.name));
+      canonicalize(node.childNodes, sensitive, node.tagName);
     }
   };
   canonicalize(fragment.childNodes);
   return serialize(fragment).trim();
+}
+
+/** Equivalent rich pairs may derive different plain line spacing from Shopify's
+ * list indentation. Accept that only when BOTH plain strings are exact
+ * projections of their own HTML. Never normalize stored strings or legacy text.
+ */
+export function descriptionPairsEquivalent(
+  left: { description: string; descriptionHtml?: string | null },
+  right: { description: string; descriptionHtml?: string | null },
+): boolean {
+  const leftHtml = left.descriptionHtml ?? plainDescriptionToHtml(left.description);
+  const rightHtml = right.descriptionHtml ?? plainDescriptionToHtml(right.description);
+  if (canonicalDescriptionHtml(leftHtml) !== canonicalDescriptionHtml(rightHtml)) return false;
+  if (left.description === right.description) return true;
+  return typeof left.descriptionHtml === "string" && typeof right.descriptionHtml === "string" &&
+    descriptionTextFromHtml(leftHtml) === left.description && descriptionTextFromHtml(rightHtml) === right.description;
 }
 
 function safeUrl(value: string, allowContact: boolean): boolean {
