@@ -80,13 +80,30 @@ type ImageProbe = Pick<HTMLImageElement,
   "naturalWidth" | "naturalHeight" | "decode" | "removeAttribute"
 >;
 
+// The page whose visibility gates the decode budget (the document in the
+// browser; injectable, and absent, in tests / on the server).
+type PageVisibility = Pick<Document, "hidden" | "addEventListener" | "removeEventListener">;
+
+function currentPage(): PageVisibility | null {
+  return typeof document === "undefined" ? null : document;
+}
+
 // Injecting the image factory keeps load/decode/timeout/abort behavior testable
 // offline. Each URL gets one bounded attempt, never an automatic retry loop.
+//
+// GAL-028: the time budget only runs while the page is visible. Browsers
+// fulfil image.decode() on a rendering frame, and a hidden tab (opened in the
+// background, covered by another window, app switched on mobile) gets none, so
+// the decode sits pending until the tab is shown again. Counting that time as
+// a timeout failed every angle of every card and removed the products from a
+// gallery nobody had looked at yet. A hidden page pauses the budget; it
+// restarts in full when the page comes back.
 export function decodeProductImage(
   src: string,
   signal: AbortSignal,
   createImage: () => ImageProbe = () => new Image(),
   timeoutMs = 10_000,
+  page: PageVisibility | null = currentPage(),
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -96,10 +113,21 @@ export function decodeProductImage(
     const image = createImage();
     let settled = false;
     let decoding = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const armTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => finish(new Error("Image load timed out")), timeoutMs);
+    };
+    const onVisibility = () => {
+      if (settled) return;
+      if (page?.hidden) clearTimeout(timer);
+      else armTimer();
+    };
     const finish = (error?: Error) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      page?.removeEventListener("visibilitychange", onVisibility);
       signal.removeEventListener("abort", abort);
       image.onload = null;
       image.onerror = null;
@@ -109,7 +137,8 @@ export function decodeProductImage(
       } else resolve();
     };
     const abort = () => finish(new DOMException("Image load cancelled", "AbortError"));
-    const timer = setTimeout(() => finish(new Error("Image load timed out")), timeoutMs);
+    page?.addEventListener("visibilitychange", onVisibility);
+    if (!page?.hidden) armTimer();
     const loaded = async () => {
       if (decoding || settled) return;
       decoding = true;

@@ -158,6 +158,70 @@ test('cached complete images still wait for decode and image timeouts are bounde
   assert.equal(hanging.onload, null);
 });
 
+function fakePage(hidden) {
+  const listeners = new Set();
+  return {
+    hidden,
+    addEventListener(type, fn) { if (type === 'visibilitychange') listeners.add(fn); },
+    removeEventListener(type, fn) { if (type === 'visibilitychange') listeners.delete(fn); },
+    show() { this.hidden = false; for (const fn of listeners) fn(); },
+    hide() { this.hidden = true; for (const fn of listeners) fn(); },
+    get listenerCount() { return listeners.size; },
+  };
+}
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function settlement(promise) {
+  const state = { settled: false, error: null };
+  promise.then(() => { state.settled = true; }, (error) => { state.settled = true; state.error = error; });
+  return state;
+}
+
+test('GAL-028: a hidden page pauses the decode timeout; it runs in full once the page is shown', async () => {
+  const page = fakePage(true);
+  const hanging = probe();
+  const state = settlement(decodeProductImage(cover, new AbortController().signal, () => hanging, 5, page));
+  await sleep(40);
+  assert.equal(state.settled, false, 'no time is charged while the tab is hidden');
+  assert.equal(page.listenerCount, 1);
+  page.show();
+  await sleep(40);
+  assert.equal(state.settled, true);
+  assert.match(String(state.error?.message), /timed out/);
+  assert.equal(hanging.src, '');
+  assert.equal(page.listenerCount, 0, 'visibility listener is released with the attempt');
+});
+
+test('GAL-028: hiding the page mid-load stops the clock; showing it restarts the budget', async () => {
+  const page = fakePage(false);
+  const hanging = probe();
+  const state = settlement(decodeProductImage(cover, new AbortController().signal, () => hanging, 20, page));
+  await sleep(5);
+  page.hide();
+  await sleep(60);
+  assert.equal(state.settled, false, 'the original 20ms budget did not fire while hidden');
+  page.show();
+  await sleep(60);
+  assert.equal(state.settled, true);
+  assert.match(String(state.error?.message), /timed out/);
+});
+
+test('GAL-028: an image that decodes while the page is hidden resolves normally and releases its listener', async () => {
+  const page = fakePage(true);
+  let finishDecode;
+  const image = probe({ decode: () => new Promise((resolve) => { finishDecode = resolve; }) });
+  const pending = decodeProductImage(cover, new AbortController().signal, () => image, 5, page);
+  void image.onload();
+  await sleep(20);
+  finishDecode();
+  await pending;
+  assert.equal(page.listenerCount, 0);
+  const aborted = new AbortController();
+  const stale = decodeProductImage(cover, aborted.signal, () => probe(), 5, page);
+  aborted.abort();
+  await assert.rejects(stale, { name: 'AbortError' });
+  assert.equal(page.listenerCount, 0, 'abort also releases the visibility listener');
+});
+
 test('aborting a stale item/angle load neither reveals the stale result nor exhausts the next candidates', async () => {
   const controller = new AbortController();
   let finishDecode;
