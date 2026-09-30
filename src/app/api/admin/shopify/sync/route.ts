@@ -4,7 +4,9 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 import { isShopifySyncConfigured } from "@/lib/shopify/admin-api";
 import { drainShopifySyncQueues } from "@/lib/shopify/sync-worker";
-import { configuredSyncCanarySku, shopifyProductGid } from "@/lib/shopify/sync-rules";
+import { assertVerifiedCopyApproval, configuredShopifySyncMode, configuredSyncCanarySku, shopifyProductGid } from "@/lib/shopify/sync-rules";
+import { readVerifiedCopyEligibility } from "@/lib/shopify/copy-eligibility";
+import { scheduleShopifySync, scheduleShopifySyncContinuation, validSyncContinuationHop } from "@/lib/shopify/schedule-sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,13 +14,23 @@ export const maxDuration = 60;
 
 /** Admin/cron worker for Shopify-visible product copy and SEO fields. */
 export async function POST(request: NextRequest) {
-  const denied = requireAdminToken(request, { allowCron: true });
+  const continuation = request.nextUrl.searchParams.get("continue") === "1";
+  const denied = requireAdminToken(request, { allowCron: !continuation });
   if (denied) return denied;
   if (!hasSupabaseAdminEnv() || !isShopifySyncConfigured()) {
     return NextResponse.json({ error: "Shopify sync is not configured" }, { status: 503 });
   }
+  if (continuation) {
+    const hop = validSyncContinuationHop(request.nextUrl.searchParams.get("hop"));
+    if (hop === null || configuredShopifySyncMode(process.env.SHOPIFY_SYNC_MODE) !== "verified_catalog") {
+      return NextResponse.json({ error: "SYNC_CONTINUATION_INVALID" }, { status: 400 });
+    }
+    scheduleShopifySync(hop);
+    return NextResponse.json({ accepted: true }, { status: 202, headers: { "Cache-Control": "no-store" } });
+  }
   try {
     const result = await drainShopifySyncQueues(createSupabaseServiceRoleClient());
+    if (result.continuationNeeded) scheduleShopifySyncContinuation();
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const code = error instanceof Error && /^[A-Z0-9_]{1,80}$/.test(error.message)
@@ -37,11 +49,16 @@ export async function GET(request: NextRequest) {
   if (!hasSupabaseAdminEnv()) {
     return NextResponse.json({ error: "Supabase admin env not configured" }, { status: 503 });
   }
+  const requestedProductId = request.nextUrl.searchParams.get("productId");
+  if (requestedProductId && !/^gid:\/\/shopify\/Product\/\d+$/.test(requestedProductId)) {
+    return NextResponse.json({ error: "SYNC_PRODUCT_GID_INVALID" }, { status: 400 });
+  }
   try {
     const supabase = createSupabaseServiceRoleClient();
     if (runWorker) {
       if (!isShopifySyncConfigured()) return NextResponse.json({ error: "Shopify sync is not configured" }, { status: 503 });
       const result = await drainShopifySyncQueues(supabase);
+      if (result.continuationNeeded) scheduleShopifySyncContinuation();
       return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
     }
     const [{ data: events, error: eventsError }, { data: outbox, error: outboxError }] = await Promise.all([
@@ -57,6 +74,13 @@ export async function GET(request: NextRequest) {
         .limit(50),
     ]);
     if (eventsError || outboxError) throw new Error("SYNC_REVIEW_QUEUE_READ_FAILED");
+    const mode = configuredShopifySyncMode(process.env.SHOPIFY_SYNC_MODE);
+    let verifiedCatalog: { enabled: number; approved: number } | null = null;
+    if (mode === "verified_catalog") {
+      const { data: approvals, error: approvalError } = await supabase.from("shopify_gallery_copy_eligibility").select("product_gid,enabled").limit(5000);
+      if (approvalError) throw new Error("SYNC_COPY_APPROVAL_READ_FAILED");
+      verifiedCatalog = { enabled: (approvals ?? []).filter(row => row.enabled).length, approved: approvals?.length ?? 0 };
+    }
     const canarySku = configuredSyncCanarySku(process.env.SHOPIFY_SYNC_CANARY_SKU);
     let canaryProductId: string | null = null;
     let canaryEvents: Array<{
@@ -88,7 +112,35 @@ export async function GET(request: NextRequest) {
         });
       }
     }
-    return NextResponse.json({ events: events ?? [], outbox: outbox ?? [], canaryProductId, canaryEvents },
+    let selectedProductId: string | null = null;
+    let productEvents: typeof canaryEvents = [];
+    if (requestedProductId) {
+      if (mode !== "verified_catalog") return NextResponse.json({ error: "SYNC_PRODUCT_STATUS_NOT_APPROVED" }, { status: 409 });
+      const approval = await readVerifiedCopyEligibility(supabase, requestedProductId);
+      assertVerifiedCopyApproval(approval);
+      const { data: bindings, error: bindingError } = await supabase.from("shopify_gallery_bindings")
+        .select("catalog_key,carousel_item_id,product_gid,variant_gid,product_handle").eq("product_gid", requestedProductId).limit(2);
+      const binding = bindings?.[0];
+      if (bindingError || bindings?.length !== 1 || !binding || binding.product_gid !== approval.product_gid ||
+          binding.catalog_key !== approval.catalog_key || binding.carousel_item_id !== approval.carousel_item_id ||
+          binding.variant_gid !== approval.variant_gid || binding.product_handle !== approval.approved_product_handle) {
+        throw new Error("SYNC_PRODUCT_STATUS_NOT_APPROVED");
+      }
+      selectedProductId = requestedProductId;
+      if (selectedProductId === canaryProductId) productEvents = canaryEvents;
+      else {
+        const { data: deliveries, error: deliveryError } = await supabase.from("shopify_webhook_events")
+          .select("id,delivery_id,topic,received_at,processed_at,status,product_id:payload->>id,event_updated_at:payload->>updated_at")
+          .in("payload->>id", [selectedProductId, selectedProductId.split("/").at(-1)!])
+          .order("received_at", { ascending: false }).limit(25);
+        if (deliveryError) throw new Error("SYNC_PRODUCT_STATUS_READ_FAILED");
+        productEvents = (deliveries ?? []).flatMap(row => shopifyProductGid(row.product_id) === selectedProductId ? [{
+          id: row.id, delivery_id: row.delivery_id, topic: row.topic, received_at: row.received_at,
+          processed_at: row.processed_at, status: row.status, product_id: selectedProductId!, event_updated_at: row.event_updated_at,
+        }] : []);
+      }
+    }
+    return NextResponse.json({ events: events ?? [], outbox: outbox ?? [], canaryProductId, canaryEvents, mode, verifiedCatalog, selectedProductId, productEvents },
       { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Shopify sync review queue unavailable" }, { status: 503 });
