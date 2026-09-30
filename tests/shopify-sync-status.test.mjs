@@ -103,6 +103,20 @@ test("unconfigured or unbound canaries never trigger a broad delivery query", as
   }
 });
 
+test("private status distinguishes configured public admission from ordinary copy synchronization", async () => {
+  const old = process.env.SHOPIFY_SYNC_AUTOCREATE;
+  try {
+    for (const [flag,mode,enabled] of [[undefined,"verified_catalog",false],["all","verified_catalog",false],["published_shopify","canary",false],["published_shopify","verified_catalog",true]]) {
+      if (flag === undefined) delete process.env.SHOPIFY_SYNC_AUTOCREATE; else process.env.SHOPIFY_SYNC_AUTOCREATE=flag;
+      const f=fixture({mode,configured:false});
+      const result=await f.get(request);
+      assert.equal(result.status,200);
+      assert.equal(result.body.publicProductAdmissionEnabled,enabled);
+      assert.equal(f.counts().drains,0);
+    }
+  } finally { if(old===undefined) delete process.env.SHOPIFY_SYNC_AUTOCREATE; else process.env.SHOPIFY_SYNC_AUTOCREATE=old; }
+});
+
 test("failed ledger reads fail closed without returning provider errors or success evidence", async () => {
   const f = fixture({ deliveryError: true });
   const result = await f.get(request);

@@ -141,7 +141,7 @@ PR #19 deployed as `da70050`; PR #20 corrected an unsupported Shopify `UserError
 
 Evidence in the workspace `outputs` folder: `toptik-sync-canary-roundtrip-20260930/`, `toptik-product-update-schema-probe-20260930.json`, `toptik-sync-canary-live-browser-20260930.json`, and `toptik-sync-canary-mobile-20260930.png`. Existing Drive Master received one verified current-state entry at 15:41 Israel time.
 
-**Live copy scope remains one exact SKU and four logical copy fields.** The 57 Samsonite persistence prerequisite is now complete, as recorded below. The next release adds explicit, private eligibility for existing matched products; changing an environment variable alone is not a complete rollout.
+**Historical canary scope was one exact SKU and four logical copy fields.** The 78-product activation and live proofs recorded below supersede that scope; changing an environment variable alone is not a complete rollout.
 
 ## Reviewed Samsonite persistence foundation
 
@@ -163,7 +163,7 @@ Evidence: workspace `outputs/toptik-samsonite-persistence-live-20260930/` and `t
 
 ### Full synchronization scope remaining
 
-Existing-product copy eligibility is the next release. New product creation, shared media/specifications, product/variant commercial fields and multi-variant reconciliation remain separate implementation and live-verification work. The existing installed Shopify app was read back and does not currently have `write_inventory`; no permissions were expanded. This limitation does not block the existing authorized product-copy updates and must not be confused with complete bidirectional inventory support.
+Existing-product copy eligibility is now active for 78 reviewed pairs. New product creation, shared media/specifications, product/variant commercial fields and multi-variant reconciliation remain separate implementation and live-verification work. The existing installed Shopify app was read back and does not currently have `write_inventory`; no permissions were expanded. This limitation does not block the existing authorized product-copy updates and must not be confused with complete bidirectional inventory support.
 
 Official API references: [Shopify `productUpdate`](https://shopify.dev/docs/api/admin-graphql/latest/mutations/productUpdate), [Shopify webhooks](https://shopify.dev/docs/apps/build/webhooks), and [webhook subscriptions](https://shopify.dev/docs/apps/build/webhooks/subscribe).
 
@@ -181,3 +181,27 @@ This release expands the four logical copy fields (title, paired HTML/text descr
 - Pre-release validation: **248/248 tests**, full ESLint and Next production build passed. Executed continuation fixtures drain 78 queued rows through eight invocations/seven authenticated handoffs and cover deadline exhaustion without progress loops. Independent activation-operator fixtures passed 21/21 with network and credentials mocked. Actual PostgreSQL/PGlite execution covered activation, permissions, rollback, leases and stale identities; the final scoped cold review had no release blockers. These checks do not replace live activation and propagation evidence.
 
 Prepared evidence is in the workspace `outputs/toptik-verified78-copy-activation-manifest-20260930.json`, `toptik-copy-activation-schema-live-20260930.json`, and `toptik-catalog-scope-audit-20260930.*`. Publication, activation and live propagation status must be recorded after their independent acceptance checks; this section is not live-completion evidence.
+
+### Activated and verified live — 2026-09-30
+
+PR #22 published as `943d177b4104928a56b707c75033a5a19c25cd40`. Production mode is `verified_catalog`, deployment `6eWCeq6KRBUF14xBYjXSn7UmJApB`. The single activation created 20 baselines, preserved 58 and enabled 78 exact pairs. Full readback before/after activation and again after the mode deployment preserved all 82 Gallery rows/settings and all 78 Shopify copy snapshots. The frozen manifest is now historical: **do not replay it after subsequent edits**.
+
+A second live round trip used exact approved alias Gallery `P10SZV24-05J-TU` / Shopify `P10SZV2405J`, product `7550812619002`, variant `42465754808570`. A normal Gallery SEO correction propagated automatically at 13:35:22 UTC. A Shopify title correction from Logoduck XS to Logoduck+ at 13:36:02 UTC arrived through signed delivery `d5a5ef57-3e04-5524-b806-a7c3de3c943f`, received 13:36:04.359674 and processed 13:36:13.369 UTC. No manual queue drain/bootstrap was used. All other 81 Gallery rows, settings, media, prices and inventory were unchanged; error/review queues were empty.
+
+Actual public product-link → correct Shopify SKU/variant → Back passed in desktop Chrome and simulated 390×844 Chromium, preserving the Mandarina filter and counter. Title/SEO readback passed on the public product. Physical Safari remains **NOT TESTED**. The old Shopify body and image alt text still contain XS and are a separate content correction, not evidence of media synchronization.
+
+Evidence: workspace `outputs/toptik-verified78-copy-activation-live-20260930/`, `toptik-verified-alias-roundtrip-20260930/`, `toptik-verified-alias-shop-live-20260930.json`, and `toptik-verified-alias-mobile-live-20260930.json`. Drive Master was updated/read back at 16:38 Israel time.
+
+PR #23 subsequently published the rich-description translation guard as `701c12db42ae7d4b64367b9bfd4f82b25aaca04e`, Vercel `EamEME6rCB59gCecnykYhL1BCHPj`. It preserves rich markup and intervening edits instead of applying a stale plain translation. All 257 tests/lint/build and CI passed. The live authenticated editor interaction is **NOT TESTED**; a Ready build alone does not close that acceptance item.
+
+## Automatic admission of new public Shopify products — candidate, default off
+
+`SHOPIFY_SYNC_AUTOCREATE=published_shopify` adds a new-product admission lane inside the existing signed webhook queue and product lease. Absent/malformed values leave the lane off. It applies only when an exact product has no existing copy approval. Existing disabled approvals and deletion events cannot bypass their restrictions.
+
+Admission requires the configured TopTik shop/Online Store channel, ACTIVE public status, exactly one variant with a unique raw SKU, one of the three approved brands and verified product-owned images. All Shopify variants, including drafts, and all active/inactive Gallery rows participate in collision checks. The two held Mandarina SKUs stay excluded. Unknown product types remain uncategorized rather than guessed. Manufacturer specifications, URLs, weight, stock and supplier prices are not invented.
+
+At most 20 images are read from exact Shopify CDN URLs, each at most 8 MiB and 16 million decoded pixels. DNS/public-host, no-redirect, byte and decode checks run before insertion. A second source/version/media and full-SKU read rejects concurrent changes. The atomic service-only SQL operation creates the new Gallery row, numbered angles, binding, public product link, independent copy baseline, separate copy eligibility and immutable receipt. It never alters the frozen 78-product activation or writes to Shopify, and initial insertion does not create an outbound echo.
+
+Permanent ambiguity enters review; transient source/media/network failures remain in the durable retry queue. Successful insertion or deliberate brand/draft exclusion acknowledges the event. A lost acknowledgement is retried against the recorded identity; no existing product is overwritten. Public catalog responses already use `no-store` and a current database read.
+
+Release requires executed SQL permission/rollback/idempotence fixtures, full application gates, an additive private migration, a default-off Production deployment, then explicit feature activation and live evidence. Code/Preview success must not be reported as a newly created live product. Rollback disables only `SHOPIFY_SYNC_AUTOCREATE` and preserves valid new rows/audit/copy approvals; existing copy synchronization stays active. Gallery→Shopify creation, shared media/spec edits, inventory and multi-variant cases remain separate work.

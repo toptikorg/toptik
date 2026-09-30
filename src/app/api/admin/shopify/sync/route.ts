@@ -140,7 +140,8 @@ export async function GET(request: NextRequest) {
         }] : []);
       }
     }
-    return NextResponse.json({ events: events ?? [], outbox: outbox ?? [], canaryProductId, canaryEvents, mode, verifiedCatalog, selectedProductId, productEvents },
+    const publicProductAdmissionEnabled = mode === "verified_catalog" && process.env.SHOPIFY_SYNC_AUTOCREATE === "published_shopify";
+    return NextResponse.json({ events: events ?? [], outbox: outbox ?? [], canaryProductId, canaryEvents, mode, verifiedCatalog, selectedProductId, productEvents, publicProductAdmissionEnabled },
       { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Shopify sync review queue unavailable" }, { status: 503 });
