@@ -1,6 +1,6 @@
 # Product media synchronization — reconciliation core
 
-Status, 30 September 2026: **local implementation only** in `media-sync-core.ts`. There is no network/database adapter, editor integration, active queue or live media change in this increment. This is a required part of the requested complete synchronization, not a replacement for it.
+Status, 30 September 2026: **local implementation** of reconciliation plus the complete Shopify read/decoded-image adapter. The query/parser and existing image decoder were verified against one live product read-only. There is no media write adapter, deployed media journal, editor integration, active media queue or live media change yet. This is a required part of the requested complete synchronization, not a replacement for it.
 
 ## Reconciliation contract
 
@@ -29,6 +29,18 @@ Every plan carries whole-source and whole-target fingerprint/revision preconditi
 - Add explicit product-reference detachment only; never `fileDelete`. Preserve variant image assignments or report a conflict rather than clearing them as a side effect.
 - Native media APIs lack `compareDigest`/expected-version fields. A local lease serializes this application's operations, but cannot lock an independent Shopify Admin edit. Fresh reads plus full readback are mandatory and this residual concurrent-write window must remain documented; do not claim atomic cross-system media CAS.
 - Authenticated conflict resolution with retained losing values, followed by exact live canary acceptance in both directions and preservation checks for all unrelated products/copy/commerce.
+
+## Complete Shopify read and image proof
+
+`media-read-adapter.ts` uses API 2026-07 and the exact Online Store publication, product/variant IDs, both raw SKUs and handle. Product media count must be exact, all connections complete, one variant present, every media entry an image and both media/file status READY. Mixed video/3D, truncation, incomplete metadata, processing images and identity changes are held; none becomes deletion. The raw fingerprint includes order, alt, media update times and variant assignments, rather than relying only on product `updatedAt`.
+
+Live API evidence revealed different image ID namespaces: `MediaImage.image.id` returns `ImageSource`, while `variant.image.id` can return `ProductImage`. Both IDs remain opaque. Variant media associations plus exact untransformed image URLs establish the relationship; numeric suffixes are never assumed equivalent.
+
+`fetchDecodedShopifyMedia` reuses the existing production `verifyOnboardingImage` helper: bounded byte/pixel limits, approved Shopify CDN, public DNS, no redirects and actual image decoding. The orchestration in `media-decode-reader.ts` limits concurrency to two, preserves the caller's absolute deadline and re-reads the full media state afterward. It returns no partial batch. Decoded bytes do not establish cross-system identity until the private journal supplies exact ownership/import lineage; the read adapter never fabricates keys.
+
+Read-only live acceptance, 30 September 2026 17:27:27 UTC: product `7550812619002`, variant `42465754808570` / exact Shopify SKU `P10SZV2405J`: all five images decoded (819,056 total bytes); one variant association retained. Full before/after query fingerprints match `47bdadc54e923ede213fc66f933e6f1e5c697cedbd0903638fb039b543c38c1f`. Source mutations: zero. Local evidence outside the repository: `outputs/media-read-canary-{response-v2,decoded,after-decode,complete}-20260930.json`. This is read/decoder proof only, not automatic media synchronization.
+
+The shared GraphQL transport now rejects malformed response/error envelopes even when they contain apparently valid product data; provider error messages remain excluded from persisted error codes.
 
 ## Official API evidence checked 30 September 2026
 
