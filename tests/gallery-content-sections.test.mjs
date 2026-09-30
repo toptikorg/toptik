@@ -76,6 +76,8 @@ test("journal article routes have live URLs, canonical metadata and truthful sch
   assert.match(articles, /KL909002/);
   assert.match(articles, /KL909004/);
   assert.match(articles, /slug: "brics-x-collection-wheeled-pilot-case-bxl38124"/);
+  assert.match(articles, /descriptionOverrides=\{\{ KJ344007:/, "the Respark article card uses its article-safe, manufacturer-verified summary");
+  assert.doesNotMatch(articles, /3\.6\s*ק״ג/, "the Respark article must not inherit the catalog's weight claim");
   const slugs = [...articles.matchAll(/slug: "([^"]+)"/g)].map((match) => match[1]);
   assert.equal(slugs.length, 13, "thirteen distinct evidence-backed article drafts are in the editorial inventory");
   assert.equal(new Set(slugs).size, slugs.length);

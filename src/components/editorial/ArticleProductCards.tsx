@@ -9,7 +9,13 @@ import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
  * SKU and exact Shopify product link are emitted in the initial HTML rather
  * than appearing only after a browser-side /api/carousel request.
  */
-export async function ArticleProductCards({ skus }: { skus: readonly string[] }) {
+export async function ArticleProductCards({
+  skus,
+  descriptionOverrides = {},
+}: {
+  skus: readonly string[];
+  descriptionOverrides?: Readonly<Record<string, string>>;
+}) {
   const { items } = await getPublicCarouselPayload();
   const cards = skus.flatMap((sku) => {
     const key = normalizeCatalogKey(sku);
@@ -22,14 +28,22 @@ export async function ArticleProductCards({ skus }: { skus: readonly string[] })
     // but two active records with the same normalized SKU are ambiguous.
     const item = matches.length === 1 ? matches[0] : undefined;
     if (!item || !item.coverImagePath || !purchaseUrlFor(item.catalogNumber)) return [];
-    return [item];
+    return [{
+      item,
+      descriptionOverride: descriptionOverrides[key],
+    }];
   });
 
   if (cards.length === 0) return null;
 
   return (
     <div className="journal-product-cards">
-      {cards.map((item) => <ArticleProductCard key={`${item.id}:${item.catalogNumber}`} item={item} />)}
+      {cards.map(({ item, descriptionOverride }) => (
+        <ArticleProductCard
+          key={`${item.id}:${item.catalogNumber}`}
+          item={descriptionOverride ? { ...item, description: descriptionOverride } : item}
+        />
+      ))}
     </div>
   );
 }

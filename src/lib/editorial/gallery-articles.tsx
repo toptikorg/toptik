@@ -248,7 +248,10 @@ const samsoniteRespark79MaterialsContent: ReactNode = <>
   <p>לפי עמוד היצרן, הבד החיצוני מכיל לפחות 80% PET ממוחזר מפסולת צרכנית, והבטנה הפנימית לפחות 95% PET ממוחזר מאותו מקור. האחוזים מתייחסים לרכיבים האלה לפי משקל; הם אינם טענה שכל חלקי המזוודה עשויים מחומר ממוחזר או מדד להשפעה הסביבתית הכוללת שלה.</p>
   <h2>הדגם בגלריה</h2>
   <p>כרטיס המוצר מציג את המק״ט של TopTik עבור Respark 79 בגוון Light Sage. אפשר לפתוח את תמונות הדגם בגלריה, ואז לעבור לעמוד המוצר המדויק בחנות.</p>
-  <ArticleProductCards skus={["KJ344007"]} />
+  <ArticleProductCards
+    skus={["KJ344007"]}
+    descriptionOverrides={{ KJ344007: "Respark 79 בגוון מרווה בהירה: נפח 124 ליטר, עם הרחבה ל־140 ליטר; עומק המזוודה גדל מ־31 ל־35 ס״מ." }}
+  />
 </>;
 
 export const galleryArticles: readonly GalleryArticle[] = [
