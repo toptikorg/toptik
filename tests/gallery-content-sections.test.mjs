@@ -22,13 +22,19 @@ test("size table lists exactly the 20 verified Samsonite 55cm SKUs", () => {
 });
 
 test("only manufacturer-verified figures appear", () => {
-  // Base Upscape (143108): expanded-volume only. Weights: only the two Intuo 55
-  // figures live-verified on samsonite.fi (146913: 2.3 kg, 150720: 3 kg).
+  // Base Upscape (143108): expanded-volume only.
   assert.match(component, /volume: "45 ל׳ בהרחבה"/);
-  assert.match(component, /<td>2\.3 ק״ג<\/td><td>3 ק״ג<\/td>/);
-  const weights = component.match(/[\d.]+ ק״ג/g) ?? [];
-  assert.deepEqual(weights, ["2.3 ק״ג", "3 ק״ג"], "no other weights without a verified source");
   assert.match(component, /81×54×33/);
+});
+
+test("PR #10 decisions hold: no weight in the public comparison, no public sources footnote", () => {
+  // Weight is owned by the store's product page (it was corrected there); the
+  // public comparison table must not carry a figure that can drift from it.
+  assert.ok(!/ק״ג|ק"ג|\bkg\b/i.test(component), "no weight figures in the public article");
+  assert.ok(!/<th scope="row">משקל<\/th>/.test(component), "no weight row in the comparison table");
+  // Sources are tracked internally (docs/seo/drafts), never shown as system text on the page.
+  assert.ok(!/מקורות הנתונים|אומת 30\.09\.2026/.test(component), "no process notes rendered to visitors");
+  assert.ok(!/samsonite\.(fi|co\.uk|com\.au)/.test(component.replace(/^\s*\/\/.*$/gm, "")), "manufacturer hosts only in code comments, not in rendered text");
 });
 
 test("section stays out of the catalogue mechanics and out of robots directives", () => {
