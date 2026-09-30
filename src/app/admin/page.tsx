@@ -976,6 +976,9 @@ export default function AdminPage() {
         <header className="admin-header">
           <h1>TOPTIK Admin</h1>
           <div className="admin-header-actions">
+            <Link href="/admin/shopify/new-product" className="admin-back-link">
+              מוצר חדש — טיוטה לחנות
+            </Link>
             {failedImports.length > 0 && (
               <button
                 type="button"

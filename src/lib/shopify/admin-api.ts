@@ -215,8 +215,8 @@ export async function writeTypedSpecFields(snapshot: TypedSpecSnapshot, operatio
 }
 
 /** Server-only authenticated transport shared by the isolated draft creator. */
-export async function shopifyAdminGraphql<T>(query: string, variables: Record<string, unknown>, timeoutMs = 15_000): Promise<T> {
-  return graphql<T>(query, variables, timeoutMs);
+export async function shopifyAdminGraphql<T>(query: string, variables: Record<string, unknown>, timeoutMs = 15_000, deadline?: number): Promise<T> {
+  return graphql<T>(query, variables, timeoutMs, deadline);
 }
 
 export async function fetchProductSnapshot(productGid: string): Promise<ShopifyProductSnapshot | null> {

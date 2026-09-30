@@ -25,6 +25,7 @@ export type CreationWorkerPorts = {
 export type CreationWorkerResult = { id: string; stage: GalleryCreationStage | "busy"; pending: boolean; code?: string };
 
 function codeOf(error: unknown) {
+  if (error instanceof Error && error.message === "SPEC_TIME_BUDGET") return "SYNC_CREATION_TIME_BUDGET";
   return error instanceof Error && /^(SYNC_CREATION_|SHOPIFY_)[A-Z0-9_]{1,80}$/.test(error.message) ? error.message : "SYNC_CREATION_OPERATION_UNCERTAIN";
 }
 

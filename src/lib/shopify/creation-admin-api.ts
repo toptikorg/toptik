@@ -43,7 +43,7 @@ function decode(product: ProductData, namespace: string): DraftLookup {
  * this route never silently creates or changes a Shopify definition. */
 export async function readCreationShopConfiguration(deadline: number) {
   const config = await shopifyAdminGraphql<{ shop: { currencyCode: string }; currentAppInstallation: { app: { id: string } } }>(
-    `query GalleryDraftShopConfig { shop { currencyCode } currentAppInstallation { app { id } } }`, {}, timeout(deadline));
+    `query GalleryDraftShopConfig { shop { currencyCode } currentAppInstallation { app { id } } }`, {}, timeout(deadline), deadline);
   const appId = /^gid:\/\/shopify\/App\/([1-9][0-9]*)$/.exec(config.currentAppInstallation?.app?.id ?? "")?.[1];
   if (!appId) throw new Error("SYNC_CREATION_APP_IDENTITY_INVALID");
   const namespace = `app--${appId}--toptik_gallery`;
@@ -53,7 +53,7 @@ export async function readCreationShopConfiguration(deadline: number) {
       metafieldDefinitions(first: 2, ownerType: PRODUCT, namespace: $namespace, key: "source_item_id") {
         nodes { namespace key ownerType type { name } capabilities { uniqueValues { enabled } } } pageInfo { hasNextPage }
       }
-    }`, { namespace }, timeout(deadline));
+    }`, { namespace }, timeout(deadline), deadline);
   const node = definitions.metafieldDefinitions.nodes[0];
   if (definitions.metafieldDefinitions.pageInfo.hasNextPage || definitions.metafieldDefinitions.nodes.length !== 1 || !node) throw new Error("SYNC_CREATION_CUSTOM_ID_DEFINITION_MISSING");
   const definition: CustomIdDefinition = { namespace: node.namespace, key: node.key, ownerType: node.ownerType,
@@ -65,7 +65,7 @@ export async function lookupCreatedGalleryDraft(ready: ReadyGalleryDraft, deadli
   const result = await shopifyAdminGraphql<{ productByIdentifier: ProductData | null }>(
     `query GalleryDraftRecovery($identifier: ProductIdentifierInput!, $namespace: String!) {
       productByIdentifier(identifier: $identifier) { ${FIELDS} }
-    }`, { identifier: { customId: ready.customId }, namespace: ready.customId.namespace }, timeout(deadline));
+    }`, { identifier: { customId: ready.customId }, namespace: ready.customId.namespace }, timeout(deadline), deadline);
   return result.productByIdentifier ? decode(result.productByIdentifier, ready.customId.namespace) : null;
 }
 
@@ -75,7 +75,7 @@ export async function createGalleryShopifyDraft(ready: ReadyGalleryDraft, deadli
   const result = await shopifyAdminGraphql<{ productCreate: { product: ProductData | null; userErrors: Array<{ field: string[]; message: string }> } }>(
     `mutation GalleryCreateOwnedDraft($product: ProductCreateInput!, $media: [CreateMediaInput!], $namespace: String!) {
       productCreate(product: $product, media: $media) { product { ${FIELDS} } userErrors { field message } }
-    }`, { ...variables, namespace: ready.customId.namespace }, timeout(deadline));
+    }`, { ...variables, namespace: ready.customId.namespace }, timeout(deadline), deadline);
   if (result.productCreate?.userErrors?.length || !result.productCreate?.product) throw new Error("SYNC_CREATION_PRODUCT_CREATE_REJECTED");
   return decode(result.productCreate.product, ready.customId.namespace).snapshot;
 }
@@ -87,7 +87,7 @@ export async function configureGalleryDraftVariant(variables: ReturnType<typeof 
       productVariantsBulkUpdate(productId: $productId, variants: $variants, allowPartialUpdates: $allowPartialUpdates) {
         productVariants { id } userErrors { field message }
       }
-    }`, variables, timeout(deadline));
+    }`, variables, timeout(deadline), deadline);
   const payload = result.productVariantsBulkUpdate;
   if (!payload || payload.userErrors.length || payload.productVariants.length !== 1 || payload.productVariants[0].id !== variables.variants[0].id) {
     throw new Error("SYNC_CREATION_VARIANT_WRITE_REJECTED");
@@ -102,7 +102,7 @@ export async function fetchCreationVariantIdentities(deadline: number) {
       pageInfo: { hasNextPage: boolean; endCursor: string | null } } } = await shopifyAdminGraphql(
       `query GalleryCreationAllSkuIdentities($after: String) { productVariants(first: 250, after: $after) {
         nodes { id sku product { id status } } pageInfo { hasNextPage endCursor }
-      } }`, { after }, timeout(deadline));
+      } }`, { after }, timeout(deadline), deadline);
     rows.push(...page.productVariants.nodes.map(row => ({ productGid: row.product.id, variantGid: row.id, sku: row.sku, status: row.product.status })));
     if (!page.productVariants.pageInfo.hasNextPage) return rows;
     after = page.productVariants.pageInfo.endCursor;

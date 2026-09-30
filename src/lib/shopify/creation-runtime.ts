@@ -87,32 +87,33 @@ export async function prepareGalleryDraft(supabase: SupabaseClient, source: Gall
       shopify: variants }, images, recovery });
 }
 
-export async function reserveGalleryDraft(supabase: SupabaseClient, input: unknown): Promise<GalleryCreationRecord> {
+export async function reserveGalleryDraft(supabase: SupabaseClient, input: unknown, deadline = Date.now() + 9000): Promise<GalleryCreationRecord> {
   if (!galleryDraftCreationMode()) throw new Error("SYNC_CREATION_NOT_ENABLED");
   const draft = parseGalleryCreationDraft(input);
-  const { data, error } = await supabase.rpc("reserve_gallery_shopify_draft", { p_draft: draft });
+  const { data, error } = await supabase.rpc("reserve_gallery_shopify_draft", { p_draft: draft }).abortSignal(AbortSignal.timeout(timeLeft(deadline)));
   if (error || !data?.id) throw new Error(safeCode(error, "SYNC_CREATION_RESERVATION_FAILED"));
   return data;
 }
 
-export async function runPersistedGalleryDraft(supabase: SupabaseClient, id: string) {
-  const deadline = Date.now() + 45000, owner = randomUUID();
+export async function runPersistedGalleryDraft(supabase: SupabaseClient, id: string, executionDeadline = Date.now() + 45000) {
+  const deadline = Math.min(Date.now() + 35000, executionDeadline - 5000), owner = randomUUID();
+  if (deadline - Date.now() < 15000) return { id, stage: "pending", pending: true, code: "SYNC_CREATION_TIME_BUDGET" };
   const ports: CreationWorkerPorts = {
     mode: galleryDraftCreationMode(), now: Date.now,
     beforeWrite: () => { if (deadline - Date.now() < 15000) throw new Error("SYNC_CREATION_TIME_BUDGET"); },
     claim: async (itemId, leaseOwner) => {
-      const { data, error } = await supabase.rpc("claim_gallery_shopify_draft", { p_id: itemId, p_owner: leaseOwner, p_seconds: 60 });
+      const { data, error } = await supabase.rpc("claim_gallery_shopify_draft", { p_id: itemId, p_owner: leaseOwner, p_seconds: 60 }).abortSignal(AbortSignal.timeout(timeLeft(deadline)));
       if (error) throw new Error(safeCode(error, "SYNC_CREATION_CLAIM_FAILED")); return data;
     },
     advance: async (record, leaseOwner, patch) => {
       timeLeft(deadline);
       const { data, error } = await supabase.rpc("advance_gallery_shopify_draft", { p_id: record.id, p_owner: leaseOwner,
-        p_expected_version: record.version, p_expected_stage: record.stage, p_patch: patch });
+        p_expected_version: record.version, p_expected_stage: record.stage, p_patch: patch }).abortSignal(AbortSignal.timeout(timeLeft(deadline)));
       if (error || !data?.id) throw new Error(safeCode(error, "SYNC_CREATION_TRANSACTION_FAILED")); return data;
     },
-    release: async (itemId, leaseOwner) => { await supabase.rpc("release_gallery_shopify_draft", { p_id: itemId, p_owner: leaseOwner }); },
+    release: async (itemId, leaseOwner) => { await supabase.rpc("release_gallery_shopify_draft", { p_id: itemId, p_owner: leaseOwner }).abortSignal(AbortSignal.timeout(2000)); },
     recordFailure: async (itemId, leaseOwner, code) => {
-      const { error } = await supabase.rpc("record_gallery_shopify_draft_error", { p_id: itemId, p_owner: leaseOwner, p_error: code });
+      const { error } = await supabase.rpc("record_gallery_shopify_draft_error", { p_id: itemId, p_owner: leaseOwner, p_error: code }).abortSignal(AbortSignal.timeout(2000));
       if (error) throw new Error("SYNC_CREATION_DIAGNOSTIC_FAILED");
     },
     prepare: (source, recovery) => prepareGalleryDraft(supabase, source, deadline, recovery),

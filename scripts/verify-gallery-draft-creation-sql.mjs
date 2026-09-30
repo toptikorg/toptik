@@ -5,6 +5,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { stripTypeScriptTypes } from 'node:module';
 import { descriptionModuleUrl } from '../tests/helpers/description-module.mjs';
+import { verifyPendingIntents } from './verify-gallery-pending-intents-sql.mjs';
 const [engine,manifestPath]=process.argv.slice(2);
 if(!engine||!manifestPath) throw new Error('Usage: node scripts/verify-gallery-draft-creation-sql.mjs <PGlite package> <frozen78 manifest>');
 const {PGlite}=await import(pathToFileURL(engine+'/dist/index.js').href);
@@ -221,4 +222,5 @@ for(const table of protectedTables){
  assert.deepEqual(rows,frozen[table],table+' frozen rows must remain unchanged');checks++;
 }
 assert.equal(after.carousel_items.length,86);assert.equal(after.shopify_gallery_copy_eligibility.length,78);assert.equal(after.shopify_gallery_content_outbox.length,0);checks+=3;
-await db.close();console.log(JSON.stringify({ok:true,assertions:checks,realWorkerLostConfigureRecovery:true,frozenGallery:82,frozenCopyApprovals:78,newInactiveDrafts:4,newBindings:0,outbox:0}));
+const pendingIntents=await verifyPendingIntents(db,manifest);
+await db.close();console.log(JSON.stringify({ok:true,assertions:checks,realWorkerLostConfigureRecovery:true,frozenGallery:82,frozenCopyApprovals:78,newInactiveDrafts:4,newBindings:0,outbox:0,pendingIntents}));
