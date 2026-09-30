@@ -3,11 +3,24 @@ import { verifyProductWebhook } from "@/lib/shopify/webhook-security";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 import { scheduleShopifySync } from "@/lib/shopify/schedule-sync";
+import { enqueueTypedSpecProduct } from "@/lib/shopify/typed-spec-worker";
+import { shopifyProductGid } from "@/lib/shopify/sync-rules";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 const MAX_WEBHOOK_BYTES = 1_000_000;
+
+/** Never coerce objects or rounded large JSON numbers into another product identity. */
+function typedWebhookProductGid(payload: Record<string, unknown>): string | null {
+  const id = payload.id;
+  if (typeof id === "number" && (!Number.isSafeInteger(id) || id <= 0)) return null;
+  if (typeof id === "string" && (!/^(?:gid:\/\/shopify\/Product\/)?[1-9]\d*$/.test(id) || id.length > 64)) return null;
+  if (typeof id !== "number" && typeof id !== "string") return null;
+  const gid = shopifyProductGid(id);
+  if (payload.admin_graphql_api_id !== undefined && payload.admin_graphql_api_id !== gid) return null;
+  return gid;
+}
 
 async function readBoundedBody(request: NextRequest): Promise<{ body: string; tooLarge: boolean }> {
   const reader = request.body?.getReader();
@@ -81,15 +94,23 @@ export async function POST(request: NextRequest) {
 
     // Shopify retries deliveries. The unique delivery id makes an already
     // accepted event an idempotent success without replaying its payload.
-    if (error?.code === "23505") {
-      scheduleShopifySync();
-      return new NextResponse(null, { status: 200 });
-    }
-    if (error) {
+    if (error && error.code !== "23505") {
       console.error("Shopify webhook inbox insert failed", { code: error.code });
       return NextResponse.json({ error: "Webhook could not be queued" }, { status: 503 });
     }
+    // The existing durable copy inbox remains successful even if optional typed
+    // admission is unavailable. Daily typed recovery observes current values.
     scheduleShopifySync();
+    if (checked.event.topic !== "products/delete") {
+      const productId = typedWebhookProductGid(checked.event.payload);
+      if (productId) {
+        try { await enqueueTypedSpecProduct(supabase, productId); }
+        catch (error) {
+          const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "SPEC_ENQUEUE_FAILED";
+          console.error("Typed specification event pending recovery", { code });
+        }
+      }
+    }
     return new NextResponse(null, { status: 200 });
   } catch (error) {
     console.error("Shopify webhook receiver unavailable", error instanceof Error ? error.name : "unknown");

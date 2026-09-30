@@ -53,6 +53,8 @@ export interface CarouselItem {
   availableColors?: string[] | null;
   angles: CarouselAngle[];
   techSpecs?: CachedTechSpecs | null;
+  /** Plain public overlay kept separate until lazy manufacturer details finish loading. */
+  typedSpecsOverlay?: { specs: CachedTechSpecs["specs"]; replacedLabels: string[]; replacementPairs: string[] };
   colors?: CarouselColor[] | null;
 }
 

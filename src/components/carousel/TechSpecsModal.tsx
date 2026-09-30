@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CarouselItem } from "@/lib/carousel/types";
 import type { ProductDetails, SpecSection } from "@/lib/catalog-source/product-details";
+import { mergeTypedSpecPresentation } from "@/lib/carousel/merge-typed-specs";
 
 type TechSpecsModalProps = {
   item: CarouselItem | null;
@@ -49,7 +50,8 @@ export function TechSpecsModal({ item, onClose }: TechSpecsModalProps) {
     return () => controller.abort();
   }, [url, synchronousDetails]);
 
-  const details = synchronousDetails ?? (fetchedUrl === url ? fetchedDetails : null);
+  const legacyDetails = synchronousDetails ?? (fetchedUrl === url ? fetchedDetails : null);
+  const details = legacyDetails ? mergeTypedSpecPresentation(legacyDetails, item?.typedSpecsOverlay) : null;
 
   useEffect(() => {
     if (!item) return;
@@ -67,7 +69,7 @@ export function TechSpecsModal({ item, onClose }: TechSpecsModalProps) {
     displayDetails = details;
   } else if (!url) {
     displayState = "done";
-    displayDetails = { specs: [], colors: [] };
+    displayDetails = mergeTypedSpecPresentation({ specs: [], colors: [] }, item.typedSpecsOverlay);
   } else if (fetchFailed && fetchedUrl === url) {
     displayState = "error";
   } else {
