@@ -7,12 +7,6 @@ import { CarouselPayload, TransitionMode } from "@/lib/carousel/types";
 import { CAROUSEL_UNAVAILABLE_MESSAGE, fallbackCarouselPayload, isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { detectVendorFromCatalog, normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
 import { PRODUCT_CATEGORIES, categorizeItem, type ProductCategory } from "@/lib/carousel/categories";
-import {
-  buildShopifyExportRows,
-  SHOPIFY_EXPORT_COLUMNS,
-  SHOPIFY_EXPORT_COLUMN_WIDTHS,
-} from "@/lib/carousel/shopify-export";
-import { LANDING_URL } from "@/lib/admin/config";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -561,37 +555,6 @@ export default function AdminPage() {
       setImportFeedback({ tone: "error", message: resolveErrorMessage(error, "שגיאה בעדכון המפרטים") });
     } finally {
       setIsWarming(false);
-    }
-  }
-
-  async function onExportExcel() {
-    try {
-      setStatus("מכין קובץ אקסל...");
-      // Fetch a FRESH payload for the export instead of using React state:
-      // with a saved token the page renders as "connected" while the initial
-      // load is still in flight, so state may still hold fallbackCarouselPayload
-      // ("דגם 1"…) — exporting that produced a file full of demo rows.
-      const res = await fetch("/api/admin/carousel", {
-        headers: { "x-admin-token": token },
-      });
-      if (!res.ok) {
-        throw new Error("הייצוא בוטל — אין חיבור לנתונים (בדוק את הטוקן ונסה שוב)");
-      }
-      const fresh = (await res.json()) as CarouselPayload;
-      setPayload(fresh);
-      const XLSX = await import("xlsx");
-      // Shopify-import shape: one row per SKU (each colour is its own SKU),
-      // variants grouped by Product_Key. See lib/carousel/shopify-export.
-      const rows = buildShopifyExportRows(fresh.items, LANDING_URL);
-      const worksheet = XLSX.utils.json_to_sheet(rows, { header: SHOPIFY_EXPORT_COLUMNS });
-      worksheet["!cols"] = SHOPIFY_EXPORT_COLUMN_WIDTHS.map((wch) => ({ wch }));
-      const workbook = XLSX.utils.book_new();
-      workbook.Workbook = { Views: [{ RTL: true }] };
-      XLSX.utils.book_append_sheet(workbook, worksheet, "מוצרים");
-      XLSX.writeFile(workbook, "toptik-shopify-import.xlsx");
-      setStatus(`קובץ אקסל ירד (${rows.length} שורות / ${fresh.items.length} מוצרים)`);
-    } catch (error) {
-      setStatus(resolveErrorMessage(error, "שגיאה ביצירת קובץ האקסל"));
     }
   }
 
@@ -1271,9 +1234,9 @@ export default function AdminPage() {
                   {isSaving ? "שומר..." : "שמור הכל"}
                 </button>
                 <button onClick={addItem}>הוסף מוצר</button>
-                <button onClick={onExportExcel} disabled={payload.items.length === 0}>
-                  הורד אקסל
-                </button>
+                <p role="note" className="admin-import-feedback admin-import-feedback-info">
+                  יצוא מוצרים ל-Shopify מושבת עד שיוגדר סנכרון בטוח ששומר על מחיר, מלאי וסטטוס הפרסום של החנות.
+                </p>
                 <button onClick={onWarmTechSpecs} disabled={isWarming || isSaving || isBatchImporting}>
                   {isWarming ? "מעדכן מפרטים..." : "עדכן מפרטים"}
                 </button>
