@@ -7,8 +7,8 @@ import { ArticleProductCard } from "./ArticleProductCard";
 //
 // Every figure below is manufacturer data: the spec sheets stored with the
 // gallery items (scraped from official Samsonite product pages through
-// safeSourceFetch) plus live checks of models 150720 (samsonite.fi) and
-// 143108 (samsonite.com.au) on 30.09.2026. SKUs without stored manufacturer
+// safeSourceFetch) plus live checks of models 146913, 150720, 146916
+// (samsonite.fi) and 143108 (samsonite.com.au) on 30.09.2026. SKUs without stored manufacturer
 // specs (the three Mandarina Duck trolleys) are deliberately listed without
 // dimensions rather than guessed.
 
@@ -115,7 +115,7 @@ export function GalleryContentSections() {
             <tr><th scope="row">מידות</th><td dir="ltr">55×40×20</td><td dir="ltr">55×40×23</td></tr>
             <tr><th scope="row">בהרחבה</th><td dir="ltr">55×40×23</td><td dir="ltr">55×40×26</td></tr>
             <tr><th scope="row">נפח (סגור/מורחב)</th><td>39/45 ל׳</td><td>42/48 ל׳</td></tr>
-            <tr><th scope="row">משקל</th><td>—</td><td>3 ק״ג</td></tr>
+            <tr><th scope="row">משקל</th><td>2.3 ק״ג</td><td>3 ק״ג</td></tr>
           </tbody>
         </table>
       </div>

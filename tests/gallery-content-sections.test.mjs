@@ -22,10 +22,12 @@ test("size table lists exactly the 20 verified Samsonite 55cm SKUs", () => {
 });
 
 test("only manufacturer-verified figures appear", () => {
-  // Base Upscape (143108): expanded-volume only; Easy Access weight is the one live-verified figure.
+  // Base Upscape (143108): expanded-volume only. Weights: only the two Intuo 55
+  // figures live-verified on samsonite.fi (146913: 2.3 kg, 150720: 3 kg).
   assert.match(component, /volume: "45 ל׳ בהרחבה"/);
-  assert.match(component, /<td>3 ק״ג<\/td>/);
-  assert.ok(!/ק״ג/.test(component.replace("3 ק״ג", "")), "no other weights without a verified source");
+  assert.match(component, /<td>2\.3 ק״ג<\/td><td>3 ק״ג<\/td>/);
+  const weights = component.match(/[\d.]+ ק״ג/g) ?? [];
+  assert.deepEqual(weights, ["2.3 ק״ג", "3 ק״ג"], "no other weights without a verified source");
   assert.match(component, /81×54×33/);
 });
 
