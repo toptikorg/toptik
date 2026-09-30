@@ -4,7 +4,8 @@ import { requireAdminToken } from "@/lib/admin/admin-token";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 import { fetchProductSnapshot, isShopifySyncConfigured } from "@/lib/shopify/admin-api";
-import { configuredSyncCanarySku, normalizeSyncSku } from "@/lib/shopify/sync-rules";
+import { assertVerifiedCopyApproval, assertVerifiedCopyIdentity, configuredShopifySyncMode, configuredSyncCanarySku, normalizeSyncSku } from "@/lib/shopify/sync-rules";
+import { readVerifiedCopyEligibility } from "@/lib/shopify/copy-eligibility";
 import { assertSafeDescriptionHtml, descriptionTextFromHtml, plainDescriptionToHtml } from "@/lib/shopify/description-document";
 import { scheduleShopifySync } from "@/lib/shopify/schedule-sync";
 
@@ -26,7 +27,7 @@ const requestSchema = z.object({
   patch: patchSchema,
 }).strict();
 
-/** One bound canary's copy only; never rewrite catalog rows, settings or angles. */
+/** Existing approved copy only; never rewrite catalog metadata, settings or angles. */
 export async function PATCH(request: NextRequest) {
   const denied = requireAdminToken(request);
   if (denied) return denied;
@@ -39,13 +40,17 @@ export async function PATCH(request: NextRequest) {
     const parsed = requestSchema.safeParse(JSON.parse(raw));
     if (!parsed.success) return NextResponse.json({ error: "SYNC_COPY_PATCH_INVALID" }, { status: 400 });
     const body = parsed.data;
+    const mode = configuredShopifySyncMode(process.env.SHOPIFY_SYNC_MODE);
+    if (mode === "disabled") throw new Error("SYNC_MODE_NOT_CONFIGURED");
     const canary = configuredSyncCanarySku(process.env.SHOPIFY_SYNC_CANARY_SKU);
     const catalogKey = normalizeSyncSku(body.sku);
-    if (!canary || catalogKey !== canary) return NextResponse.json({ error: "SYNC_SKU_OUTSIDE_CANARY" }, { status: 409 });
+    if (mode === "canary" && (!canary || catalogKey !== canary)) return NextResponse.json({ error: "SYNC_SKU_OUTSIDE_CANARY" }, { status: 409 });
     const supabase = createSupabaseServiceRoleClient();
+    const approval = mode === "verified_catalog" ? await readVerifiedCopyEligibility(supabase, body.productId) : null;
+    if (mode === "verified_catalog") assertVerifiedCopyApproval(approval);
     const [itemResult, bindingResult] = await Promise.all([
       supabase.from("carousel_items").select("id,catalog_number,title,description,description_html,seo_title,seo_description,copy_updated_at").eq("id", body.itemId).maybeSingle(),
-      supabase.from("shopify_gallery_bindings").select("catalog_key,carousel_item_id,product_gid,variant_gid").eq("product_gid", body.productId),
+      supabase.from("shopify_gallery_bindings").select("catalog_key,carousel_item_id,product_gid,variant_gid,product_handle").eq("product_gid", body.productId),
     ]);
     if (itemResult.error || bindingResult.error) throw new Error("SYNC_COPY_READ_FAILED");
     const item = itemResult.data;
@@ -60,9 +65,10 @@ export async function PATCH(request: NextRequest) {
     }
     const product = await fetchProductSnapshot(body.productId);
     if (!product || product.id !== body.productId || product.variants.length !== 1 ||
-        product.variants[0].id !== binding.variant_gid || product.variants[0].sku !== body.sku) {
+        product.variants[0].id !== binding.variant_gid || (mode === "canary" && product.variants[0].sku !== body.sku)) {
       return NextResponse.json({ error: "SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT" }, { status: 409 });
     }
+    if (approval) assertVerifiedCopyIdentity(approval, binding, { id: body.itemId, catalog_number: item.catalog_number }, product);
     const copy = {
       title: body.patch.title ?? item.title,
       description: item.description ?? "",
@@ -80,10 +86,11 @@ export async function PATCH(request: NextRequest) {
       copy.descriptionHtml = plainDescriptionToHtml(body.patch.description);
       copy.description = descriptionTextFromHtml(copy.descriptionHtml);
     }
-    const { data, error } = await supabase.rpc("patch_shopify_canary_copy", {
+    const { data, error } = await supabase.rpc(approval ? "patch_shopify_verified_copy" : "patch_shopify_canary_copy", {
       p_item_id: body.itemId, p_catalog_key: catalogKey, p_exact_sku: body.sku,
       p_product_gid: body.productId, p_variant_gid: binding.variant_gid,
       p_expected_version: body.copyUpdatedAt, p_copy: copy,
+      ...(approval ? { p_exact_shopify_sku: approval.exact_shopify_sku } : {}),
     });
     if (error) {
       const code = /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "SYNC_COPY_PATCH_FAILED";

@@ -1,6 +1,7 @@
 import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";
 import samsoniteVariantIds from "./samsonite-variants.json";
 import storeProductPages from "./store-product-pages.json";
+import { isSafeShopifyProductHandle } from "@/lib/shopify/sync-rules";
 
 // Per-SKU Shopify VARIANT IDs — from the owner's "Products_urls" sheet
 // (2026-08-17). Keys are normalized catalog keys (letters+digits, uppercase,
@@ -58,8 +59,8 @@ export function purchaseUrlFor(
 ): string | null {
   if (!catalogNumber) return null;
   if (liveLink) {
-    if (!liveLink.isPublished || !/^[a-z0-9][a-z0-9-]*$/.test(liveLink.handle) || !/^\d+$/.test(liveLink.variantId)) return null;
-    return `https://www.toptik.co.il/products/${liveLink.handle}?variant=${liveLink.variantId}`;
+    if (!liveLink.isPublished || !isSafeShopifyProductHandle(liveLink.handle) || !/^\d+$/.test(liveLink.variantId)) return null;
+    return `https://www.toptik.co.il/products/${encodeURIComponent(liveLink.handle)}?variant=${liveLink.variantId}`;
   }
   const key = normalizeCatalogKey(catalogNumber).replace(/TU$/, "");
   const variantId = VARIANT_IDS[key];

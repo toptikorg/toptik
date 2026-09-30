@@ -13,6 +13,7 @@ const wrapped = `export function createHandler(deps) {
   const NextResponse = { json: (value, init) => Response.json(value, init) };
   const hasSupabaseAdminEnv = () => true;
   const isShopifySyncConfigured = () => true;
+  const configuredShopifySyncMode = () => 'canary';
   const configuredSyncCanarySku = () => 'BAH08453001';
   const normalizeSyncSku = value => value.replace(/[^A-Z0-9]/g, '');
   ${body}

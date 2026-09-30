@@ -17,7 +17,7 @@ const workerSource = stripTypeScriptTypes(readFileSync("src/lib/shopify/sync-wor
 const { processQueue, withProductReconciliationLease, reconcileOutboxRow, mergeAndPersist, setProduct, getWrites } = await import(moduleUrl(
   `import { createHash, randomUUID } from "node:crypto";
    import { isSyncReviewCode, mergeVisibleProductCopy, visibleCopiesEquivalent } from "${policyUrl}";
-   import { normalizeSyncSku } from "${rulesUrl}";
+   import { normalizeSyncSku, configuredShopifySyncMode } from "${rulesUrl}";
    let product;
    let writes = 0;
    export function setProduct(value) { product = value; writes = 0; }

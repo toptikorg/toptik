@@ -7,7 +7,8 @@ const source = readFileSync("src/app/api/admin/shopify/sync/route.ts", "utf8");
 const body = source.slice(source.indexOf("export async function GET")).replace(/^export /gm, "");
 const moduleSource = stripTypeScriptTypes(`export function makeGet(deps) {
   const { requireAdminToken, createSupabaseServiceRoleClient, hasSupabaseAdminEnv,
-    configuredSyncCanarySku, shopifyProductGid, drainShopifySyncQueues, isShopifySyncConfigured } = deps;
+    configuredSyncCanarySku, configuredShopifySyncMode, shopifyProductGid, drainShopifySyncQueues, isShopifySyncConfigured,
+    readVerifiedCopyEligibility, assertVerifiedCopyApproval } = deps;
   const NextResponse = { json: (body, options = {}) => ({ body, status: options.status ?? 200, headers: options.headers }) };
   ${body}
   return GET;
@@ -18,7 +19,7 @@ const productGid = value => /^\d+$/.test(String(value)) ? `gid://shopify/Product
   : /^gid:\/\/shopify\/Product\/\d+$/.test(String(value)) ? value : null;
 const request = { nextUrl: new URL("https://example.com/api/admin/shopify/sync") };
 
-function fixture({ denied = false, configured = true, bound = true, deliveryError = false } = {}) {
+function fixture({ denied = false, configured = true, bound = true, deliveryError = false, mode = "canary", approved = true, mismatched = false } = {}) {
   const queries = [];
   let drains = 0;
   let clients = 0;
@@ -34,6 +35,8 @@ function fixture({ denied = false, configured = true, bound = true, deliveryErro
       async maybeSingle() { return { data: bound ? { product_gid: productId } : null, error: null }; },
       then(resolve) {
         const ledger = query.fields.includes("delivery_id");
+        if (table === "shopify_gallery_copy_eligibility") return Promise.resolve({data:[{product_gid:productId,enabled:true}],error:null}).then(resolve);
+        if (table === "shopify_gallery_bindings") return Promise.resolve({data:[{product_gid:productId,catalog_key:"KEY",carousel_item_id:"item",variant_gid:mismatched?"wrong":"variant",product_handle:"handle"}],error:null}).then(resolve);
         const data = ledger ? [{ id: "event-new", delivery_id: "delivery-new", topic: "products/update",
           received_at: "2026-09-30T16:00:01Z", processed_at: "2026-09-30T16:00:02Z",
           status: "processed", product_id: "9375026544890", event_updated_at: "2026-09-30T16:00:00Z",
@@ -51,6 +54,9 @@ function fixture({ denied = false, configured = true, bound = true, deliveryErro
     },
     hasSupabaseAdminEnv: () => true,
     configuredSyncCanarySku: () => configured ? "BAH08453001" : null,
+    configuredShopifySyncMode: () => mode,
+    readVerifiedCopyEligibility: async () => approved ? { product_gid:productId,catalog_key:"KEY",carousel_item_id:"item",variant_gid:"variant",approved_product_handle:"handle" } : null,
+    assertVerifiedCopyApproval: value => { if(!value) throw new Error("SYNC_COPY_NOT_APPROVED"); },
     shopifyProductGid: productGid,
     createSupabaseServiceRoleClient: () => { clients++; return db; },
     drainShopifySyncQueues: () => { drains++; assert.fail("status must never run the worker"); },
@@ -103,4 +109,20 @@ test("failed ledger reads fail closed without returning provider errors or succe
   assert.equal(result.status, 503);
   assert.ok(!Object.hasOwn(result.body, "canaryEvents"));
   assert.doesNotMatch(JSON.stringify(result.body), /private database detail|must not escape/);
+});
+
+test("selected product ledger requires enabled reviewed identity and exposes bounded metadata only",async()=>{
+  const selected={nextUrl:new URL(`https://example.com/api/admin/shopify/sync?productId=${encodeURIComponent(productId)}`)};
+  const f=fixture({mode:"verified_catalog",configured:false});
+  const result=await f.get(selected);
+  assert.equal(result.status,200);assert.equal(result.body.selectedProductId,productId);
+  assert.equal(result.body.productEvents.length,1);assert.equal(result.body.productEvents[0].product_id,productId);
+  assert.deepEqual(result.body.verifiedCatalog,{approved:1,enabled:1});
+  assert.doesNotMatch(JSON.stringify(result.body),/must not escape|private\.example|alias_evidence/);
+  const ledger=f.queries.find(q=>q.fields.includes("delivery_id"));assert.equal(ledger.limit,25);
+  for(const options of [{mode:"canary"},{mode:"verified_catalog",approved:false},{mode:"verified_catalog",mismatched:true}]){
+    const rejected=fixture({...options,configured:false});const response=await rejected.get(selected);
+    assert.notEqual(response.status,200);assert.ok(rejected.queries.every(q=>!q.fields.includes("delivery_id")));
+  }
+  assert.equal((await f.get({nextUrl:new URL("https://example.com/api/admin/shopify/sync?productId=https://evil.invalid")})).status,400);
 });

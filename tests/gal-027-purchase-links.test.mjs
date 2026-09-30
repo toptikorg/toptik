@@ -13,9 +13,13 @@ const linksSource = readFileSync("src/lib/carousel/purchase-links.ts", "utf8");
 const grid = readFileSync("src/components/carousel/CarouselGrid.tsx", "utf8");
 const modal = readFileSync("src/components/carousel/ProductModal.tsx", "utf8");
 const page = readFileSync("src/app/carousel/CarouselPageClient.tsx", "utf8");
+const rulesSource = readFileSync("src/lib/shopify/sync-rules.ts", "utf8")
+  .replace('import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";', 'const normalizeCatalogKey = value => value;');
+const rulesUrl = `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(rulesSource)).toString("base64")}`;
 
 // Run the real purchaseUrlFor with its real data, without a bundler.
 const inlined = linksSource
+  .replace('"@/lib/shopify/sync-rules"', JSON.stringify(rulesUrl))
   .replace('import { normalizeCatalogKey } from "@/lib/catalog-source/vendor-detect";',
     'const normalizeCatalogKey = (v) => (v || "").toUpperCase().replace(/[^A-Z0-9]/g, "");')
   .replace('import samsoniteVariantIds from "./samsonite-variants.json";',
@@ -75,6 +79,17 @@ test("purchase buttons open in the same tab, in the card and in the product moda
   }
   assert.ok(!/purchaseUrl[\s\S]{0,300}target="_blank"/.test(grid));
   assert.ok(!/purchaseUrl[\s\S]{0,300}target="_blank"/.test(modal));
+});
+
+test("verified Hebrew product handles stay on the store and encode one path segment", () => {
+  for (const handle of ["logoduck-i-טרולי", "smile-go-trolley-m-i-טרולי", "טרולי-תרמיל-פלדה-smile-go-trolley-m"]) {
+    const url = purchaseUrlFor("P10SZV2405J", { handle, variantId: "42465754808570", isPublished: true });
+    assert.equal(url, `https://www.toptik.co.il/products/${encodeURIComponent(handle)}?variant=42465754808570`);
+    assert.equal(decodeURIComponent(new URL(url).pathname), `/products/${handle}`);
+  }
+  for (const unsafe of ["/outside", "two/segments", "a\\b", "a%2fb", "a?x=1", "a#x", "a@b", "a:b", "two words", "a\u202Eb", "caf\u00e9", "\u4ea7\u54c1", "a\u05b0", "-leading", "a".repeat(256)]) {
+    assert.equal(purchaseUrlFor("P10SZV2405J", { handle: unsafe, variantId: "42465754808570", isPublished: true }), null);
+  }
 });
 
 test("gallery state survives Back: brand/category in the URL, scroll saved and restored", () => {
