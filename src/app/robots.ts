@@ -4,20 +4,11 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      // Public pages must remain crawlable for their noindex directives to be seen.
       allow: "/",
-      disallow: [
-        "/admin",
-        "/dashboard",
-        "/settings",
-        "/setup",
-        "/login",
-        "/reset",
-        "/auth",
-        "/api/admin",
-        "/api/panel",
-      ],
+      // APIs are not search landing pages; admin and account routes are crawlable
+      // so their explicit noindex directives can be read by crawlers.
+      disallow: "/api/",
     },
-    // Deliberately do not advertise a sitemap during the indexing hold.
+    sitemap: "https://landing.toptik.co.il/sitemap.xml",
   };
 }

@@ -12,8 +12,8 @@ import {
 } from "@/lib/seo/site";
 import { carouselStructuredData, jsonLdString } from "@/lib/seo/structured-data";
 
-// Indexing directives are inherited from the root layout (noindex, follow) and
-// from the X-Robots-Tag header; this module only adds descriptive metadata.
+// Public indexing directives are inherited from the root layout. Admin and API
+// paths receive separate noindex headers in next.config.ts.
 export const metadata: Metadata = {
   title: CAROUSEL_TITLE,
   description: CAROUSEL_DESCRIPTION,

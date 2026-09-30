@@ -61,10 +61,12 @@ export const metadata: Metadata = {
   // the Shopify store on 2026-06-20; this Vercel app now lives on the
   // `landing` subdomain. See docs/LANDING-SUBDOMAIN.md.
   metadataBase: new URL("https://landing.toptik.co.il"),
-  title: "TopTik Collection — Move in Style. Travel with Purpose.",
-  description: "TopTik — דף נחיתה רשמי",
-  // Keep the existing site public while content and SEO await release approval.
-  robots: { index: false, follow: true },
+  title: "גלריית TopTik | מזוודות, טרולי ותיקי נסיעות",
+  description: "גלו מקרוב מזוודות, טרולי ותיקי נסיעות של Mandarina Duck, Bric’s ו-Samsonite. השוו בין דגמים, צבעים ופרטי מוצר, והמשיכו לעמוד המוצר בחנות TopTik.",
+  robots: { index: true, follow: true },
+  verification: {
+    google: "SOL1x5W_O4mnV5j6IGHiH-mW4jopb3hJjIOWZXlaLbg",
+  },
 };
 
 export const viewport = {
