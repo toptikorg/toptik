@@ -18,6 +18,7 @@ type ItemRow = {
   id: string;
   title: string;
   description: string | null;
+  description_html?: string | null;
   seo_title?: string | null;
   seo_description?: string | null;
   copy_updated_at?: string | null;
@@ -26,6 +27,11 @@ type ItemRow = {
   cover_image_path: string;
   display_order: number;
   is_active: boolean;
+  color?: string | null;
+  dimensions?: string | null;
+  weight?: string | null;
+  sizes?: string[] | null;
+  available_colors?: string[] | null;
   tech_specs?: import("./types").CachedTechSpecs | null;
   colors?: import("./types").CarouselColor[] | null;
 };
@@ -40,6 +46,8 @@ type AngleRow = {
 
 type GetCarouselPayloadOptions = {
   includeInactive?: boolean;
+  /** Only authenticated admin routes may request stored copy and rich HTML. */
+  rawAdmin?: boolean;
 };
 
 export async function getCarouselPayload(
@@ -112,10 +120,11 @@ export async function getCarouselPayload(
   }
 
   return {
-    items: (itemRows as ItemRow[]).map((item) => applyReviewedCopy({
+    items: (itemRows as ItemRow[]).map((item) => ({
       id: item.id,
       title: item.title,
       description: item.description,
+      descriptionHtml: item.description_html ?? null,
       seoTitle: item.seo_title ?? null,
       seoDescription: item.seo_description ?? null,
       copyUpdatedAt: item.copy_updated_at ?? null,
@@ -127,6 +136,11 @@ export async function getCarouselPayload(
       coverImagePath: item.cover_image_path,
       displayOrder: item.display_order,
       isActive: item.is_active,
+      color: item.color ?? null,
+      dimensions: item.dimensions ?? null,
+      weight: item.weight ?? null,
+      sizes: item.sizes ?? null,
+      availableColors: item.available_colors ?? null,
       techSpecs: item.tech_specs ?? null,
       colors: item.colors ?? null,
       angles: (anglesByItem.get(item.id) ?? []).map((angle) => ({
@@ -136,7 +150,18 @@ export async function getCarouselPayload(
         imagePath: angle.image_path,
         angleOrder: angle.angle_order,
       })),
-    })),
+    })).map(item => {
+      // Public cards keep escaped text. Raw HTML is used by the authenticated
+      // editor only; rawAdmin is passed by the gated admin endpoint.
+      // Public supplement deduplication also needs inactive rows, so that
+      // independent option must never select the raw admin representation.
+      // Admin must round-trip raw stored fields: applying public legacy repairs
+      // here would turn an unrelated Save All into edits of other products.
+      if (options.rawAdmin) return item;
+      const publicItem = { ...applyReviewedCopy(item) };
+      Reflect.deleteProperty(publicItem, "descriptionHtml");
+      return publicItem;
+    }),
     settings: {
       autoplayMs: settingsRow?.autoplay_ms ?? fallbackCarouselPayload.settings.autoplayMs,
       transitionMode: settingsRow?.transition_mode ?? fallbackCarouselPayload.settings.transitionMode,

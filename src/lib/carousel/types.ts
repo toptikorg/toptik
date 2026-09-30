@@ -34,6 +34,8 @@ export interface CarouselItem {
   id: string;
   title: string;
   description: string | null;
+  /** Rich source is included only in authenticated admin payloads. */
+  descriptionHtml?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
   copyUpdatedAt?: string | null;
@@ -68,6 +70,7 @@ export interface AdminItemInput {
   id?: string;
   title: string;
   description?: string | null;
+  descriptionHtml?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
   copyUpdatedAt?: string | null;

@@ -1,5 +1,6 @@
 import "server-only";
 import { createShopifyClientCredentialsProvider } from "./client-credentials";
+import { plainDescriptionToHtml, descriptionTextFromHtml, canonicalDescriptionHtml, assertSafeDescriptionHtml } from "./description-document";
 
 export type ShopifyVariant = { id: string; sku: string | null };
 export type ShopifyProductSnapshot = {
@@ -195,44 +196,20 @@ export async function fetchShopifyBootstrapProducts(limit = 5000): Promise<Array
 export type ShopifyVisibleCopy = {
   title: string;
   description: string;
+  descriptionHtml?: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
 };
 
-function escapeHtml(value: string): string {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;").replaceAll("'", "&#39;");
-}
-
-/** Gallery descriptions are plain text; convert them to safe paragraph HTML. */
-export function galleryTextToShopifyHtml(value: string): string {
-  return value.split(/\r?\n{2,}/).map(paragraph => `<p>${escapeHtml(paragraph).replaceAll("\n", "<br>")}</p>`).join("");
-}
-
-/** Keep the Gallery's plain-text editor readable when Shopify sends HTML. */
-export function shopifyHtmlToGalleryText(value: string): string {
-  return value
-    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
-    .replace(/<\/(p|div|h[1-6]|blockquote)>/gi, "\n\n")
-    .replace(/<\/li>/gi, "\n")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;|&#160;/gi, " ")
-    .replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'")
-    .replace(/&#(\d+);/g, (entity, code: string) => {
-      const point = Number(code);
-      return Number.isInteger(point) && point >= 0 && point <= 0x10ffff && !(point >= 0xd800 && point <= 0xdfff)
-        ? String.fromCodePoint(point)
-        : entity;
-    })
-    .replace(/\n{3,}/g, "\n\n").trim();
-}
+/** Compatibility names shared with the importer and existing callers. */
+export const galleryTextToShopifyHtml = plainDescriptionToHtml;
+export const shopifyHtmlToGalleryText = descriptionTextFromHtml;
 
 export function visibleCopyFromProduct(product: Pick<ShopifyProductSnapshot, "title" | "descriptionHtml" | "seoTitle" | "seoDescription">): ShopifyVisibleCopy {
   return {
     title: product.title,
     description: shopifyHtmlToGalleryText(product.descriptionHtml),
+    descriptionHtml: product.descriptionHtml,
     seoTitle: product.seoTitle,
     seoDescription: product.seoDescription,
   };
@@ -252,7 +229,17 @@ export function buildShopifyVisibleCopyInput(productGid: string, copy: ShopifyVi
   const previous = visibleCopyFromProduct(current);
   const patch: ShopifyCopyPatch = { id: productGid };
   if (copy.title !== previous.title) patch.title = copy.title;
-  if (copy.description !== previous.description) patch.descriptionHtml = galleryTextToShopifyHtml(copy.description);
+  const descriptionEdited = copy.description !== previous.description ||
+    (typeof copy.descriptionHtml === "string" &&
+      canonicalDescriptionHtml(copy.descriptionHtml) !== canonicalDescriptionHtml(current.descriptionHtml));
+  if (descriptionEdited) {
+    const html = copy.descriptionHtml ?? galleryTextToShopifyHtml(copy.description);
+    if (typeof copy.descriptionHtml === "string" && descriptionTextFromHtml(html) !== copy.description) {
+      throw new Error("SYNC_DESCRIPTION_PAIR_MISMATCH");
+    }
+    assertSafeDescriptionHtml(html);
+    patch.descriptionHtml = html;
+  }
   const seo: NonNullable<ShopifyCopyPatch["seo"]> = {};
   if (copy.seoTitle !== previous.seoTitle) seo.title = copy.seoTitle;
   if (copy.seoDescription !== previous.seoDescription) seo.description = copy.seoDescription;

@@ -10,13 +10,13 @@ import {
   type ShopifyVisibleCopy,
 } from "./admin-api";
 import { configuredSyncCanarySku, isSyncCanarySku, matchExactSkus, normalizeSyncSku, numericVariantId, shopifyProductGid, staleBindingKeys } from "./sync-rules";
-import { isSyncReviewCode, mergeVisibleProductCopy, type VisibleProductCopy } from "./sync-policy";
+import { isSyncReviewCode, mergeVisibleProductCopy, visibleCopiesEquivalent, type VisibleProductCopy } from "./sync-policy";
 
 const BATCH_SIZE = 20;
 type InboxEvent = { id: string; topic: "products/create" | "products/update" | "products/delete"; payload: Record<string, unknown> };
 type OutboxRow = { id: string; carousel_item_id: string; catalog_key: string; content_hash: string; payload: VisibleProductCopy };
 type BindingRow = { catalog_key: string; carousel_item_id: string; product_gid: string; variant_gid: string; product_handle: string; is_published: boolean; source_updated_at: string | null };
-type GalleryCopyRow = { id: string; catalog_number: string | null; title: string; description: string | null; seo_title: string | null; seo_description: string | null; copy_updated_at: string };
+type GalleryCopyRow = { id: string; catalog_number: string | null; title: string; description: string | null; description_html?: string | null; seo_title: string | null; seo_description: string | null; copy_updated_at: string };
 
 function safeErrorCode(error: unknown): string {
   const message = error instanceof Error ? error.message : "SYNC_UNKNOWN";
@@ -30,7 +30,7 @@ function eventProductGid(event: InboxEvent): string | null {
 }
 
 function galleryCopy(row: GalleryCopyRow): VisibleProductCopy {
-  return { title: row.title, description: row.description ?? "", seoTitle: row.seo_title, seoDescription: row.seo_description };
+  return { title: row.title, description: row.description ?? "", descriptionHtml: row.description_html ?? null, seoTitle: row.seo_title, seoDescription: row.seo_description };
 }
 
 function assertCanarySnapshotIdentity(product: ShopifyProductSnapshot, binding: BindingRow): void {
@@ -48,6 +48,7 @@ function normalizedPayload(payload: unknown, catalogKey: string): VisibleProduct
   if (!payload || typeof payload !== "object") throw new Error("SYNC_OUTBOX_PAYLOAD_INVALID");
   const value = payload as Partial<VisibleProductCopy>;
   if (typeof value.title !== "string" || !value.title.trim() || typeof value.description !== "string" ||
+      !(value.descriptionHtml == null || typeof value.descriptionHtml === "string") ||
       !(value.seoTitle === null || typeof value.seoTitle === "string") ||
       !(value.seoDescription === null || typeof value.seoDescription === "string")) {
     throw new Error("SYNC_OUTBOX_PAYLOAD_INVALID");
@@ -55,7 +56,7 @@ function normalizedPayload(payload: unknown, catalogKey: string): VisibleProduct
   // Verify the queue identity separately from the visible text. SKU never
   // becomes part of a product title or description by this integration.
   if (!/^[A-Z0-9]+$/.test(catalogKey)) throw new Error("SYNC_OUTBOX_SKU_MISMATCH");
-  return { title: value.title.trim(), description: value.description, seoTitle: value.seoTitle, seoDescription: value.seoDescription };
+  return { title: value.title.trim(), description: value.description, descriptionHtml: value.descriptionHtml ?? null, seoTitle: value.seoTitle, seoDescription: value.seoDescription };
 }
 
 async function updateExactProductBindings(supabase: SupabaseClient, event: InboxEvent, productGid: string, canarySku: string) {
@@ -130,7 +131,7 @@ async function singleBindingForProduct(supabase: SupabaseClient, productGid: str
 
 async function readGalleryCopyRow(supabase: SupabaseClient, binding: BindingRow): Promise<GalleryCopyRow> {
   const { data, error } = await supabase.from("carousel_items")
-    .select("id,catalog_number,title,description,seo_title,seo_description,copy_updated_at")
+    .select("id,catalog_number,title,description,description_html,seo_title,seo_description,copy_updated_at")
     .eq("id", binding.carousel_item_id).maybeSingle();
   if (error || !data) throw new Error("SYNC_GALLERY_COPY_READ_FAILED");
   if (normalizeSyncSku(data.catalog_number) !== binding.catalog_key) throw new Error("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT");
@@ -140,7 +141,7 @@ async function readGalleryCopyRow(supabase: SupabaseClient, binding: BindingRow)
 async function saveGalleryCopy(supabase: SupabaseClient, row: GalleryCopyRow, copy: VisibleProductCopy): Promise<string> {
   const updatedAt = new Date().toISOString();
   const { data, error } = await supabase.from("carousel_items").update({
-    title: copy.title, description: copy.description || null, seo_title: copy.seoTitle,
+    title: copy.title, description: copy.description || null, description_html: copy.descriptionHtml ?? null, seo_title: copy.seoTitle,
     seo_description: copy.seoDescription, copy_updated_at: updatedAt,
   }).eq("id", row.id).eq("copy_updated_at", row.copy_updated_at).select("id").maybeSingle();
   if (error) throw new Error("SYNC_GALLERY_COPY_WRITE_FAILED");
@@ -152,8 +153,8 @@ async function writeConflictAudit(supabase: SupabaseClient, binding: BindingRow,
   if (!merged.conflicts.length) return;
   const rows = merged.conflicts.map(conflict => {
     const field = conflict.field;
-    const galleryValue = gallery[field];
-    const shopifyValue = shopify[field];
+    const galleryValue = field === "description" ? JSON.stringify({ text: gallery.description, html: gallery.descriptionHtml ?? null }) : gallery[field];
+    const shopifyValue = field === "description" ? JSON.stringify({ text: shopify.description, html: shopify.descriptionHtml ?? null }) : shopify[field];
     const conflictKey = createHash("sha256").update(JSON.stringify([binding.catalog_key, field, galleryValue, shopifyValue, conflict.winner, galleryUpdatedAt, shopifyUpdatedAt])).digest("hex");
     return {
       conflict_key: conflictKey, catalog_key: binding.catalog_key, carousel_item_id: binding.carousel_item_id,
@@ -188,7 +189,7 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
     if (!latest) throw new Error("SYNC_SHOPIFY_PRODUCT_MISSING");
     assertCanarySnapshotIdentity(latest, binding);
     const latestCopy = visibleCopyFromProduct(latest);
-    if (JSON.stringify(latestCopy) !== JSON.stringify(shopifyCopy)) {
+    if (!visibleCopiesEquivalent(latestCopy, shopifyCopy)) {
       shopifyCopy = latestCopy;
       merged = mergeVisibleProductCopy(
         galleryCopy(galleryRow), shopifyCopy, lastSynced, galleryRow.copy_updated_at, latest.updatedAt,
@@ -204,7 +205,7 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
   if (merged.galleryChanged) {
     const newGalleryUpdatedAt = await saveGalleryCopy(supabase, galleryRow, merged.galleryCopy);
     galleryRow = { ...galleryRow, ...{
-      title: merged.galleryCopy.title, description: merged.galleryCopy.description || null,
+      title: merged.galleryCopy.title, description: merged.galleryCopy.description || null, description_html: merged.galleryCopy.descriptionHtml ?? null,
       seo_title: merged.galleryCopy.seoTitle, seo_description: merged.galleryCopy.seoDescription, copy_updated_at: newGalleryUpdatedAt,
     } };
   }
@@ -214,8 +215,8 @@ async function mergeAndPersist(supabase: SupabaseClient, binding: BindingRow, pr
   assertCanarySnapshotIdentity(latestProduct, binding);
   const verifiedShopifyCopy = visibleCopyFromProduct(latestProduct);
   const verifiedGalleryCopy = galleryCopy(await readGalleryCopyRow(supabase, binding));
-  if (JSON.stringify(verifiedShopifyCopy) !== JSON.stringify(merged.shopifyCopy) ||
-      JSON.stringify(verifiedGalleryCopy) !== JSON.stringify(merged.galleryCopy)) {
+  if (!visibleCopiesEquivalent(verifiedShopifyCopy, merged.shopifyCopy) ||
+      !visibleCopiesEquivalent(verifiedGalleryCopy, merged.galleryCopy)) {
     throw new Error("SYNC_COPY_READBACK_MISMATCH");
   }
   const { error: stateWriteError } = await supabase.from("shopify_gallery_sync_state").upsert({

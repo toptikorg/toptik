@@ -2,10 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
+import { descriptionModuleUrl } from "./helpers/description-module.mjs";
 
 let source = await readFile("src/lib/shopify/admin-api.ts", "utf8");
 source = source.replace(/^import "server-only";\s*/m, "");
 source = source.replace(/^import \{ createShopifyClientCredentialsProvider \} from "\.\/client-credentials";\s*/m, "");
+source = source.replace('"./description-document"', JSON.stringify(descriptionModuleUrl));
 const { galleryTextToShopifyHtml, shopifyHtmlToGalleryText, buildShopifyVisibleCopyInput, visibleCopyFromProduct } = await import(
   `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString("base64")}`
 );
@@ -62,7 +64,7 @@ test("title-only and SEO-only edits never rewrite Shopify rich HTML or untouched
 test("unchanged copy is a no-op, and description edits patch only descriptionHtml", () => {
   const copy = visibleCopyFromProduct(richProduct);
   assert.deepEqual(buildShopifyVisibleCopyInput(richProduct.id, copy, richProduct), { id: richProduct.id });
-  assert.deepEqual(buildShopifyVisibleCopyInput(richProduct.id, { ...copy, description: "New <text>" }, richProduct), {
+  assert.deepEqual(buildShopifyVisibleCopyInput(richProduct.id, { ...copy, description: "New <text>", descriptionHtml: "<p>New &lt;text&gt;</p>" }, richProduct), {
     id: richProduct.id, descriptionHtml: "<p>New &lt;text&gt;</p>",
   });
 });
@@ -70,4 +72,19 @@ test("unchanged copy is a no-op, and description edits patch only descriptionHtm
 test("a snapshot for another product cannot authorize a copy patch", () => {
   assert.throws(() => buildShopifyVisibleCopyInput("gid://shopify/Product/999", visibleCopyFromProduct(richProduct), richProduct),
     /SYNC_SHOPIFY_PRODUCT_IDENTITY_CONFLICT/);
+});
+
+test("editing a rich description preserves links and tables in the Shopify patch", () => {
+  const html = richProduct.descriptionHtml.replace("Visit", "Explore");
+  const changed = { ...visibleCopyFromProduct(richProduct), description: shopifyHtmlToGalleryText(html), descriptionHtml: html };
+  assert.deepEqual(buildShopifyVisibleCopyInput(richProduct.id, changed, richProduct), { id: richProduct.id, descriptionHtml: html });
+  assert.match(html, /<table>/);
+  assert.match(html, /href="\/collections\/bags"/);
+});
+
+test("format-only HTML changes are written, while mismatched text/HTML is refused", () => {
+  const html = richProduct.descriptionHtml.replace('<h2>', '<h3>').replace('</h2>', '</h3>');
+  const copy = { ...visibleCopyFromProduct(richProduct), descriptionHtml: html };
+  assert.deepEqual(buildShopifyVisibleCopyInput(richProduct.id, copy, richProduct), { id: richProduct.id, descriptionHtml: html });
+  assert.throws(() => buildShopifyVisibleCopyInput(richProduct.id, { ...copy, description: 'Wrong old text' }, richProduct), /SYNC_DESCRIPTION_PAIR_MISMATCH/);
 });

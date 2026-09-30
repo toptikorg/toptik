@@ -1,9 +1,9 @@
 import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { adminCarouselPayloadSchema } from "@/lib/validation/carousel";
-import { applyReviewedCopy } from "./reviewed-copy";
 import { gallerySyncHash, outboxPayload } from "@/lib/shopify/sync-worker";
 import { normalizeSyncSku } from "@/lib/shopify/sync-rules";
+import { plainDescriptionToHtml, descriptionTextFromHtml, assertSafeDescriptionHtml } from "@/lib/shopify/description-document";
 
 // Admin-only write path (service role). Moved unchanged from ./repository.ts so
 // the public read path cannot reach the service-role client (GAL-025 / GAL-015).
@@ -17,7 +17,7 @@ export async function saveCarouselPayload(input: unknown) {
   const supabase = createSupabaseServiceRoleClient();
 
   const normalizedItems = parsed.items.map((item) => ({
-    ...applyReviewedCopy(item),
+    ...item,
     id: item.id ?? crypto.randomUUID(),
     angles: item.angles.map((angle) => ({
       ...angle,
@@ -27,12 +27,19 @@ export async function saveCarouselPayload(input: unknown) {
 
   let { data: priorContentRows, error: priorContentError } = await supabase
     .from("carousel_items")
-    .select("id,title,description,catalog_number,seo_title,seo_description,copy_updated_at");
+    .select("id,title,description,description_html,catalog_number,seo_title,seo_description,copy_updated_at");
+  let richSchemaAvailable = !priorContentError;
+  if (priorContentError && /description_html/i.test(priorContentError.message)) {
+    const priorSync = await supabase.from("carousel_items").select("id,title,description,catalog_number,seo_title,seo_description,copy_updated_at");
+    priorContentRows = priorSync.data as typeof priorContentRows;
+    priorContentError = priorSync.error;
+  }
   let syncSchemaAvailable = !priorContentError;
   // A draft deployment can run against a database before its additive sync
   // migration. Preserve the existing editor read/write path in that case.
   if (priorContentError && /seo_title|copy_updated_at|column|schema cache/i.test(priorContentError.message)) {
     syncSchemaAvailable = false;
+    richSchemaAvailable = false;
     const legacy = await supabase.from("carousel_items").select("id,title,description,catalog_number");
     priorContentRows = legacy.data as typeof priorContentRows;
     priorContentError = legacy.error;
@@ -42,6 +49,7 @@ export async function saveCarouselPayload(input: unknown) {
     id: string;
     title: string;
     description: string | null;
+    description_html?: string | null;
     catalog_number: string | null;
     seo_title: string | null;
     seo_description: string | null;
@@ -57,10 +65,29 @@ export async function saveCarouselPayload(input: unknown) {
   const itemsToSave = normalizedItems.map((item, index) => {
     const previous = priorContent.get(item.id);
     const inputItem = parsed.items[index];
+    let description = item.description ?? "";
+    let descriptionHtml: string | null = previous?.description_html ?? null;
+    if (typeof inputItem.descriptionHtml === "string") {
+      if (!richSchemaAvailable) throw new Error("SYNC_DESCRIPTION_MIGRATION_REQUIRED");
+      if (inputItem.descriptionHtml !== previous?.description_html) assertSafeDescriptionHtml(inputItem.descriptionHtml);
+      descriptionHtml = inputItem.descriptionHtml;
+      description = descriptionTextFromHtml(descriptionHtml);
+    } else if (typeof previous?.description_html === "string") {
+      if ((inputItem.description ?? "") !== (previous.description ?? "")) {
+        throw new Error("SYNC_DESCRIPTION_RICH_EDITOR_REQUIRED");
+      }
+      // A legacy client saving another field cannot erase rich structure or
+      // trigger a historical plain-text repair underneath the stored HTML.
+      description = previous.description ?? "";
+    } else if (richSchemaAvailable && (!previous || description !== (previous.description ?? ""))) {
+      descriptionHtml = plainDescriptionToHtml(description);
+      description = descriptionTextFromHtml(descriptionHtml);
+    }
     const seoTitle = inputItem.seoTitle === undefined ? previous?.seo_title ?? null : inputItem.seoTitle;
     const seoDescription = inputItem.seoDescription === undefined ? previous?.seo_description ?? null : inputItem.seoDescription;
     const copyChanged = !previous || previous.title !== item.title ||
-      (previous.description ?? null) !== (item.description ?? null) ||
+      (previous.description ?? "") !== description ||
+      (previous.description_html ?? null) !== descriptionHtml ||
       (previous.seo_title ?? null) !== (seoTitle ?? null) ||
       (previous.seo_description ?? null) !== (seoDescription ?? null);
     const submittedVersion = inputItem.copyUpdatedAt;
@@ -73,6 +100,8 @@ export async function saveCarouselPayload(input: unknown) {
     }
     return {
       ...item,
+      description: description || null,
+      descriptionHtml,
       // Full-catalog saves from old clients/imports preserve SEO unless the
       // caller explicitly supplied an SEO value (including an empty string).
       seoTitle,
@@ -97,6 +126,7 @@ export async function saveCarouselPayload(input: unknown) {
     id: item.id,
     title: item.title,
     description: item.description ?? null,
+    ...(richSchemaAvailable ? { description_html: item.descriptionHtml } : {}),
     seo_title: item.seoTitle ?? null,
     seo_description: item.seoDescription ?? null,
     copy_updated_at: item.copyUpdatedAt,
@@ -223,6 +253,7 @@ export async function saveCarouselPayload(input: unknown) {
     const previous = priorContent.get(item.id);
     return !previous || previous.title !== item.title ||
       (previous.description ?? null) !== (item.description ?? null) ||
+      (previous.description_html ?? null) !== (item.descriptionHtml ?? null) ||
       (previous.seo_title ?? null) !== (item.seoTitle ?? null) ||
       (previous.seo_description ?? null) !== (item.seoDescription ?? null);
   }).map(item => item.id));
@@ -244,7 +275,7 @@ export async function saveCarouselPayload(input: unknown) {
     const syncedByKey = new Map((stateResult.data ?? []).map((row: { catalog_key: string; last_synced_payload: unknown }) => [row.catalog_key, row.last_synced_payload]));
     for (const { item, catalogKey } of keyedItems) {
       if (!boundItemIds.has(item.id)) continue;
-      const content = { title: item.title, description: item.description ?? "", seoTitle: item.seoTitle ?? null, seoDescription: item.seoDescription ?? null };
+      const content = { title: item.title, description: item.description ?? "", descriptionHtml: item.descriptionHtml, seoTitle: item.seoTitle ?? null, seoDescription: item.seoDescription ?? null };
       const previousSynced = syncedByKey.get(catalogKey) as typeof content | undefined;
       if (!previousSynced || gallerySyncHash(previousSynced) !== gallerySyncHash(content)) changedCopyIds.add(item.id);
     }
@@ -256,6 +287,7 @@ export async function saveCarouselPayload(input: unknown) {
     const content = {
       title: item.title,
       description: item.description ?? "",
+      descriptionHtml: item.descriptionHtml,
       seoTitle: item.seoTitle ?? null,
       seoDescription: item.seoDescription ?? null,
     };

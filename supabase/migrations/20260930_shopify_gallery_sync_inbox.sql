@@ -5,6 +5,7 @@
 -- content. Exact-SKU reconciliation belongs to a separately tested worker.
 
 alter table public.carousel_items
+  add column if not exists description_html text null,
   add column if not exists seo_title text null,
   add column if not exists seo_description text null,
   add column if not exists copy_updated_at timestamptz not null default now();
@@ -177,7 +178,7 @@ begin
     from jsonb_object_keys(incoming) keys(key)
     join pg_attribute attr on attr.attrelid = 'public.carousel_items'::regclass
       and attr.attname = keys.key and not attr.attisdropped and attr.attnum > 0
-    where keys.key = any(array['id','title','description','seo_title','seo_description','copy_updated_at',
+    where keys.key = any(array['id','title','description','description_html','seo_title','seo_description','copy_updated_at',
       'catalog_number','source_url','cover_image_path','display_order','is_active','color',
       'dimensions','weight','sizes','available_colors','colors','tech_specs'])
       and (not exists_before or keys.key <> 'id');
@@ -188,10 +189,10 @@ begin
       execute format('insert into public.carousel_items (%s) select %s from jsonb_populate_record(null::public.carousel_items, $1) record returning *',
         columns_sql, projected_columns_sql) using incoming into saved;
     end if;
-    content := jsonb_build_object('title',saved.title,'description',coalesce(saved.description,''),
+    content := jsonb_build_object('title',saved.title,'description',coalesce(saved.description,''),'descriptionHtml',saved.description_html,
       'seoTitle',saved.seo_title,'seoDescription',saved.seo_description);
     previous_content := case when exists_before then jsonb_build_object('title',previous.title,
-      'description',coalesce(previous.description,''),'seoTitle',previous.seo_title,'seoDescription',previous.seo_description) else null end;
+      'description',coalesce(previous.description,''),'descriptionHtml',previous.description_html,'seoTitle',previous.seo_title,'seoDescription',previous.seo_description) else null end;
     sku_key := regexp_replace(upper(coalesce(saved.catalog_number,'')), '[^A-Z0-9]', '', 'g');
     if sku_key ~ '^P[0-9]{2}.*TU$' then sku_key := left(sku_key,length(sku_key)-2); end if;
     if content is distinct from previous_content and sku_key <> '' then
@@ -465,7 +466,7 @@ grant select on table public.shopify_gallery_public_links to anon, authenticated
 -- Preserve any pre-existing admin privileges, and guarantee the narrower
 -- direct read/CAS-copy update access needed by the sync worker itself.
 grant select on table public.carousel_items to service_role;
-grant update (title, description, seo_title, seo_description, copy_updated_at)
+grant update (title, description, description_html, seo_title, seo_description, copy_updated_at)
   on table public.carousel_items to service_role;
 
 -- Deliberately create no policies for the inbox, bindings, outbox, sync state,

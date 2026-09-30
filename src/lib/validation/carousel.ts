@@ -48,6 +48,7 @@ export const carouselItemInputSchema = z.object({
   id: z.string().uuid().optional(),
   title: z.string().min(1).max(120),
   description: z.string().max(50000).nullable().optional(),
+  descriptionHtml: z.string().max(250000).nullable().optional(),
   seoTitle: z.string().max(512).nullable().optional(),
   seoDescription: z.string().max(5000).nullable().optional(),
   copyUpdatedAt: z.string().max(64).nullable().optional(),
@@ -68,7 +69,12 @@ export const carouselItemInputSchema = z.object({
   angles: z.array(carouselAngleInputSchema).max(30),
 });
 
+// A full-catalog save must accommodate the existing 82 rows and future imports.
+// This is separate from the smaller, per-request manufacturer import batch.
+// Keep aligned with save_gallery_items_with_copy_cas's bounded input limit.
+export const MAX_CAROUSEL_ITEMS = 5000;
+
 export const adminCarouselPayloadSchema = z.object({
   settings: carouselSettingsSchema,
-  items: z.array(carouselItemInputSchema).min(1).max(80),
+  items: z.array(carouselItemInputSchema).min(1).max(MAX_CAROUSEL_ITEMS),
 });

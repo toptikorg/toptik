@@ -74,6 +74,21 @@ await assert.rejects(db.query("update shopify_gallery_public_links set is_publis
 assert.equal((await db.query('select acquire_shopify_reconciliation_lease($1,$2) as acquired',[product,owner])).rows[0].acquired,true);
 await db.query('select release_shopify_reconciliation_lease($1,$2)',[product,owner]);
 await db.exec('reset role');
+const richId='44444444-4444-4444-8444-444444444444';
+const richRaw='<p><a href="/first">Bag</a></p><table><tr><td>55 cm</td></tr></table>';
+const richItem={...item,id:richId,catalog_number:'RICH1',description:'Bag\n\n55 cm',description_html:richRaw,copy_updated_at:now};
+await save([richItem],{[richId]:null});
+const richEdited=richRaw.replace('/first','/second');
+await save([{...richItem,description_html:richEdited,copy_updated_at:later}],{[richId]:now});
+const richStored=(await db.query('select description,description_html,copy_updated_at from carousel_items where id=$1',[richId])).rows[0];
+assert.equal(richStored.description,richItem.description);
+assert.equal(richStored.description_html,richEdited,'link/table markup stored without flattening');
+const richQueue=(await db.query('select payload from shopify_gallery_content_outbox where carousel_item_id=$1 order by created_at',[richId])).rows;
+assert.equal(richQueue.length,2,'HTML-only edits enqueue a new atomic description pair');
+assert.equal(richQueue[1].payload.descriptionHtml,richEdited);
+assert.equal(richQueue[1].payload.description,richItem.description);
+await assert.rejects(save([{...richItem,description_html:'<p>Stale</p>'}],{[richId]:now}),/SYNC_COPY_STALE_EDIT_RELOAD/);
+assert.equal((await db.query('select description_html from carousel_items where id=$1',[richId])).rows[0].description_html,richEdited);
 for (const role of ['anon','authenticated']) {
   await db.exec(`set role ${role}`);
   await assert.rejects(save([item],{[id]:later}),/permission denied/);
@@ -87,5 +102,5 @@ for (const role of ['anon','authenticated']) {
   await db.exec('reset role');
 }
 await db.exec(await readFile(root+'supabase/migrations/20260930_shopify_gallery_sync_inbox.sql','utf8'));
-console.log('PASS: complete SQL migration compiles and is idempotent with pgcrypto in extensions; create/update/outbox atomicity, unchanged copy, metadata preservation, stale version rejection, deletion rejection, lease contention/ownership, lease-editor exclusion, outbox-failure rollback, service_role direct worker operations, RPC-only leases/binding writes, anon/authenticated private table+RPC denial, public projection read-only.');
+console.log('PASS: complete SQL migration compiles and is idempotent with pgcrypto in extensions; rich description pair + HTML-only enqueue/version checks; create/update/outbox atomicity, unchanged copy, metadata preservation, stale version rejection, deletion rejection, lease contention/ownership, lease-editor exclusion, outbox-failure rollback, service_role direct worker operations, RPC-only leases/binding writes, anon/authenticated private table+RPC denial, public projection read-only.');
 await db.close();

@@ -4,6 +4,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 import { isShopifySyncConfigured } from "@/lib/shopify/admin-api";
 import { drainShopifySyncQueues } from "@/lib/shopify/sync-worker";
+import { configuredSyncCanarySku, shopifyProductGid } from "@/lib/shopify/sync-rules";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** Return a bounded status-only review queue; never expose webhook bodies. */
+/** Return bounded private review and exact-canary delivery metadata, never bodies. */
 export async function GET(request: NextRequest) {
   const runWorker = request.nextUrl.searchParams.get("run") === "1";
   const denied = requireAdminToken(request, { allowCron: runWorker });
@@ -56,7 +57,39 @@ export async function GET(request: NextRequest) {
         .limit(50),
     ]);
     if (eventsError || outboxError) throw new Error("SYNC_REVIEW_QUEUE_READ_FAILED");
-    return NextResponse.json({ events: events ?? [], outbox: outbox ?? [] }, { headers: { "Cache-Control": "no-store" } });
+    const canarySku = configuredSyncCanarySku(process.env.SHOPIFY_SYNC_CANARY_SKU);
+    let canaryProductId: string | null = null;
+    let canaryEvents: Array<{
+      id: string; delivery_id: string; topic: string; received_at: string;
+      processed_at: string | null; status: string; product_id: string; event_updated_at: string | null;
+    }> = [];
+    if (canarySku) {
+      const { data: binding, error: bindingError } = await supabase.from("shopify_gallery_bindings")
+        .select("product_gid").eq("catalog_key", canarySku).maybeSingle();
+      if (bindingError) throw new Error("SYNC_CANARY_STATUS_READ_FAILED");
+      if (binding) {
+        canaryProductId = shopifyProductGid(binding.product_gid);
+        if (!canaryProductId) throw new Error("SYNC_CANARY_STATUS_IDENTITY_INVALID");
+        // Select only scalar identity/version metadata from JSON. Webhook content and
+        // shop identifiers never enter the status response or this read result.
+        const { data: deliveries, error: deliveriesError } = await supabase.from("shopify_webhook_events")
+          .select("id,delivery_id,topic,received_at,processed_at,status,product_id:payload->>id,event_updated_at:payload->>updated_at")
+          .in("payload->>id", [canaryProductId, canaryProductId.split("/").at(-1)!])
+          .order("received_at", { ascending: false })
+          .limit(25);
+        if (deliveriesError) throw new Error("SYNC_CANARY_STATUS_READ_FAILED");
+        canaryEvents = (deliveries ?? []).flatMap(row => {
+          const productId = shopifyProductGid(row.product_id);
+          return productId && productId === canaryProductId ? [{
+            id: row.id, delivery_id: row.delivery_id, topic: row.topic,
+            received_at: row.received_at, processed_at: row.processed_at,
+            status: row.status, product_id: productId, event_updated_at: row.event_updated_at,
+          }] : [];
+        });
+      }
+    }
+    return NextResponse.json({ events: events ?? [], outbox: outbox ?? [], canaryProductId, canaryEvents },
+      { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Shopify sync review queue unavailable" }, { status: 503 });
   }

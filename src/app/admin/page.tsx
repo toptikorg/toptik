@@ -13,6 +13,8 @@ import {
   SHOPIFY_EXPORT_COLUMN_WIDTHS,
 } from "@/lib/carousel/shopify-export";
 import { LANDING_URL } from "@/lib/admin/config";
+import ProductDescriptionEditor from "@/components/admin/ProductDescriptionEditor";
+import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -308,7 +310,10 @@ export default function AdminPage() {
         const normalized = String(value).trim();
         item.catalogNumber = normalized ? normalized : null;
       }
-      else if (field === "description") item.description = String(value);
+      else if (field === "description") {
+        item.description = String(value);
+        item.descriptionHtml = plainDescriptionToHtml(String(value));
+      }
       else if (field === "seoTitle") item.seoTitle = String(value);
       else if (field === "seoDescription") item.seoDescription = String(value);
       else item.title = String(value);
@@ -666,7 +671,7 @@ export default function AdminPage() {
         seenKeys.add(key);
         unique.push(normalizeRowValue(value));
       }
-      const MAX_BATCH_ROWS = 80; // the catalog payload is capped at 80 items
+      const MAX_BATCH_ROWS = 80; // bound manufacturer requests per import, not total catalog size
       const loaded = unique.slice(0, MAX_BATCH_ROWS);
       const padded =
         loaded.length < BATCH_IMPORT_INITIAL
@@ -1316,16 +1321,13 @@ export default function AdminPage() {
                         onChange={(e) => updateItemField(itemIndex, "title", e.target.value)}
                       />
                     </label>
-                    <label style={{ gridColumn: "1 / -1" }}>
-                      תיאור
-                      <textarea
-                        value={item.description ?? ""}
-                        onChange={(e) => updateItemField(itemIndex, "description", e.target.value)}
-                        rows={4}
-                        style={{ width: "100%", resize: "vertical", font: "inherit" }}
-                        placeholder="תיאור המוצר (יופיע בכרטיסייה ובחלון המוצר)"
-                      />
-                    </label>
+                    <ProductDescriptionEditor text={item.description ?? ""} html={item.descriptionHtml}
+                      onChange={({ text, html }) => setPayload(current => {
+                        const next = structuredClone(current);
+                        const changed = next.items.find(row => row.id === item.id);
+                        if (changed) { changed.description = text; changed.descriptionHtml = html; }
+                        return next;
+                      })} />
                     <label>
                       כותרת SEO לחנות
                       <input

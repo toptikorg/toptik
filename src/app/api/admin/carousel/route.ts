@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   if (denied) return denied;
 
   try {
-    const payload = await getCarouselPayload({ includeInactive: true });
+    const payload = await getCarouselPayload({ includeInactive: true, rawAdmin: true });
     if (isUnavailableCarouselPayload(payload)) {
       return NextResponse.json({ error: CAROUSEL_UNAVAILABLE_MESSAGE }, { status: 503 });
     }

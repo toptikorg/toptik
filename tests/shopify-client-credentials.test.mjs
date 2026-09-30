@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
+import { descriptionModuleUrl } from "./helpers/description-module.mjs";
 
 const source = await readFile("src/lib/shopify/client-credentials.ts", "utf8");
 const providerUrl = `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString("base64")}`;
@@ -73,7 +74,8 @@ test("redirects, missing write scope and malformed tokens cannot authorize Shopi
 test("separate GraphQL calls reuse the provider and credential rotation creates a new one", async t => {
   let apiSource = await readFile("src/lib/shopify/admin-api.ts", "utf8");
   apiSource = apiSource.replace(/^import "server-only";\s*/m, "")
-    .replace('from "./client-credentials"', `from "${providerUrl}"`);
+    .replace('from "./client-credentials"', `from "${providerUrl}"`)
+    .replace('from "./description-document"', `from "${descriptionModuleUrl}"`);
   const { fetchShopifyBootstrapProducts } = await import(
     `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(apiSource)).toString("base64")}`
   );

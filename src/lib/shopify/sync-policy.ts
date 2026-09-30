@@ -1,11 +1,15 @@
+import { canonicalDescriptionHtml, plainDescriptionToHtml } from "./description-document";
+
 export type VisibleProductCopy = {
   title: string;
   description: string;
+  /** null/undefined means legacy representation unknown; empty string means clear. */
+  descriptionHtml?: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
 };
 
-export type CopyField = keyof VisibleProductCopy;
+export type CopyField = Exclude<keyof VisibleProductCopy, "descriptionHtml">;
 export type CopyMergeResult = {
   copy: VisibleProductCopy;
   shopifyCopy: VisibleProductCopy;
@@ -15,8 +19,33 @@ export type CopyMergeResult = {
   conflicts: Array<{ field: CopyField; winner: "gallery" | "shopify" | "review" }>;
 };
 
-const fields: CopyField[] = ["title", "description", "seoTitle", "seoDescription"];
+const fields = ["title", "seoTitle", "seoDescription"] as const;
 const nonEmpty = (value: string | null): boolean => Boolean(value?.trim());
+
+const hasDescriptionHtml = (copy: VisibleProductCopy): boolean => typeof copy.descriptionHtml === "string";
+const descriptionDocument = (copy: VisibleProductCopy): string => canonicalDescriptionHtml(
+  copy.descriptionHtml ?? plainDescriptionToHtml(copy.description),
+);
+const descriptionSame = (left: VisibleProductCopy, right: VisibleProductCopy): boolean =>
+  left.description === right.description && descriptionDocument(left) === descriptionDocument(right);
+
+/** Readback tolerates Shopify's equivalent HTML serialization, never removed structure. */
+export function visibleCopiesEquivalent(left: VisibleProductCopy, right: VisibleProductCopy): boolean {
+  return fields.every(field => left[field] === right[field]) && descriptionSame(left, right);
+}
+
+function assignDescription(target: VisibleProductCopy, source: VisibleProductCopy) {
+  target.description = source.description;
+  if (source.descriptionHtml === undefined) delete target.descriptionHtml;
+  else target.descriptionHtml = source.descriptionHtml;
+}
+
+function descriptionChangedFrom(copy: VisibleProductCopy, baseline: VisibleProductCopy): boolean {
+  // A version-1 baseline has no HTML evidence. Hydrate it from the current
+  // snapshot instead of treating markup first observed after upgrade as an edit.
+  return copy.description !== baseline.description ||
+    (hasDescriptionHtml(copy) && hasDescriptionHtml(baseline) && !descriptionSame(copy, baseline));
+}
 
 /**
  * Deterministic, field-level bidirectional merge.
@@ -88,12 +117,40 @@ export function mergeVisibleProductCopy(
     result[field] = winningValue;
   }
 
+  // Description text and its rich document are one indivisible field. Initial
+  // equal text can adopt the known rich representation without erasing markup.
+  if (galleryCopy.description === shopifyCopy.description) {
+    if (!hasDescriptionHtml(galleryCopy) && hasDescriptionHtml(shopifyCopy)) assignDescription(galleryCopy, shopifyCopy);
+    else if (!hasDescriptionHtml(shopifyCopy) && hasDescriptionHtml(galleryCopy)) assignDescription(shopifyCopy, galleryCopy);
+  }
+  if (!descriptionSame(galleryCopy, shopifyCopy)) {
+    if (!hasSideBaselines) {
+      const galleryHasValue = nonEmpty(galleryCopy.description) || Boolean(galleryCopy.descriptionHtml?.trim());
+      const shopifyHasValue = nonEmpty(shopifyCopy.description) || Boolean(shopifyCopy.descriptionHtml?.trim());
+      if (galleryHasValue && !shopifyHasValue) assignDescription(shopifyCopy, galleryCopy);
+      else if (shopifyHasValue && !galleryHasValue) assignDescription(galleryCopy, shopifyCopy);
+    } else {
+      const galleryChanged = descriptionChangedFrom(gallery, galleryBaseline);
+      const shopifyChanged = descriptionChangedFrom(shopify, shopifyBaseline);
+      if (galleryChanged || shopifyChanged) {
+        const winner = galleryChanged && !shopifyChanged ? "gallery" :
+          shopifyChanged && !galleryChanged ? "shopify" :
+          timestampsValid && galleryTime > shopifyTime ? "gallery" : "shopify";
+        if (galleryChanged && shopifyChanged) conflicts.push({ field: "description", winner });
+        const winning = winner === "gallery" ? galleryCopy : shopifyCopy;
+        assignDescription(galleryCopy, winning);
+        assignDescription(shopifyCopy, winning);
+      }
+    }
+  }
+  assignDescription(result, shopifyCopy);
+
   return {
     copy: result,
     shopifyCopy,
     galleryCopy,
-    shopifyChanged: fields.some(field => shopifyCopy[field] !== shopify[field]),
-    galleryChanged: fields.some(field => galleryCopy[field] !== gallery[field]),
+    shopifyChanged: !visibleCopiesEquivalent(shopifyCopy, shopify) || hasDescriptionHtml(shopifyCopy) !== hasDescriptionHtml(shopify),
+    galleryChanged: !visibleCopiesEquivalent(galleryCopy, gallery) || hasDescriptionHtml(galleryCopy) !== hasDescriptionHtml(gallery),
     conflicts,
   };
 }
@@ -115,6 +172,9 @@ const REVIEW_CODES = new Set([
   "SYNC_COPY_READBACK_MISMATCH",
   "SHOPIFY_PRODUCT_COPY_WRITE_REJECTED",
   "SHOPIFY_PRODUCT_COPY_WRITE_MISSING",
+  "SYNC_DESCRIPTION_HTML_UNSAFE",
+  "SYNC_DESCRIPTION_PAIR_MISMATCH",
+  "SYNC_DESCRIPTION_RICH_EDITOR_REQUIRED",
 ]);
 
 export function isSyncReviewCode(code: string): boolean {

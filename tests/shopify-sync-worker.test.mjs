@@ -2,9 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
+import { descriptionModuleUrl, descriptionHelpers } from "./helpers/description-module.mjs";
 
 const moduleUrl = (source) => `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
-const policyUrl = moduleUrl(stripTypeScriptTypes(readFileSync("src/lib/shopify/sync-policy.ts", "utf8")));
+const policyUrl = moduleUrl(stripTypeScriptTypes(readFileSync("src/lib/shopify/sync-policy.ts", "utf8")
+  .replace('"./description-document"', JSON.stringify(descriptionModuleUrl))));
 const vendorUrl = moduleUrl(stripTypeScriptTypes(readFileSync("src/lib/catalog-source/vendor-detect.ts", "utf8")));
 const rulesUrl = moduleUrl(stripTypeScriptTypes(readFileSync("src/lib/shopify/sync-rules.ts", "utf8")
   .replace('"@/lib/catalog-source/vendor-detect"', JSON.stringify(vendorUrl))));
@@ -13,14 +15,14 @@ const rulesUrl = moduleUrl(stripTypeScriptTypes(readFileSync("src/lib/shopify/sy
 const workerSource = stripTypeScriptTypes(readFileSync("src/lib/shopify/sync-worker.ts", "utf8"))
   .replace(/^import[\s\S]*?;\r?\n/gm, "");
 const { processQueue, withProductReconciliationLease, reconcileOutboxRow, mergeAndPersist, setProduct, getWrites } = await import(moduleUrl(
-  `import { randomUUID } from "node:crypto";
-   import { isSyncReviewCode, mergeVisibleProductCopy } from "${policyUrl}";
+  `import { createHash, randomUUID } from "node:crypto";
+   import { isSyncReviewCode, mergeVisibleProductCopy, visibleCopiesEquivalent } from "${policyUrl}";
    import { normalizeSyncSku } from "${rulesUrl}";
    let product;
    let writes = 0;
    export function setProduct(value) { product = value; writes = 0; }
    export function getWrites() { return writes; }
-   async function fetchProductSnapshot() { return product; }
+   async function fetchProductSnapshot() { return Array.isArray(product) ? product.shift() : product; }
    function visibleCopyFromProduct(product) { return product.copy; }
    async function writeShopifyVisibleCopy() { writes++; }
    ${workerSource}
@@ -94,6 +96,33 @@ test("final Shopify reread rejects changed variant identity even if product copy
     await assert.rejects(mergeAndPersist(database, binding, initial, gallery), /SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT/);
     assert.equal(getWrites(), 0);
   }
+});
+
+test("rich Shopify readback accepts equivalent serialization and baselines returned raw HTML", async () => {
+  const makeCopy = html => ({ title: "Bag", description: descriptionHelpers.descriptionTextFromHtml(html), descriptionHtml: html, seoTitle: null, seoDescription: null });
+  const baseline = makeCopy('<p><a href="/old" title="Info">Bag</a></p>');
+  const galleryCopy = makeCopy('<p><a title="Info" href="/new">Bag</a></p>');
+  const returnedCopy = makeCopy('<p><a href="/new" title="Info">Bag</a></p>');
+  const binding = { product_gid: "product-1", variant_gid: "variant-1", catalog_key: "CANARY", carousel_item_id: "item-1" };
+  const initial = { id: "product-1", variants: [{ id: "variant-1", sku: "CANARY" }], copy: baseline, updatedAt: "2026-09-30T10:00:00Z" };
+  const gallery = { id: "item-1", catalog_number: "CANARY", title: galleryCopy.title, description: galleryCopy.description,
+    description_html: galleryCopy.descriptionHtml, seo_title: null, seo_description: null, copy_updated_at: "2026-09-30T10:01:00Z" };
+  let stateSaved;
+  const database = {
+    from(table) {
+      if (table === "shopify_gallery_sync_state") return {
+        select() { return { eq() { return { async maybeSingle() { return { data: { last_synced_payload: baseline }, error: null }; } }; } }; },
+        async upsert(value) { stateSaved = value; return { error: null }; },
+      };
+      assert.equal(table, "carousel_items");
+      return { select() { return { eq() { return { async maybeSingle() { return { data: gallery, error: null }; } }; } }; } };
+    },
+  };
+  setProduct([initial, { ...initial, copy: returnedCopy, updatedAt: "2026-09-30T10:02:00Z" }]);
+  await mergeAndPersist(database, binding, initial, gallery);
+  assert.equal(getWrites(), 1);
+  assert.equal(stateSaved.shopify_baseline_payload.descriptionHtml, returnedCopy.descriptionHtml);
+  assert.equal(stateSaved.gallery_baseline_payload.descriptionHtml, galleryCopy.descriptionHtml);
 });
 
 for (const scenario of [
