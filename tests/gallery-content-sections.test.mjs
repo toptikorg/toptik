@@ -75,9 +75,9 @@ test("journal article routes have live URLs, canonical metadata and truthful sch
   assert.match(articles, /KL909004/);
   assert.match(articles, /slug: "brics-x-collection-wheeled-pilot-case-bxl38124"/);
   const slugs = [...articles.matchAll(/slug: "([^"]+)"/g)].map((match) => match[1]);
-  assert.equal(slugs.length, 10, "ten distinct evidence-backed articles are currently drafted");
+  assert.equal(slugs.length, 12, "twelve distinct evidence-backed article drafts are in the editorial inventory");
   assert.equal(new Set(slugs).size, slugs.length);
-  for (const slug of ["brics-taormina-four-sizes-dimensions", "brics-x-collection-soft-trolley-55-vs-77", "samsonite-urbify-55-68-78-dimensions", "mandarina-logoduck-metal-trolley-beauty-case", "mandarina-eco-coated-large-interior-map", "mandarina-active-lux-shopper-pocket-layout"]) {
+  for (const slug of ["brics-taormina-four-sizes-dimensions", "brics-x-collection-soft-trolley-55-vs-77", "samsonite-urbify-55-68-78-dimensions", "mandarina-logoduck-metal-trolley-beauty-case", "mandarina-eco-coated-large-interior-map", "mandarina-active-lux-shopper-pocket-layout", "brics-taormina-55-interior-and-features", "samsonite-c-lite-75-vs-86"]) {
     assert.ok(slugs.includes(slug), `missing drafted article ${slug}`);
   }
   assert.match(articles, /sourceUrls: \["https:\/\/www\.bricsmilano\.com\//);

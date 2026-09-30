@@ -109,3 +109,21 @@ Read-only comparison against the live `/api/carousel` catalog and `store-product
 - `P10ZJT06-24U-TU` — Active Lux Shopper
 
 Both source articles remain in the research/code inventory but are release-blocked and excluded from the archive and generated public article routes until an exact Shopify product destination is verified. No handle or variant is guessed. The other eight are candidates only; their product images, article HTML, and purchase navigation still need Preview/live QA. No article is yet verified in Production, and the 30-page target is not complete.
+
+## Additional article drafts — manufacturer facts checked 2026-09-30
+
+### `brics-taormina-55-interior-and-features`
+
+Official source: https://www.bricsmilano.com/en-eu/collections/new-arrivals/products/taormina-ultra-light-cabin-trolley-bah08451
+
+Facts used: BAH08451; polycarbonate shell; polyester lining; easy-clean inside surface; internal zip and garment-holding straps; expansion; TSA lock and anti-tampering zipper; built-in USB port; double silent castors; multistop towing system; soft leather upper handle. The manufacturer page lists a USB port but does not establish that a battery/power bank is included, so the article expressly avoids that assumption. The article focuses on construction and organization and does not repeat the Taormina size table. Card SKU: `BAH08451.001`.
+
+### `samsonite-c-lite-75-vs-86`
+
+Official sources:
+- https://www.samsonite.co.uk/c-lite-spinner-75cm-black/122861-1041.html — SKU 122861-1041; 75×51×31 cm; 94 L; Curv™ woven polypropylene; TSA combination lock; top/side/bottom handles; double-tube pull handle; four suspension wheels; lower compartment ribbons and upper divider pad.
+- https://www.samsonite.co.uk/c-lite-spinner-86cm-lavender/122863-1491.html — SKU 122863-1491; 86×58×36 cm; 144 L; same listed construction features.
+
+The article compares the two exact gallery/store SKUs `S209004` and `S281006`. It does not include product weight, flight-size advice, or a packing-capacity promise. Store page/variant mapping is in `store-product-pages.json` and `samsonite-reviewed.json`.
+
+Both are drafts until the route, server-rendered product cards, image decoding, live Shopify SKU/variant, and Back behavior have passed Preview QA. They remain under the site-wide `noindex, follow` hold.

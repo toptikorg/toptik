@@ -212,6 +212,34 @@ const activeLuxPocketMapContent: ReactNode = <>
   <ArticleProductCards skus={["P10ZJT06-24U-TU"]} />
 </>;
 
+const bricsTaorminaCabinDetailsContent: ReactNode = <>
+  <p>עמוד מידות Taormina משווה את ארבעת הגבהים של הסדרה. כאן מתמקדים בדגם הקבינה BAH08451: בפרטי המבנה והארגון הפנימי שמופיעים בתיאור הרשמי ובתמונות המוצר.</p>
+  <h2>החלוקה בפנים</h2>
+  <p>Bric’s מציינת בטנה מפוליאסטר, משטח פנימי שקל לנקות, רוכסן פנימי ורצועות שמחזיקות בגדים. התמונות בגלריה מאפשרות לראות את החלוקה ואת מיקום הרצועות בלי להסתמך על הדמיה של מוצר אחר.</p>
+  <h2>הפרטים החיצוניים</h2>
+  <p>לפי היצרן, המעטפת עשויה פוליקרבונט, והרוכסן ההיקפי מאפשר הרחבה. בדגם מצוינים גם מנעול TSA, רוכסן נגד חדירה, שקע USB מובנה, ארבעה גלגלים כפולים שקטים, מערכת גרירה רב-מצבית וידית עליונה מעור רך.</p>
+  <p className="journal-note">היצרן מציין שקע USB, אך בעמוד המקור שנבדק לא מפורט אם מקור מתח נכלל. אין לראות בשקע עצמו הוכחה שסוללה או power bank מגיעים עם הטרולי.</p>
+  <ArticleProductCards skus={["BAH08451.001"]} />
+</>;
+
+const samsoniteCLite75vs86Content: ReactNode = <>
+  <p>שני דגמי C-Lite המופיעים בגלריה מדגימים את המעבר ממזוודה גדולה ל-XXL: 75 ס״מ בשחור ו-86 ס״מ בלבנדר. ההשוואה כאן היא של נתוני היצרן והמבנה, לא המלצה על גודל שמתאים לכל נסיעה.</p>
+  <h2>ההבדל במידות ובנפח</h2>
+  <div className="journal-table-scroll" role="region" aria-label="השוואת Samsonite C-Lite 75 ו-86 ס״מ" tabIndex={0}>
+    <table className="journal-table"><thead><tr><th scope="col">נתון יצרן</th><th scope="col">C-Lite 75 · שחור</th><th scope="col">C-Lite 86 · לבנדר</th></tr></thead><tbody>
+      <tr><th scope="row">מידות חיצוניות</th><td dir="ltr">75×51×31 ס״מ</td><td dir="ltr">86×58×36 ס״מ</td></tr>
+      <tr><th scope="row">נפח</th><td>94 ליטר</td><td>144 ליטר</td></tr>
+      <tr><th scope="row">גודל לפי היצרן</th><td>Large</td><td>XXL</td></tr>
+      <tr><th scope="row">חומר המעטפת</th><td>Curv™ — פוליפרופילן ארוג</td><td>Curv™ — פוליפרופילן ארוג</td></tr>
+    </tbody></table>
+  </div>
+  <p>ההפרש בין שני המפרטים הוא 11 ס״מ בגובה, 7 ס״מ ברוחב, 5 ס״מ בעומק ו-50 ליטר בנפח הרשמי. המספרים מתארים את הדגמים הספציפיים; הם לא אומדן לכמות פריטים שתיכנס בפועל.</p>
+  <h2>מה משותף למבנה</h2>
+  <p>בשני עמודי Samsonite מצוינים מעטפת Curv™, מנעול קומבינציה עם TSA, ידיות עליונה, צדית ותחתונה, ידית משיכה דו-צינורית וארבעה גלגלים עם מתלה שמפחית רעש וזעזועים. בפנים, תחתית עם רצועות ותא עליון עם מחיצה מרופדת.</p>
+  <p className="journal-note">לפני נסיעה, בדקו בנפרד את מגבלות המידות והמשקל של חברת התעופה. ההשוואה אינה קובעת שאחד הגדלים מתקבל בטיסה מסוימת.</p>
+  <ArticleProductCards skus={["S209004", "S281006"]} />
+</>;
+
 export const galleryArticles: readonly GalleryArticle[] = [
   {
     slug: "samsonite-carry-on-55-sku-dimensions",
@@ -371,6 +399,35 @@ export const galleryArticles: readonly GalleryArticle[] = [
     releaseBlocker: "אין מיפוי מאומת לעמוד מוצר Shopify של המק״ט P10ZJT06-24U-TU.",
     sourceUrls: ["https://mandarinaduck.com/en-us/products/active-lux-shopper-gun-metal-zjt0624u"],
     content: activeLuxPocketMapContent,
+  },
+  {
+    slug: "brics-taormina-55-interior-and-features",
+    category: "מבט מקרוב על הדגם",
+    title: "Bric’s Taormina 55: מבט מקרוב על הארגון והפרטים",
+    description: "מבט במבנה הפנימי ובפרטים החיצוניים של טרולי Bric’s Taormina 55 לפי עמוד היצרן ותמונות הדגם בגלריה.",
+    standfirst: "לא טבלת מידות נוספת: סקירה ממוקדת של הבטנה, רצועות הארגון, ההרחבה והגלגלים בדגם BAH08451.",
+    publishedAt: "2026-09-30",
+    updatedAt: "2026-09-30",
+    readingMinutes: 2,
+    byline: "מערכת מגזין TopTik",
+    sourceUrls: ["https://www.bricsmilano.com/en-eu/collections/new-arrivals/products/taormina-ultra-light-cabin-trolley-bah08451"],
+    content: bricsTaorminaCabinDetailsContent,
+  },
+  {
+    slug: "samsonite-c-lite-75-vs-86",
+    category: "השוואת מידות וארגון",
+    title: "Samsonite C-Lite 75 מול 86 ס״מ: מידות, נפח ומבנה",
+    description: "השוואה בין שני דגמי C-Lite המוצגים בגלריה: מידות חיצוניות, נפח, חומר המעטפת ופרטי הארגון לפי Samsonite.",
+    standfirst: "C-Lite 75 שחורה מול C-Lite 86 בלבנדר: נתוני היצרן זה לצד זה, יחד עם תמונות של שני הדגמים המדויקים.",
+    publishedAt: "2026-09-30",
+    updatedAt: "2026-09-30",
+    readingMinutes: 3,
+    byline: "מערכת מגזין TopTik",
+    sourceUrls: [
+      "https://www.samsonite.co.uk/c-lite-spinner-75cm-black/122861-1041.html",
+      "https://www.samsonite.co.uk/c-lite-spinner-86cm-lavender/122863-1491.html",
+    ],
+    content: samsoniteCLite75vs86Content,
   },
 ];
 
