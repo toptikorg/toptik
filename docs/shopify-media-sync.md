@@ -1,6 +1,6 @@
 # Product media synchronization — reconciliation core
 
-Status, 30 September 2026: **local implementation** of reconciliation plus the complete Shopify read/decoded-image adapter. The query/parser and existing image decoder were verified against one live product read-only. There is no media write adapter, deployed media journal, editor integration, active media queue or live media change yet. This is a required part of the requested complete synchronization, not a replacement for it.
+Status, 30 September 2026: **local implementation** of reconciliation, complete Shopify read/decoded-image adapter, strict staged transport requests and a one-phase worker with service-only ports. The query/parser and existing image decoder were verified against one live product read-only. Real write-service ports, deployed media journal, editor integration, active media queue and live media changes remain unimplemented/unverified. This is a required part of the requested complete synchronization, not a replacement for it.
 
 ## Reconciliation contract
 
@@ -52,3 +52,21 @@ The shared GraphQL transport now rejects malformed response/error envelopes even
 Current installed-app scope read (30 September, 17:06:22 UTC): `write_themes` and `write_products` are present, so the documented file-update and product-reorder transport scopes are already available. `write_inventory` is absent. No scope was added or changed. Evidence: `outputs/media-sync-scope-gate-20260930.json` outside the repository; scope availability is not a media-write test.
 
 Local focused tests cover both directions, independent baselines, conflicts, target-only assets, explicit removals, last-image protection, ordering, exact identity, uncertain acknowledgements and full readback. No live behavior has been verified for this new lane.
+
+## Staged transport and one-shot worker, local implementation
+
+`media-transport-read.ts` retains the whole ordered raw product-media collection, including PROCESSING/FAILED images and coexisting old/new IDs during replacement. These intermediate states are never coerced into unique logical asset keys. Every raw revision includes statuses, alt, media update times, image ID/URL/dimensions, order and variant assignment. Initial and final logical snapshots still require actual decoded-image evidence.
+
+`media-transport-requests.ts` builds API 2026-07 operations only: create a new owned file from a verified immutable staged object, associate it with the exact product, reassign the one exact variant, detach one product reference, or reorder the exact full membership. Alt changes also clone an owned file instead of editing a possibly shared file. No global file deletion or overwriting source/alt on an existing shared file exists. Creation uses deterministic operation/asset filenames and `RAISE_ERROR`; a lost response permits read-only recovery, never a second blind create. Acknowledgements and asynchronous Job IDs are not completion.
+
+`media-transport-journal-intent.ts` binds each actual request hash to the exact normalized private SQL intent. `step` is a stable logical asset index shared by its phases; `phaseIndex` identifies individual mutation attempts. JSONB key order is not semantic identity. The private operation must retain the original pre-call request/guard for uncertain recovery instead of rebuilding it from changed current media.
+
+`media-transport-worker.ts` loads a server-owned job, checks existing required scopes, acquires the shared product lease, obtains a one-shot journal permit and immediately re-reads both sides before making at most one Shopify mutation. All accepted and lost responses transition to readback/recovery. A prior attempt never authorizes another mutation. A change before the outbound call holds the operation; baseline advancement requires SQL-validated complete recovery evidence.
+
+Every worker port receives an absolute deadline. Actual mutation execution stops five seconds before the overall deadline, leaving four seconds for persistent uncertainty/readback and one second for best-effort lease cleanup. The lease must outlive the invocation plus five seconds; cleanup failure cannot override a durable verified outcome. Caller-side Promise.race is an additional bound, not cancellation: concrete HTTP ports must check their deadline before dispatch and abort accordingly. An already-correct terminal order is completed through SQL's verifiedNoop path with no API mutation; a permit to execute empty moves is rejected.
+
+Current worker ports are not yet connected to the deployed services. Structural `StagedMediaSource`/`OwnedMediaReceipt` objects must be resolved from immutable private proofs; browser-supplied receipt fields are never authority. After association, refresh the owned media observation (including updatedAt) before reassigning the variant. The `mediaId` mutation's treatment of all variant-media associations is not proven live: full readback must show the intended assignment before old-reference removal is allowed. If the platform retains the old association, hold it; do not infer that removal is safe.
+
+The SQL logical journal and additive transport-substep candidate are developed separately. Neither has been deployed. Their executed local fixtures use explicit synthetic identity/lease data and require full-migration integration before activation. The renderer, indexing state and all current live product data remain unchanged by this work.
+
+Additional official contracts: [duplicate resolution enum](https://shopify.dev/docs/api/admin-graphql/latest/enums/FileCreateInputDuplicateResolutionMode), [fileCreate](https://shopify.dev/docs/api/admin-graphql/latest/mutations/fileCreate), [variant mediaId](https://shopify.dev/docs/api/admin-graphql/latest/input-objects/ProductVariantsBulkInput). The pinned installed API is 2026-07; the linked latest documentation identified that same version on 30 September 2026.
