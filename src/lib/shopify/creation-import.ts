@@ -6,6 +6,7 @@ import type { CatalogVendor } from "@/lib/catalog-source/provider";
 import type { CarouselItem } from "@/lib/carousel/types";
 import { normalizeSyncSku } from "./sync-rules";
 import { galleryDraftCreationMode } from "./creation-runtime";
+import { finalizedCreationIds } from "./creation-finalization-read";
 import { assertCreationIntentRecord, assertCreationIdentityAllowed, saveCreationIntent, type CreationIntentInput } from "./creation-intent";
 import { plainDescriptionToHtml, descriptionTextFromHtml } from "./description-document";
 
@@ -52,7 +53,9 @@ export async function runAdminManufacturerImport(vendor: CatalogVendor, source: 
       .eq("id", existing.id).abortSignal(AbortSignal.timeout(3000)).maybeSingle();
     if (error && !(!galleryDraftCreationMode() && ["42P01", "PGRST205"].includes(error.code) &&
       error.message.includes("shopify_gallery_creation_drafts"))) throw new Error("SYNC_CREATION_IMPORT_IDENTITY_READ_FAILED");
-    if (!privateDraft) return importer(vendor, source, existing.id, inputLabel);
+    if (!privateDraft || (await finalizedCreationIds([existing.id], db)).has(existing.id)) {
+      return importer(vendor, source, existing.id, inputLabel);
+    }
     const receipt = await db.from("shopify_gallery_creation_imports").select("intent_id")
       .eq("vendor", vendor).eq("exact_manufacturer_sku", sku).abortSignal(AbortSignal.timeout(3000)).maybeSingle();
     if (receipt.error || receipt.data?.intent_id !== existing.id) throw new Error("SYNC_CREATION_PRIVATE_ITEM_USE_INTENT");

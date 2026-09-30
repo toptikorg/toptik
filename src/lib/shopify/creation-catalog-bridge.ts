@@ -3,6 +3,7 @@ import type { CarouselPayload } from "@/lib/carousel/types";
 import { adminCarouselPayloadSchema } from "@/lib/validation/carousel";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { galleryDraftCreationMode } from "./creation-runtime";
+import { finalizedCreationIds } from "./creation-finalization-read";
 
 async function privateDraftIds(): Promise<Set<string>> {
   const db = createSupabaseServiceRoleClient(), ids = new Set<string>();
@@ -18,7 +19,12 @@ async function privateDraftIds(): Promise<Set<string>> {
         error.message.includes("shopify_gallery_creation_drafts")) return ids;
       throw new Error("SYNC_CREATION_CATALOG_READ_FAILED");
     }
-    data.forEach(row => ids.add(row.id)); if (data.length < 1000) return ids;
+    data.forEach(row => ids.add(row.id));
+    if (data.length < 1000) {
+      const finalized = await finalizedCreationIds([...ids], db, deadline);
+      finalized.forEach(id => ids.delete(id));
+      return ids;
+    }
   }
   throw new Error("SYNC_CREATION_CATALOG_LIMIT");
 }

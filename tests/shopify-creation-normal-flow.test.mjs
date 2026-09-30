@@ -12,8 +12,11 @@ const policy=url(base(read('src/lib/shopify/creation-policy.ts'))),intent=url(ba
 const pure=await import(intent),schema=url(read('src/lib/validation/carousel.ts').replace('"zod"',JSON.stringify(import.meta.resolve('zod'))));
 const service=url('export const createSupabaseServiceRoleClient=()=>globalThis.__normalCreation.db;');
 const mode=url('export const galleryDraftCreationMode=()=>globalThis.__normalCreation.enabled;');
+const finalized=url(read('src/lib/shopify/creation-finalization-read.ts').replace('import "server-only";','')
+ .replace('"@/lib/supabase/service-role"',JSON.stringify(service)));
 const inject=s=>base(s).replace('import "server-only";','').replace('"@/lib/supabase/service-role"',JSON.stringify(service))
- .replace('"./creation-runtime"',JSON.stringify(mode)).replace('"./creation-intent"',JSON.stringify(intent)).replace('"@/lib/validation/carousel"',JSON.stringify(schema));
+ .replace('"./creation-runtime"',JSON.stringify(mode)).replace('"./creation-finalization-read"',JSON.stringify(finalized))
+ .replace('"./creation-intent"',JSON.stringify(intent)).replace('"@/lib/validation/carousel"',JSON.stringify(schema));
 const flow=await import(url(inject(read('src/lib/shopify/creation-import.ts'))));
 const bridge=await import(url(inject(read('src/lib/shopify/creation-catalog-bridge.ts'))));
 function item(sku='NEW-MANUFACTURER-001') {const id=randomUUID();return {id,title:'מזוודה',description:'תיאור מקור',catalogNumber:sku,sourceUrl:'https://www.bricsmilano.com/products/exact',
@@ -21,13 +24,15 @@ function item(sku='NEW-MANUFACTURER-001') {const id=randomUUID();return {id,titl
  techSpecs:{specs:[{heading:'מידע מקור',items:[{label:'חומר',value:'PC'}]}],colors:[],category:null},colors:[],
  angles:[{id:randomUUID(),itemId:id,angleKey:'front',imagePath:'https://cdn.shopify.com/s/files/1/exact.webp',angleOrder:1}]};}
 function fixture(rows=[]) {
- const f=globalThis.__normalCreation={enabled:true,rows,privateIds:[],calls:[],records:new Map(),db:null};
+ const f=globalThis.__normalCreation={enabled:true,rows,privateIds:[],finalizedIds:[],calls:[],records:new Map(),db:null};
  f.db={from(table){f.calls.push({table});const filters={};return {select(){return this;},order(){return this;},range(){return this;},eq(key,value){filters[key]=value;return this;},abortSignal(){
   const data=table==='carousel_items'?f.rows.map(r=>({id:r.id,catalog_number:r.catalogNumber})):table==='shopify_gallery_creation_imports'
    ? [...f.records.entries()].filter(([key])=>key===filters.vendor+':'+filters.exact_manufacturer_sku).map(([,record])=>({intent_id:record.input.galleryItemId}))
    : f.privateIds.filter(id=>!filters.id||id===filters.id).map(id=>({id}));
   return {then(resolve,reject){return Promise.resolve({error:null,data}).then(resolve,reject);},maybeSingle(){return Promise.resolve({error:null,data:data[0]??null});}};}};},
-  rpc(name,args){return {abortSignal(){f.calls.push({name,args});assert.equal(name,'stage_gallery_creation_import');const key=args.p_vendor+':'+args.p_exact_manufacturer_sku;
+  rpc(name,args){return {abortSignal(){f.calls.push({name,args});
+   if(name==='read_finalized_gallery_creation_items')return Promise.resolve({data:{finalizedItemIds:f.finalizedIds.filter(id=>args.p_item_ids.includes(id))},error:null});
+   assert.equal(name,'stage_gallery_creation_import');const key=args.p_vendor+':'+args.p_exact_manufacturer_sku;
    const previous=f.records.get(key);if(previous)return Promise.resolve({data:{record:previous,sourceChanged:false,replayed:true},error:null});
    f.records.set(key,args.p_record);return Promise.resolve({data:{record:args.p_record,sourceChanged:false,replayed:false},error:null});}};}};
  return f;
@@ -101,4 +106,20 @@ test('original Add Item and all import paths use the same embedded intent editor
  assert.match(read('src/app/api/admin/import/by-url/route.ts'),/runAdminManufacturerImport/);
  assert.match(read('src/lib/import/import-handler.ts'),/runAdminManufacturerImport\(vendor, sourceProduct, targetItemId, catalogNumber, importSourceProduct\)/);
  const editor=read('src/components/admin/NewProductEditor.tsx');assert.match(editor,/input: prepared, expectedRevision: null/);assert.match(editor,/type="file"/);
+});
+
+test('finalized exact receipt releases active and inactive products to normal editor and reimport even when creation is disabled',async()=>{
+ const live=item('CREATED-LIVE'),inactive=item('CREATED-INACTIVE'),pending=item('PRIVATE-PENDING');live.isActive=true;
+ const f=fixture([live,inactive,pending]);f.privateIds=[live.id,inactive.id,pending.id];f.finalizedIds=[live.id,inactive.id];f.enabled=false;
+ const current={items:[live,inactive,pending],settings:{autoplayMs:3500,transitionMode:'curtain-fade'}};
+ const visible=await bridge.visibleAdminCatalog(current);assert.deepEqual(visible.items,[live,inactive]);
+ const edited=structuredClone(visible);edited.items[0].title='עריכה לאחר פרסום';
+ const saved=await bridge.prepareExistingCatalogSave(edited,current);assert.equal(saved.items[0].title,'עריכה לאחר פרסום');
+ assert.deepEqual(saved.items[2],pending);assert.deepEqual(current.items,[live,inactive,pending]);
+ const calls=[];for(const product of [live,inactive]){
+  const result=await flow.runAdminManufacturerImport('brics',sourceFor(product),product.id,product.catalogNumber,importerFor(product,calls));
+  assert.equal(result.pendingCreation,undefined);
+ }
+ assert.deepEqual(calls.map(c=>c.target),[live.id,inactive.id]);
+ assert.equal(f.calls.filter(c=>c.name==='stage_gallery_creation_import').length,0);
 });

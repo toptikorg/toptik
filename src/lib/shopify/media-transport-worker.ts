@@ -24,7 +24,7 @@ export type MediaTransportDependencies = {
   begin(reference: MediaTransportReference, leaseOwner: string, attemptId: string, intent: Record<string, unknown>, guard: MediaTransportGuard, deadline: number): Promise<Permit>;
   execute(request: MediaTransportRequest, deadline: number): Promise<unknown>;
   uncertain(reference: MediaTransportReference, leaseOwner: string, receipt: { outcome: "unknown" | "accepted" | "processing"; mediaGid?: string; jobId?: string }, deadline: number): Promise<void>;
-  conflict(reference: MediaTransportReference, leaseOwner: string, code: string, deadline: number): Promise<void>;
+  conflict(reference: MediaTransportReference, leaseOwner: string, code: string, guard: MediaTransportGuard, deadline: number): Promise<void>;
   /** Read/decode/recover ONLY, then call SQL accept. Must not issue a second external mutation. */
   recover(reference: MediaTransportReference, leaseOwner: string, job: MediaTransportPhaseJob, deadline: number): Promise<ObservationResult>;
 };
@@ -109,13 +109,13 @@ export async function runMediaTransportPhase(reference: MediaTransportReference,
     }
     const lastGuard = await bounded(() => deps.observe(job, workDeadline), workDeadline, deps.now); validateGuard(lastGuard, job, deps.now()); checkTime();
     if (!matchesBefore(guard, job) || !matchesBefore(lastGuard, job)) {
-      await bounded(() => deps.conflict(reference, lease, "MEDIA_TRANSPORT_CHANGED_BEFORE_CALL", workDeadline), workDeadline, deps.now);
+      await bounded(() => deps.conflict(reference, lease, "MEDIA_TRANSPORT_CHANGED_BEFORE_CALL", lastGuard, workDeadline), workDeadline, deps.now);
       return { status: "conflict", executed };
     }
     // Reserve enough time to record uncertainty; fixed-shop transport enforces its own deadline.
     const executeDeadline = workDeadline - 4000;
     if (executeDeadline - deps.now() < 1000) {
-      await bounded(() => deps.conflict(reference, lease, "MEDIA_TRANSPORT_NOT_SENT_TIME_BUDGET", workDeadline), workDeadline, deps.now);
+      await bounded(() => deps.conflict(reference, lease, "MEDIA_TRANSPORT_NOT_SENT_TIME_BUDGET", lastGuard, workDeadline), workDeadline, deps.now);
       return { status: "conflict", executed };
     }
     let acknowledgement: ReturnType<typeof parseMediaTransportAcknowledgement>;
