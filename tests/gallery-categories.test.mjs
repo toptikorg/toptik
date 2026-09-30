@@ -18,7 +18,7 @@ const expected = {
   "BAH08451.001": "carryon", "BAH08454.001": "suitcase", "BAH08453.078": "suitcase",
   "BXL58117.101": "carryon", BXL38124101: "carryon", "BXL58145.101": "suitcase",
   "BXL58145.050": "suitcase", "BXL58145.078": "suitcase", "P10SZV24-05J-TU": "carryon",
-  "P10SZV24-A83-TU": "carryon", "P10UJV24-A92-TU": null, "P10SZV24-A81-TU": "carryon",
+  "P10SZV24-A83-TU": "carryon", "P10UJV24-A92-TU": "carryon", "P10SZV24-A81-TU": "carryon",
   "P10OUV24-A89-TU": "carryon", "P10OUN01-A89-TU": null, "P10UJN01-A92-TU": null,
   "ORI05500.909": "carryon", "ORI05500.024": "carryon", "P10OSV04-05J-TU": "suitcase",
   "P10ZJT06-24U-TU": null,
@@ -48,11 +48,11 @@ test("the current catalogue preserves three explicit assignments and fixes verif
   assert.deepEqual(originalExplicit.map(item => item.catalogNumber), ["P10JNV05465", "P10GXV24A32", "P10JNV0508Q"]);
   const counts = { carryon: 0, suitcase: 0, unassigned: 0 };
   for (const item of items) counts[categorizeItem(item) ?? "unassigned"]++;
-  assert.deepEqual(counts, { carryon: 13, suitcase: 8, unassigned: 4 });
+  assert.deepEqual(counts, { carryon: 14, suitcase: 8, unassigned: 3 });
   assert.deepEqual(filterByCategory(filterByBrand(items, "porsche-design"), "carryon")
     .map(item => item.catalogNumber), ["ORI05500.909", "ORI05500.024"]);
   assert.equal(filterByCategory(filterByBrand(items, "brics"), "carryon").length, 4);
-  assert.equal(filterByCategory(filterByBrand(items, "mandarina-duck"), "carryon").length, 7);
+  assert.equal(filterByCategory(filterByBrand(items, "mandarina-duck"), "carryon").length, 8);
 });
 
 test("explicit future admin choices win over exact SKU evidence without mutating specs", () => {
@@ -70,7 +70,7 @@ test("explicit future admin choices win over exact SKU evidence without mutating
 });
 
 test("accessories and unverified models are all-only, never guessed from title, prefixes or punctuation", () => {
-  for (const sku of ["P10OUN01-A89-TU", "P10UJN01-A92-TU", "P10ZJT06-24U-TU", "P10UJV24-A92-TU"]) {
+  for (const sku of ["P10OUN01-A89-TU", "P10UJN01-A92-TU", "P10ZJT06-24U-TU"]) {
     const item = items.find(item => item.catalogNumber === sku);
     assert.equal(categorizeItem(item), null, sku);
     assert.equal(filterByCategory([item], "all").length, 1);

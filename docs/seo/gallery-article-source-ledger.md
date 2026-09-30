@@ -173,4 +173,35 @@ This section supersedes the earlier statements in this ledger that describe the 
 - **Article-to-Shopify flow:** a live browser click from the Intuo 55 vs Easy Access article opened the exact Shopify product URL and variant for SKU `KL909001`; the Shopify page displayed the same SKU, and browser Back returned to the article. Earlier full-card QA for 21 cards was Preview-only; this update does not claim that all 21 production click/Back paths were individually re-run.
 - **Research source trail:** the manufacturer URLs and fact boundaries for the published articles remain in the SKU/model sections above. The 11 article pages are source-led; no manufacturer facts were fabricated to fill missing fields.
 
-**Remaining verification:** Google indexing/rankings and traffic are asynchronous and not yet evidenced. A full Production click/Back pass across every article product card was not completed in this audit. Physical iPhone/Safari and Android/Chrome testing remains NOT TESTED. Known security follow-ups (`llm_usage_log` policy and Vercel secret classification) were not modified by the indexing release and remain separate.
+**Remaining verification:** Google indexing/rankings and traffic are asynchronous and not yet evidenced. The full Production desktop-browser click/Back pass across every article product card is now complete (23/23 across all 11 live article routes; exact Shopify variant and visible SKU verified, and Back restored the originating article). A representative 390×844 mobile viewport pass also verified both product cards on the Intuo comparison article. These are browser viewport checks, not physical-device checks. Physical iPhone/Safari and Android/Chrome testing remains NOT TESTED. Known security follow-ups (`llm_usage_log` policy and Vercel secret classification) were not modified by the indexing release and remain separate.
+
+### Production article-to-Shopify acceptance audit — 2026-09-30
+
+Using the connected Chrome browser on Production, each of the 23 article product cards was clicked. The final Shopify URL contained the exact mapped product handle and variant ID; the destination page visibly displayed the expected SKU; one browser Back returned to the same article with its product cards restored. No cart, checkout, or purchase action occurred.
+
+| Article route | Verified SKUs |
+|---|---|
+| `/journal/samsonite-carry-on-55-sku-dimensions` | KL909001, KJ109001, KO709005 |
+| `/journal/samsonite-intuo-55-vs-easy-access` | KL909001, KL909005 |
+| `/journal/samsonite-intuo-sizes-55-69-81` | KL909001, KL909002, KL909004 |
+| `/journal/brics-x-collection-wheeled-pilot-case-bxl38124` | BXL38124078 |
+| `/journal/brics-taormina-four-sizes-dimensions` | BAH08451.001, BAH08453.001, BAH08454.001 |
+| `/journal/brics-x-collection-soft-trolley-55-vs-77` | BXL58117.101, BXL58145.101 |
+| `/journal/samsonite-urbify-55-68-78-dimensions` | KO709005, KO709006, KO709007 |
+| `/journal/mandarina-logoduck-metal-trolley-beauty-case` | P10OUV24-A89-TU, P10OUN01-A89-TU |
+| `/journal/brics-taormina-55-interior-and-features` | BAH08451.001 |
+| `/journal/samsonite-c-lite-75-vs-86` | S209004, S281006 |
+| `/journal/samsonite-respark-79-recycled-materials` | KJ344007 |
+
+Mobile viewport follow-up at 390×844 on `/journal/samsonite-intuo-55-vs-easy-access`: `KL909001` and `KL909005` each opened the matching live Shopify variant, showed the expected SKU, and browser Back returned to the article. This is simulation only; iPhone/Safari and Android/Chrome on physical devices remain NOT TESTED.
+
+### Mandarina Duck catalog/filter reconciliation — 2026-09-30
+
+Read-only comparison of the live Shopify public `Mandarina Duck` collection and Production gallery:
+
+- Shopify's public brand collection reports 10 available products. All 10 exact catalog SKUs are present in the gallery's 12-item “כל המוצרים” set (normalizing Shopify's `P10SZV2405J` to gallery SKU `P10SZV24-05J-TU`). No currently listed Shopify product was missing from the gallery.
+- Shopify's public `מזוודות` collection reports 44 products across brands. The Mandarina results in it are two beauty cases, not medium/large travel suitcases. The brand collection's other eight products are cabin trolleys/travel trolleys.
+- The gallery's `מזוודה` filter has one item, `P10OSV04-05J-TU`. Exact-SKU Shopify search returns no product result, and this item has no purchase link. It is a gallery-only item, not an omitted Shopify import. `P10ZJT06-24U-TU` is the other gallery-only Mandarina item and likewise has no public Shopify product result.
+- Found one real category omission: the active Shopify product `P10UJV24-A92-TU`, titled “טרולי עלייה למטוס מנדרינה דאק Logoduck+ Moire מתרחב – מוארה,” is already present in the gallery's all-products set but was unassigned to `carryon`. The SKU evidence and product title support an exact carry-on classification. Code/test correction prepared to add it, making the Mandarina carry-on filter match all eight currently listed travel trolleys. This does not create a large-suitcase product or imply automatic Shopify↔Gallery synchronization.
+
+The store has no public Mandarina medium/large suitcase to import at this time. Do not classify cabin trolleys as large suitcases to inflate that filter. Until a corresponding Shopify listing exists, keep `P10OSV04-05J-TU` visibly identified as gallery-only / without a purchase destination; no Shopify or Supabase record was changed during this audit.
