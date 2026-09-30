@@ -54,9 +54,11 @@ test("sitemap includes only the public root, gallery, journal, and publishable a
   assert.match(articles, /publishableGalleryArticles = galleryArticles\.filter\(\(article\) => !article\.releaseBlocker\)/);
 });
 
-test("only nested admin-panel metadata retains a noindex robots directive", async () => {
+test("only admin surfaces retain noindex metadata", async () => {
   const panelLayout = await read("src/app/(panel)/layout.tsx");
   assert.match(panelLayout, /robots:\s*\{\s*index:\s*false,\s*follow:\s*false\s*\}/);
+  const adminLayout = await read("src/app/admin/layout.tsx");
+  assert.match(adminLayout, /robots:\s*\{\s*index:\s*false,\s*follow:\s*false\s*\}/);
   for (const path of ["src/app/page.tsx", "src/app/carousel/page.tsx", "src/app/journal/page.tsx", "src/app/journal/[slug]/page.tsx"]) {
     const source = await read(path);
     assert.doesNotMatch(source, /index\s*:\s*false/, `${path} must not suppress public indexing`);
