@@ -1,3 +1,4 @@
+import { MAX_EXISTING_MEDIA_PIXELS } from "./existing-media-limits";
 import { createHash } from "node:crypto";
 import type { MediaIdentity, MediaSnapshot } from "./media-sync-core";
 import { mediaSnapshotFingerprint } from "./media-sync-core";
@@ -109,7 +110,7 @@ export function parseMediaReadResponse(input: unknown, identity: MediaIdentity):
     const image = object(m.image);
     if ((!gid(image.id, "ImageSource") && !gid(image.id, "ProductImage")) || !imageUrl(image.url) || !Number.isInteger(image.width) || !Number.isInteger(image.height) ||
         Number(image.width) < 1 || Number(image.height) < 1 || Number(image.width) > 16000 || Number(image.height) > 16000 ||
-        Number(image.width) * Number(image.height) > 16_000_000) fail("MEDIA_IMAGE_INVALID");
+        Number(image.width) * Number(image.height) > MAX_EXISTING_MEDIA_PIXELS) fail("MEDIA_IMAGE_INVALID");
     return { mediaId: m.id, imageId: image.id, url: image.url, width: Number(image.width), height: Number(image.height),
       alt: m.alt, updatedAt: m.updatedAt, variantAssigned: variantMediaIds.includes(m.id) } as ShopifyMediaImage;
   });

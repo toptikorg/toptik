@@ -1,8 +1,9 @@
+import { resolveImageLimits } from './existing-media-limits.mjs';
 import {readFileSync} from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 export const src=n=>readFileSync(new URL(`../../src/lib/shopify/${n}.ts`,import.meta.url),'utf8');
-export const mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
-export const stripped=n=>stripTypeScriptTypes(src(n)).replace(/^import[\s\S]*?;\r?\n/gm,'');
+export const mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(resolveImageLimits(s))).toString('base64');
+export const stripped=n=>stripTypeScriptTypes(resolveImageLimits(src(n))).replace(/^import[\s\S]*?;\r?\n/gm,'');
 export const coreUrl=mod(src('media-sync-core'));
 export const readyUrl=mod(src('media-read-adapter').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`));
 export const galleryUrl=mod(src('media-gallery-transport').replace('import "server-only";','').replace('import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";','const createSupabaseServiceRoleClient=()=>{throw Error("SECRET_FACTORY");};').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`));

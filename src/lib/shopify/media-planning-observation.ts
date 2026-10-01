@@ -7,6 +7,7 @@ import { captureMediaSourceBytes, type CapturedMediaBytes } from "./media-source
 import { readReadyShopifyMedia } from "./media-shopify-transport";
 import type { MediaPlanningContext, MediaRegisteredProof, MediaProofRow } from "./media-planning-rpc";
 
+type CapturedMediaMetadata = Omit<CapturedMediaBytes, "bytes">;
 type Dependencies = { capture?: typeof captureMediaSourceBytes; shopify?: typeof readReadyShopifyMedia; gallery?: typeof createGalleryMediaTransport; now?: () => number };
 function fail(code: string): never { throw new Error(code); }
 function stable(v: unknown): string { return Array.isArray(v) ? `[${v.map(stable).join(",")}]` : v && typeof v === "object" ?
@@ -24,10 +25,13 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
   check();
   const galleryPort = (dependencies.gallery ?? createGalleryMediaTransport)(id), shopRead = dependencies.shopify ?? readReadyShopifyMedia;
   const shop = await shopRead(id, deadline); check();
-  const proofs: MediaRegisteredProof[] = [], captured = new Map<string, CapturedMediaBytes>();
+  const proofs: MediaRegisteredProof[] = [], captured = new Map<string, CapturedMediaMetadata>();
   const capture = async (url: string) => { check(); let value = captured.get(url); if (!value) {
-    value = await (dependencies.capture ?? captureMediaSourceBytes)(id, url, deadline); captured.set(url, value); } check(); return value; };
-  const choose = (side: MediaSide, key: string, url: string, platformRef: string, bytes: CapturedMediaBytes): MediaRegisteredProof => {
+    const decoded = await (dependencies.capture ?? captureMediaSourceBytes)(id, url, deadline);
+    // Planning needs hashes/metadata, never original buffers. Do not retain 8MiB per URL.
+    value = { sha256: decoded.sha256, mime: decoded.mime, width: decoded.width, height: decoded.height, byteLength: decoded.byteLength };
+    captured.set(url, value); } check(); return value; };
+  const choose = (side: MediaSide, key: string, url: string, platformRef: string, bytes: CapturedMediaMetadata): MediaRegisteredProof => {
     const matches = c.provenance.filter(p => p.side === side && p.asset_key === key && p.proof.url === url &&
       p.proof.decodedSha256 === bytes.sha256 && p.proof.width === bytes.width && p.proof.height === bytes.height &&
       p.proof.mime === bytes.mime && p.proof.byteLength === bytes.byteLength && (side === "gallery" || p.proof.platformRef === platformRef));

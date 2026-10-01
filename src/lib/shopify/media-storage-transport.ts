@@ -1,3 +1,4 @@
+import { MAX_EXISTING_MEDIA_PIXELS } from "./existing-media-limits";
 import "server-only";
 import { createHash } from "node:crypto";
 import { lookup } from "node:dns/promises";
@@ -21,20 +22,20 @@ function expectedSource(source: StagedMediaSource) {
       !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(source.receiptId) ||
       !Number.isInteger(source.byteLength) || source.byteLength < 1 || source.byteLength > MAX_BYTES ||
       !Number.isInteger(source.width) || !Number.isInteger(source.height) || source.width < 1 || source.height < 1 ||
-      source.width > 16000 || source.height > 16000 || source.width * source.height > 16_000_000) fail("MEDIA_STORAGE_SOURCE_INVALID");
+      source.width > 16000 || source.height > 16000 || source.width * source.height > MAX_EXISTING_MEDIA_PIXELS) fail("MEDIA_STORAGE_SOURCE_INVALID");
   return source.url.slice(PREFIX.length);
 }
 async function decode(bytes: Uint8Array, deadline: number): Promise<Decoded> {
   if (!(bytes instanceof Uint8Array) || bytes.byteLength < 1 || bytes.byteLength > MAX_BYTES) fail("MEDIA_STORAGE_BYTE_LIMIT");
   const buffer = Buffer.from(bytes);
   try {
-    const decoder = sharp(buffer, { failOn: "error", limitInputPixels: 16_000_000 })
+    const decoder = sharp(buffer, { failOn: "error", limitInputPixels: MAX_EXISTING_MEDIA_PIXELS })
       .timeout({ seconds: Math.max(1, Math.ceil(remaining(deadline) / 1000)) });
     const metadata = await decoder.metadata();
     const formats = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" } as const;
     const mime = metadata.format === "heif" && metadata.compression === "av1" ? "image/avif" : formats[metadata.format as keyof typeof formats];
     if (!mime || !metadata.width || !metadata.height || metadata.width > 16000 || metadata.height > 16000 ||
-        metadata.width * metadata.height > 16_000_000 || (metadata.pages ?? 1) !== 1) fail("MEDIA_STORAGE_FORMAT_INVALID");
+        metadata.width * metadata.height > MAX_EXISTING_MEDIA_PIXELS || (metadata.pages ?? 1) !== 1) fail("MEDIA_STORAGE_FORMAT_INVALID");
     await decoder.resize({ width: 64, height: 64, fit: "inside", withoutEnlargement: true }).png().toBuffer();
     remaining(deadline);
     return { mime, width: metadata.width, height: metadata.height, byteLength: buffer.byteLength,

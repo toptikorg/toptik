@@ -1,3 +1,4 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -6,14 +7,14 @@ import { createHash } from "node:crypto";
 import sharp from "sharp";
 import { descriptionModuleUrl } from "./helpers/description-module.mjs";
 
-const moduleUrl=source=>`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString("base64")}`;
+const moduleUrl=source=>`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(resolveImageLimits(source))).toString("base64")}`;
 const vendorUrl=moduleUrl(readFileSync("src/lib/catalog-source/vendor-detect.ts","utf8"));
 const rulesUrl=moduleUrl(readFileSync("src/lib/shopify/sync-rules.ts","utf8").replace('"@/lib/catalog-source/vendor-detect"',JSON.stringify(vendorUrl)));
 const policyUrl=moduleUrl(readFileSync("src/lib/shopify/onboarding-policy.ts","utf8")
   .replace('"./description-document"',JSON.stringify(descriptionModuleUrl)).replace('"./sync-rules"',JSON.stringify(rulesUrl)));
 const policy=await import(policyUrl);
 const guardsUrl=moduleUrl(readFileSync("src/lib/catalog-source/source-allowlist.ts","utf8"));
-const workerSource=stripTypeScriptTypes(readFileSync("src/lib/shopify/onboarding-worker.ts","utf8")).replace(/^import[\s\S]*?;\r?\n/gm,"").replace(/^export /gm,"");
+const workerSource=stripTypeScriptTypes(resolveImageLimits(readFileSync("src/lib/shopify/onboarding-worker.ts","utf8"))).replace(/^import[\s\S]*?;\r?\n/gm,"").replace(/^export /gm,"");
 const {makeWorker}=await import(moduleUrl(`
   import {createHash} from 'node:crypto';
   import sharp from '${import.meta.resolve("sharp")}';
@@ -105,6 +106,14 @@ test("CDN URL/public DNS/decoded bytes and exact dimensions are required",async(
   await assert.rejects(fixture({response:()=>new Response("not an image")}).run(),/IMAGE_DECODE_FAILED/);
   await assert.rejects(fixture({response:()=>new Response(bytes,{headers:{"content-length":String(8*1024*1024+1)}})}).run(),/IMAGE_TOO_LARGE/);
   const product=snapshot();product.media[0].image.width=41;await assert.rejects(fixture({product}).run(),/IMAGE_DIMENSIONS_CHANGED/);
+});
+test('shared existing-image verifier decodes25MP, while new-product admission remains16MP',async()=>{
+ const original=await sharp({create:{width:5000,height:5000,channels:3,background:'#fedcba'}}).png().toBuffer();
+ const product=snapshot();product.media[0].image.width=5000;product.media[0].image.height=5000;
+ const f=fixture({product,response:()=>new Response(original)});
+ const decoded=await f.worker.verifyOnboardingImage(product.media[0],Date.now()+15000);
+ assert.equal(decoded.width,5000);assert.equal(decoded.height,5000);assert.equal(decoded.sha256,createHash('sha256').update(original).digest('hex'));
+ await assert.rejects(f.run(),/SYNC_ONBOARDING_MEDIA_IDENTITY_INVALID/);assert.equal(f.rpcCalls.length,0);
 });
 
 test("ambiguous product types remain all-only and shared deadline prevents late mutation",async()=>{

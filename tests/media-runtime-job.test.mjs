@@ -1,14 +1,15 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 const src = name => readFileSync(`src/lib/shopify/${name}.ts`, 'utf8');
-const mod = text => 'data:text/javascript;base64,' + Buffer.from(stripTypeScriptTypes(text)).toString('base64');
+const mod = text => 'data:text/javascript;base64,' + Buffer.from(stripTypeScriptTypes(resolveImageLimits(text))).toString('base64');
 const coreUrl = mod(src('media-sync-core')), core = await import(coreUrl);
 const readUrl = mod(src('media-transport-read').replaceAll('from "./media-sync-core";', `from "${coreUrl}";`)), read = await import(readUrl);
 const requestUrl = mod(src('media-transport-requests').replaceAll('from "./media-transport-read";', `from "${readUrl}";`)), requests = await import(requestUrl);
 const intentUrl = mod(src('media-transport-journal-intent').replaceAll('from "./media-transport-read";', `from "${readUrl}";`)), intents = await import(intentUrl);
-const body = stripTypeScriptTypes(src('media-runtime-job')).replace(/^import[\s\S]*?;\r?\n/gm, '');
+const body = stripTypeScriptTypes(resolveImageLimits(src('media-runtime-job'))).replace(/^import[\s\S]*?;\r?\n/gm, '');
 const api = await import(mod(`import {mediaSnapshotFingerprint} from '${coreUrl}';
   import {assertMediaTransportRead,parseTransportMedia} from '${readUrl}';
   import {buildOwnedMediaCreate,buildOwnedMediaAssociate,buildMediaVariantReassign,buildMediaReferenceDetach,buildMediaReorder,ownedMediaFilename,stagedMediaUrl} from '${requestUrl}';
