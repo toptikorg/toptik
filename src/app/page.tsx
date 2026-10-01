@@ -6,6 +6,7 @@ import { HomeToCarouselCta } from "@/components/carousel/HomeToCarouselCta";
 import { InfoMenu } from "@/components/InfoMenu";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 import { isCarouselEnabled } from "@/lib/carousel/feature-flag";
+import { absoluteUrl, SITE_NAME } from "@/lib/seo/site";
 
 const navItems = [
   { href: "#deals", label: "מבצעים" },
@@ -47,6 +48,26 @@ export const metadata: Metadata = {
   title: "גלריית TopTik | מזוודות ותיקי נסיעות",
   description: "הכירו את גלריית TopTik: מבחר מזוודות, טרולי ותיקי נסיעות ממותגים מובילים. עברו לגלריה כדי להשוות בין דגמים, צבעים ומפרטים.",
   alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "he_IL",
+    siteName: SITE_NAME,
+    title: "גלריית TopTik | מזוודות ותיקי נסיעות",
+    description: "גלו מזוודות, טרולי ותיקים ממותגים מובילים. השוו דגמים, צבעים ופרטי מוצר, והמשיכו לחנות TopTik.",
+    url: absoluteUrl("/"),
+    images: [{
+      url: absoluteUrl(homePageImage.src),
+      width: homePageImage.width,
+      height: homePageImage.height,
+      alt: "גלריית TopTik — מזוודות ותיקי נסיעות",
+    }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "גלריית TopTik | מזוודות ותיקי נסיעות",
+    description: "גלו מזוודות, טרולי ותיקים ממותגים מובילים. השוו דגמים, צבעים ופרטי מוצר, והמשיכו לחנות TopTik.",
+    images: [absoluteUrl(homePageImage.src)],
+  },
 };
 
 export default function Home() {
