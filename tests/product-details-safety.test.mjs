@@ -173,6 +173,7 @@ test("the read path used by the public route only issues select queries", async 
   const repository = await read("src/lib/carousel/repository.ts");
   const readStart = repository.indexOf("export async function getCarouselPayload");
   const { makeReader } = await moduleFrom(`export function makeReader(deps) {
+    ${(await read("src/lib/carousel/read-complete-pages.ts")).replace(/^export /gm, "")}
     const { hasSupabasePublicEnv, createSupabaseServerClient, fallbackCarouselPayload, applyReviewedCopy, normalizeSyncSku } = deps;
     ${repository.slice(readStart).replace(/^export /gm, "")}
     return getCarouselPayload;
@@ -181,9 +182,9 @@ test("the read path used by the public route only issues select queries", async 
   const chain = (table, rows) => {
     const query = {
       select: (...args) => { calls.push([table, "select", ...args]); return query; },
-      order: () => query, eq: () => query, in: () => query,
+      order: () => query, eq: () => query, in: () => query, range: () => query,
       maybeSingle: async () => ({ data: { id: 1, autoplay_ms: 3500, transition_mode: "shatter-particle" } }),
-      then: (resolve) => resolve({ data: rows, error: null }),
+      then: (resolve) => resolve({ data: rows, count: rows.length, error: null }),
     };
     for (const write of ["insert", "update", "upsert", "delete"]) {
       query[write] = () => { calls.push([table, write]); return query; };
