@@ -14,7 +14,7 @@ const positiveMoney=money.refine(v=>Number(v)>0);
 const customId=z.object({namespace:z.string().regex(/^app--[1-9][0-9]*--toptik_gallery$/),key:z.literal('source_item_id'),value:z.string().max(255)}).strict();
 const copy=z.object({title:z.string().min(1).max(120),description:z.string().max(50000).nullable(),descriptionHtml:z.string().max(250000).nullable(),seoTitle:z.string().max(512).nullable(),seoDescription:z.string().max(5000).nullable()}).strict();
 const commercial=z.object({price:money,compareAtPrice:money.nullable(),barcode:z.string().max(64).nullable(),taxable:z.boolean(),requiresShipping:z.boolean()}).strict();
-const merchantValues=commercial.extend({price:positiveMoney,requiresShipping:z.literal(true),inventoryPolicy:z.literal('DENY'),tracked:z.literal(true)}).strict();
+const merchantValues=commercial.extend({price:positiveMoney,requiresShipping:z.literal(true),inventoryPolicy:z.literal('DENY'),tracked:z.boolean()}).strict();
 const quantities=z.object({available:z.number().int().min(0).max(1000000),onHand:z.number().int().min(0).max(1000000),committed:z.number().int().min(0).max(1000000),
  reserved:z.number().int().min(0).max(1000000),damaged:z.number().int().min(0).max(1000000),safetyStock:z.number().int().min(0).max(1000000),qualityControl:z.number().int().min(0).max(1000000),incoming:z.number().int().min(0).max(1000000)}).strict();
 const level=z.object({locationId:gid('Location'),active:z.boolean(),quantities}).strict();
@@ -22,13 +22,13 @@ const identity=z.object({itemId:UUID,productGid:gid('Product'),variantGid:gid('P
  manufacturerSku:SKU.nullable(),brand:z.enum(['Mandarina Duck',"Bric's",'Samsonite']),handle:z.string().min(1).max(255).regex(/^[A-Za-z0-9א-ת][A-Za-z0-9א-ת-]*$/),customId,sourceFingerprint:HASH}).strict();
 export const snapshotSchema=z.object({identity,variantCount:z.literal(1),productStatus:z.enum(['DRAFT','ACTIVE']),productUpdatedAt:ISO,variantUpdatedAt:ISO,inventoryUpdatedAt:ISO,
  publicationIds:z.array(gid('Publication')).max(100),variantOnlinePublished:z.boolean(),commercial:commercial.extend({inventoryPolicy:z.enum(['DENY','CONTINUE']),tracked:z.boolean()}).strict(),
- levels:z.array(level).max(100),levelsComplete:z.literal(true),copyMediaFingerprint:HASH,decodedImagesVerifiedAt:ISO,
+ levels:z.array(level).max(100),levelsComplete:z.boolean(),copyMediaFingerprint:HASH,decodedImagesVerifiedAt:ISO,
  galleryRowFingerprint:HASH,galleryCopyVersion:ISO,galleryCopy:copy,shopifyCopy:copy,
  otherProductDataFingerprint:HASH,otherInventoryDataFingerprint:HASH}).strict();
 export type Snapshot=z.infer<typeof snapshotSchema>;
 const payloadSchema=z.object({intentId:UUID,galleryItemId:UUID,sourceFingerprint:HASH,frozenPendingRevision:HASH,currency:z.string().regex(/^[A-Z]{3}$/),
  targetStatus:z.literal('ACTIVE'),storeIntent:z.literal('publish_when_ready'),commercial:merchantValues,
- stock:z.array(z.object({locationId:gid('Location'),available:z.number().int().min(0).max(1000000),basis:z.literal('merchant_count'),evidenceId:UUID}).strict()).min(1).max(20),
+ stock:z.array(z.object({locationId:gid('Location'),available:z.number().int().min(0).max(1000000),basis:z.literal('merchant_count'),evidenceId:UUID}).strict()).max(20),
  provenance:z.object({authority:z.literal('authenticated_gallery_editor'),actorId:UUID,requestId:UUID,savedAt:ISO}).strict()}).strict();
 export type MerchantPayload=z.input<typeof payloadSchema>;
 export type MerchantIntent=z.infer<typeof payloadSchema>&{revision:string};
@@ -42,7 +42,7 @@ export type CreationProof=z.infer<typeof creationProofSchema>;
 const contextSchema=z.object({now:z.number().finite(),mode:z.literal('publish_verified_v1'),environment:z.literal('production'),shopDomain:z.literal(SHOP),apiVersion:z.literal(API_VERSION),shopCurrency:z.string().regex(/^[A-Z]{3}$/),
  scopes:z.array(z.string()).max(100),capturedAt:ISO,intentRevision:HASH,frozenPendingRevision:HASH,creationRevision:z.number().int().positive(),
  leaseOwner:UUID,creationLeaseOwner:UUID,productLeaseOwner:UUID,creationLeaseExpiresAt:ISO,productLeaseExpiresAt:ISO,
- locations:z.array(z.object({id:gid('Location'),active:z.boolean(),fulfillsOnlineOrders:z.boolean(),merchantManaged:z.boolean(),inventoryWriteAllowed:z.boolean()}).strict()).max(100),locationsComplete:z.literal(true),
+ locations:z.array(z.object({id:gid('Location'),active:z.boolean(),fulfillsOnlineOrders:z.boolean(),merchantManaged:z.boolean(),inventoryWriteAllowed:z.boolean()}).strict()).max(100),locationsComplete:z.boolean(),
  catalogComplete:z.literal(true),catalogCapturedAt:ISO,
  gallery:z.array(z.object({id:UUID,sku:SKU.nullable(),active:z.boolean()}).strict()).max(6000),
  shopify:z.array(z.object({productGid:gid('Product'),variantGid:gid('ProductVariant'),sku:SKU.nullable()}).strict()).max(10000),
@@ -72,6 +72,7 @@ function normalizeSnapshot(raw:unknown):Snapshot {
 /** Called only after authenticated server provenance and private SQL CAS persistence. */
 export function buildMerchantIntent(raw:MerchantPayload):MerchantIntent {
  const value=parse(payloadSchema,raw,'MERCHANT_DETAILS_REQUIRED');
+ if(value.commercial.tracked?value.stock.length===0:value.stock.length!==0)fail('STOCK_MODE_MISMATCH');
  if(value.commercial.compareAtPrice!==null&&Number(value.commercial.compareAtPrice)<=Number(value.commercial.price))fail('COMPARE_PRICE_INVALID');
  if(new Set(value.stock.map(x=>x.locationId)).size!==value.stock.length)fail('DUPLICATE_LOCATION');
  value.stock.sort((a,b)=>a.locationId.localeCompare(b.locationId));
@@ -85,7 +86,8 @@ function assertIntent(raw:MerchantIntent):MerchantIntent {
 function assertPlan(p:Plan){if(!p||p.policyVersion!==POLICY||p.hash!==fingerprint({policyVersion:p.policyVersion,intent:p.intent,creation:p.creation,initial:p.initial,steps:p.steps}))fail('PLAN_CHANGED');assertIntent(p.intent);}
 function guard(intent:MerchantIntent,proof:CreationProof,s:Snapshot,raw:Context):Context {
  const c=parse(contextSchema,raw,'CONTEXT_INVALID');
- if(!['write_products','write_inventory','write_publications'].every(scope=>c.scopes.includes(scope)))fail('SCOPES_REQUIRED');
+ if(!['write_products','write_publications',...(intent.commercial.tracked?['write_inventory']:[])].every(scope=>c.scopes.includes(scope)))fail('SCOPES_REQUIRED');
+ if(intent.commercial.tracked?(!s.levelsComplete||!c.locationsComplete):(s.levelsComplete||s.levels.length!==0||c.locationsComplete||c.locations.length!==0))fail('STOCK_MODE_MISMATCH');
  if(!fresh(c.capturedAt,c.now,30000)||!fresh(c.catalogCapturedAt,c.now,30000)||!fresh(s.decodedImagesVerifiedAt,c.now,300000))fail('FRESH_PROOF_REQUIRED');
  if(c.intentRevision!==intent.revision||c.frozenPendingRevision!==intent.frozenPendingRevision||proof.frozenPendingRevision!==intent.frozenPendingRevision||c.creationRevision!==proof.creationRevision)fail('SOURCE_CAS_CHANGED');
  if(c.leaseOwner!==c.creationLeaseOwner||c.leaseOwner!==c.productLeaseOwner||Date.parse(c.creationLeaseExpiresAt)<c.now+10000||Date.parse(c.productLeaseExpiresAt)<c.now+10000)fail('OWNED_LEASE_REQUIRED');
@@ -152,7 +154,7 @@ export function beginNextStep(plan:Plan,state:State,current:Snapshot,context:Con
  const step=plan.steps[state.index];if(!step)fail('FINALIZER_REQUIRED');
  const expected=clone(s),i=s.identity,desired=plan.intent.commercial;const id=attemptKey(plan,state.index);let variables:Record<string,unknown>;
  if(step.kind==='commerce'){
-  variables={productId:i.productGid,variants:[{id:i.variantGid,price:desired.price,compareAtPrice:desired.compareAtPrice,barcode:desired.barcode,taxable:desired.taxable,inventoryPolicy:'DENY',inventoryItem:{tracked:true,requiresShipping:true}}]};
+  variables={productId:i.productGid,variants:[{id:i.variantGid,price:desired.price,compareAtPrice:desired.compareAtPrice,barcode:desired.barcode,taxable:desired.taxable,inventoryPolicy:'DENY',inventoryItem:{tracked:desired.tracked,requiresShipping:true}}]};
   expected.commercial=clone(desired);
  }else if(step.kind==='activate_location'){
   const target=expected.levels.find(l=>l.locationId===step.locationId),stock=plan.intent.stock.find(l=>l.locationId===step.locationId)!;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminToken } from "@/lib/admin/admin-token";
+import { requireGalleryAdmin } from "@/lib/admin/gallery-access";
 import { z } from "zod";
 import { CatalogVendor, createCatalogSourceProvider } from "@/lib/catalog-source/provider";
 import { fetchProductDetails } from "@/lib/catalog-source/product-details";
@@ -209,7 +209,7 @@ export async function importSourceProduct(
 
 export function createImportRouteHandler(vendor: CatalogVendor) {
   return async function POST(req: NextRequest) {
-    const denied = requireAdminToken(req);
+    const denied = await requireGalleryAdmin(req);
     if (denied) return denied;
 
     try {

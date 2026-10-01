@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminToken } from "@/lib/admin/admin-token";
+import { requireGalleryAdmin } from "@/lib/admin/gallery-access";
 import { fetchProductDetails, type ProductDetails } from "@/lib/catalog-source/product-details";
 import { createCatalogSourceProvider } from "@/lib/catalog-source/provider";
 import { detectVendorFromCatalog } from "@/lib/catalog-source/vendor-detect";
@@ -79,7 +79,7 @@ function specCount(ts: StoredTechSpecs | null | undefined) {
 }
 
 export async function POST(req: NextRequest) {
-  const denied = requireAdminToken(req, { allowQueryToken: true, allowCron: true });
+  const denied = await requireGalleryAdmin(req, { allowQueryToken: true, allowCron: true, sessionMutation: true });
   if (denied) return denied;
   if (!hasSupabaseAdminEnv()) {
     return NextResponse.json({ error: "Supabase admin env not configured" }, { status: 500 });

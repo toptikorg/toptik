@@ -8,7 +8,7 @@ import { plainDescriptionToHtml, descriptionTextFromHtml, assertSafeDescriptionH
 // Admin-only write path (service role). Moved unchanged from ./repository.ts so
 // the public read path cannot reach the service-role client (GAL-025 / GAL-015).
 
-export async function saveCarouselPayload(input: unknown) {
+export async function saveCarouselPayload(input: unknown, mediaActor?: { actorType: "supabase_user" | "admin_panel_token"; actorId: string }) {
   // Check before schema parsing strips the failure marker and before any write.
   if (isUnavailableCarouselPayload(input)) {
     throw new Error("Cannot save an unavailable catalog. Reload the catalog first.");
@@ -45,6 +45,19 @@ export async function saveCarouselPayload(input: unknown) {
     priorContentError = legacy.error;
   }
   if (priorContentError) throw priorContentError;
+  const revisionRead = await supabase.from("carousel_items").select("id,editor_revision");
+  const editorSchemaAvailable = !revisionRead.error;
+  if (revisionRead.error && !["42703", "PGRST204"].includes(revisionRead.error.code)) throw revisionRead.error;
+  if (editorSchemaAvailable && !syncSchemaAvailable) throw new Error("GALLERY_EDITOR_SYNC_SCHEMA_REQUIRED");
+  const storedRevisions = new Map((revisionRead.data ?? []).map((row: { id: string; editor_revision: number }) => [row.id, row.editor_revision]));
+  if (editorSchemaAvailable) {
+    if (!parsed.settings.editorRevision) throw new Error("GALLERY_EDITOR_REVISION_REQUIRED");
+    for (const item of normalizedItems) {
+      if (storedRevisions.has(item.id) && item.editorRevision !== storedRevisions.get(item.id)) {
+        throw new Error("GALLERY_EDITOR_STALE_RELOAD");
+      }
+    }
+  }
   const priorContent = new Map(((priorContentRows ?? []) as Array<{
     id: string;
     title: string;
@@ -110,6 +123,7 @@ export async function saveCarouselPayload(input: unknown) {
     };
   });
 
+  if (!editorSchemaAvailable) {
   const { error: settingsError } = await supabase.from("carousel_settings").upsert(
     {
       id: 1,
@@ -119,6 +133,7 @@ export async function saveCarouselPayload(input: unknown) {
     { onConflict: "id" },
   );
   if (settingsError) throw settingsError;
+  }
 
   // Full row incl. scraped side-data (colours + tech specs) so a "save all"
   // from the admin persists everything an import produced — not just images.
@@ -133,6 +148,7 @@ export async function saveCarouselPayload(input: unknown) {
     catalog_number: item.catalogNumber ?? null,
     source_url: item.sourceUrl ?? null,
     cover_image_path: item.coverImagePath,
+    ...(editorSchemaAvailable ? { cover_image_alt: item.coverImageAlt ?? null } : {}),
     display_order: item.displayOrder,
     is_active: item.isActive,
     color: item.color ?? null,
@@ -170,6 +186,11 @@ export async function saveCarouselPayload(input: unknown) {
     })),
   ];
 
+  const angleRows = itemsToSave.flatMap(item => item.angles.map(angle => ({
+    id: angle.id, item_id: item.id, angle_key: angle.angleKey,
+    image_path: angle.imagePath, angle_order: angle.angleOrder,
+    ...(editorSchemaAvailable ? { image_alt: angle.imageAlt ?? null } : {}),
+  })));
   let itemsError: { message: string } | null = null;
   let upsertedItems: { id: string }[] | null = null;
   if (syncSchemaAvailable) {
@@ -180,8 +201,15 @@ export async function saveCarouselPayload(input: unknown) {
       ...[...priorContent.values()].map(item => [item.id, item.copy_updated_at]),
       ...itemsToSave.filter(item => !priorContent.has(item.id)).map(item => [item.id, null]),
     ]);
-    const result = await supabase.rpc("save_gallery_items_with_copy_cas", {
+    const result = await supabase.rpc(editorSchemaAvailable ? "save_gallery_catalog_atomic" : "save_gallery_items_with_copy_cas", {
       p_items: itemsToSave.map(fullRow), p_expected_versions: expectedVersions,
+      ...(editorSchemaAvailable ? {
+        p_expected_editor_revisions: Object.fromEntries(itemsToSave.map(item => [item.id, item.editorRevision ?? null])),
+        p_angles: angleRows,
+        p_media_actor: mediaActor ?? null,
+        p_settings: { autoplay_ms: parsed.settings.autoplayMs, transition_mode: parsed.settings.transitionMode },
+        p_expected_settings_revision: parsed.settings.editorRevision,
+      } : {}),
     });
     itemsError = result.error;
     upsertedItems = result.data;
@@ -215,16 +243,7 @@ export async function saveCarouselPayload(input: unknown) {
     if (deleteItemsError) throw deleteItemsError;
   }
 
-  const angleRows = itemsToSave.flatMap((item) =>
-    item.angles.map((angle) => ({
-      id: angle.id,
-      item_id: item.id,
-      angle_key: angle.angleKey,
-      image_path: angle.imagePath,
-      angle_order: angle.angleOrder,
-    })),
-  );
-
+  if (!editorSchemaAvailable) {
   if (angleRows.length > 0) {
     const { error: anglesError } = await supabase
       .from("carousel_item_angles")
@@ -240,8 +259,11 @@ export async function saveCarouselPayload(input: unknown) {
       .map((row: { id: string }) => row.id);
 
     if (angleIdsToDelete.length > 0) {
-      await supabase.from("carousel_item_angles").delete().in("id", angleIdsToDelete);
+      const { error } = await supabase.from("carousel_item_angles").delete().in("id", angleIdsToDelete);
+      if (error) throw error;
     }
+  }
+
   }
 
   // Mirror only actual Gallery-owned copy edits to the private outbox. A batch

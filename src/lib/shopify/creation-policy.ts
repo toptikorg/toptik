@@ -68,7 +68,7 @@ export type ReadyGalleryDraft = {
   policyVersion: typeof GALLERY_CREATION_POLICY; draft: GalleryCreationDraft; catalogKey: string;
   sourceFingerprint: string; customId: { namespace: string; key: string; value: string };
   imageEvidence: DecodedCreationImage[]; readyForPublication: false;
-  outstanding: Array<"selling_price" | "tax_policy" | "inventory" | "publication_not_supported_v1">;
+  outstanding: Array<"selling_price" | "tax_policy" | "server_verification">;
 };
 
 function fail(code: string): never { throw new Error(`SYNC_CREATION_${code}`); }
@@ -153,7 +153,7 @@ export function readyGalleryCreationDraft(input: unknown, context: DraftReadines
     customId: { namespace: def.namespace, key: def.key, value: `${CREATION_SHOP}:gallery:${draft.galleryItemId}` },
     imageEvidence: structuredClone(context.images), readyForPublication: false,
     outstanding: [...(draft.commerce.sellingPrice === null ? ["selling_price" as const] : []),
-      ...(draft.commerce.taxable === null ? ["tax_policy" as const] : []), "inventory", "publication_not_supported_v1"] };
+      ...(draft.commerce.taxable === null ? ["tax_policy" as const] : []), "server_verification"] };
   let catalog = context.catalog;
   if (context.recovery) {
     const { receipt, snapshot } = context.recovery;

@@ -206,9 +206,10 @@ export async function fetchTypedSpecSnapshot(identity: TypedSpecIdentity & { pro
 }
 export async function writeTypedSpecFields(snapshot: TypedSpecSnapshot, operations: TypedSpecOperation[], deadline = Date.now() + 15_000): Promise<void> {
   if (process.env.VERCEL_ENV !== "production" || process.env.SHOPIFY_TYPED_SPEC_SYNC !== "enabled_v1") throw new Error("SPEC_DISABLED");
-  const { buildSpecWriteRequest, parseSpecWriteResponse } = await import("./typed-spec-adapter");
-  if (operations.some(operation => operation.intent === "clear")) throw new Error("SPEC_CLEAR_DISABLED_V1");
-  const request = buildSpecWriteRequest(snapshot, operations);
+  const { buildSpecWriteRequest, parseSpecWriteResponse, CLEAR_CONSUMER_CONTRACT } = await import("./typed-spec-adapter");
+  const clearReady = process.env.SHOPIFY_TYPED_SPEC_CLEAR_CONSUMER === CLEAR_CONSUMER_CONTRACT;
+  if (operations.some(operation => operation.intent === "clear") && !clearReady) throw new Error("SPEC_CLEAR_CONSUMER_NOT_READY");
+  const request = buildSpecWriteRequest(snapshot, operations, { clearConsumerContract: clearReady ? CLEAR_CONSUMER_CONTRACT : undefined });
   if (!request) return;
   const result = await graphql<Record<string, unknown>>(request.query, request.variables, 15_000, deadline);
   parseSpecWriteResponse({ data: result }, request);

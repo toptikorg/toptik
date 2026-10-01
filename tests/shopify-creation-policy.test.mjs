@@ -28,7 +28,7 @@ function receipt(r=ready(),stage='reserved'){return {policyVersion:p.GALLERY_CRE
 
 test('complete exact new draft preserves rich HTML, fixed DRAFT status and private commerce',()=>{
   const d=draft(),r=ready(d),v=p.buildGalleryDraftCreateVariables(r);
-  assert.equal(r.readyForPublication,false);assert.deepEqual(r.outstanding,['inventory','publication_not_supported_v1']);
+  assert.equal(r.readyForPublication,false);assert.deepEqual(r.outstanding,['server_verification']);
   assert.equal(v.product.status,'DRAFT');assert.equal(v.product.descriptionHtml,d.copy.descriptionHtml);assert.equal(v.product.vendor,"Bric's");
   assert.equal(v.product.metafields[0].type,'id');assert.equal(v.product.metafields[0].value,`toptikcoil.myshopify.com:gallery:${id}`);
   assert.equal(v.media[0].originalSource,image);assert.equal(v.media[0].mediaContentType,'IMAGE');
@@ -41,7 +41,7 @@ test('complete exact new draft preserves rich HTML, fixed DRAFT status and priva
 test('unknown price/tax/stock remains a real unpublished draft, never invented numbers',()=>{
   const d=draft();d.commerce.sellingPrice=null;d.commerce.compareAtPrice=null;d.commerce.taxable=null;
   const r=ready(d),v=p.buildGalleryDraftVariantVariables(r,snapshot(r),ts,p.galleryDraftCommercialFingerprint(snapshot(r).commercial)).variants[0];
-  assert.deepEqual(r.outstanding,['selling_price','tax_policy','inventory','publication_not_supported_v1']);
+  assert.deepEqual(r.outstanding,['selling_price','tax_policy','server_verification']);
   for(const key of ['price','compareAtPrice','taxable','inventoryQuantities','inventoryPolicy']) assert.equal(key in v,false);
   assert.equal(p.buildGalleryDraftCreateVariables(r).product.status,'DRAFT');
 });

@@ -6,12 +6,13 @@ const url=source=>`data:text/javascript;base64,${Buffer.from(stripTypeScriptType
 const after=url('export const after=callback=>globalThis.__creationSchedule.callbacks.push(callback);');
 const db=url('export const createSupabaseServiceRoleClient=()=>({fixture:true});');
 const runtime=url('export const galleryDraftCreationMode=()=>globalThis.__creationSchedule.enabled;export const runPersistedGalleryDraft=async(db,id,deadline)=>{const s=globalThis.__creationSchedule;s.workerCalls.push({id,deadline});s.now=s.workerEnd;return s.result;};');
+const commerce=url('export const dispatchCommercialPublication=async(...args)=>{globalThis.__creationSchedule.commerceCalls.push(args);return true;};');
 const moduleUrl=url(readFileSync('src/lib/shopify/schedule-creation.ts','utf8').replace('import "server-only";','')
- .replace('"next/server"',JSON.stringify(after)).replace('"@/lib/supabase/service-role"',JSON.stringify(db)).replace('"./creation-runtime"',JSON.stringify(runtime)));
+ .replace('"next/server"',JSON.stringify(after)).replace('"@/lib/supabase/service-role"',JSON.stringify(db)).replace('"./creation-runtime"',JSON.stringify(runtime)).replace('"./commerce-schedule"',JSON.stringify(commerce)));
 const {scheduleGalleryDraftCreation,MAX_CREATION_HOPS}=await import(moduleUrl);
 async function fixture(fn){
  const previous={now:Date.now,timer:globalThis.setTimeout,fetch:globalThis.fetch,error:console.error,token:process.env.ADMIN_PANEL_TOKEN};
- const state=globalThis.__creationSchedule={enabled:true,callbacks:[],workerCalls:[],requests:[],errors:[],now:9000,workerEnd:44000,result:{pending:true}};
+ const state=globalThis.__creationSchedule={enabled:true,callbacks:[],workerCalls:[],commerceCalls:[],requests:[],errors:[],now:9000,workerEnd:44000,result:{pending:true}};
  Date.now=()=>state.now;globalThis.setTimeout=(callback,ms)=>{state.now+=ms;callback();return 1;};
  globalThis.fetch=async(target,options)=>{state.requests.push({target,options});state.now+=8000;return new Response(null,{status:202});};
  console.error=(message,value)=>state.errors.push({message,value});process.env.ADMIN_PANEL_TOKEN='fixture-never-log';
@@ -32,4 +33,10 @@ test('insufficient tail budget leaves durable work visible and never starts anot
 test('default-off and bounded hop limit cannot start an unbounded continuation chain',()=>fixture(async s=>{
  s.enabled=false;scheduleGalleryDraftCreation('fixture-id');assert.equal(s.callbacks.length,0);
  s.enabled=true;scheduleGalleryDraftCreation('fixture-id',MAX_CREATION_HOPS,55000);await s.callbacks[0]();assert.equal(s.requests.length,0);
+}));
+
+test('completed draft wakes publication in a separate request budget, without another creation',()=>fixture(async s=>{
+ s.result={stage:'draft_ready',pending:false};
+ scheduleGalleryDraftCreation('fixture-id',0,55000);await s.callbacks[0]();
+ assert.deepEqual(s.commerceCalls,[['fixture-id',0,55000]]);assert.equal(s.requests.length,0);
 }));

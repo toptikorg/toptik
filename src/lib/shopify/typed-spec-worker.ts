@@ -2,12 +2,13 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchTypedSpecSnapshot, writeTypedSpecFields } from "./admin-api";
-import { buildSpecWriteRequest, verifySpecWriteReadback, type Identity, type RawMetafield, type SpecSnapshot } from "./typed-spec-adapter";
-import { SPEC_KEYS, FIELD_DEFINITIONS, absent, observe, makeSpecValue, validateSpecDocument, planSpecMerge,
+import { buildSpecWriteRequest, verifySpecWriteReadback, CLEAR_CONSUMER_CONTRACT, type Identity, type RawMetafield, type SpecSnapshot } from "./typed-spec-adapter";
+import { SPEC_KEYS, FIELD_DEFINITIONS, absent, observe, makeSpecValue, makeSpecClear, decodeShopifySpecField, validateSpecDocument, planSpecMerge,
   acceptVerifiedSpecReadback, type Baselines, type Document, type Observation, type Provenance, type SpecKey } from "./typed-spec-core";
 import { buildSpecStatePersistence } from "./typed-spec-state-adapter";
 
 export const typedSpecSyncEnabled = () => process.env.VERCEL_ENV === "production" && process.env.SHOPIFY_TYPED_SPEC_SYNC === "enabled_v1";
+export const typedSpecClearsEnabled = () => typedSpecSyncEnabled() && process.env.SHOPIFY_TYPED_SPEC_CLEAR_CONSUMER === CLEAR_CONSUMER_CONTRACT;
 type FieldRow = { key: SpecKey; stateVersion: number; galleryVersion: number; galleryBaseline: Observation; shopifyBaseline: Observation; currentGallery: Observation };
 export type TypedState = { identity: Identity & { itemId: string; gallerySku: string; productHandle: string }; fields: FieldRow[] };
 export type TypedEditIdentity = Pick<TypedState["identity"], "itemId" | "variantGid" | "gallerySku" | "exactSku" | "productHandle">;
@@ -36,16 +37,18 @@ export async function readTypedState(db: SupabaseClient, productGid: string, own
   }
   return state;
 }
-function shopifyProvenance(key: SpecKey, raw: RawMetafield): Provenance {
+function shopifyProvenance(key: SpecKey, raw: RawMetafield, clearIntentId?: string): Provenance {
   // Typed merchant fields are merchant claims, never inferred manufacturer facts.
-  return { authority: "merchant", producer: "shopify_typed_metafield", observedAt: raw.updatedAt,
+  const base: Provenance = { authority: "merchant", producer: "shopify_typed_metafield", observedAt: raw.updatedAt,
     evidenceId: `${raw.id}:${raw.compareDigest}`, intentId: `shopify:${raw.id}:${raw.compareDigest}`,
     raw: { id: raw.id, namespace: raw.namespace, key, type: raw.type, value: raw.value, updatedAt: raw.updatedAt } };
+  if (!clearIntentId) return base;
+  const decoded = raw.namespace === "toptik_specs" ? decodeShopifySpecField(raw, base).cell : null;
+  return { ...base, intentId: clearIntentId, raw: { intent: "clear", previousValue: decoded?.state === "value" ? decoded.value : null } };
 }
 export async function freshTypedShopify(state: TypedState, deadline = Date.now() + 10_000): Promise<SpecSnapshot> {
   if (Date.now() > deadline - 500) throw new Error("SPEC_TIME_BUDGET");
   const snapshot = await fetchTypedSpecSnapshot(state.identity, shopifyProvenance, Math.min(8_000, deadline - Date.now() - 250));
-  if (Object.values(snapshot.clearState.cleared).length) throw new Error("SPEC_CLEAR_DISABLED_V1");
   return snapshot;
 }
 function docs(state: TypedState): { baseline: Baselines; currentGallery: Document } {
@@ -80,11 +83,18 @@ export async function editTypedSpecs(db: SupabaseClient, productGid: string, req
     const entries = Object.entries(changes);
     if (!entries.length || entries.length > 19 || Object.keys(versions).length !== entries.length || entries.some(([key]) => !Object.hasOwn(versions, key))) throw new Error("SPEC_EDIT_INVALID");
     const edits = entries.map(([key, raw]) => {
-      if (!SPEC_KEYS.includes(key as SpecKey) || raw === null) throw new Error("SPEC_CLEAR_DISABLED_V1");
+      if (!SPEC_KEYS.includes(key as SpecKey)) throw new Error("SPEC_FIELD_NOT_ALLOWED");
+      if (raw === null && !typedSpecClearsEnabled()) throw new Error("SPEC_CLEAR_CONSUMER_NOT_READY");
       const version = versions[key]; if (!Number.isSafeInteger(version) || version < 1) throw new Error("SPEC_EDITOR_STALE");
       const provenance: Provenance = { authority: "merchant", producer: "gallery_typed_editor", observedAt: new Date().toISOString(),
         evidenceId: requestId, intentId: `${requestId}:${key}`, raw: raw as Provenance["raw"] };
-      return { key, expectedVersion: version, observation: observe(makeSpecValue(key as SpecKey, raw, provenance), `${requestId}:${key}`) };
+      if (raw === null) {
+        const row = state.fields.find(field => field.key === key)!;
+        const cell = row.currentGallery.cell;
+        const previous = cell.state === "value" ? cell.value : cell.state === "clear" && cell.provenance.raw && typeof cell.provenance.raw === "object" && "previousValue" in cell.provenance.raw ? cell.provenance.raw.previousValue : row.shopifyBaseline.cell.state === "value" ? row.shopifyBaseline.cell.value : null;
+        provenance.raw = { intent: "clear", previousValue: previous } as Provenance["raw"];
+      }
+      return { key, expectedVersion: version, observation: observe(raw === null ? makeSpecClear(key as SpecKey, provenance) : makeSpecValue(key as SpecKey, raw, provenance), `${requestId}:${key}`) };
     });
     return specRpc(db, "edit_toptik_spec_fields", { p_product_gid: productGid, p_lease_owner: owner, p_request_id: requestId, p_edits: edits, p_evidence: { evidenceId: requestId, operation: "authenticated_editor" } });
   });
@@ -97,18 +107,35 @@ export async function enqueueTypedSpecProduct(db: SupabaseClient, productGid: st
 }
 export async function reconcileTypedSpecProduct(db: SupabaseClient, productGid: string, deadline = Date.now() + 40_000): Promise<{ conflicts: string[]; fields: number }> {
   return withTypedSpecLease(db, productGid, async owner => {
-    const state = await readTypedState(db, productGid, owner);
-    if (state.fields.length !== 19) throw new Error("SPEC_BASELINE_REQUIRED");
+    let state: TypedState, initial: SpecSnapshot | undefined;
+    try { state = await readTypedState(db, productGid, owner, deadline - 18_000); }
+    catch (error) {
+      if (safeCode(error) !== "SPEC_APPROVAL_MISSING_OR_CHANGED") throw error;
+      const admission = await specRpc<{ identity: TypedState["identity"]; copyApprovalId: string }>(db, "read_toptik_spec_admission", { p_product_gid: productGid, p_lease_owner: owner }, deadline - 15_000);
+      if (!admission || admission.identity?.productGid !== productGid || typeof admission.copyApprovalId !== "string") throw new Error("SPEC_STATE_INVALID");
+      state = { identity: admission.identity, fields: [] };
+      initial = await freshTypedShopify(state, deadline - 9_000);
+      await specRpc(db, "activate_toptik_spec_product", { p_product_gid: productGid, p_lease_owner: owner,
+        p_expected: { itemId: state.identity.itemId, variantId: state.identity.variantGid, exactGallerySku: state.identity.gallerySku, exactShopifySku: state.identity.exactSku, productHandle: state.identity.productHandle },
+        p_approval_id: "copy-approved-auto-v1", p_evidence: { evidenceId: `copy-admission:${productGid}`, copyApprovalId: admission.copyApprovalId } }, deadline - 6_000);
+      state = await readTypedState(db, productGid, owner, deadline - 3_000);
+    }
+    if (!state.fields.length) {
+      initial ??= await freshTypedShopify(state, deadline - 3_000);
+      const gallery = { fields: Object.fromEntries(SPEC_KEYS.map(key => [key, absent()])) };
+      await commitState(db, state, owner, { gallery, shopify: initial.document }, [...SPEC_KEYS], true, deadline);
+      return { conflicts: [], fields: 19 }; // Independent baseline only; never initial cross-system fill.
+    }
     const before = await freshTypedShopify(state, deadline), { baseline, currentGallery } = docs(state);
     const plan = planSpecMerge({ gallery: currentGallery, shopify: before.document }, baseline);
-    if (plan.operations.some(op => op.intent === "clear")) throw new Error("SPEC_CLEAR_DISABLED_V1");
+    if (plan.operations.some(op => op.target === "shopify" && op.intent === "clear") && !typedSpecClearsEnabled()) throw new Error("SPEC_CLEAR_CONSUMER_NOT_READY");
     const toShopify = plan.operations.filter(op => op.target === "shopify");
     let after = before;
     if (toShopify.length) {
       // Recheck the live identity/approvals/lease just before the provider CAS write.
       await readTypedState(db, productGid, owner, deadline - 18_000);
       const immediate = await freshTypedShopify(state, deadline);
-      const request = buildSpecWriteRequest(immediate, toShopify);
+      const request = buildSpecWriteRequest(immediate, toShopify, { clearConsumerContract: typedSpecClearsEnabled() ? CLEAR_CONSUMER_CONTRACT : undefined });
       if (Date.now() > deadline - 18_000) throw new Error("SPEC_TIME_BUDGET");
       await writeTypedSpecFields(immediate, toShopify, deadline - 10_000);
       after = await freshTypedShopify(state, deadline - 6_000);

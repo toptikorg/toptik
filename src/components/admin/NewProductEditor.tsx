@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import CommercePublicationEditor from "@/components/admin/CommercePublicationEditor";
 import ProductDescriptionEditor from "@/components/admin/ProductDescriptionEditor";
 import type { CreationIntentInput, CreationIntentRecord } from "@/lib/shopify/creation-intent";
 import { createCreationEditorRequestGate } from "@/lib/shopify/creation-editor-requests";
@@ -12,8 +13,8 @@ const REASONS: Record<string, string> = {
   media: "תמונת מוצר אמיתית", media_alt: "תיאור לתמונה", selling_price: "מחיר מכירה",
   media_limit: "בחירת עד 10 תמונות ליצירה בחנות; כל תמונות המקור נשמרו",
   currency: "מטבע החנות", tax_policy: "החלטת מס", shipping_policy: "החלטת משלוח", store_intent: "יעד השמירה",
-  manufacturer_mapping_receipt: "התאמת מק״ט יצרן מאומתת", inventory: "מלאי מאומת ב-Shopify",
-  publication_not_supported_v1: "הפרסום הציבורי אינו מופעל במסלול הזה",
+  manufacturer_mapping_receipt: "התאמת מק״ט יצרן מאומתת",
+  server_verification: "אימות אוטומטי של הזהות, התמונות ופרטי המכירה",
 };
 type SavedRow = { id: string; title: string | null; sku: string | null; frozen_at: string | null };
 type Readiness = { draftBlockers: string[]; publicBlockers: string[] };
@@ -57,7 +58,7 @@ export default function NewProductEditor({ adminToken, initialId, createOnOpen =
     }, requestFailed, () => setBusy(false));
   }
   useEffect(() => {
-    if (!adminToken) return;
+    if (adminToken === undefined) return;
     if (!initialDraft.current) initialDraft.current = blank();
     const gate = requestGate.current;
     let active = true;
@@ -136,8 +137,8 @@ export default function NewProductEditor({ adminToken, initialId, createOnOpen =
   return <section dir="rtl" aria-label="עריכת מוצר חדש" style={{ maxWidth: 920, margin: "auto", padding: 24, background: "#fff", color: "#211d17", lineHeight: 1.7 }}>
     <style>{`.creation-form label{display:flex;flex-direction:column;gap:6px;margin:14px 0}.creation-form input,.creation-form select,.creation-form textarea{min-height:44px;padding:9px;border:1px solid #887e6f;border-radius:6px;background:white;color:#211d17}.creation-form button{min-height:44px;padding:9px 18px;border:1px solid #887e6f;border-radius:6px;margin:6px;background:#f1ece3;color:#211d17}.creation-form button:disabled{opacity:.5}.creation-form fieldset{border:1px solid #c6bdaf;padding:18px;margin:20px 0}.creation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}`}</style>
     <div className="creation-form">
-      {onClose ? <button disabled={busy} onClick={onClose}>חזרה לרשימת המוצרים</button> : <a href="/admin">חזרה לניהול הגלריה</a>}<h1>מוצר חדש — טיוטה לחנות</h1>
-      <p>אפשר לשמור פרטים חלקיים. מוצר חדש ייווצר בחנות כטיוטה פרטית בלבד, לאחר אימות הזהות והתמונות.</p>
+      {onClose ? <button disabled={busy} onClick={onClose}>חזרה לרשימת המוצרים</button> : <a href="/admin">חזרה לניהול הגלריה</a>}<h1>מוצר חדש</h1>
+      <p>אפשר לשמור פרטים חלקיים כטיוטה, או לבחור פרסום אוטומטי בחנות ובגלריה לאחר השלמת הפרטים ואימות התמונות.</p>
       {!connected ? <form onSubmit={event => { event.preventDefault(); void connect(); }}>
         <label>סיסמת מנהל<input type="password" autoComplete="current-password" value={token} onChange={event => setToken(event.target.value)} /></label>
         <button disabled={busy || !token} type="submit">כניסה</button></form> : <>
@@ -148,7 +149,7 @@ export default function NewProductEditor({ adminToken, initialId, createOnOpen =
         <button disabled={busy || !enabled} onClick={() => void createNew()}>טיוטה חדשה</button>
         {input && <>
           {importedSource && <details><summary>פרטים שנשמרו מהייבוא</summary>
-            <p>מק״ט יצרן: <bdi>{importedSource.catalogNumber}</bdi>. נתוני המקור נשמרים בנפרד מהחלטות המחיר והמלאי של החנות.</p>
+            <p>מק״ט יצרן: <bdi>{importedSource.catalogNumber}</bdi>. נתוני המקור נשמרים לצד פרטי המכירה שקבעתם.</p>
             <dl>{[["צבע", importedSource.color], ["מידות", importedSource.dimensions], ["משקל מקור", importedSource.weight]]
               .filter(([, value]) => value).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
             {importedSource.techSpecs?.specs.map((group, index) => <section key={index}><h3>{group.heading}</h3><dl>
@@ -175,7 +176,7 @@ export default function NewProductEditor({ adminToken, initialId, createOnOpen =
               <small>קישור למקור אינו אסמכתת אימות. המערכת בודקת רשומה קיימת שנוצרה בתהליך אימות נפרד.</small></label>}
           </fieldset>
           <fieldset disabled={busy || frozen || !enabled}><legend>תמונות המוצר והצבע המדויקים</legend>
-            <label>העלאת תמונת מוצר<input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" disabled={input.media.length >= 10}
+            <label>העלאת תמונת מוצר — JPG, PNG או WebP, עד 8MB<input type="file" accept="image/jpeg,image/png,image/webp" disabled={input.media.length >= 10}
               onChange={event => { const file = event.target.files?.[0]; if (file) void uploadImage(file); event.target.value = ""; }} /></label>
             {input.media.map((media, index) => <div key={index} className="creation-grid">
               <label>כתובת תמונה {index + 1}<input type="url" dir="ltr" value={media.url} onChange={event => setInput({ ...input, media: input.media.map((m, i) => i === index ? { ...m, url: event.target.value } : m) })} /></label>
@@ -194,12 +195,13 @@ export default function NewProductEditor({ adminToken, initialId, createOnOpen =
             <label>מוצר פיזי למשלוח<select value={input.commerce.requiresShipping ? "true" : ""} onChange={event => patchCommerce({ requiresShipping: event.target.value === "true" ? true : null })}>
               <option value="">טרם הוחלט</option><option value="true">כן</option></select></label>
             <label>יעד השמירה<select value={input.commerce.storeIntent} onChange={event => patchCommerce({ storeIntent: event.target.value as CreationIntentInput["commerce"]["storeIntent"] })}>
-              <option value="undecided">שמירה מקומית בינתיים</option><option value="draft">הכנת טיוטה בחנות</option><option value="publish_when_ready">טיוטה כעת; פרסום בעתיד כשהכול מוכן</option></select></label>
-          </div><p>לא נקבע מלאי ולא מתבצע פרסום ללקוחות במסלול הזה.</p></fieldset>
+              <option value="undecided">שמירה מקומית בינתיים</option><option value="draft">הכנת טיוטה בחנות</option><option value="publish_when_ready">פרסום אוטומטי בחנות ובגלריה לאחר בדיקה</option></select></label>
+          </div><p>המוצר יפורסם בהתאם ליעד השמירה שבחרתם. האתר אינו מנהל כמויות מלאי.</p></fieldset>
           <button disabled={busy || frozen || !enabled} onClick={() => void save()}>שמירת הטיוטה</button>
           {record && <button disabled={busy} onClick={() => void load(record.input.galleryItemId)}>רענון מצב</button>}
           {frozen && !["draft_ready", "review"].includes(stage) && <button disabled={busy || !enabled} onClick={() => void resume()}>המשך טיפול בטיוטה השמורה</button>}
-          {frozen && <p>הפרטים הוקפאו כדי למנוע יצירה כפולה. מצב: <bdi>{stage}</bdi>. טיוטה מוכנה עדיין אינה מוצר ציבורי.</p>}
+          {frozen && <p>הפרטים הוקפאו כדי למנוע יצירה כפולה. מצב: <bdi>{stage}</bdi>. מצב הפרסום בחנות מופיע בהמשך.</p>}
+          {frozen && record && <CommercePublicationEditor token={token} itemId={record.input.galleryItemId} />}
           {readiness && <section aria-label="מוכנות המוצר"><h2>מה חסר</h2>
             <p>{readiness.draftBlockers.length ? readiness.draftBlockers.map(reason => REASONS[reason] ?? reason).join(" · ") : "פרטי הבסיס נשמרו; יש להשלים את אימות המקורות והתמונות בשרת."}</p>
             <p>לפרסום ציבורי: {readiness.publicBlockers.map(reason => REASONS[reason] ?? reason).join(" · ")}</p></section>}

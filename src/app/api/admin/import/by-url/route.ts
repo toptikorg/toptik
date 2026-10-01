@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminToken } from "@/lib/admin/admin-token";
+import { requireGalleryAdmin } from "@/lib/admin/gallery-access";
 import { z } from "zod";
 import { importSourceProduct } from "@/lib/import/import-handler";
 import { fetchMandarinaByUrl } from "@/lib/catalog-source/mandarina-scraper";
@@ -46,7 +46,7 @@ const URL_SOURCES: UrlSource[] = [
 ];
 
 export async function POST(req: NextRequest) {
-  const denied = requireAdminToken(req);
+  const denied = await requireGalleryAdmin(req);
   if (denied) return denied;
 
   try {

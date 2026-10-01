@@ -102,7 +102,8 @@ test('original Add Item and all import paths use the same embedded intent editor
  assert.match(add,/setCreationSelection/);assert.doesNotMatch(add,/setPayload|hero-web-airport/);
  assert.match(admin,/<NewProductEditor key=\{creationSelection.key\} adminToken=\{token\}/);
  assert.match(admin,/data.pendingCreation \? \{ next: workingPayload, mode: "pending"/);
- assert.match(admin,/if \(existingUpdates\) \{ await persistPayload/);
+ // The atomic save returns a fresh catalog with its new concurrency revisions.
+ assert.match(admin,/if \(existingUpdates\) \{ setPayload\(await persistPayload\(workingPayload\)\)/);
  assert.match(read('src/app/api/admin/import/by-url/route.ts'),/runAdminManufacturerImport/);
  assert.match(read('src/lib/import/import-handler.ts'),/runAdminManufacturerImport\(vendor, sourceProduct, targetItemId, catalogNumber, importSourceProduct\)/);
  const editor=read('src/components/admin/NewProductEditor.tsx');assert.match(editor,/input: prepared, expectedRevision: null/);assert.match(editor,/type="file"/);

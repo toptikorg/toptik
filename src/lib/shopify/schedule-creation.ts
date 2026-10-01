@@ -1,6 +1,7 @@
 import "server-only";
 import { after } from "next/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
+import { dispatchCommercialPublication } from "./commerce-schedule";
 import { galleryDraftCreationMode, runPersistedGalleryDraft } from "./creation-runtime";
 
 const CONTINUATION_URL = "https://landing.toptik.co.il/api/admin/shopify/drafts";
@@ -12,6 +13,12 @@ export function scheduleGalleryDraftCreation(id: string, hop = 0, deadline = Dat
   after(async () => {
     try {
       const result = await runPersistedGalleryDraft(createSupabaseServiceRoleClient(), id, deadline - 10000);
+      if (result.stage === "draft_ready") {
+        if (!await dispatchCommercialPublication(id, 0, deadline)) {
+          console.error("Gallery publication wakeup pending", { id });
+        }
+        return;
+      }
       if (!result.pending || hop >= MAX_CREATION_HOPS || !process.env.ADMIN_PANEL_TOKEN) return;
       // Avoid a rapid chain on a busy lock or a missing response. The durable
       // intent survives the bounded chain and can resume by its UUID.

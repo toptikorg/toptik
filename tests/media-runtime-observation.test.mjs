@@ -1,0 +1,25 @@
+import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';import{stripTypeScriptTypes}from'node:module';
+Error.stackTraceLimit=0;
+const src=n=>readFileSync(`src/lib/shopify/${n}.ts`,'utf8'),mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
+const coreUrl=mod(src('media-sync-core')),core=await import(coreUrl);
+const readUrl=mod(src('media-read-adapter').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`)),reader=await import(readUrl);
+const body=stripTypeScriptTypes(src('media-runtime-observation')).replace(/^import[\s\S]*?;\r?\n/gm,'');
+const api=await import(mod(`import {mediaSnapshotFingerprint} from '${coreUrl}';import{mediaReadToSnapshot}from'${readUrl}';${body}`));
+const id={productId:'gid://shopify/Product/123',variantId:'gid://shopify/ProductVariant/456',itemId:'a0000000-0000-4000-8000-000000000001',exactGallerySku:'ABC',exactShopifySku:'ABC',productHandle:'abc'};
+const stamp='2026-09-30T17:00:00Z',now=Date.parse(stamp),hash='a'.repeat(64),conn=nodes=>({nodes,pageInfo:{hasNextPage:false}});
+function fixture(){const calls=[],image={id:'gid://shopify/MediaImage/1',mediaContentType:'IMAGE',status:'READY',fileStatus:'READY',alt:'bag',updatedAt:stamp,image:{id:'gid://shopify/ImageSource/1',url:'https://cdn.shopify.com/s/files/1/a.png',width:40,height:60}};
+ const read=reader.parseMediaReadResponse({data:{product:{id:id.productId,handle:id.productHandle,status:'ACTIVE',publishedOnPublication:true,updatedAt:stamp,mediaCount:{count:1,precision:'EXACT'},media:conn([image]),variants:conn([{id:id.variantId,sku:id.exactShopifySku,image:null,media:conn([])}])}}},id);
+ const gallery={identity:id,side:'gallery',complete:true,revision:'g1',assets:[{key:'a',evidenceId:'g-a',contentId:hash,alt:'bag'}]};
+ const d={identity:id,enabled:true,provenance:[{product_gid:id.productId,side:'shopify',asset_key:'a',evidence_id:'s-a',content_id:hash,proof:{platformRef:image.id,url:image.image.url,width:40,height:60,decodedSha256:hash,byteLength:100,mime:'image/png'}}]};
+ const deps={now:()=>now,readReady:async()=>{calls.push('read');return structuredClone(read);},readBytes:async p=>{calls.push(['decode',p]);return new Uint8Array(100);},readGallery:async()=>{calls.push('gallery');return structuredClone(gallery);}};
+ return {calls,d,read,gallery,deps,run:()=>api.readRegisteredShopifyMedia(d,now+30000,deps)};}
+test('exact registered product-bound bytes are verified and read again',async()=>{const f=fixture(),s=await f.run();assert.equal(s.assets[0].key,'a');assert.equal(s.assets[0].evidenceId,'s-a');assert.equal(s.revision,f.read.fingerprint);assert.deepEqual(f.calls.map(x=>Array.isArray(x)?x[0]:x),['read','decode','read']);});
+test('unknown image cannot gain identity from position',async()=>{const f=fixture();f.d.provenance=[];await assert.rejects(f.run(),/REGISTERED_SOURCE_REQUIRED/);assert.equal(f.calls.length,1);});
+test('ambiguous registered lineage fails before decode',async()=>{const f=fixture();f.d.provenance.push(structuredClone(f.d.provenance[0]));await assert.rejects(f.run(),/REGISTERED_SOURCE_REQUIRED/);});
+test('wrong product-owned proof is rejected',async()=>{const f=fixture();f.d.provenance[0].product_gid='gid://shopify/Product/999';await assert.rejects(f.run(),/REGISTERED_SOURCE_REQUIRED/);});
+test('exact dimension mismatch cannot be relabelled',async()=>{const f=fixture();f.d.provenance[0].proof.width=41;await assert.rejects(f.run(),/REGISTERED_SOURCE_CHANGED/);});
+test('actual byte decoder failure prevents snapshot',async()=>{const f=fixture();f.deps.readBytes=async()=>{throw Error('MEDIA_SOURCE_BYTES_CHANGED');};await assert.rejects(f.run(),/BYTES_CHANGED/);});
+test('source metadata change during decode rejects complete snapshot',async()=>{const f=fixture();let n=0;f.deps.readReady=async()=>({...f.read,fingerprint:++n===1?f.read.fingerprint:'b'.repeat(64)});await assert.rejects(f.run(),/SOURCE_CHANGED_DURING_READ/);});
+test('Gallery target observation surrounds it with same Shopify source',async()=>{const f=fixture(),g=await api.createMediaRuntimeObserver(f.d,f.deps)(id,'gallery',now+30000);assert.deepEqual(g.target,f.gallery);assert.equal(g.sourceFingerprint,core.mediaSnapshotFingerprint(await f.run()));});
+test('target wrong identity is rejected',async()=>{const f=fixture();f.deps.readGallery=async()=>({...f.gallery,identity:{...id,exactGallerySku:'OTHER'}});await assert.rejects(api.createMediaRuntimeObserver(f.d,f.deps)(id,'gallery',now+30000),/IDENTITY_CHANGED/);});
+test('expired budget performs no read',async()=>{const f=fixture();await assert.rejects(api.readRegisteredShopifyMedia(f.d,now,f.deps),/TIME_BUDGET/);assert.deepEqual(f.calls,[]);});

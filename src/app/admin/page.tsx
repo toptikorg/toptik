@@ -12,8 +12,10 @@ import {
   SHOPIFY_EXPORT_COLUMNS,
   SHOPIFY_EXPORT_COLUMN_WIDTHS,
 } from "@/lib/carousel/shopify-export";
-import { LANDING_URL } from "@/lib/admin/config";
+import { ADMIN_HOST, LANDING_URL } from "@/lib/admin/config";
 import ProductDescriptionEditor from "@/components/admin/ProductDescriptionEditor";
+import CommerceExistingEditor from "@/components/admin/CommerceExistingEditor";
+import TypedSpecificationEditor from "@/components/admin/TypedSpecificationEditor";
 import NewProductEditor from "@/components/admin/NewProductEditor";
 import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
 
@@ -43,12 +45,34 @@ type BatchImportStatus = {
   message: string;
 };
 
+// Resolve async image results by immutable row ID, never by its prior sorted position.
+function applyUploadedImage(
+  current: CarouselPayload, itemId: string, url: string, kind: "cover" | "angle",
+  expectedGeneration: number, currentGeneration: number,
+): CarouselPayload {
+  if (expectedGeneration !== currentGeneration || !current.items.some(item => item.id === itemId)) return current;
+  const next = structuredClone(current);
+  const target = next.items.find(item => item.id === itemId)!;
+  if (kind === "cover") target.coverImagePath = url;
+  else {
+    const order = target.angles.length + 1;
+    target.angles.push({ id: crypto.randomUUID(), itemId, angleKey: `view-${order}`, angleOrder: order, imagePath: url });
+    if (!target.coverImagePath || target.coverImagePath === "/hero-web-airport.png") target.coverImagePath = url;
+  }
+  return next;
+}
+
 export default function AdminPage() {
   const [token, setToken] = useState("");
+  const [loginUrl, setLoginUrl] = useState(`https://${ADMIN_HOST}/login?next=/admin`);
   const [authReady, setAuthReady] = useState(false);
   const [payload, setPayload] = useState<CarouselPayload>(fallbackCarouselPayload);
+  const [catalogSearch, setCatalogSearch] = useState("");
   const [status, setStatus] = useState<string>("טוען...");
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState(0);
+  const pendingUploadsRef = useRef(0);
+  const catalogGenerationRef = useRef(0);
   const [creationSelection, setCreationSelection] = useState<{ id?: string; key: string; create?: boolean } | null>(null);
   const [isWarming, setIsWarming] = useState(false);
   const [batchCatalogInputs, setBatchCatalogInputs] = useState<Record<Vendor, string[]>>({
@@ -65,7 +89,6 @@ export default function AdminPage() {
   const [urlImportStatus, setUrlImportStatus] = useState<BatchImportStatus | null>(null);
   const [itemVendorMap, setItemVendorMap] = useState<Record<string, Vendor>>({});
   const [itemImportingMap, setItemImportingMap] = useState<Record<string, boolean>>({});
-  const [translatingItemId, setTranslatingItemId] = useState<string | null>(null);
   const [importFeedback, setImportFeedback] = useState<{
     tone: ImportFeedbackTone;
     message: string;
@@ -76,6 +99,8 @@ export default function AdminPage() {
   const [failedImports, setFailedImports] = useState<Array<{ catalog: string; reason: string }>>([]);
   const [showFailedModal, setShowFailedModal] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const isCatalogBusy = isSaving || isBatchImporting || isUrlImporting || isWarming
+    || pendingUploads > 0 || Object.values(itemImportingMap).some(Boolean);
   // Persist the failed list across page reloads (until every catalog is imported
   // OK — which empties + clears it — or the admin clears it manually). State
   // starts empty to match SSR; localStorage is read after mount to avoid a
@@ -172,6 +197,7 @@ export default function AdminPage() {
         displayOrder: existing.displayOrder,
         isActive: existing.isActive,
         copyUpdatedAt: existing.copyUpdatedAt,
+        editorRevision: existing.editorRevision,
         descriptionHtml: data.item.descriptionHtml ?? plainDescriptionToHtml(data.item.description ?? ""),
         seoTitle: data.item.seoTitle ?? existing.seoTitle,
         seoDescription: data.item.seoDescription ?? existing.seoDescription,
@@ -247,6 +273,8 @@ export default function AdminPage() {
   }
 
   async function persistPayload(nextPayload: CarouselPayload) {
+    if (pendingUploadsRef.current) throw new Error("יש להמתין לסיום העלאת התמונה לפני שמירה.");
+    const generation = ++catalogGenerationRef.current;
     if (!authReady || isUnavailableCarouselPayload(nextPayload)) {
       throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
     }
@@ -268,11 +296,19 @@ export default function AdminPage() {
     });
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(data?.error || "Save failed");
+      throw new Error(res.status === 409 ? "המוצר עודכן במקום אחר בזמן העריכה. טען את הנתונים מחדש לפני שמירה; השינויים שלך לא נדרסו." : data?.error || "Save failed");
     }
+    const freshResponse = await fetch("/api/admin/carousel", { cache: "no-store", headers: { "x-admin-token": token } });
+    if (!freshResponse.ok) throw new Error("השמירה התקבלה, אבל טעינת הגרסה העדכנית נכשלה. טען מחדש לפני עריכה נוספת.");
+    const fresh: CarouselPayload = await freshResponse.json();
+    if (isUnavailableCarouselPayload(fresh)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
+    if (generation !== catalogGenerationRef.current) throw new Error("הנתונים נטענו מחדש במהלך השמירה. יש לרענן לפני עריכה נוספת.");
+    return fresh;
   }
 
   const loadData = useCallback(async (activeToken: string) => {
+    if (pendingUploadsRef.current) { setStatus("יש להמתין לסיום העלאת התמונה לפני רענון."); return; }
+    const generation = ++catalogGenerationRef.current;
     setAuthReady(false);
     try {
       setStatus("טוען נתוני אדמין...");
@@ -281,32 +317,34 @@ export default function AdminPage() {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error || "Unauthorized or load failed");
+        throw new Error(res.status === 401 ? "יש להתחבר לחשבון המנהל כדי להמשיך." : res.status === 403 ? "לחשבון הזה אין הרשאת ניהול." : data?.error || "לא ניתן לטעון את המוצרים כרגע.");
       }
       const data = await res.json();
       if (isUnavailableCarouselPayload(data)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
+      if (generation !== catalogGenerationRef.current) return;
       setPayload(data);
       setStatus("מחובר");
       setAuthReady(true);
     } catch (error) {
+      if (generation !== catalogGenerationRef.current) return;
       setStatus(resolveErrorMessage(error, "טוקן לא תקין או חוסר הרשאות"));
       setAuthReady(false);
     }
   }, []);
 
   useEffect(() => {
+    const host = window.location.hostname;
+    if (host === ADMIN_HOST || host === "localhost" || host.startsWith("127.") || host.endsWith(".vercel.app")) {
+      setLoginUrl("/login?next=/admin");
+    }
     const savedToken = window.localStorage.getItem(STORAGE_KEY) || "";
     setToken(savedToken);
-    if (!savedToken) {
-      setStatus("הזן טוקן אדמין כדי להתחבר");
-      return;
-    }
     void loadData(savedToken);
   }, [loadData]);
 
   function updateItemField(
     index: number,
-    field: "title" | "description" | "seoTitle" | "seoDescription" | "catalogNumber" | "displayOrder" | "isActive",
+    field: "title" | "description" | "seoTitle" | "seoDescription" | "coverImageAlt" | "catalogNumber" | "displayOrder" | "isActive",
     value: string | number | boolean,
   ) {
     setPayload((current) => {
@@ -322,6 +360,7 @@ export default function AdminPage() {
         item.description = String(value);
         item.descriptionHtml = plainDescriptionToHtml(String(value));
       }
+      else if (field === "coverImageAlt") item.coverImageAlt = String(value);
       else if (field === "seoTitle") item.seoTitle = String(value);
       else if (field === "seoDescription") item.seoDescription = String(value);
       else item.title = String(value);
@@ -336,7 +375,7 @@ export default function AdminPage() {
   function removeItem(itemId: string) {
     setPayload((current) => ({
       ...current,
-      items: current.items.filter((item) => item.id !== itemId),
+      items: current.items.map(item => item.id === itemId ? { ...item, isActive: false } : item),
     }));
   }
 
@@ -357,49 +396,23 @@ export default function AdminPage() {
     return data.publicUrl as string;
   }
 
-  async function onCoverUpload(itemIndex: number, file: File) {
+  async function onImageUpload(itemId: string, file: File, kind: "cover" | "angle") {
+    if (pendingUploadsRef.current || isCatalogBusy || !authReady) return;
+    if (!payload.items.some(item => item.id === itemId)) return;
+    const generation = catalogGenerationRef.current;
+    pendingUploadsRef.current += 1;
+    setPendingUploads(pendingUploadsRef.current);
     try {
-      setStatus("מעלה cover...");
-      const item = payload.items[itemIndex];
-      const url = await uploadFile(file, `items/${item.id}/cover`);
-      setPayload((current) => {
-        const next = structuredClone(current);
-        next.items[itemIndex].coverImagePath = url;
-        return next;
-      });
-      setStatus("cover הועלה");
+      setStatus("מעלה תמונה...");
+      const url = await uploadFile(file, `items/${itemId}/${kind === "cover" ? "cover" : "angles"}`);
+      if (generation !== catalogGenerationRef.current) throw new Error("המוצר נטען מחדש; התמונה לא הוחלה על נתונים שהשתנו.");
+      setPayload(current => applyUploadedImage(current, itemId, url, kind, generation, catalogGenerationRef.current));
+      setStatus("התמונה הועלתה. יש לשמור את השינויים.");
     } catch (error) {
       setStatus(resolveErrorMessage(error, "שגיאת העלאה"));
-    }
-  }
-
-  // Manual entry — upload an angle image and append it to the product's gallery.
-  // The first uploaded image also becomes the cover if the cover is still the
-  // placeholder, so a hand-entered product shows a real photo on its card.
-  async function onAngleUpload(itemIndex: number, file: File) {
-    try {
-      setStatus("מעלה תמונת זווית...");
-      const item = payload.items[itemIndex];
-      const url = await uploadFile(file, `items/${item.id}/angles`);
-      setPayload((current) => {
-        const next = structuredClone(current);
-        const target = next.items[itemIndex];
-        const order = target.angles.length + 1;
-        target.angles.push({
-          id: crypto.randomUUID(),
-          itemId: target.id,
-          angleKey: `view-${order}`,
-          angleOrder: order,
-          imagePath: url,
-        });
-        if (!target.coverImagePath || target.coverImagePath === "/hero-web-airport.png") {
-          target.coverImagePath = url;
-        }
-        return next;
-      });
-      setStatus("תמונת זווית הועלתה");
-    } catch (error) {
-      setStatus(resolveErrorMessage(error, "שגיאת העלאה"));
+    } finally {
+      pendingUploadsRef.current -= 1;
+      setPendingUploads(pendingUploadsRef.current);
     }
   }
 
@@ -410,102 +423,6 @@ export default function AdminPage() {
       target.angles = target.angles
         .filter((a) => a.id !== angleId)
         .map((a, i) => ({ ...a, angleOrder: i + 1 }));
-      return next;
-    });
-  }
-
-  // This translator accepts plain text only. Never flatten a saved rich document.
-  async function onTranslateDescription(itemIndex: number) {
-    const item = payload.items[itemIndex];
-    if (!item || translatingItemId !== null) return;
-    if (typeof item.descriptionHtml === "string") {
-      setStatus("תרגום אוטומטי אינו זמין לתיאור מעוצב. ניתן לערוך אותו ישירות.");
-      return;
-    }
-    const originalDescription = item.description;
-    const text = (originalDescription ?? "").trim();
-    if (!text) {
-      setStatus("אין טקסט לתרגום");
-      return;
-    }
-    try {
-      setTranslatingItemId(item.id);
-      setStatus("מתרגם לעברית...");
-      const res = await fetch("/api/admin/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-token": token },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(data?.error || "Translate failed");
-      }
-      const data = (await res.json()) as { text: string };
-      setPayload((current) => {
-        // Identify the same product after the request, and preserve intervening
-        // edits (including a new rich document) instead of replacing them.
-        const currentIndex = current.items.findIndex((row) => row.id === item.id);
-        const currentItem = current.items[currentIndex];
-        if (!currentItem || typeof currentItem.descriptionHtml === "string" ||
-            currentItem.description !== originalDescription) return current;
-        const next = structuredClone(current);
-        next.items[currentIndex].description = data.text;
-        return next;
-      });
-      setStatus("התרגום הסתיים. תיאור שנערך בזמן ההמתנה לא הוחלף.");
-    } catch (error) {
-      setStatus(resolveErrorMessage(error, "שגיאת תרגום"));
-    } finally {
-      setTranslatingItemId(null);
-    }
-  }
-
-  // Dimensions/weight are stored inside item.techSpecs (the "מידות" section).
-  // That JSON blob is the ONLY spec data that survives a save→reload (the flat
-  // dimensions/weight columns are written but not read back), and the tech-specs
-  // modal renders techSpecs directly — so writing here makes hand-entered
-  // dimensions show up exactly like scraped ones.
-  // Free-form tech specs: one "label: value" per line, stored as a section in
-  // item.techSpecs (the only spec data that round-trips + what the tech-specs
-  // modal renders). Lets a manual product carry any fields (רוחב/גובה/עומק/נפח/
-  // משקל…), not just two. Other sections (e.g. scraped) and the category are
-  // preserved.
-  const SPEC_HEADING = "מפרט טכני";
-  function getSpecsText(item: CarouselPayload["items"][number]) {
-    const section = item.techSpecs?.specs?.find((s) => s.heading === SPEC_HEADING);
-    if (!section) return "";
-    return section.items.map((i) => (i.value ? `${i.label}: ${i.value}` : i.label)).join("\n");
-  }
-  function parseSpecLines(text: string): Array<{ label: string; value: string }> {
-    return text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .flatMap((line) => {
-        const idx = line.indexOf(":");
-        // No colon → a stand-alone label line (renders full width).
-        if (idx === -1) return [{ label: line, value: "" }];
-        const label = line.slice(0, idx).trim();
-        const value = line.slice(idx + 1).trim();
-        if (!label) return [];
-        // "Label:" with an empty value (e.g. an unfilled "Weight:") is dropped.
-        if (!value) return [];
-        return [{ label, value }];
-      });
-  }
-  function setSpecsText(itemIndex: number, text: string) {
-    setPayload((current) => {
-      const next = structuredClone(current);
-      const item = next.items[itemIndex];
-      const existing = item.techSpecs;
-      const otherSections = (existing?.specs ?? []).filter((s) => s.heading !== SPEC_HEADING);
-      const items = parseSpecLines(text);
-      const specs = items.length > 0 ? [...otherSections, { heading: SPEC_HEADING, items }] : otherSections;
-      const category = existing?.category ?? null;
-      item.techSpecs =
-        specs.length > 0 || (existing?.colors?.length ?? 0) > 0 || category
-          ? { specs, colors: existing?.colors ?? [], category }
-          : null;
       return next;
     });
   }
@@ -535,6 +452,8 @@ export default function AdminPage() {
   // warmer, using the token the admin already entered — no hand-built URL. The
   // warmer merges: manual data and the category choice are never overwritten.
   async function onWarmTechSpecs() {
+    if (pendingUploadsRef.current) return;
+    if (!window.confirm("עדכון מפרטים יטען את הקטלוג מחדש. עריכות שטרם נשמרו יוחלפו. להמשיך?")) return;
     try {
       setIsWarming(true);
       setStatus("מעדכן מפרטים מאתרי היצרנים... (עד 3 דקות)");
@@ -579,7 +498,7 @@ export default function AdminPage() {
         throw new Error("הייצוא בוטל — אין חיבור לנתונים (בדוק את הטוקן ונסה שוב)");
       }
       const fresh = (await res.json()) as CarouselPayload;
-      setPayload(fresh);
+      if (isUnavailableCarouselPayload(fresh)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
       const XLSX = await import("xlsx");
       // Shopify-import shape: one row per SKU (each colour is its own SKU),
       // variants grouped by Product_Key. See lib/carousel/shopify-export.
@@ -597,11 +516,12 @@ export default function AdminPage() {
   }
 
   async function onSave() {
+    if (pendingUploadsRef.current) return;
     try {
       setIsSaving(true);
       setStatus("שומר...");
-      await persistPayload(payload);
-      setStatus("נשמר בהצלחה");
+      setPayload(await persistPayload(payload));
+      setStatus("נשמר בגלריה ונשלח לסנכרון.");
       // Any catalog number that now exists as a saved product (e.g. a product
       // entered manually after its auto-import failed) is resolved — drop it
       // from the "failed imports" list.
@@ -613,7 +533,7 @@ export default function AdminPage() {
       });
       setImportFeedback({
         tone: "success",
-        message: "השינויים נשמרו בהצלחה.",
+        message: "השינויים נשמרו בגלריה ונשלחו לסנכרון.",
       });
     } catch (error) {
       setStatus(resolveErrorMessage(error, "שגיאת שמירה"));
@@ -703,6 +623,8 @@ export default function AdminPage() {
   // mandarinaduck.com / bricstore.com). Imports and saves in one action, like
   // the batch flow.
   async function onImportByUrl() {
+    if (pendingUploadsRef.current) return;
+    const generation = catalogGenerationRef.current;
     const url = urlImportValue.trim();
     if (!url) {
       setUrlImportStatus({ tone: "error", message: "יש להדביק כתובת של עמוד מוצר." });
@@ -724,6 +646,7 @@ export default function AdminPage() {
         throw new Error(data?.error || "Import failed");
       }
       const data = (await res.json()) as ImportedItemData;
+      if (generation !== catalogGenerationRef.current) throw new Error("הקטלוג השתנה במהלך הייבוא. התוצאה לא הוחלה; יש לטעון מחדש.");
 
       if (data.pendingCreation) {
         setCreationSelection({ id: data.pendingCreation.id, key: data.pendingCreation.id });
@@ -735,8 +658,7 @@ export default function AdminPage() {
       }
 
       const result = upsertImportedItem(payload, data);
-      await persistPayload(result.next);
-      setPayload(result.next);
+      setPayload(await persistPayload(result.next));
       setImportPreviews((current) =>
         [
           {
@@ -762,6 +684,8 @@ export default function AdminPage() {
   }
 
   async function onImportIntoItem(itemId: string) {
+    if (pendingUploadsRef.current) return;
+    const generation = catalogGenerationRef.current;
     const item = payload.items.find((row) => row.id === itemId);
     if (!item) return;
     // Import uses THIS item's own catalog number (single source of truth).
@@ -780,6 +704,7 @@ export default function AdminPage() {
         message: `מייבא ${itemCatalogNumber} מ-${vendorLabel(vendor)} למוצר זה...`,
       });
       const data = await importCatalogNumberFromSource(vendor, itemCatalogNumber, itemId);
+      if (generation !== catalogGenerationRef.current) throw new Error("הקטלוג השתנה במהלך הייבוא. התוצאה לא הוחלה; יש לטעון מחדש.");
       setPayload((current) => upsertImportedItem(current, data, itemId).next);
       recordImportResults([itemCatalogNumber], []);
       setImportFeedback({
@@ -796,6 +721,7 @@ export default function AdminPage() {
   }
 
   async function onBatchImportAndSave(vendor: Vendor) {
+    if (pendingUploadsRef.current) return;
     const normalizedRows = batchCatalogInputs[vendor].map((value, index) => ({
       index,
       catalogNumber: normalizeRowValue(value),
@@ -913,7 +839,7 @@ export default function AdminPage() {
         throw new Error("לא יובא אף מוצר. לא נשמרו שינויים.");
       }
 
-      if (existingUpdates) { await persistPayload(workingPayload); setPayload(workingPayload); }
+      if (existingUpdates) { setPayload(await persistPayload(workingPayload)); }
       if (pendingIds.length) setCreationSelection({ id: pendingIds[0], key: pendingIds[0] });
       setImportPreviews((current) => [...previews, ...current].slice(0, 8));
       setStatus(`נשמרו ${successCount} מוצרים מייבוא מרובה.`);
@@ -939,9 +865,9 @@ export default function AdminPage() {
   );
 
   return (
-    <main className="admin-page">
+    <main className="admin-page" inert={isCatalogBusy} aria-busy={isCatalogBusy}>
       {!authReady && (
-        <div className="admin-secret-backdrop" role="dialog" aria-modal="true">
+        <div className="admin-secret-backdrop" role="dialog" aria-modal="true" aria-labelledby="gallery-login-title">
           <form
             className="admin-secret-modal"
             dir="rtl"
@@ -951,14 +877,24 @@ export default function AdminPage() {
               loadData(token);
             }}
           >
-            <input
-              type="password"
-              value={token}
-              autoFocus
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="סיסמת אדמין"
-            />
-            <button type="submit">כניסה</button>
+            <h1 id="gallery-login-title">ניהול הגלריה</h1>
+            <p>עדכון מוצרים, תמונות ותיאורים בחשבון המנהל.</p>
+            <a className="admin-back-link" href={loginUrl}>
+              כניסה לחשבון המנהל
+            </a>
+            <details>
+              <summary>כניסה באמצעות מפתח ניהול</summary>
+              <label htmlFor="gallery-admin-token">מפתח ניהול</label>
+              <input
+                id="gallery-admin-token"
+                type="password"
+                value={token}
+                autoComplete="off"
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="מפתח ניהול"
+              />
+              <button type="submit">כניסה עם מפתח</button>
+            </details>
             {status && status !== "מחובר" && (
               <div className="admin-secret-status">{status}</div>
             )}
@@ -968,8 +904,10 @@ export default function AdminPage() {
 
       {authReady && (
         <header className="admin-header">
-          <h1>TOPTIK Admin</h1>
+          <h1>ניהול גלריית TopTik</h1>
+          <p role="status" aria-live="polite">{status}</p>
           <div className="admin-header-actions">
+            <button disabled={isCatalogBusy} onClick={() => { if (window.confirm("לטעון נתונים עדכניים? עריכות שטרם נשמרו יוחלפו.")) void loadData(token); }}>רענן נתונים</button>
             <button disabled={Boolean(creationSelection) || isBatchImporting || isUrlImporting} onClick={() => setCreationSelection({ key: crypto.randomUUID() })} className="admin-back-link">טיוטות מוצרים</button>
             {failedImports.length > 0 && (
               <button
@@ -1284,7 +1222,7 @@ export default function AdminPage() {
                 <button
                   className="admin-save-inline-btn"
                   onClick={onSave}
-                  disabled={isSaving || isBatchImporting}
+                  disabled={isCatalogBusy}
                 >
                   {isSaving ? "שומר..." : "שמור הכל"}
                 </button>
@@ -1298,16 +1236,20 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {sortedItems.map((item) => {
+            <label>חיפוש לפי שם או מספר קטלוגי
+              <input type="search" value={catalogSearch} onChange={e => setCatalogSearch(e.target.value)}
+                placeholder="חיפוש מוצר" autoComplete="off" />
+            </label>
+            {sortedItems.filter(item => !catalogSearch.trim() || `${item.title} ${item.catalogNumber ?? ""}`.toLowerCase().includes(catalogSearch.trim().toLowerCase())
+              || (normalizeCatalogKey(catalogSearch).length >= 2 && normalizeCatalogKey(item.catalogNumber ?? "").includes(normalizeCatalogKey(catalogSearch)))).map((item) => {
               const itemIndex = payload.items.findIndex((row) => row.id === item.id);
-              const hasRichDescription = typeof item.descriptionHtml === "string";
               return (
                 <article key={item.id} className="admin-item-card">
                   <div className="admin-item-head">
                     {item.coverImagePath ? (
                       <Image
                         src={item.coverImagePath}
-                        alt={item.title}
+                        alt={item.coverImageAlt ?? item.title}
                         width={64}
                         height={64}
                         className="admin-item-thumb"
@@ -1320,7 +1262,7 @@ export default function AdminPage() {
                     )}
                     <h3>{item.title}</h3>
                     <button className="admin-danger-btn" onClick={() => removeItem(item.id)}>
-                      מחק מוצר
+                      הסתר מהגלריה
                     </button>
                   </div>
                   <div className="admin-item-grid">
@@ -1358,36 +1300,23 @@ export default function AdminPage() {
                         placeholder="תיאור לחיפוש Google; ריק = ללא תיאור SEO נפרד"
                       />
                     </label>
-                    <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: -4 }}>
-                      <button
-                        type="button"
-                        onClick={() => onTranslateDescription(itemIndex)}
-                        disabled={translatingItemId !== null || hasRichDescription || !(item.description ?? "").trim()}
-                        aria-describedby={`translate-note-${item.id}`}
-                      >
-                        {translatingItemId === item.id ? "מתרגם..." : "תרגם לעברית"}
-                      </button>
-                      <span id={`translate-note-${item.id}`} className="admin-import-note" style={{ margin: 0 }}>
-                        {hasRichDescription
-                          ? "כדי לשמור על העיצוב, ערכו את התרגום ישירות בתיאור."
-                          : "תרגום אוטומטי לתיאור בטקסט רגיל."}
-                      </span>
-                    </div>
-                    <label style={{ gridColumn: "1 / -1" }}>
-                      פרטים טכניים (שורה לכל שדה, בפורמט &quot;שם: ערך&quot;)
-                      <textarea
-                        value={getSpecsText(item)}
-                        onChange={(e) => setSpecsText(itemIndex, e.target.value)}
-                        rows={5}
-                        dir="rtl"
-                        style={{ width: "100%", resize: "vertical", font: "inherit" }}
-                        placeholder={"רוחב: 40 ס״מ\nגובה: 35 ס״מ\nעומק: 16 ס״מ\nנפח: 28 ליטר\nמשקל: 3.2 ק״ג"}
-                      />
-                    </label>
+                    <details style={{ gridColumn: "1 / -1" }}>
+                      <summary>נתוני מקור שמורים</summary>
+                      {(item.techSpecs?.specs ?? []).map((section, sectionIndex) => <div key={sectionIndex}>
+                        <strong>{section.heading}</strong>
+                        <dl>{section.items.map((field, fieldIndex) => <div key={fieldIndex}>
+                          <dt>{field.label}</dt><dd>{field.value}</dd>
+                        </div>)}</dl>
+                      </div>)}
+                    </details>
+                    <TypedSpecificationEditor itemId={item.id} token={token} />
+                    <CommerceExistingEditor itemId={item.id} token={token} />
                     <label>
                       מספר קטלוגי
                       <input
                         value={item.catalogNumber ?? ""}
+                        readOnly={Boolean(item.shopifyLink)}
+                        title={item.shopifyLink ? "מזהה של מוצר מקושר נשמר כדי לא לשייך אותו למוצר אחר." : undefined}
                         onChange={(e) => updateItemField(itemIndex, "catalogNumber", e.target.value)}
                         placeholder="למשל: QMT32A74"
                         dir="ltr"
@@ -1427,13 +1356,18 @@ export default function AdminPage() {
                       />
                     </label>
                     <label>
+                      תיאור נגיש לתמונה הראשית
+                      <input value={item.coverImageAlt ?? ""} maxLength={512}
+                        onChange={e => updateItemField(itemIndex, "coverImageAlt", e.target.value)} />
+                    </label>
+                    <label>
                       תמונה ראשית (העלאה מהמחשב)
                       <input
                         type="file"
                         accept="image/png,image/jpeg,image/webp"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) onCoverUpload(itemIndex, file);
+                          if (file) void onImageUpload(item.id, file, "cover");
                         }}
                       />
                     </label>
@@ -1495,7 +1429,7 @@ export default function AdminPage() {
                           style={{ display: "none" }}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
-                            if (file) void onAngleUpload(itemIndex, file);
+                            if (file) void onImageUpload(item.id, file, "angle");
                             e.target.value = "";
                           }}
                         />
@@ -1504,10 +1438,10 @@ export default function AdminPage() {
                     {item.angles.length > 0 && (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
                         {item.angles.map((angle) => (
-                          <div key={angle.id} style={{ position: "relative" }}>
+                          <div key={angle.id} style={{ position: "relative", maxWidth: 180 }}>
                             <Image
                               src={angle.imagePath}
-                              alt=""
+                              alt={angle.imageAlt ?? item.title}
                               width={64}
                               height={64}
                               className="admin-item-thumb"
@@ -1535,6 +1469,11 @@ export default function AdminPage() {
                             >
                               ✕
                             </button>
+                            <label>תיאור נגיש
+                              <input value={angle.imageAlt ?? ""} maxLength={512} style={{ width: "100%" }}
+                                onChange={e => setPayload(current => ({ ...current, items: current.items.map(row => row.id !== item.id ? row :
+                                  { ...row, angles: row.angles.map(a => a.id !== angle.id ? a : { ...a, imageAlt: e.target.value }) }) }))} />
+                            </label>
                           </div>
                         ))}
                       </div>
@@ -1550,7 +1489,7 @@ export default function AdminPage() {
           </section>
 
           <section className="admin-save">
-            <button onClick={onSave} disabled={isSaving || isBatchImporting}>
+            <button onClick={onSave} disabled={isCatalogBusy}>
               {isSaving ? "שומר..." : "שמור הכל"}
             </button>
           </section>

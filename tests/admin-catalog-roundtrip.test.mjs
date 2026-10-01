@@ -42,12 +42,12 @@ const { createSaver } = await moduleFrom(`export function createSaver(deps) {
 const uuid = index => `11111111-1111-4111-8111-${String(index).padStart(12, "0")}`;
 const stamp = "2026-09-30T10:00:00.000Z";
 
-function fixture() {
+function fixture(readFailures = {}) {
   const rows = Object.entries(repairs).map(([sku, entry], index) => ({
     id: uuid(index + 1), title: entry.expectedLegacyTitle,
     description: entry.expectedLegacyDescription, description_html: null,
     catalog_number: sku, seo_title: "Preserved SEO", seo_description: "Preserved search description",
-    copy_updated_at: stamp, source_url: "https://example.com/source",
+    copy_updated_at: stamp, editor_revision: 1, cover_image_alt: null, source_url: "https://example.com/source",
     cover_image_path: `https://example.com/real-${index}.webp`, display_order: index + 1,
     is_active: index !== 24, color: `Color ${index}`, dimensions: "75 x 49 x 31 cm",
     weight: "4.1 kg", sizes: ["75 cm"], available_colors: ["Black", "Blue"],
@@ -59,8 +59,8 @@ function fixture() {
   rich.description_html = descriptionHelpers.plainDescriptionToHtml(rich.description ?? "");
   rich.description = descriptionHelpers.descriptionTextFromHtml(rich.description_html);
   const angles = rows.map((row, index) => ({ id: uuid(100 + index), item_id: row.id,
-    angle_key: "front", angle_order: 1, image_path: row.cover_image_path }));
-  const settings = { id: 1, autoplay_ms: 3000, transition_mode: "curtain-fade" };
+    angle_key: "front", angle_order: 1, image_path: row.cover_image_path, image_alt: null }));
+  const settings = { id: 1, editor_revision: 1, autoplay_ms: 3000, transition_mode: "curtain-fade" };
   const before = structuredClone({ rows, angles, settings });
   const rpcCalls = [];
   const db = {
@@ -70,7 +70,7 @@ function fixture() {
         select() { return query; }, order() { return query; },
         eq(key, value) { filters.push(row => row[key] === value); return query; },
         in(key, values) { filters.push(row => values.includes(row[key])); return query; },
-        maybeSingle() { return Promise.resolve({ data: settings, error: null }); },
+        maybeSingle() { return Promise.resolve(readFailures[table] ?? { data: settings, error: null }); },
         async upsert(data) {
           if (table === "carousel_settings") Object.assign(settings, data);
           else if (table === "carousel_item_angles") {
@@ -80,6 +80,7 @@ function fixture() {
         },
         delete() { assert.fail("A canary copy edit must not delete rows or angles"); },
         then(resolve) {
+          if (readFailures[table]) return Promise.resolve(readFailures[table]).then(resolve);
           const data = table === "carousel_items" ? rows : table === "carousel_item_angles" ? angles : [];
           return Promise.resolve({ data: structuredClone(data.filter(row => filters.every(filter => filter(row)))), error: null }).then(resolve);
         },
@@ -87,7 +88,10 @@ function fixture() {
       return query;
     },
     async rpc(name, input) {
-      assert.equal(name, "save_gallery_items_with_copy_cas");
+      assert.equal(name, "save_gallery_catalog_atomic");
+      assert.equal(input.p_expected_settings_revision, settings.editor_revision);
+      assert.deepEqual(input.p_expected_editor_revisions, Object.fromEntries(rows.map(row => [row.id, row.editor_revision])));
+      assert.deepEqual(input.p_angles, angles);
       assert.equal(input.p_items.length, rows.length, "must not append the public Samsonite supplement");
       assert.deepEqual(input.p_expected_versions, Object.fromEntries(rows.map(row => [row.id, row.copy_updated_at])));
       rpcCalls.push(structuredClone(input));
@@ -101,6 +105,18 @@ function fixture() {
     save: createSaver({ ...descriptionHelpers, createSupabaseServiceRoleClient: () => db, adminCarouselPayloadSchema }),
   };
 }
+
+test("editable catalog rejects incomplete related reads instead of turning missing images into removals", async () => {
+  for (const table of ["carousel_items", "carousel_settings", "carousel_item_angles", "shopify_gallery_public_links"]) {
+    for (const failure of [{ data: null, error: { message: "transient" } }, { data: null, error: null }]) {
+      const f = fixture({ [table]: failure });
+      await assert.rejects(f.read({ includeInactive: true, rawAdmin: true }), /GALLERY_ADMIN_READ_INCOMPLETE/);
+      assert.equal(f.rpcCalls.length, 0);
+      assert.deepEqual(f.angles, f.before.angles);
+      assert.deepEqual(f.rows, f.before.rows);
+    }
+  }
+});
 
 test("authenticated catalog reads preserve raw copy and all editable metadata; public repair stays public", async () => {
   const f = fixture();
@@ -167,4 +183,24 @@ test("full admin GET to PUT of one canary SEO edit leaves every other row, field
   }
   assert.deepEqual(f.angles, f.before.angles);
   assert.deepEqual(f.settings, f.before.settings);
+});
+
+
+test("stale whole-editor metadata or image revisions fail before an atomic write", async () => {
+  for (const mutate of [f => { f.rows[0].editor_revision++; }, f => { f.rows[0].editor_revision += 2; }]) {
+    const f = fixture(), input = await f.read({ includeInactive: true, rawAdmin: true });
+    mutate(f); input.items[0].coverImagePath = "https://example.com/new.webp";
+    await assert.rejects(f.save(input), /GALLERY_EDITOR_STALE_RELOAD/);
+    assert.equal(f.rpcCalls.length, 0);
+  }
+});
+test("editor revisions are admin-only and missing revisions cannot bypass CAS", async () => {
+  const f = fixture(), input = await f.read({ includeInactive: true, rawAdmin: true });
+  assert.equal(input.settings.editorRevision, 1); assert.ok(input.items.every(i => i.editorRevision === 1));
+  const publicData = await f.read();
+  assert.ok(!Object.hasOwn(publicData.settings, "editorRevision"));
+  assert.ok(publicData.items.every(i => !Object.hasOwn(i, "editorRevision")));
+  delete input.settings.editorRevision;
+  await assert.rejects(f.save(input), /GALLERY_EDITOR_REVISION_REQUIRED/);
+  assert.equal(f.rpcCalls.length, 0);
 });

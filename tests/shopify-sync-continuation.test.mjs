@@ -8,7 +8,7 @@ async function compile(source) {
 }
 const scheduleSource = readFileSync("src/lib/shopify/schedule-sync.ts", "utf8").replace(/^import .*;\r?\n/gm, "").replace(/^export /gm, "");
 const { makeSchedule } = await compile(`export function makeSchedule(deps) {
-  const {after,createSupabaseServiceRoleClient,hasSupabaseAdminEnv,isShopifySyncConfigured,drainShopifySyncQueues,fetch,process,console,dispatchTypedSpecSync} = deps;
+  const {after,createSupabaseServiceRoleClient,hasSupabaseAdminEnv,isShopifySyncConfigured,drainShopifySyncQueues,fetch,process,console,dispatchTypedSpecSync,dispatchMediaSync} = deps;
   ${scheduleSource}
   return {scheduleShopifySync,scheduleShopifySyncContinuation,runScheduledShopifySync,validSyncContinuationHop};
 }`);
@@ -23,7 +23,7 @@ const route = readFileSync("src/app/api/admin/shopify/sync/route.ts", "utf8");
 const postSource = route.slice(route.indexOf("export async function POST"), route.indexOf("/** Return bounded private")).replace(/^export /gm, "");
 const { makePost } = await compile(`export function makePost(deps) {
   const {requireAdminToken,hasSupabaseAdminEnv,isShopifySyncConfigured,validSyncContinuationHop,
-    configuredShopifySyncMode,scheduleShopifySync,scheduleShopifySyncContinuation,drainShopifySyncQueues,createSupabaseServiceRoleClient,process,console,scheduleTypedSpecWakeup} = deps;
+    configuredShopifySyncMode,scheduleShopifySync,scheduleShopifySyncContinuation,drainShopifySyncQueues,createSupabaseServiceRoleClient,process,console,scheduleTypedSpecWakeup,scheduleMediaSyncWakeup} = deps;
   const NextResponse = {json:(body,opts={})=>({body,status:opts.status??200})};
   ${postSource}
   return POST;
@@ -49,7 +49,7 @@ function fixture({count=78,env="production",failure=false,busy=false,hopResponse
       return totals;
     }});
   const deps={process,after:fn=>callbacks.push(fn),hasSupabaseAdminEnv:()=>true,isShopifySyncConfigured:()=>true,
-    createSupabaseServiceRoleClient:()=>db,drainShopifySyncQueues:()=>drain(db),dispatchTypedSpecSync:async()=>{},scheduleTypedSpecWakeup:()=>{},console:{error:(...args)=>logs.push(args)}};
+    createSupabaseServiceRoleClient:()=>db,drainShopifySyncQueues:()=>drain(db),dispatchTypedSpecSync:async()=>{},dispatchMediaSync:async()=>{},scheduleMediaSyncWakeup:()=>{},scheduleTypedSpecWakeup:()=>{},console:{error:(...args)=>logs.push(args)}};
   let post;
   const schedule=makeSchedule({...deps,fetch:async(url,options)=>{
     requests.push({url,options});

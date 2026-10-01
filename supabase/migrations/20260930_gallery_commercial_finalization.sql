@@ -59,7 +59,7 @@ begin
  attempt:=substr(h,1,8)||'-'||substr(h,9,4)||'-8'||substr(h,14,3)||'-a'||substr(h,18,3)||'-'||substr(h,21,12);
  if k='commerce' then
   vars:=jsonb_build_object('productId',i->'productGid','variants',jsonb_build_array(jsonb_build_object('id',i->'variantGid','price',c->'price','compareAtPrice',c->'compareAtPrice',
-   'barcode',c->'barcode','taxable',c->'taxable','inventoryPolicy','DENY','inventoryItem',jsonb_build_object('tracked',true,'requiresShipping',true))));
+   'barcode',c->'barcode','taxable',c->'taxable','inventoryPolicy','DENY','inventoryItem',jsonb_build_object('tracked',c->'tracked','requiresShipping',true))));
   e:=jsonb_set(e,'{commercial}',c);
   query:='mutation FinalizeVariant($productId:ID!,$variants:[ProductVariantsBulkInput!]!){productVariantsBulkUpdate(productId:$productId,variants:$variants,allowPartialUpdates:false){productVariants{id} userErrors{field message}}}';
  elsif k in ('activate_location','set_stock') then
@@ -253,10 +253,12 @@ begin
   or (c->'compareAtPrice'<>'null'::jsonb and (jsonb_typeof(c->'compareAtPrice') is distinct from 'string' or c->>'compareAtPrice' !~ '^(0|[1-9][0-9]{0,6})[.][0-9]{2}$' or (c->>'compareAtPrice')::numeric<=(c->>'price')::numeric))
   or (c->'barcode'<>'null'::jsonb and (jsonb_typeof(c->'barcode') is distinct from 'string' or length(c->>'barcode')>64))
   or jsonb_typeof(c->'taxable') is distinct from 'boolean' or c->'requiresShipping' is distinct from 'true'::jsonb
-  or c->>'inventoryPolicy' is distinct from 'DENY' or c->'tracked' is distinct from 'true'::jsonb
+  or c->>'inventoryPolicy' is distinct from 'DENY' or jsonb_typeof(c->'tracked') is distinct from 'boolean'
   or not public.creation_has_keys(p,array['authority','actorId','requestId','savedAt']) or p->>'authority' is distinct from 'authenticated_gallery_editor'
   or (p->>'actorId')::uuid is null or (p->>'requestId')::uuid is null or (p->>'savedAt')::timestamptz is null
-  or jsonb_typeof(v->'stock') is distinct from 'array' or jsonb_array_length(v->'stock') not between 1 and 20
+  or jsonb_typeof(v->'stock') is distinct from 'array' or jsonb_array_length(v->'stock')>20
+  or (c->'tracked'='true'::jsonb and jsonb_array_length(v->'stock')=0)
+  or (c->'tracked'='false'::jsonb and jsonb_array_length(v->'stock')<>0)
  then raise exception 'FINALIZE_MERCHANT_DETAILS_REQUIRED'; end if;
  for s in select value from jsonb_array_elements(v->'stock') loop
   if not public.creation_has_keys(s,array['locationId','available','basis','evidenceId'])
@@ -340,7 +342,9 @@ begin
   or i->>'inventoryItemGid' !~ '^gid://shopify/InventoryItem/[1-9][0-9]*$' or jsonb_typeof(i->'inventoryItemGid') is distinct from 'string'
   or i->>'sku' is distinct from d.source->>'shopifySku' or i->'manufacturerSku' is distinct from d.source->'manufacturerSku' or i->'brand' is distinct from d.source->'brand'
   or i->'customId' is distinct from d.receipt->'customId' or i->'sourceFingerprint' is distinct from d.ready_proof->'sourceFingerprint'
-  or not public.shopify_safe_product_handle(i->>'handle') or v->'variantCount' is distinct from '1'::jsonb or v->'levelsComplete' is distinct from 'true'::jsonb
+  or not public.shopify_safe_product_handle(i->>'handle') or v->'variantCount' is distinct from '1'::jsonb
+  or v->'levelsComplete' is distinct from p_plan->'intent'->'commercial'->'tracked'
+  or (p_plan->'intent'->'commercial'->'tracked'='false'::jsonb and v->'levels' is distinct from '[]'::jsonb)
   or jsonb_typeof(v->'variantOnlinePublished') is distinct from 'boolean' or v->>'productStatus' not in ('DRAFT','ACTIVE') or jsonb_typeof(v->'productStatus') is distinct from 'string'
   or v->'galleryCopy' is distinct from public.commercial_copy(p_id) or v->>'galleryRowFingerprint' is distinct from d.source_row_hash
   or v->>'copyMediaFingerprint' is distinct from p_plan->'creation'->>'readbackCopyMediaFingerprint'
@@ -408,7 +412,7 @@ end $$;
 create or replace function public.finalize_gallery_shopify_public_creation(p_request jsonb,p_owner uuid) returns jsonb
 language plpgsql security definer set search_path=pg_catalog,pg_temp as $$
 declare p_id uuid; j public.gallery_creation_commercial_jobs%rowtype; d public.shopify_gallery_creation_drafts%rowtype;
- r public.gallery_creation_commercial_receipts%rowtype; s jsonb; i jsonb; gallery jsonb; shopcopy jsonb; old_item jsonb; protected text;
+ r public.gallery_creation_commercial_receipts%rowtype; s jsonb; i jsonb; gallery jsonb; shopcopy jsonb; old_item jsonb; expected_item jsonb; protected text;
  approval text; v_result jsonb; receipt uuid; k text; manifest jsonb;
 begin
  if p_owner is null or not public.creation_has_keys(p_request,array['p_intent_id','p_intent_revision','p_creation_receipt_id','p_creation_revision','p_plan_hash','p_expected_state_version','p_lease_owner',
@@ -460,6 +464,12 @@ begin
   or exists(select 1 from public.shopify_gallery_public_links where variant_id=replace(d.variant_gid,'gid://shopify/ProductVariant/',''))
  then raise exception 'FINALIZE_EXISTING_APPROVED_PRODUCT';end if;
  select to_jsonb(t) into old_item from public.carousel_items t where id=p_id;
+ -- Atomic editor CAS advances exactly once for this inactive-to-active change.
+ -- Retain the full-row comparison: no content/media/metadata change is allowed.
+ expected_item:=jsonb_set(old_item-'updated_at','{is_active}','true');
+ if old_item ? 'editor_revision' then
+  expected_item:=jsonb_set(expected_item,'{editor_revision}',to_jsonb((old_item->>'editor_revision')::bigint+1));
+ end if;
  protected:=public.commercial_protected_hash(p_id,d.catalog_key,approval);gallery:=s->'galleryCopy';shopcopy:=s->'shopifyCopy';receipt:=gen_random_uuid();
  manifest:=jsonb_build_object('policyVersion','gallery-commerce-finalization-v1','itemId',p_id,'intentId',j.intent_id,'planHash',j.plan->'hash','receiptId',receipt,
   'sourceFingerprint',i->'sourceFingerprint','frozenPendingRevision',j.plan->'creation'->'frozenPendingRevision');
@@ -482,7 +492,7 @@ begin
  insert into public.gallery_creation_commercial_receipts(item_id,receipt_id,product_gid,variant_gid,plan_hash,final_state_version,snapshot,request,result)
   values(p_id,receipt,d.product_gid,d.variant_gid,j.plan->>'hash',j.version,s,p_request,v_result);
  if public.commercial_protected_hash(p_id,d.catalog_key,approval) is distinct from protected
-  or (select to_jsonb(t)-'updated_at' from public.carousel_items t where id=p_id) is distinct from jsonb_set(old_item-'updated_at','{is_active}','true')
+  or (select to_jsonb(t)-'updated_at' from public.carousel_items t where id=p_id) is distinct from expected_item
   or not exists(select 1 from public.shopify_gallery_bindings where catalog_key=d.catalog_key and carousel_item_id=p_id and product_gid=d.product_gid and variant_gid=d.variant_gid and product_handle=i->>'handle' and is_published)
   or not exists(select 1 from public.shopify_gallery_public_links where catalog_key=d.catalog_key and product_handle=i->>'handle' and variant_id=replace(d.variant_gid,'gid://shopify/ProductVariant/','') and is_published)
   or not exists(select 1 from public.shopify_gallery_sync_state where catalog_key=d.catalog_key and gallery_baseline_payload=gallery and shopify_baseline_payload=shopcopy)
@@ -524,15 +534,47 @@ begin
  return jsonb_build_object('finalizedItemIds',result);
 end $$;
 
+-- Server-only source projection. Browser input never supplies these proofs or leases.
+create or replace function public.read_gallery_commerce_source(p_id uuid,p_owner uuid default null) returns jsonb
+language plpgsql security definer set search_path=pg_catalog,pg_temp as $$
+declare d public.shopify_gallery_creation_drafts%rowtype; n public.shopify_gallery_creation_intents%rowtype;
+ c public.gallery_creation_commercial_intents%rowtype; l public.shopify_gallery_reconciliation_leases%rowtype;
+ proof jsonb; gallery jsonb; approved jsonb; copy_version timestamptz;
+begin
+ if p_id is null then raise exception 'FINALIZE_ID_INVALID';end if;
+ perform public.commercial_assert_source(p_id,p_owner);
+ select * into d from public.shopify_gallery_creation_drafts where id=p_id;
+ select * into n from public.shopify_gallery_creation_intents where id=p_id;
+ select * into c from public.gallery_creation_commercial_intents where item_id=p_id;
+ select * into l from public.shopify_gallery_reconciliation_leases where product_gid=d.product_gid;
+ select patch->'readbackProof' into proof from public.shopify_gallery_creation_events where draft_id=p_id and patch?'readbackProof' order by from_version desc limit 1;
+ if proof is null then raise exception 'FINALIZE_DRAFT_READY_REQUIRED';end if;
+ if (select count(*) from public.carousel_items)>6000 or (select count(*) from public.shopify_gallery_copy_eligibility)>6000 then raise exception 'FINALIZE_CATALOG_LIMIT';end if;
+ select coalesce(jsonb_agg(jsonb_build_object('id',id,'sku',catalog_number,'active',is_active) order by id),'[]') into gallery from public.carousel_items;
+ select coalesce(jsonb_agg(jsonb_build_object('itemId',carousel_item_id,'productGid',product_gid,'variantGid',variant_gid,'sku',exact_shopify_sku) order by product_gid),'[]') into approved from public.shopify_gallery_copy_eligibility;
+ select copy_updated_at into copy_version from public.carousel_items where id=p_id;
+ return jsonb_build_object('intent',c.record,'pendingCommerce',n.record->'input'->'commerce','publicationActorId',n.record->'provenance'->'storeIntent'->'actorId',
+  'identity',jsonb_build_object('itemId',d.id,'productGid',d.product_gid,'variantGid',d.variant_gid,'sku',d.source->'shopifySku',
+   'manufacturerSku',d.source->'manufacturerSku','brand',d.source->'brand','customId',d.receipt->'customId','sourceFingerprint',d.ready_proof->'sourceFingerprint'),
+  'proof',jsonb_build_object('receipt',d.receipt,'receiptId',d.id,'creationRevision',d.version,'frozenPendingRevision',n.revision,'pendingStoreIntent','publish_when_ready',
+   'sourceIdentity',jsonb_build_object('shopifySku',d.source->'shopifySku','manufacturerSku',d.source->'manufacturerSku','brand',d.source->'brand'),
+   'readbackCommerce',proof->'snapshot'->'commercial','readbackCopyMediaFingerprint',public.commercial_readback_hash(proof),
+   'readbackGalleryRowFingerprint',d.source_row_hash,'readbackGalleryCopyVersion',d.source->'copyUpdatedAt'),
+  'galleryRowFingerprint',d.source_row_hash,'galleryCopyVersion',copy_version,'galleryCopy',public.commercial_copy(p_id),
+  'context',jsonb_build_object('intentRevision',c.revision,'frozenPendingRevision',n.revision,'creationRevision',d.version,
+   'leaseOwner',p_owner,'creationLeaseOwner',d.lease_owner,'productLeaseOwner',l.owner,'creationLeaseExpiresAt',d.lease_expires_at,'productLeaseExpiresAt',l.expires_at,
+   'catalogComplete',true,'gallery',gallery,'approved',approved));
+end $$;
+
 -- All helpers are private, including trigger functions. Only reviewed public RPCs
 -- have service EXECUTE; anon/authenticated cannot read any commercial state.
 do $$ declare f record; begin
  for f in select p.oid::regprocedure as signature from pg_proc p join pg_namespace n on n.oid=p.pronamespace
   where n.nspname='public' and (p.proname like 'commercial\_%' escape '\' or p.proname in
-   ('save_gallery_creation_commerce','reserve_gallery_commercial_finalization','claim_gallery_commercial_finalization','save_gallery_commercial_finalization','dispatch_gallery_commercial_finalization','finalize_gallery_shopify_public_creation','read_finalized_gallery_creation_items')) loop
+   ('save_gallery_creation_commerce','reserve_gallery_commercial_finalization','claim_gallery_commercial_finalization','save_gallery_commercial_finalization','dispatch_gallery_commercial_finalization','finalize_gallery_shopify_public_creation','read_finalized_gallery_creation_items','read_gallery_commerce_source')) loop
   execute format('revoke all on function %s from public,anon,authenticated,service_role',f.signature);
  end loop;
 end $$;
 grant execute on function public.save_gallery_creation_commerce(jsonb,text),public.reserve_gallery_commercial_finalization(jsonb,jsonb,uuid),
  public.claim_gallery_commercial_finalization(uuid,uuid,integer),public.save_gallery_commercial_finalization(uuid,uuid,bigint,jsonb,timestamptz),
- public.dispatch_gallery_commercial_finalization(uuid,uuid,bigint),public.finalize_gallery_shopify_public_creation(jsonb,uuid),public.read_finalized_gallery_creation_items(uuid[]) to service_role;
+ public.dispatch_gallery_commercial_finalization(uuid,uuid,bigint),public.finalize_gallery_shopify_public_creation(jsonb,uuid),public.read_finalized_gallery_creation_items(uuid[]),public.read_gallery_commerce_source(uuid,uuid) to service_role;

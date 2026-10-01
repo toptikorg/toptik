@@ -49,7 +49,7 @@ test('incomplete product remains saveable private intent with exact missing reas
  const record=save(input()), report=p.assessCreationIntent(record);
  assert.equal(report.state,'needs_details'); assert.equal(report.readyForPublication,false);
  assert.deepEqual(report.draftBlockers,['store_sku','brand','title','description','media','currency','shipping_policy','store_intent']);
- assert.deepEqual(report.publicBlockers,[...report.draftBlockers,'selling_price','tax_policy','inventory','publication_not_supported_v1']);
+ assert.deepEqual(report.publicBlockers,[...report.draftBlockers,'selling_price','tax_policy','server_verification']);
  assert.deepEqual(record.input,input()); assert.throws(()=>freeze(record),/DETAILS_REQUIRED/);
 });
 test('full snapshot is strict and preserves missing versus explicitly blank copy',()=>{
@@ -132,7 +132,7 @@ test('merchant price/currency/tax authority rejects inferred supplier or invento
  const record=save(value), frozen=freeze(record);
  assert.equal(frozen.requestedStoreIntent,'publish_when_ready');assert.equal(frozen.ready.draft.commerce.storeIntent,'draft');
  assert.equal(policy.buildGalleryDraftCreateVariables(frozen.ready).product.status,'DRAFT');
- assert.deepEqual(p.assessCreationIntent(record).publicBlockers,['inventory','publication_not_supported_v1']);
+ assert.deepEqual(p.assessCreationIntent(record).publicBlockers,['server_verification']);
 });
 test('all image proof/custom-ID/catalog gates still run at freeze, no local draft bypass',()=>{
  const record=save();for(const change of [c=>{c.mode=undefined;},c=>{c.images=[];},c=>{c.definition.uniqueValuesEnabled=false;},c=>{c.catalog.complete=false;},c=>{c.images[0].exactSku='OTHER';},c=>{c.catalog.shopify=[{productGid:'gid://shopify/Product/10',variantGid:'gid://shopify/ProductVariant/11',sku:'NEWBRIC078',status:'ARCHIVED'}];}]) {

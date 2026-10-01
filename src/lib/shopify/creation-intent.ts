@@ -148,7 +148,7 @@ export function saveCreationIntent(previous: CreationIntentRecord | null, input:
 
 export type CreationReadinessReason = "store_sku" | "brand" | "title" | "description" | "media" |
   "media_alt" | "media_limit" | "selling_price" | "currency" | "tax_policy" | "shipping_policy" | "store_intent" |
-  "manufacturer_mapping_receipt" | "inventory" | "publication_not_supported_v1";
+  "manufacturer_mapping_receipt" | "server_verification";
 /** Local details, proof readiness and public readiness are deliberately distinct. */
 export function assessCreationIntent(record: CreationIntentRecord) {
   const { input } = assertCreationIntentRecord(record);
@@ -168,7 +168,7 @@ export function assessCreationIntent(record: CreationIntentRecord) {
   const publicBlockers: CreationReadinessReason[] = [...draftBlockers];
   if (input.commerce.sellingPrice === null && !publicBlockers.includes("selling_price")) publicBlockers.push("selling_price");
   if (input.commerce.taxable === null) publicBlockers.push("tax_policy");
-  publicBlockers.push("inventory", "publication_not_supported_v1");
+  publicBlockers.push("server_verification");
   return { state: draftBlockers.length ? "needs_details" as const : "ready_for_server_proof" as const,
     draftBlockers, publicBlockers, readyForPublication: false as const };
 }

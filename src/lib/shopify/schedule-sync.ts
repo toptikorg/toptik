@@ -4,6 +4,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 import { isShopifySyncConfigured } from "./admin-api";
 import { drainShopifySyncQueues } from "./sync-worker";
+import { dispatchMediaSync } from "./media-schedule";
 import { dispatchTypedSpecSync } from "./schedule-typed-spec-sync";
 
 export const MAX_SYNC_CONTINUATION_HOPS = 100;
@@ -42,15 +43,17 @@ export async function runScheduledShopifySync(hop = 0): Promise<void> {
     // typed worker starts. A wakeup failure never reverses an accepted copy edit.
     // Independent bounded acceptance requests share the same tail:45+max(8,8),
     // never45+8+8. Both consumers serialize actual product work using the lease.
-    const [copyWakeup, typedWakeup] = await Promise.allSettled([
+    const [copyWakeup, typedWakeup, mediaWakeup] = await Promise.allSettled([
       continuationNeeded ? dispatchSyncContinuation(hop) : Promise.resolve(),
       dispatchTypedSpecSync(),
+      dispatchMediaSync(),
     ]);
     if (typedWakeup.status === "rejected") {
       const error = typedWakeup.reason;
       const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "SPEC_WAKEUP_FAILED";
       console.error("Typed specification wakeup pending after copy", { code });
     }
+    if (mediaWakeup.status === "rejected") console.error("Media wakeup pending after copy", { code: "MEDIA_WAKEUP_FAILED" });
     if (copyWakeup.status === "rejected") throw copyWakeup.reason;
   }
 }
@@ -58,7 +61,7 @@ export async function runScheduledShopifySync(hop = 0): Promise<void> {
 /** Resume a completed synchronous admin/cron drain without running a second in its budget. */
 export function scheduleShopifySyncContinuation(): void {
   after(async () => {
-    const results = await Promise.allSettled([dispatchSyncContinuation(0), dispatchTypedSpecSync()]);
+    const results = await Promise.allSettled([dispatchSyncContinuation(0), dispatchTypedSpecSync(), dispatchMediaSync()]);
     for (const [index, result] of results.entries()) if (result.status === "rejected") {
       const error = result.reason;
       const fallback = index === 0 ? "SYNC_CONTINUATION_DISPATCH_FAILED" : "SPEC_WAKEUP_FAILED";

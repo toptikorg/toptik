@@ -3,7 +3,7 @@ import { shopifyAdminGraphql } from "./admin-api";
 import { verifyOnboardingImage } from "./onboarding-worker";
 import type { MediaIdentity } from "./media-sync-core";
 import type { DecodedMediaImage } from "./media-decode-reader";
-import { buildMediaReadRequest, MEDIA_API_VERSION, MEDIA_PUBLICATION_ID } from "./media-read-adapter";
+import { buildMediaReadRequest, parseMediaReadResponse, MEDIA_API_VERSION, MEDIA_PUBLICATION_ID, type ShopifyMediaRead } from "./media-read-adapter";
 import { assertMediaTransportRead, parseMediaTransportResponse, parseTransportMedia,
   type ShopifyMediaTransportRead, type TransportMedia } from "./media-transport-read";
 import { buildOwnedMediaCreate, buildOwnedMediaAssociate, buildMediaVariantReassign, buildMediaReferenceDetach,
@@ -61,6 +61,12 @@ async function call(query: string, variables: Record<string, unknown>, deadline:
 export async function readShopifyMediaTransport(identity: MediaIdentity, deadline: number): Promise<ShopifyMediaTransportRead> {
   const expected = structuredClone(identity), request = buildMediaReadRequest(expected);
   return parseMediaTransportResponse(await call(request.query, request.variables, deadline), expected);
+}
+
+/** A complete READY-only observation; pending media can never imply removal. */
+export async function readReadyShopifyMedia(identity: MediaIdentity, deadline: number): Promise<ShopifyMediaRead> {
+  const expected = structuredClone(identity), request = buildMediaReadRequest(expected);
+  return parseMediaReadResponse(await call(request.query, request.variables, deadline), expected);
 }
 
 /** Rebuilds exact known mutation text AND variables. A matching caller-provided hash alone is insufficient. */

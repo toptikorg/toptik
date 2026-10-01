@@ -8,6 +8,25 @@ function finish(f){const x=prepare(f);let state=x.state;const requests=[];
   state=p.acceptStepReadback(x.plan,b.state,b.state.pending.expected,f.context);
  }return {...x,state,requests};
 }
+
+test('explicit no-inventory publication needs no stock, locations or inventory scope',()=>{
+ const f=fixture();f.payload.commercial.tracked=false;f.payload.stock=[];f.intent=p.buildMerchantIntent(f.payload);
+ f.context.intentRevision=f.intent.revision;f.context.scopes=['write_products','write_publications'];
+ f.context.locations=[];f.context.locationsComplete=false;f.snapshot.levels=[];f.snapshot.levelsComplete=false;
+ const result=finish(f);
+ assert.deepEqual(result.plan.steps.map(s=>s.kind),['commerce','activate_product','publish_product']);
+ assert.equal(result.requests[0].variables.variants[0].inventoryItem.tracked,false);
+ assert.ok(result.requests.every(r=>!['activate_location','set_stock'].includes(r.operation)));
+ assert.equal(p.buildFinalizerRequest(result.plan,result.state,result.state.observed,f.context).args.p_live_commerce.tracked,false);
+ assert.deepEqual(result.state.observed.levels,[]);
+});
+
+test('no-inventory snapshots never pretend unknown stock is complete or accept stock input',()=>{
+ const f=fixture();f.payload.commercial.tracked=false;
+ assert.throws(()=>p.buildMerchantIntent(f.payload),/STOCK_MODE_MISMATCH/);
+ f.payload.stock=[];f.intent=p.buildMerchantIntent(f.payload);f.context.intentRevision=f.intent.revision;
+ assert.throws(()=>prepare(f),/STOCK_MODE_MISMATCH/);
+});
 test('minimal complete plan is deterministic, immutable, explicitly merchant sourced',()=>{
  const f=fixture(),before=cp(f),a=prepare(f),b=prepare(f);
  assert.deepEqual(a,b);assert.deepEqual(f,before);assert.equal(f.intent.commercial.price,'699.00');

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdminToken } from "@/lib/admin/admin-token";
+import { requireGalleryAdmin } from "@/lib/admin/gallery-access";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 import { galleryDraftCreationMode } from "@/lib/shopify/creation-runtime";
@@ -36,7 +36,7 @@ function configured(write = false) {
   return hasSupabaseAdminEnv() && (!write || Boolean(galleryDraftCreationMode()));
 }
 export async function GET(request: NextRequest) {
-  const denied = requireAdminToken(request); if (denied) return denied;
+  const denied = await requireGalleryAdmin(request); if (denied) return denied;
   if (!configured()) return NextResponse.json({ error: "SYNC_CREATION_INTENT_NOT_CONFIGURED" }, { status: 503, headers });
   try {
     const db = createSupabaseServiceRoleClient(), raw = request.nextUrl.searchParams.get("id");
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 }
 export async function PUT(request: NextRequest) {
   const started = Date.now();
-  const denied = requireAdminToken(request); if (denied) return denied;
+  const denied = await requireGalleryAdmin(request); if (denied) return denied;
   if (!configured(true)) return NextResponse.json({ error: "SYNC_CREATION_INTENT_NOT_ENABLED" }, { status: 503, headers });
   try {
     const data = saveSchema.parse(await body(request, started + 9000));
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest) {
 }
 export async function POST(request: NextRequest) {
   const started = Date.now();
-  const denied = requireAdminToken(request); if (denied) return denied;
+  const denied = await requireGalleryAdmin(request); if (denied) return denied;
   if (!configured(true)) return NextResponse.json({ error: "SYNC_CREATION_INTENT_NOT_ENABLED" }, { status: 503, headers });
   try {
     const data = promoteSchema.parse(await body(request, started + 9000));

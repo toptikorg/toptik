@@ -17,12 +17,13 @@ const runtimeSource=readFileSync('src/lib/shopify/creation-intent-runtime.ts','u
 const runtimeUrl=asUrl(runtimeSource.replace('import "server-only";','').replace('"./creation-intent"',JSON.stringify(intentUrl)).replace('"./creation-runtime"',JSON.stringify(modeUrl)));
 const runtime=await import(runtimeUrl);
 const responseUrl=asUrl('export const NextRequest=Request;export const NextResponse={json:(data,init)=>Response.json(data,init)};');
-const authUrl=asUrl('export const requireAdminToken=request=>request.headers.get("x-admin-token")==="fixture-token"?null:Response.json({error:"Unauthorized"},{status:401});');
+const authUrl=asUrl('export const requireGalleryAdmin=request=>request.headers.get("x-admin-token")==="fixture-token"?null:Response.json({error:"Unauthorized"},{status:401});');
+const tokenAuthUrl=asUrl('export const requireAdminToken=request=>request.headers.get("x-admin-token")==="fixture-token"?null:Response.json({error:"Unauthorized"},{status:401});');
 const dbUrl=asUrl('export const createSupabaseServiceRoleClient=()=>globalThis.__creationIntent.db;');
 const envUrl=asUrl('export const hasSupabaseAdminEnv=()=>globalThis.__creationIntent.configured;');
 const schedulerUrl=asUrl('export const MAX_CREATION_HOPS=8;export const scheduleGalleryDraftCreation=(...args)=>globalThis.__creationIntent.scheduled.push(args);');
 function routeSource(file){return readFileSync(file,'utf8').replace('"next/server"',JSON.stringify(responseUrl)).replace('"zod"',JSON.stringify(import.meta.resolve('zod')))
- .replace('"@/lib/admin/admin-token"',JSON.stringify(authUrl)).replace('"@/lib/supabase/service-role"',JSON.stringify(dbUrl)).replace('"@/lib/supabase/env"',JSON.stringify(envUrl))
+ .replace('"@/lib/admin/admin-token"',JSON.stringify(tokenAuthUrl)).replace('"@/lib/admin/gallery-access"',JSON.stringify(authUrl)).replace('"@/lib/supabase/service-role"',JSON.stringify(dbUrl)).replace('"@/lib/supabase/env"',JSON.stringify(envUrl))
  .replace('"@/lib/shopify/creation-runtime"',JSON.stringify(modeUrl)).replace('"@/lib/shopify/creation-intent"',JSON.stringify(intentUrl))
  .replace('"@/lib/shopify/creation-intent-runtime"',JSON.stringify(runtimeUrl)).replace('"@/lib/shopify/schedule-creation"',JSON.stringify(schedulerUrl));}
 const route=await import(asUrl(routeSource('src/app/api/admin/shopify/creation-intents/route.ts')));

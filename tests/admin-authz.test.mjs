@@ -288,7 +288,7 @@ const valueImports = (source) =>
 
 // Signed third-party webhooks have their own HMAC/shop/topic gate. Keep it
 // explicit here so privileged inbox writes cannot appear before verification.
-const GATES = /\b(requireAdminUser|requireOwnerUser|requireAdminPage|requireOwnerPage|requireAdminToken|verifyProductWebhook|authStepUp|isValidSetupToken)\(/;
+const GATES = /\b(requireAdminUser|requireOwnerUser|requireAdminPage|requireOwnerPage|requireAdminToken|requireGalleryAdmin|authorizeGalleryAdmin|verifyProductWebhook|authStepUp|isValidSetupToken)\(/;
 const HARMLESS = new Set(["isVaultConfigured", "STEP_UP_COOKIE", "STEP_UP_MAX_AGE", "parseVaultInput", "authStepUp", "requireAdminUser", "requireOwnerUser"]);
 
 test("no route, page or server action reaches the service role without a gate", async () => {
@@ -344,7 +344,7 @@ test("no route, page or server action reaches the service role without a gate", 
   // The import route factory gates first.
   const importer = await read("src/lib/import/import-handler.ts");
   const factoryBody = importer.slice(importer.indexOf("export function createImportRouteHandler"));
-  assert.ok(factoryBody.indexOf("requireAdminToken(") > 0 && factoryBody.indexOf("requireAdminToken(") < factoryBody.indexOf("runAdminManufacturerImport("));
+  assert.ok(factoryBody.indexOf("requireGalleryAdmin(") > 0 && factoryBody.indexOf("requireGalleryAdmin(") < factoryBody.indexOf("runAdminManufacturerImport("));
   assert.deepEqual(problems, []);
   assert.ok(table.length >= 15, `expected the privileged entry points to be found (${table.length})`);
 });

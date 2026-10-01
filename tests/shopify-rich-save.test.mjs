@@ -25,7 +25,7 @@ function fixture(previous = prior) {
   const db = {
     from(table) {
       return {
-        async select() { return { data: table === "carousel_items" && previous ? [previous] : [], error: null }; },
+        async select(columns) { if (columns === "id,editor_revision") return { data: null, error: { code: "42703", message: "editor_revision absent in legacy fixture" } }; return { data: table === "carousel_items" && previous ? [previous] : [], error: null }; },
         async upsert() { assert.equal(table, "carousel_settings"); return { error: null }; },
       };
     },

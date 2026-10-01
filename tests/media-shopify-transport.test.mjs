@@ -15,7 +15,7 @@ const requestsUrl = moduleUrl(source('media-transport-requests').replaceAll('fro
 const read = await import(readUrl), requests = await import(requestsUrl);
 const body = stripTypeScriptTypes(source('media-shopify-transport')).replace(/^import[\s\S]*?;\r?\n/gm, '').replace(/^export /gm, '');
 const { makeAdapter } = await import(moduleUrl(`
-  import {buildMediaReadRequest,MEDIA_API_VERSION,MEDIA_PUBLICATION_ID} from '${readyUrl}';
+  import {buildMediaReadRequest,parseMediaReadResponse,MEDIA_API_VERSION,MEDIA_PUBLICATION_ID} from '${readyUrl}';
   import {assertMediaTransportRead,parseMediaTransportResponse,parseTransportMedia} from '${readUrl}';
   import {buildOwnedMediaCreate,buildOwnedMediaAssociate,buildMediaVariantReassign,buildMediaReferenceDetach,
     buildMediaReorder,buildOwnedMediaRecoveryRead,buildOwnedMediaNodeRead,ownedMediaFilename,
@@ -23,7 +23,7 @@ const { makeAdapter } = await import(moduleUrl(`
   export function makeAdapter(deps) {
     const {shopifyAdminGraphql,verifyOnboardingImage,process,Date}=deps;
     ${body}
-    return {readShopifyMediaTransport,rebuildShopifyMediaMutation,executeShopifyMediaTransport,
+    return {readReadyShopifyMedia,readShopifyMediaTransport,rebuildShopifyMediaMutation,executeShopifyMediaTransport,
       findOwnedShopifyMedia,readOwnedShopifyMediaNode,readDecodedOwnedShopifyMedia};
   }
 `));
@@ -74,6 +74,13 @@ function fixture(phase='associate') {
     setClock:value=>{clock=value;},run:()=>adapter().executeShopifyMediaTransport(request,evidence,deadline)};
 }
 
+test('planning reader returns only complete READY fixed-product evidence',async()=>{
+  const f=fixture(),out=await f.adapter().readReadyShopifyMedia(identity,f.deadline);
+  assert.equal(out.identity.productId,identity.productId);assert.equal(out.images.length,2);assert.equal(f.calls.length,1);
+  assert.equal(f.calls[0].variables.publicationId,env.SHOPIFY_ONLINE_STORE_PUBLICATION_ID);
+  assert.ok(f.calls[0].deadline<=f.deadline);
+  f.raw.media.nodes[0].fileStatus='PROCESSING';await assert.rejects(f.adapter().readReadyShopifyMedia(identity,f.deadline),/ASSET_NOT_READY/);
+});
 for(const phase of ['create_owned','associate','variant_reassign','detach_old','detach_reference','reorder']) {
   test(`only the strict ${phase} builder can authorize one fixed-shop mutation`,async()=>{
     const f=fixture(phase);assert.deepEqual(f.adapter().rebuildShopifyMediaMutation(f.request,f.evidence),f.request);
