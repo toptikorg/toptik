@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { lifestyleArticles } from "./lifestyle-articles";
 import { practicalArticles } from "./practical-articles";
+import { collectionArticles } from "./collection-articles";
 import { ArticleProductCards } from "@/components/editorial/ArticleProductCards";
 
 export type GalleryArticle = {
@@ -258,6 +259,7 @@ const samsoniteRespark79MaterialsContent: ReactNode = <>
 </>;
 
 export const galleryArticles: readonly GalleryArticle[] = [
+  ...collectionArticles,
   ...practicalArticles,
   ...lifestyleArticles,
   {
