@@ -16,6 +16,10 @@ import { isSafeShopifyProductHandle } from "@/lib/shopify/sync-rules";
 const VARIANT_IDS: Record<string, string> = {
   // Exact public Shopify variant identities verified on 2026-09-29.
   ...samsoniteVariantIds,
+  // Exact existing MD20 color variants verified against Shopify on 2026-10-01.
+  P10QMMM1651: "42307603103994",
+  P10QMMM1465: "42307603136762",
+  P10QMMM109K: "42307603169530",
   P10SZV2405J: "42465754808570",
   P10JNV0508Q: "42466128494842",
   P10JNV05465: "42624928415994",
