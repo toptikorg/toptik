@@ -99,7 +99,11 @@ test("filtering keeps identities, all products, display order and existing navig
 
 test("admin and Excel consumers handle unassigned products without persisting a false default", async () => {
   const admin = await read("src/app/admin/page.tsx");
-  assert.match(admin, /techSpecs: \{ specs: \[\], colors: \[\], category: null \}/);
+  const newEditor = await read("src/components/admin/NewProductEditor.tsx");
+  assert.match(newEditor, /brand: null, category: null/);
+  const add = admin.slice(admin.indexOf("function addItem()"), admin.indexOf("function removeItem("));
+  assert.match(add, /setCreationSelection/);
+  assert.doesNotMatch(add, /setPayload|isActive: true/);
   assert.match(admin, /function getItemCategory\([^\n]+\): ProductCategory \| null/);
   assert.match(admin, /checked=\{getItemCategory\(item\) === c.key\}/);
   const exporter = await read("src/lib/carousel/shopify-export.ts");

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createPanelBrowserClient } from "@/lib/admin/supabase-browser";
 
-export function LoginClient({ initialError }: { initialError?: string }) {
+export function LoginClient({ initialError, returnTo = "/dashboard" }: { initialError?: string; returnTo?: "/dashboard" | "/admin" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(initialError ?? null);
@@ -26,7 +26,7 @@ export function LoginClient({ initialError }: { initialError?: string }) {
         return;
       }
       // Full navigation so the server renders with the fresh session cookie.
-      window.location.assign("/dashboard");
+      window.location.assign(returnTo);
     } catch {
       setError("שגיאת התחברות. נסו שוב.");
       setBusy(false);

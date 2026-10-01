@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const carouselSettingsSchema = z.object({
+  editorRevision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   autoplayMs: z.number().int().min(1500).max(12000),
   transitionMode: z.enum(["shatter-particle", "curtain-fade"]),
 });
@@ -10,6 +11,7 @@ export const carouselAngleInputSchema = z.object({
   angleKey: z.string().min(1).max(32),
   angleOrder: z.number().int().min(1).max(50),
   imagePath: z.string().min(1),
+  imageAlt: z.string().max(512).nullable().optional(),
 });
 
 // Scraped colour swatch (drives the per-colour gallery swap). Kept lenient so
@@ -51,12 +53,14 @@ export const carouselItemInputSchema = z.object({
   descriptionHtml: z.string().max(250000).nullable().optional(),
   seoTitle: z.string().max(512).nullable().optional(),
   seoDescription: z.string().max(5000).nullable().optional(),
+  editorRevision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   copyUpdatedAt: z.string().max(64).nullable().optional(),
   catalogNumber: z.string().trim().min(2).max(64).nullable().optional(),
   sourceUrl: z.string().url().max(2000).nullable().optional(),
   displayOrder: z.number().int().min(1).max(9999),
   isActive: z.boolean(),
   coverImagePath: z.string().min(1),
+  coverImageAlt: z.string().max(512).nullable().optional(),
   color: z.string().max(60).nullable().optional(),
   dimensions: z.string().max(100).nullable().optional(),
   weight: z.string().max(30).nullable().optional(),

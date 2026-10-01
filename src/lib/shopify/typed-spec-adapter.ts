@@ -7,10 +7,10 @@ import { NAMESPACE, FIELD_DEFINITIONS, SPEC_KEYS, absent, observe, makeSpecClear
 export const API_VERSION = "2026-07";
 export const CLEAR_NAMESPACE = "toptik_specs_sync";
 export const CLEAR_KEY = "clear_state_v1";
-export const CLEAR_CONSUMER_CONTRACT = "typed-spec-clear-aware-v1";
+export const CLEAR_CONSUMER_CONTRACT = "typed-spec-clear-aware-v2";
 export type Identity = { productGid: string; variantGid: string; exactSku: string };
 export type RawMetafield = { id: string; namespace: string; key: string; type: string; value: string; compareDigest: string; updatedAt: string };
-type ClearMarker = { intentId: string; valueHash: string };
+type ClearMarker = { intentId: string; valueHash: string | null; renderValue: unknown };
 type ClearState = { version: 1; cleared: Partial<Record<SpecKey, ClearMarker>> };
 export type SpecSnapshot = { identity: Identity; updatedAt: string; raw: Record<SpecKey, RawMetafield | null>;
   control: RawMetafield | null; clearState: ClearState; document: Document };
@@ -43,7 +43,11 @@ function rawField(input: unknown, namespace: string, key: string, type: string):
   return { id: value.id as string, namespace, key, type, value: value.value, compareDigest: value.compareDigest, updatedAt: value.updatedAt };
 }
 export function rawSpecValueHash(raw: Pick<RawMetafield, "namespace" | "key" | "type" | "value">): string {
-  return createHash("sha256").update(JSON.stringify([raw.namespace, raw.key, raw.type, raw.value])).digest("hex");
+  // Bind semantic native value, preserving array order and exact strings. JSON
+  // spacing/object-key order or 55 versus55.0 cannot resurrect a cleared fact.
+  const stable = (value: unknown): unknown => Array.isArray(value) ? value.map(stable) : value && typeof value === "object"
+    ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, v]) => [key, stable(v)])) : value;
+  return createHash("sha256").update(JSON.stringify([raw.namespace, raw.key, raw.type, stable(clearRenderValue(raw))])).digest("hex");
 }
 function parseClearState(control: RawMetafield | null): ClearState {
   if (!control) return { version: 1, cleared: {} };
@@ -54,8 +58,14 @@ function parseClearState(control: RawMetafield | null): ClearState {
   if (Object.keys(cleared).length > 19) fail("SPEC_CLEAR_STATE_INVALID");
   for (const [key, markerInput] of Object.entries(cleared)) {
     keyAllowed(key); const marker = object(markerInput);
-    if (Object.keys(marker).sort().join(",") !== "intentId,valueHash" || !nonempty(marker.intentId) || marker.intentId.length > 200 || !/^[a-f0-9]{64}$/.test(String(marker.valueHash))) fail("SPEC_CLEAR_STATE_INVALID");
-    result.cleared[key] = { intentId: marker.intentId, valueHash: marker.valueHash as string };
+    if (Object.keys(marker).sort().join(",") !== "intentId,renderValue,valueHash" || !nonempty(marker.intentId) || marker.intentId.length > 200 || (marker.valueHash !== null && !/^[a-f0-9]{64}$/.test(String(marker.valueHash)))) fail("SPEC_CLEAR_STATE_INVALID");
+    if (marker.valueHash === null) { if (marker.renderValue !== null) fail("SPEC_CLEAR_STATE_INVALID"); }
+    else {
+      const type = FIELD_DEFINITIONS[key].type, text = ["single_line_text_field", "multi_line_text_field"].includes(type);
+      if (text && typeof marker.renderValue !== "string") fail("SPEC_CLEAR_STATE_INVALID");
+      if (rawSpecValueHash({ namespace: NAMESPACE, key, type, value: text ? marker.renderValue as string : JSON.stringify(marker.renderValue) }) !== marker.valueHash) fail("SPEC_CLEAR_STATE_INVALID");
+    }
+    result.cleared[key] = { intentId: marker.intentId, valueHash: marker.valueHash as string | null, renderValue: marker.renderValue };
   }
   return result;
 }
@@ -75,15 +85,22 @@ export function parseSpecReadResponse(response: unknown, expectedInput: Identity
   for (const key of SPEC_KEYS) {
     if (!Object.hasOwn(product, `f_${key}`)) fail("SPEC_RESPONSE_INCOMPLETE");
     const field = rawField(product[`f_${key}`], NAMESPACE, key, FIELD_DEFINITIONS[key].type); raw[key] = field;
-    if (!field) { document.fields[key] = absent(); continue; }
     const marker = clearState.cleared[key];
-    if (marker && marker.valueHash === rawSpecValueHash(field)) {
-      const source = provenance(key, field, marker.intentId);
+    if (!field && !(marker?.valueHash === null && control)) { document.fields[key] = absent(); continue; }
+    if (marker && marker.valueHash === (field ? rawSpecValueHash(field) : null)) {
+      const source = provenance(key, field ?? control!, marker.intentId);
       if (source.authority !== "merchant" || source.intentId !== marker.intentId) fail("SPEC_CLEAR_PROVENANCE_MISSING");
-      document.fields[key] = observe(makeSpecClear(key, source), field.compareDigest);
-    } else document.fields[key] = decodeShopifySpecField(field, provenance(key, field));
+      document.fields[key] = observe(makeSpecClear(key, source), field?.compareDigest ?? null);
+    } else document.fields[key] = decodeShopifySpecField(field!, provenance(key, field!));
   }
   return { identity: expected, updatedAt: product.updatedAt, raw, control, clearState, document };
+}
+/** Render evidence is data only. Liquid hashes current and expected using its own
+ * serializer, avoiding cross-runtime JSON escaping differences. Measurements use
+ * explicit number/unit equality; a stale differing value never stays hidden. */
+export function clearRenderValue(raw: Pick<RawMetafield, "type" | "value">): unknown {
+  if (["dimension", "volume", "weight", "json", "boolean", "number_integer"].includes(raw.type)) return JSON.parse(raw.value);
+  return raw.value;
 }
 export type SpecWriteRequest = { apiVersion: string; query: string; variables: { metafields: MetafieldSet[] }; identity: Identity; operations: Operation[] };
 /** Caller must perform final exact-identity/lease authorization before sending. No automatic retries. */
@@ -105,9 +122,12 @@ export function buildSpecWriteRequest(snapshot: SpecSnapshot, operations: Operat
     if (operation.expectedRevision !== (raw?.compareDigest ?? null)) fail("SPEC_FIELD_CAS_CONFLICT");
     let value: string;
     if (operation.intent === "clear") {
-      if (cell.state !== "clear" || !raw || options.clearConsumerContract !== CLEAR_CONSUMER_CONTRACT) fail("SPEC_CLEAR_REQUIRES_VERIFIED_CONSUMERS");
-      value = raw.value; // A no-op typed-value write supplies the atomic CAS guard for the clear marker.
-      clearState.cleared[operation.key] = { intentId: cell.provenance.intentId!, valueHash: rawSpecValueHash(raw) };
+      if (cell.state !== "clear" || options.clearConsumerContract !== CLEAR_CONSUMER_CONTRACT) fail("SPEC_CLEAR_REQUIRES_VERIFIED_CONSUMERS");
+      // A present value is guarded by a no-op CAS write in the same atomic batch.
+      // For an absent value, only the marker is written; a later value invalidates it.
+      clearState.cleared[operation.key] = { intentId: cell.provenance.intentId!, valueHash: raw ? rawSpecValueHash(raw) : null, renderValue: raw ? clearRenderValue(raw) : null };
+      if (!raw) continue;
+      value = raw.value;
     } else {
       if (cell.state !== "value") fail("SPEC_SET_REQUIRES_VALUE");
       value = encodeShopifySpecValue(operation.key, cell); delete clearState.cleared[operation.key];

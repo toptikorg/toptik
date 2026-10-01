@@ -1,6 +1,6 @@
 # Typed product specifications — implementation candidate
 
-Status: local code and offline SQL verified. Not activated, not deployed, and no live product/metafield/database writes performed by this change's builder. Copy sync, commerce, product creation, media and existing manufacturer caches are separate.
+Status, 30 September 2026: PR #26 was squash-merged as `996d82aa68ce7efbc011df309ff19be23f7e4afb` and deployed **default OFF** to Production `dpl_HsZ7MuERUtXKKanyDxF4fJbiwGLq`. The exact deployment and four public aliases were verified at 16:54:59 UTC. The before/after-code comparison preserved all 82 raw Gallery rows/settings and 78 Shopify products; the private fields endpoint correctly returned `404 SPEC_DISABLED`. Desktop and 390px Gallery modal/navigation checks passed. No typed SQL migration, feature activation, bootstrap, or typed-field product write has occurred. Supabase browser sign-in is required for the pending migration. This does not establish live typed propagation. Copy sync, commerce, product creation, media and existing manufacturer caches remain separate lanes.
 
 ## Scope and activation
 

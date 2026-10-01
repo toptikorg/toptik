@@ -77,3 +77,29 @@ test("productUpdate UserError messages remain private when the mutation is rejec
   await assert.rejects(writeShopifyVisibleCopy(current.id, { ...visibleCopyFromProduct(current), title: "Updated" }, current),
     { message: "SHOPIFY_PRODUCT_COPY_WRITE_REJECTED" });
 });
+
+test("present malformed errors reject even with valid product data", async t => {
+  configure(t);
+  let errors;
+  t.mock.method(globalThis, "fetch", async () => Response.json({ data: { product: null }, errors }));
+  for (const value of [{}, "", "private", 0, false, null]) {
+    errors = value;
+    await assert.rejects(fetchProductSnapshot(current.id), { message: "SHOPIFY_GRAPHQL_ERROR" });
+  }
+  errors = [];
+  assert.equal(await fetchProductSnapshot(current.id), null);
+});
+
+test("GraphQL envelope and data must be objects", async t => {
+  configure(t);
+  let payload;
+  t.mock.method(globalThis, "fetch", async () => Response.json(payload));
+  for (const value of [null, [], "private", 1]) {
+    payload = value;
+    await assert.rejects(fetchProductSnapshot(current.id), { message: "SHOPIFY_GRAPHQL_RESPONSE_INVALID" });
+  }
+  for (const value of [null, [], "private", 1]) {
+    payload = { data: value };
+    await assert.rejects(fetchProductSnapshot(current.id), { message: "SHOPIFY_GRAPHQL_DATA_MISSING" });
+  }
+});

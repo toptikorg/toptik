@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { galleryLoginDestination } from "@/lib/admin/gallery-session-policy";
 import { redirect } from "next/navigation";
 import { getPanelAccess } from "@/lib/admin/authz";
 import { LoginClient } from "@/components/admin/LoginClient";
@@ -9,14 +10,14 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   // Only an authorized admin goes on to the dashboard. A signed-in account
   // without a panel role stays here (no redirect loop, no service-role read).
   const { user, role } = await getPanelAccess();
-  if (role) redirect("/dashboard");
-
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
+  const returnTo = galleryLoginDestination(next);
+  if (role) redirect(returnTo);
   const initialError = error === "link" ? "הקישור פג תוקף או שאינו תקין. נסו שוב." : undefined;
 
   return (
@@ -34,7 +35,7 @@ export default async function LoginPage({
         ) : (
           <>
             <p className="admin-auth-sub">התחברו עם פרטי המנהל שלכם כדי להמשיך.</p>
-            <LoginClient initialError={initialError} />
+            <LoginClient initialError={initialError} returnTo={returnTo} />
           </>
         )}
       </div>

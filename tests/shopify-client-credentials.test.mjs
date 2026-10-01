@@ -106,3 +106,22 @@ test("separate GraphQL calls reuse the provider and credential rotation creates 
   assert.equal(exchanges, 2);
   assert.equal(reads, 3);
 });
+
+test("absolute creation deadline expiring during OAuth never starts the Shopify mutation", async t => {
+  const apiSource=(await readFile("src/lib/shopify/admin-api.ts","utf8")).replace(/^import "server-only";\s*/m, "")
+    .replace('from "./client-credentials"', `from "${providerUrl}"`)
+    .replace('from "./description-document"', `from "${descriptionModuleUrl}"`);
+  const api=await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(apiSource)).toString("base64")}`);
+  const environment={SHOPIFY_SHOP_DOMAIN:config.shopDomain,SHOPIFY_CLIENT_ID:config.clientId,SHOPIFY_CLIENT_SECRET:'isolated-deadline-fixture',
+    SHOPIFY_ONLINE_STORE_PUBLICATION_ID:'gid://shopify/Publication/1',SHOPIFY_API_VERSION:'2026-07'};
+  const previous=Object.fromEntries(Object.keys(environment).map(key=>[key,process.env[key]]));Object.assign(process.env,environment);
+  t.after(()=>{for(const [key,value]of Object.entries(previous)){if(value===undefined)delete process.env[key];else process.env[key]=value;}});
+  let clock=1_800_000_000_000,exchanges=0,mutations=0;const deadline=clock+1000;
+  t.mock.method(Date,'now',()=>clock);
+  t.mock.method(globalThis,'fetch',async url=>{
+    if(String(url).includes('/oauth/')){exchanges++;clock=deadline+1;return success('deadline-fixture-token');}
+    mutations++;return Response.json({data:{unexpected:true}});
+  });
+  await assert.rejects(api.shopifyAdminGraphql('mutation NeverAfterDeadline { productCreate }',{},10000,deadline),/SPEC_TIME_BUDGET/);
+  assert.equal(exchanges,1);assert.equal(mutations,0);
+});

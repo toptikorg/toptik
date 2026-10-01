@@ -5,6 +5,7 @@ export interface CarouselAngle {
   itemId: string;
   angleKey: string;
   imagePath: string;
+  imageAlt?: string | null;
   angleOrder: number;
 }
 
@@ -39,11 +40,13 @@ export interface CarouselItem {
   seoTitle?: string | null;
   seoDescription?: string | null;
   copyUpdatedAt?: string | null;
+  editorRevision?: number;
   catalogNumber?: string | null;
   /** Live Shopify navigation binding, hydrated from the narrow public link projection. */
   shopifyLink?: { handle: string; variantId: string; isPublished: boolean } | null;
   sourceUrl?: string | null;
   coverImagePath: string;
+  coverImageAlt?: string | null;
   displayOrder: number;
   isActive: boolean;
   color?: string | null;
@@ -59,6 +62,7 @@ export interface CarouselItem {
 }
 
 export interface CarouselSettings {
+  editorRevision?: number;
   autoplayMs: number;
   transitionMode: TransitionMode;
 }
@@ -76,11 +80,13 @@ export interface AdminItemInput {
   seoTitle?: string | null;
   seoDescription?: string | null;
   copyUpdatedAt?: string | null;
+  editorRevision?: number;
   catalogNumber?: string | null;
   sourceUrl?: string | null;
   displayOrder: number;
   isActive: boolean;
   coverImagePath: string;
+  coverImageAlt?: string | null;
   angles: Array<{
     id?: string;
     angleKey: string;

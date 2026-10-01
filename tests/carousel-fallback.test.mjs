@@ -92,7 +92,8 @@ test('authorized admin GET returns 503 for unavailable data, not a saveable HTTP
   const body = route.slice(route.indexOf('export async function GET'), route.indexOf('export async function PUT')).replace(/^export /gm, '');
   const { makeGet } = await moduleFrom(`export function makeGet(deps) {
     const { getCarouselPayload, isUnavailableCarouselPayload, CAROUSEL_UNAVAILABLE_MESSAGE } = deps;
-    const requireAdminToken = () => null; // authorized request (central token gate)
+    const visibleAdminCatalog = async value => value; // private-draft filtering is tested separately
+    const requireGalleryAdmin = () => null; // authorized request (central token gate)
     const NextResponse = { json: (body, options) => ({ body, status: options?.status ?? 200 }) };
     ${body}
     return GET;
@@ -115,6 +116,8 @@ test('admin initial/failed read cannot unlock the editor or send a replacement c
   const { makePersist } = await moduleFrom(`export function makePersist(deps) {
     const { authReady, isUnavailableCarouselPayload, CAROUSEL_UNAVAILABLE_MESSAGE, fetch } = deps;
     const token = 'not-a-real-token';
+    const pendingUploadsRef = { current: 0 };
+    const catalogGenerationRef = { current: 0 };
     ${persist}
     return persistPayload;
   }`);

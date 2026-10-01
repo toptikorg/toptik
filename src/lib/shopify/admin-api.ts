@@ -115,6 +115,32 @@ export function configuredShopifyDomain(): string {
   return getConfig().domain;
 }
 
+/** Complete media associations, read only; decoding/private lineage is a separate required gate. */
+export async function fetchShopifyMediaRead(identity: import("./media-sync-core").MediaIdentity, timeoutMs = 8_000, outerDeadline?: number) {
+  const { buildMediaReadRequest, parseMediaReadResponse } = await import("./media-read-adapter");
+  const request = buildMediaReadRequest(identity), config = getConfig();
+  if (config.domain !== "toptikcoil.myshopify.com" || config.publicationId !== request.variables.publicationId ||
+      config.version !== request.apiVersion) throw new Error("MEDIA_CONFIG_MISMATCH");
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || (outerDeadline !== undefined && !Number.isFinite(outerDeadline))) {
+    throw new Error("MEDIA_TIME_BUDGET_INVALID");
+  }
+  const deadline = Math.min(Date.now() + Math.min(timeoutMs, 8_000), outerDeadline ?? Infinity);
+  const data = await graphql<Record<string, unknown>>(request.query, request.variables, timeoutMs, deadline);
+  return parseMediaReadResponse({ data }, identity);
+}
+
+/** Decode exact current image URLs and recheck the complete association snapshot before returning. */
+export async function fetchDecodedShopifyMedia(identity: import("./media-sync-core").MediaIdentity, deadline: number) {
+  const { readDecodedMedia } = await import("./media-decode-reader");
+  const { verifyOnboardingImage } = await import("./onboarding-worker");
+  return readDecodedMedia(identity, deadline, {
+    now: Date.now,
+    read: (expected, stopAt) => fetchShopifyMediaRead(expected, 8_000, stopAt),
+    decode: (image, stopAt) => verifyOnboardingImage({ id: image.mediaId, alt: image.alt, mediaContentType: "IMAGE", status: "READY",
+      image: { url: image.url, width: image.width, height: image.height, altText: image.alt } }, stopAt),
+  });
+}
+
 function graphqlErrorCode(code: unknown): string {
   if (typeof code !== "string" || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(code)) return "SHOPIFY_GRAPHQL_ERROR";
   const normalized = code.replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
@@ -159,10 +185,12 @@ async function graphql<T>(query: string, variables: Record<string, unknown>, tim
   if (response.status >= 300 && response.status < 400) throw new Error("SHOPIFY_API_REDIRECT_REJECTED");
   if (!response.ok) throw new Error(`SHOPIFY_API_HTTP_${response.status}`);
   const payload = await response.json() as { data?: T; errors?: GraphqlError[] };
-  if (payload.errors?.length) {
-    throw new Error(graphqlErrorCode(payload.errors[0]?.extensions?.code));
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("SHOPIFY_GRAPHQL_RESPONSE_INVALID");
+  if (Object.hasOwn(payload, "errors")) {
+    if (!Array.isArray(payload.errors)) throw new Error("SHOPIFY_GRAPHQL_ERROR");
+    if (payload.errors.length) throw new Error(graphqlErrorCode(payload.errors[0]?.extensions?.code));
   }
-  if (!payload.data) throw new Error("SHOPIFY_GRAPHQL_DATA_MISSING");
+  if (!payload.data || typeof payload.data !== "object" || Array.isArray(payload.data)) throw new Error("SHOPIFY_GRAPHQL_DATA_MISSING");
   return payload.data;
 }
 
@@ -178,12 +206,18 @@ export async function fetchTypedSpecSnapshot(identity: TypedSpecIdentity & { pro
 }
 export async function writeTypedSpecFields(snapshot: TypedSpecSnapshot, operations: TypedSpecOperation[], deadline = Date.now() + 15_000): Promise<void> {
   if (process.env.VERCEL_ENV !== "production" || process.env.SHOPIFY_TYPED_SPEC_SYNC !== "enabled_v1") throw new Error("SPEC_DISABLED");
-  const { buildSpecWriteRequest, parseSpecWriteResponse } = await import("./typed-spec-adapter");
-  if (operations.some(operation => operation.intent === "clear")) throw new Error("SPEC_CLEAR_DISABLED_V1");
-  const request = buildSpecWriteRequest(snapshot, operations);
+  const { buildSpecWriteRequest, parseSpecWriteResponse, CLEAR_CONSUMER_CONTRACT } = await import("./typed-spec-adapter");
+  const clearReady = process.env.SHOPIFY_TYPED_SPEC_CLEAR_CONSUMER === CLEAR_CONSUMER_CONTRACT;
+  if (operations.some(operation => operation.intent === "clear") && !clearReady) throw new Error("SPEC_CLEAR_CONSUMER_NOT_READY");
+  const request = buildSpecWriteRequest(snapshot, operations, { clearConsumerContract: clearReady ? CLEAR_CONSUMER_CONTRACT : undefined });
   if (!request) return;
   const result = await graphql<Record<string, unknown>>(request.query, request.variables, 15_000, deadline);
   parseSpecWriteResponse({ data: result }, request);
+}
+
+/** Server-only authenticated transport shared by the isolated draft creator. */
+export async function shopifyAdminGraphql<T>(query: string, variables: Record<string, unknown>, timeoutMs = 15_000, deadline?: number): Promise<T> {
+  return graphql<T>(query, variables, timeoutMs, deadline);
 }
 
 export async function fetchProductSnapshot(productGid: string): Promise<ShopifyProductSnapshot | null> {

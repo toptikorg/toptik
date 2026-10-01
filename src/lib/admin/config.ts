@@ -11,9 +11,9 @@ export const MAX_ADMIN_USERS = 3;
 /** Public landing page — "צפייה בדף הנחיתה". */
 export const LANDING_URL = process.env.NEXT_PUBLIC_LANDING_URL ?? "https://landing.toptik.co.il";
 
-/** Landing-page gallery (carousel) editor — lives on the landing domain. */
+/** Same-host editor keeps the existing authenticated panel session. */
 export const GALLERY_EDITOR_URL =
-  process.env.NEXT_PUBLIC_GALLERY_EDITOR_URL ?? "https://landing.toptik.co.il/admin";
+  process.env.NEXT_PUBLIC_GALLERY_EDITOR_URL ?? "/admin";
 
 /** Shopify store admin console. */
 export const SHOPIFY_ADMIN_URL =

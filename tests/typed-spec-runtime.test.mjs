@@ -13,13 +13,13 @@ function fixture(){
  f.fetch=async(expected,provenance)=>{
   f.fetches++;assert.equal(expected.productGid,gid);
   if(f.beforeFetch)await f.beforeFetch(f.fetches);
-  const product={id:gid,updatedAt:stamp,variants:{nodes:[{id:identity.variantGid,sku:identity.exactSku}],pageInfo:{hasNextPage:false}},control:null};
+  const product={id:gid,updatedAt:stamp,variants:{nodes:[{id:identity.variantGid,sku:identity.exactSku}],pageInfo:{hasNextPage:false}},control:f.control??null};
   for(const key of core.SPEC_KEYS)product[`f_${key}`]=raw[key];
   return adapter.parseSpecReadResponse({data:{product}},identity,provenance);
  };
  f.write=async(snapshot,operations)=>{
-  const request=adapter.buildSpecWriteRequest(snapshot,operations);f.writes.push(request);
-  for(const field of request.variables.metafields)if(field.namespace==='toptik_specs')f.setShop(field.key,field.value);
+  const request=adapter.buildSpecWriteRequest(snapshot,operations,{clearConsumerContract:process.env.SHOPIFY_TYPED_SPEC_CLEAR_CONSUMER});f.writes.push(request);
+  for(const field of request.variables.metafields)if(field.namespace==='toptik_specs')f.setShop(field.key,field.value);else f.control={...field,id:'gid://shopify/Metafield/999',compareDigest:'control-'+(++version),updatedAt:stamp};
   if(f.uncertain){f.uncertain=false;throw new Error('SHOPIFY_REQUEST_TIMEOUT');}
  };
  f.db={rpc:async(name,args={})=>{
@@ -75,7 +75,7 @@ test('changed digest or exact identity blocks stale writes and keeps baselines',
 test('editor generates merchant provenance and queues only changed fields; null clears are refused',()=>enabled(async()=>{
  const f=fixture(),w=await workerFor(f),id='33333333-3333-4333-8333-333333333333';await w.editTypedSpecs(f.db,gid,id,{material:'100% PC'},{material:1});
  assert.equal(f.edits.p_edits.length,1);const source=f.edits.p_edits[0].observation.cell.provenance;assert.equal(source.authority,'merchant');assert.equal(source.producer,'gallery_typed_editor');assert.equal(source.evidenceId,id);
- await assert.rejects(w.editTypedSpecs(f.db,gid,id,{material:null},{material:1}),/CLEAR_DISABLED/);
+ await assert.rejects(w.editTypedSpecs(f.db,gid,id,{material:null},{material:1}),/CLEAR_CONSUMER_NOT_READY/);
 }));
 test('token operator supplied identity must exactly match approval under lease before any field write',()=>enabled(async()=>{
  const expected={itemId:identity.itemId,variantGid:identity.variantGid,gallerySku:identity.gallerySku,exactSku:identity.exactSku,productHandle:identity.productHandle};
@@ -99,3 +99,8 @@ test('near-deadline accepted write reserves lease cleanup, queue finish and cont
  f.onRpc=name=>{if(name==='commit_toptik_spec_readback')now=deadline-9000;else if(['release_shopify_reconciliation_lease','finish_toptik_spec_work','toptik_spec_queue_status'].includes(name))now+=3000;};
  const w=await workerFor(f),result=await w.drainTypedSpecQueue(f.db,deadline);assert.equal(result.processed,1);assert.equal(result.continuationNeeded,true);assert.equal(f.finished[0].p_status,'complete');assert.equal(now,deadline);assert.ok(now+8000<160000);
 }));
+async function clearEnabled(fn){const before=process.env.SHOPIFY_TYPED_SPEC_CLEAR_CONSUMER;process.env.SHOPIFY_TYPED_SPEC_CLEAR_CONSUMER=adapter.CLEAR_CONSUMER_CONTRACT;try{return await enabled(fn)}finally{if(before===undefined)delete process.env.SHOPIFY_TYPED_SPEC_CLEAR_CONSUMER;else process.env.SHOPIFY_TYPED_SPEC_CLEAR_CONSUMER=before;}}
+test('explicit clear stores null intent with prior public value, never infers absence',()=>clearEnabled(async()=>{const f=fixture(),row=f.state.fields.find(r=>r.key==='material');row.currentGallery=merchant('material','PC');const w=await workerFor(f);await w.editTypedSpecs(f.db,gid,'33333333-3333-4333-8333-333333333333',{material:null},{material:1});const cell=f.edits.p_edits[0].observation.cell;assert.equal(cell.state,'clear');assert.deepEqual(cell.provenance.raw,{intent:'clear',previousValue:'PC'});assert.equal(cell.provenance.intentId,'33333333-3333-4333-8333-333333333333:material');}));
+test('clear CAS leaves native value and recovers accepted marker without second mutation',()=>clearEnabled(async()=>{const f=fixture();f.setShop('material','PC');const w=await workerFor(f);await w.reconcileTypedSpecProduct(f.db,gid);const row=f.state.fields.find(r=>r.key==='material');row.currentGallery=core.observe(core.makeSpecClear('material',{authority:'merchant',producer:'gallery_typed_editor',observedAt:stamp,evidenceId:'clear-1',intentId:'clear-1',raw:{intent:'clear',previousValue:'PC'}}),'g-clear');f.uncertain=true;await assert.rejects(w.reconcileTypedSpecProduct(f.db,gid),/TIMEOUT/);assert.equal(f.raw.material.value,'PC');assert.equal(f.writes.length,1);await w.reconcileTypedSpecProduct(f.db,gid);assert.equal(f.writes.length,1);assert.equal(row.currentGallery.cell.state,'clear');f.setShop('material','PP');await w.reconcileTypedSpecProduct(f.db,gid);assert.equal(row.currentGallery.cell.state,'value');assert.equal(row.currentGallery.cell.value,'PP');}));
+test('explicit clear on absent typed target writes only bound control; later new value survives',()=>clearEnabled(async()=>{const f=fixture(),row=f.state.fields.find(r=>r.key==='material');row.currentGallery=core.observe(core.makeSpecClear('material',{authority:'merchant',producer:'gallery_typed_editor',observedAt:stamp,evidenceId:'clear-empty',intentId:'clear-empty',raw:{intent:'clear',previousValue:null}}),'g-clear');const w=await workerFor(f);await w.reconcileTypedSpecProduct(f.db,gid);assert.deepEqual(f.writes[0].variables.metafields.map(x=>x.key),['clear_state_v1']);assert.equal(f.raw.material,null);assert.equal(row.shopifyBaseline.cell.state,'clear');f.setShop('material','PC');await w.reconcileTypedSpecProduct(f.db,gid);assert.equal(row.currentGallery.cell.value,'PC');}));
+test('automatic missing baseline establishes independent sides without native or Gallery first-fill',()=>enabled(async()=>{const f=fixture();f.state.fields=[];f.setShop('material','PC');let missing=true;const original=f.db.rpc;f.db.rpc=async(name,args)=>{if(name==='read_toptik_spec_state'&&missing)return{error:{message:'SPEC_APPROVAL_MISSING_OR_CHANGED'}};if(name==='read_toptik_spec_admission')return{data:{identity,copyApprovalId:'verified-copy'},error:null};if(name==='activate_toptik_spec_product'){missing=false;assert.equal(args.p_approval_id,'copy-approved-auto-v1');return{data:true,error:null}}if(name==='commit_toptik_spec_readback'){f.commits.push(args);return{data:[],error:null}}return original(name,args)};const w=await workerFor(f),r=await w.reconcileTypedSpecProduct(f.db,gid);assert.equal(r.fields,19);assert.equal(f.writes.length,0);assert.equal(f.commits.length,1);for(const c of f.commits[0].p_changes){assert.equal(c.gallery.cell.state,'absent');assert.equal(c.expectedVersion,null)}assert.equal(f.commits[0].p_changes.find(c=>c.key==='material').shopify.cell.value,'PC');}));

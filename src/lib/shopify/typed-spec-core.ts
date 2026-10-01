@@ -253,7 +253,10 @@ export function planSpecMerge(currentInput: Baselines, baselineInput: Baselines)
     if (!gc && !sc) continue;
     if ((gc && g.cell.state === "absent") || (sc && s.cell.state === "absent")) { plan.conflicts.push({ key, code: "SPEC_ABSENCE_NEEDS_EXPLICIT_CLEAR" }); continue; }
     if (g.cell.state === "missing" || s.cell.state === "missing") { plan.conflicts.push({ key, code: "SPEC_TARGET_UNOBSERVED" }); continue; }
-    if (specValuesEqual(g.cell, s.cell)) { plan.acknowledgements.push({ key, gallery: clone(g), shopify: clone(s) }); continue; }
+    // Explicit clears also suppress legacy fallback when the typed target is
+    // absent; semantic absence alone is not a durable cross-system clear receipt.
+    const clearNeedsMarker = (gc && g.cell.state === "clear" && s.cell.state === "absent") || (sc && s.cell.state === "clear" && g.cell.state === "absent");
+    if (specValuesEqual(g.cell, s.cell) && !clearNeedsMarker) { plan.acknowledgements.push({ key, gallery: clone(g), shopify: clone(s) }); continue; }
     if (gc && sc) { plan.conflicts.push({ key, code: "SPEC_CONCURRENT_FIELD_CONFLICT" }); continue; }
     const source: Side = gc ? "gallery" : "shopify", target: Side = gc ? "shopify" : "gallery";
     const sourceObservation = gc ? g : s, targetObservation = gc ? s : g;

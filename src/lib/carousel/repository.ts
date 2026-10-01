@@ -11,6 +11,7 @@ import { normalizeSyncSku } from "@/lib/shopify/sync-rules";
 type SettingsRow = {
   id: number;
   autoplay_ms: number;
+  editor_revision?: number;
   transition_mode: "shatter-particle" | "curtain-fade";
 };
 
@@ -22,6 +23,8 @@ type ItemRow = {
   seo_title?: string | null;
   seo_description?: string | null;
   copy_updated_at?: string | null;
+  editor_revision?: number;
+  cover_image_alt?: string | null;
   catalog_number?: string | null;
   source_url?: string | null;
   cover_image_path: string;
@@ -42,6 +45,7 @@ type AngleRow = {
   angle_key: string;
   image_path: string;
   angle_order: number;
+  image_alt?: string | null;
 };
 
 type GetCarouselPayloadOptions = {
@@ -54,6 +58,7 @@ export async function getCarouselPayload(
   options: GetCarouselPayloadOptions = {},
 ): Promise<CarouselPayload> {
   if (!hasSupabasePublicEnv()) {
+    if (options.rawAdmin) throw new Error("GALLERY_ADMIN_READ_INCOMPLETE");
     return fallbackCarouselPayload;
   }
 
@@ -68,11 +73,15 @@ export async function getCarouselPayload(
     itemQuery = itemQuery.eq("is_active", true);
   }
 
-  const [{ data: settingsRow }, { data: itemRows, error: itemsError }] = await Promise.all([
+  const [{ data: settingsRow, error: settingsError }, { data: itemRows, error: itemsError }] = await Promise.all([
     supabase.from("carousel_settings").select("*").eq("id", 1).maybeSingle<SettingsRow>(),
     itemQuery,
   ]);
 
+  // Never let a partial editable snapshot be saved as intentional removal.
+  if (options.rawAdmin && (settingsError || !settingsRow || itemsError || !Array.isArray(itemRows))) {
+    throw new Error("GALLERY_ADMIN_READ_INCOMPLETE");
+  }
   if (itemsError || !itemRows) {
     return fallbackCarouselPayload;
   }
@@ -80,9 +89,10 @@ export async function getCarouselPayload(
   // This table is a narrow public projection (SKU key + verified product URL
   // + publication bit). If the sync migration is not installed yet, retain the
   // audited static map in purchase-links.ts as a backwards-compatible fallback.
-  const { data: liveLinks } = await supabase
+  const { data: liveLinks, error: linksError } = await supabase
     .from("shopify_gallery_public_links")
     .select("catalog_key,product_handle,variant_id,is_published");
+  if (options.rawAdmin && (linksError || !Array.isArray(liveLinks))) throw new Error("GALLERY_ADMIN_READ_INCOMPLETE");
   const liveLinksByKey = new Map((liveLinks ?? []).map((row: {
     catalog_key: string;
     product_handle: string;
@@ -99,18 +109,20 @@ export async function getCarouselPayload(
     return {
       items: [],
       settings: {
-        autoplayMs: settingsRow?.autoplay_ms ?? fallbackCarouselPayload.settings.autoplayMs,
+        ...(options.rawAdmin ? { editorRevision: settingsRow?.editor_revision } : {}),
+      autoplayMs: settingsRow?.autoplay_ms ?? fallbackCarouselPayload.settings.autoplayMs,
         transitionMode: settingsRow?.transition_mode ?? fallbackCarouselPayload.settings.transitionMode,
       },
     };
   }
 
   const itemIds = itemRows.map((row: ItemRow) => row.id);
-  const { data: angleRows } = await supabase
+  const { data: angleRows, error: anglesError } = await supabase
     .from("carousel_item_angles")
     .select("*")
     .in("item_id", itemIds.length ? itemIds : [""])
     .order("angle_order", { ascending: true });
+  if (options.rawAdmin && (anglesError || !Array.isArray(angleRows))) throw new Error("GALLERY_ADMIN_READ_INCOMPLETE");
 
   const anglesByItem = new Map<string, AngleRow[]>();
   for (const angle of (angleRows ?? []) as AngleRow[]) {
@@ -128,12 +140,14 @@ export async function getCarouselPayload(
       seoTitle: item.seo_title ?? null,
       seoDescription: item.seo_description ?? null,
       copyUpdatedAt: item.copy_updated_at ?? null,
+      ...(options.rawAdmin ? { editorRevision: item.editor_revision } : {}),
       catalogNumber: item.catalog_number ?? null,
       shopifyLink: item.catalog_number
         ? liveLinksByKey.get(normalizeSyncSku(item.catalog_number) ?? "") ?? null
         : null,
       sourceUrl: item.source_url ?? null,
       coverImagePath: item.cover_image_path,
+      coverImageAlt: item.cover_image_alt ?? null,
       displayOrder: item.display_order,
       isActive: item.is_active,
       color: item.color ?? null,
@@ -148,6 +162,7 @@ export async function getCarouselPayload(
         itemId: angle.item_id,
         angleKey: angle.angle_key,
         imagePath: angle.image_path,
+        imageAlt: angle.image_alt ?? null,
         angleOrder: angle.angle_order,
       })),
     })).map(item => {
@@ -163,6 +178,7 @@ export async function getCarouselPayload(
       return publicItem;
     }),
     settings: {
+      ...(options.rawAdmin ? { editorRevision: settingsRow?.editor_revision } : {}),
       autoplayMs: settingsRow?.autoplay_ms ?? fallbackCarouselPayload.settings.autoplayMs,
       transitionMode: settingsRow?.transition_mode ?? fallbackCarouselPayload.settings.transitionMode,
     },

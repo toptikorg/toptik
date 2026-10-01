@@ -6,7 +6,7 @@ import {moduleUrl} from './helpers/typed-spec-modules.mjs';
 const source=readFileSync('src/app/api/admin/shopify/specs/fields/route.ts','utf8');
 const body=source.slice(source.indexOf('const productId')).replace(/^export /gm,'');
 const {createHandlers}=await import(moduleUrl(`export function createHandlers(deps){
- const {z,requireAdminToken,typedSpecSyncEnabled,createSupabaseServiceRoleClient,withTypedSpecLease,readTypedState,freshTypedShopify,editTypedSpecs,typedSpecDefinitions,scheduleTypedSpecSync}=deps;
+ const {z,requireGalleryAdmin,typedSpecSyncEnabled,typedSpecClearsEnabled,createSupabaseServiceRoleClient,withTypedSpecLease,readTypedState,freshTypedShopify,editTypedSpecs,typedSpecDefinitions,scheduleTypedSpecSync}=deps;
  const NextResponse={json:(value,init)=>Response.json(value,init)};
  ${body}
  return {GET,PATCH};
@@ -15,7 +15,7 @@ const productId='gid://shopify/Product/123',variantId='gid://shopify/ProductVari
 const input={productId,variantId,itemId,exactGallerySku:'P10SZV24-05J-TU',exactShopifySku:'P10SZV2405J',productHandle:'logoduck-i-טרולי',requestId:'22222222-2222-4222-8222-222222222222',changes:{material:'100% PC'},versions:{material:1}};
 function fixture(options={}){
  const calls=[];let scheduled=0;
- const handlers=createHandlers({z,requireAdminToken:()=>options.denied?Response.json({error:'Unauthorized'},{status:401}):null,typedSpecSyncEnabled:()=>!options.disabled,
+ const handlers=createHandlers({z,requireGalleryAdmin:()=>options.denied?Response.json({error:'Unauthorized'},{status:401}):null,typedSpecSyncEnabled:()=>!options.disabled,typedSpecClearsEnabled:()=>false,
   createSupabaseServiceRoleClient:()=>{calls.push('db');return 'service';},
   withTypedSpecLease:async(db,gid,fn)=>{calls.push(['lease',db,gid]);return fn('owner');},
   readTypedState:async(db,gid,owner)=>{calls.push(['read',db,gid,owner]);if(options.error)throw Error(options.error);return {identity:{productGid:productId},fields:Array.from({length:19},(_,i)=>({key:String(i),galleryVersion:1}))};},

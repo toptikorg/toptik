@@ -52,7 +52,7 @@ test('typed webhook identity rejects unsafe coercion/mismatched GID and deletion
 
 const route=read('src/app/api/admin/shopify/sync/route.ts');
 const makeCron=await factory(route.slice(route.indexOf('export async function GET')),
- 'NextResponse,requireAdminToken,hasSupabaseAdminEnv,isShopifySyncConfigured,createSupabaseServiceRoleClient,drainShopifySyncQueues,recoverTypedSpecQueue,scheduleShopifySyncContinuation,scheduleTypedSpecWakeup,console','GET');
+ 'NextResponse,requireAdminToken,hasSupabaseAdminEnv,isShopifySyncConfigured,createSupabaseServiceRoleClient,drainShopifySyncQueues,recoverTypedSpecQueue,recoverMediaWork,scheduleMediaSyncWakeup,scheduleShopifySyncContinuation,scheduleTypedSpecWakeup,console','GET');
 test('daily optional typed recovery starts alongside copy and failure never blocks copy result or schedules two tails',async()=>{
  for(const continuationNeeded of [true,false]){
   const calls=[],logs=[];let releaseCopy;
@@ -61,30 +61,31 @@ test('daily optional typed recovery starts alongside copy and failure never bloc
    createSupabaseServiceRoleClient:()=>({}),console:{error:(...args)=>logs.push(args)},
    drainShopifySyncQueues:async()=>{calls.push('copy');await copyWait;return {continuationNeeded};},
    recoverTypedSpecQueue:async()=>{calls.push('typedRecovery');releaseCopy();throw Error('SPEC_DB_RETRY');},
+   recoverMediaWork:async()=>{calls.push('mediaRecovery');},scheduleMediaSyncWakeup:()=>calls.push('mediaTail'),
    scheduleShopifySyncContinuation:()=>calls.push('jointTail'),scheduleTypedSpecWakeup:()=>calls.push('typedTail'),
   });
   const request=new Request('https://landing.toptik.co.il/api/admin/shopify/sync?run=1');request.nextUrl=new URL(request.url);
   const result=await GET(request);assert.equal(result.status,200);assert.deepEqual(await result.json(),{continuationNeeded});
-  assert.deepEqual(calls,['copy','typedRecovery',continuationNeeded?'jointTail':'typedTail']);assert.equal(logs[0][1].code,'SPEC_DB_RETRY');
+  assert.deepEqual(calls,continuationNeeded?['copy','mediaRecovery','typedRecovery','jointTail']:['copy','mediaRecovery','typedRecovery','typedTail','mediaTail']);assert.equal(logs[0][1].code,'SPEC_DB_RETRY');
  }
 });
 
 const makeSchedule=await factory(read('src/lib/shopify/schedule-sync.ts'),
- 'after,createSupabaseServiceRoleClient,hasSupabaseAdminEnv,isShopifySyncConfigured,drainShopifySyncQueues,dispatchTypedSpecSync,process,fetch,console',
+ 'after,createSupabaseServiceRoleClient,hasSupabaseAdminEnv,isShopifySyncConfigured,drainShopifySyncQueues,dispatchTypedSpecSync,dispatchMediaSync,process,fetch,console',
  'runScheduledShopifySync,scheduleShopifySyncContinuation');
 test('copy continuation and typed wakeup start together after lease release instead of serial eight-second tails',async()=>{
  for(const synchronous of [false,true]){
   const calls=[],afters=[],started=[];let release;
   const wait=new Promise(resolve=>{release=resolve;});
-  async function dispatch(name){calls.push(name);started.push(name);if(started.length===2)release();await wait;}
+  async function dispatch(name){calls.push(name);started.push(name);if(started.length===3)release();await wait;}
   const schedule=makeSchedule({after:fn=>afters.push(fn),createSupabaseServiceRoleClient:()=>({}),hasSupabaseAdminEnv:()=>true,isShopifySyncConfigured:()=>true,
    process:{env:{VERCEL_ENV:'production',ADMIN_PANEL_TOKEN:'fixture'}},console:{error:()=>{}},
    drainShopifySyncQueues:async()=>{calls.push('drainReleased');return {continuationNeeded:true};},
-   fetch:async()=>{await dispatch('copyWakeup');return {status:202};},dispatchTypedSpecSync:()=>dispatch('typedWakeup'),
+   fetch:async()=>{await dispatch('copyWakeup');return {status:202};},dispatchTypedSpecSync:()=>dispatch('typedWakeup'),dispatchMediaSync:()=>dispatch('mediaWakeup'),
   });
   if(synchronous){schedule.scheduleShopifySyncContinuation();assert.equal(calls.length,0);await afters[0]();}
   else await schedule.runScheduledShopifySync();
-  assert.deepEqual(calls,synchronous?['copyWakeup','typedWakeup']:['drainReleased','copyWakeup','typedWakeup']);
+  assert.deepEqual(calls,synchronous?['copyWakeup','typedWakeup','mediaWakeup']:['drainReleased','copyWakeup','typedWakeup','mediaWakeup']);
  }
 });
 

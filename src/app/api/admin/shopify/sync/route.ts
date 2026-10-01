@@ -7,6 +7,8 @@ import { drainShopifySyncQueues } from "@/lib/shopify/sync-worker";
 import { assertVerifiedCopyApproval, configuredShopifySyncMode, configuredSyncCanarySku, shopifyProductGid } from "@/lib/shopify/sync-rules";
 import { readVerifiedCopyEligibility } from "@/lib/shopify/copy-eligibility";
 import { scheduleShopifySync, scheduleShopifySyncContinuation, validSyncContinuationHop } from "@/lib/shopify/schedule-sync";
+import { recoverMediaWork } from "@/lib/shopify/media-work-queue";
+import { scheduleMediaSyncWakeup } from "@/lib/shopify/media-schedule";
 import { recoverTypedSpecQueue } from "@/lib/shopify/typed-spec-worker";
 import { scheduleTypedSpecWakeup } from "@/lib/shopify/schedule-typed-spec-sync";
 
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await drainShopifySyncQueues(createSupabaseServiceRoleClient());
     if (result.continuationNeeded) scheduleShopifySyncContinuation();
-    else scheduleTypedSpecWakeup();
+    else { scheduleTypedSpecWakeup(); scheduleMediaSyncWakeup(); }
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const code = error instanceof Error && /^[A-Z0-9_]{1,80}$/.test(error.message)
@@ -62,13 +64,14 @@ export async function GET(request: NextRequest) {
       if (!isShopifySyncConfigured()) return NextResponse.json({ error: "Shopify sync is not configured" }, { status: 503 });
       const [result] = await Promise.all([
         drainShopifySyncQueues(supabase),
+        recoverMediaWork().catch(() => console.error("Media recovery pending", { code: "MEDIA_RECOVERY_FAILED" })),
         recoverTypedSpecQueue(supabase).catch(error => {
           const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "SPEC_RECOVERY_FAILED";
           console.error("Typed specification recovery pending", { code });
         }),
       ]);
       if (result.continuationNeeded) scheduleShopifySyncContinuation();
-      else scheduleTypedSpecWakeup();
+      else { scheduleTypedSpecWakeup(); scheduleMediaSyncWakeup(); }
       return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
     }
     const [{ data: events, error: eventsError }, { data: outbox, error: outboxError }] = await Promise.all([

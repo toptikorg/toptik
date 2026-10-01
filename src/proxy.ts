@@ -34,7 +34,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   // The admin subdomain root shows the dashboard (which itself redirects to
   // /login when signed out).
   const rewriteRoot = pathname === "/" && isAdminHost;
-  const needsSession = panelPath || rewriteRoot;
+  const needsSession = panelPath || rewriteRoot || (pathname === "/admin" && panelHost);
 
   const buildResponse = (): NextResponse => {
     if (rewriteRoot) {
@@ -82,6 +82,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 export const config = {
   matcher: [
     { source: "/", has: [{ type: "host", value: "admin.toptik.co.il" }] },
+    "/admin",
     "/login/:path*",
     "/setup/:path*",
     "/reset/:path*",
