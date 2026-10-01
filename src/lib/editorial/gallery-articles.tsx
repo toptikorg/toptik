@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { lifestyleArticles } from "./lifestyle-articles";
 import { ArticleProductCards } from "@/components/editorial/ArticleProductCards";
 
 export type GalleryArticle = {
@@ -13,6 +14,7 @@ export type GalleryArticle = {
   byline: string;
   sourceUrls: readonly string[];
   releaseBlocker?: string;
+  hero?: { src: string; alt: string; width: number; height: number; caption: string };
   content: ReactNode;
 };
 
@@ -255,6 +257,7 @@ const samsoniteRespark79MaterialsContent: ReactNode = <>
 </>;
 
 export const galleryArticles: readonly GalleryArticle[] = [
+  ...lifestyleArticles,
   {
     slug: "samsonite-carry-on-55-sku-dimensions",
     category: "מידות לפי מק״ט",
