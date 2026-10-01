@@ -46,6 +46,14 @@ test("every mapped SKU resolves to its exact product page with its exact variant
   assert.ok(variantIds.length > 0);
 });
 
+test("OSV04 exact Gallery SKU resolves to the published product without a live binding", () => {
+  const expected = "https://www.toptik.co.il/products/p10osv0405j?variant=67612818669818";
+  assert.equal(purchaseUrlFor("P10OSV04-05J-TU", null), expected);
+  assert.equal(purchaseUrlFor("P10OSV0405J"), expected);
+  assert.equal(purchaseUrlFor("P10OSV04-01J-TU", null), null);
+  assert.equal(purchaseUrlFor("P10OSV03-05J-TU", null), null);
+});
+
 test("unmapped or unknown SKUs get no purchase URL (no guessing)", () => {
   assert.equal(purchaseUrlFor("NOSUCHSKU1"), null);
   assert.equal(purchaseUrlFor(""), null);
