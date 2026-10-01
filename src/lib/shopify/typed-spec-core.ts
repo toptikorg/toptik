@@ -336,8 +336,9 @@ export function decodeShopifySpecField(input: { namespace: string; key: string; 
   if ("unit" in definition) {
     // Narrow full-object parser retains the decimal token, including >53-bit precision.
     const number = "(\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d{1,3})?)";
-    const first = new RegExp(`^\\s*\\{\\s*"value"\\s*:\\s*${number}\\s*,\\s*"unit"\\s*:\\s*"([a-z_]+)"\\s*\\}\\s*$`).exec(input.value);
-    const second = new RegExp(`^\\s*\\{\\s*"unit"\\s*:\\s*"([a-z_]+)"\\s*,\\s*"value"\\s*:\\s*${number}\\s*\\}\\s*$`).exec(input.value);
+    // Shopify can return uppercase unit names; normalization still checks the exact unit allowlist.
+    const first = new RegExp(`^\\s*\\{\\s*"value"\\s*:\\s*${number}\\s*,\\s*"unit"\\s*:\\s*"([A-Za-z_]+)"\\s*\\}\\s*$`).exec(input.value);
+    const second = new RegExp(`^\\s*\\{\\s*"unit"\\s*:\\s*"([A-Za-z_]+)"\\s*,\\s*"value"\\s*:\\s*${number}\\s*\\}\\s*$`).exec(input.value);
     if (!first && !second) fail("SPEC_MEASUREMENT_JSON_INVALID");
     value = first ? { value: first[1], unit: first[2] } : { value: second![2], unit: second![1] };
   } else if (definition.type === "boolean") {

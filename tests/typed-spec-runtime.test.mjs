@@ -56,9 +56,20 @@ test('Gallery changed material only writes typed material with absent CAS; fresh
  await w.reconcileTypedSpecProduct(f.db,gid);assert.equal(f.writes.length,1);assert.equal(f.commits.length,1);
 }));
 test('Shopify typed net_weight updates Gallery exactly; no commerce/shipping fallback or Shopify write',()=>enabled(async()=>{
- const f=fixture();f.setShop('net_weight','{"value":2.4,"unit":"kilograms"}');const w=await workerFor(f);
+ const f=fixture();f.setShop('net_weight','{"value":2.4,"unit":"KILOGRAMS"}');const w=await workerFor(f);
  await w.reconcileTypedSpecProduct(f.db,gid);assert.equal(f.writes.length,0);
  const updated=f.state.fields.find(f=>f.key==='net_weight');assert.equal(updated.currentGallery.cell.value.decimal,'2.4');assert.equal(updated.currentGallery.cell.provenance.producer,'shopify_typed_metafield');assert.equal(f.commits[0].p_changes.length,1);
+ assert.equal(updated.currentGallery.cell.value.unit,'kilograms');assert.equal(updated.currentGallery.cell.value.original.unit,'KILOGRAMS');
+ await w.reconcileTypedSpecProduct(f.db,gid);assert.equal(f.writes.length,0);assert.equal(f.commits.length,1);
+}));
+
+test('uncertain accepted weight write normalized to uppercase recovers without a repeated mutation',()=>enabled(async()=>{
+ const f=fixture();f.state.fields.find(f=>f.key==='net_weight').currentGallery=merchant('net_weight',{value:'2.4',unit:'kilograms'});f.uncertain=true;const w=await workerFor(f);
+ await assert.rejects(w.reconcileTypedSpecProduct(f.db,gid),/SHOPIFY_REQUEST_TIMEOUT/);assert.equal(f.commits.length,0);assert.equal(f.writes.length,1);
+ f.setShop('net_weight','{"value":2.4,"unit":"KILOGRAMS"}');
+ await w.reconcileTypedSpecProduct(f.db,gid);assert.equal(f.writes.length,1);assert.equal(f.commits.length,1);
+ const row=f.state.fields.find(f=>f.key==='net_weight');assert.equal(row.shopifyBaseline.cell.value.decimal,'2.4');assert.equal(row.shopifyBaseline.cell.value.original.unit,'KILOGRAMS');
+ await w.reconcileTypedSpecProduct(f.db,gid);assert.equal(f.writes.length,1);assert.equal(f.commits.length,1);
 }));
 test('simultaneous same-field conflict advances no baseline; independent fields still reconcile',()=>enabled(async()=>{
  const f=fixture();f.state.fields.find(f=>f.key==='material').currentGallery=merchant('material','PC');f.setShop('material','PP');f.setShop('wheel_count','4');

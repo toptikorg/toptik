@@ -69,6 +69,29 @@ test('normal set request includes every CAS plus control-map CAS; receipt and fr
  const done=execute(before,request);assert.equal(adapter.parseSpecWriteResponse(done.result,request).length,3);
  assert.throws(()=>adapter.verifySpecWriteReadback(request,snapshot),/READBACK/);adapter.verifySpecWriteReadback(request,parse(done.body));
 });
+
+test('Shopify uppercase native measurement units normalize while exact raw provenance is preserved',()=>{
+ const cases={net_weight:['kilograms','grams','pounds','ounces'],height:['millimeters','centimeters','meters','inches','feet','yards'],volume:['milliliters','centiliters','liters','cubic_meters','us_fluid_ounces','us_pints','us_quarts','us_gallons','imperial_fluid_ounces','imperial_pints','imperial_quarts','imperial_gallons']};
+ for(const [key,units] of Object.entries(cases))for(const unit of units)for(const unitFirst of [false,true]){
+  const raw=JSON.stringify(unitFirst?{unit:unit.toUpperCase(),value:2.4}:{value:2.4,unit:unit.toUpperCase()});
+  const cell=parse(response({[key]:raw})).document.fields[key].cell;
+  const expected=core.normalizeMeasurement(key,{value:'2.4',unit});
+  assert.equal(cell.value.decimal,expected.decimal);assert.equal(cell.value.unit,expected.unit);
+  assert.deepEqual(cell.value.original,{value:'2.4',unit:unit.toUpperCase()});assert.equal(cell.provenance.raw.value,raw);
+ }
+ for(const raw of ['{"value":2.4,"unit":"STONE"}','{"value":2.4,"unit":"OZ"}','{"value":2.4,"unit":"KILOGRAMS_EXTRA"}'])assert.throws(()=>parse(response({net_weight:raw})),/SPEC_UNIT_UNSUPPORTED_OR_AMBIGUOUS/);
+ for(const raw of ['{"value":2.4,"unit":" KILOGRAMS"}','{"value":2.4,"unit":"KILOGRAMS!"}','{"value":2.4,"unit":"KILOGRAMS","extra":1}','{"value":2.4,"unit":"KILOGRAMS","unit":"GRAMS"}'])assert.throws(()=>parse(response({net_weight:raw})),/SPEC_MEASUREMENT_JSON_INVALID/);
+});
+
+test('provider uppercase weight acknowledgement and fresh readback accept the value without weakening numeric checks',()=>{
+ const before=response(),snapshot=parse(before),request=adapter.buildSpecWriteRequest(snapshot,plan(snapshot,{net_weight:{value:'2.4',unit:'kilograms'}}).merge.operations);
+ const done=execute(before,request),normalized=field('net_weight','{"value":2.4,"unit":"KILOGRAMS"}');
+ done.body.data.product.f_net_weight=normalized;done.result.data.metafieldsSet.metafields[0]=normalized;
+ assert.equal(adapter.parseSpecWriteResponse(done.result,request).length,2);
+ adapter.verifySpecWriteReadback(request,parse(done.body));
+ const changed=structuredClone(done.body);changed.data.product.f_net_weight=field('net_weight','{"value":2.5,"unit":"KILOGRAMS"}');
+ assert.throws(()=>adapter.verifySpecWriteReadback(request,parse(changed)),/READBACK/);
+});
 test('omitted operation CAS and stale target/control digest cannot become unconditional writes',()=>{
  const before=response({material:'PC'}),snapshot=parse(before),changes=plan(snapshot,{material:'PP'}),op=changes.merge.operations[0];
  const missing=structuredClone(op);delete missing.expectedRevision;assert.throws(()=>adapter.buildSpecWriteRequest(snapshot,[missing]),/COMPARE_DIGEST/);
