@@ -90,7 +90,7 @@ test("journal article routes have live URLs, canonical metadata and truthful sch
 
 test("articles without a verified Shopify destination stay out of the public archive and routes", async () => {
   const archive = await read("src/app/journal/page.tsx");
-  assert.match(articles, /releaseBlocker: "אין מיפוי מאומת לעמוד מוצר Shopify של המק״ט P10OSV04-05J-TU\./);
+  assert.doesNotMatch(articles, /releaseBlocker: "אין מיפוי מאומת לעמוד מוצר Shopify של המק״ט P10OSV04-05J-TU\./);
   assert.match(articles, /releaseBlocker: "אין מיפוי מאומת לעמוד מוצר Shopify של המק״ט P10ZJT06-24U-TU\./);
   assert.match(articles, /publishableGalleryArticles = galleryArticles\.filter\(\(article\) => !article\.releaseBlocker\)/);
   assert.match(archive, /publishableGalleryArticles\.map/);
