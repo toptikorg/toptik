@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import styles from "@/components/editorial/Journal.module.css";
 import { getGalleryArticle, publishableGalleryArticles } from "@/lib/editorial/gallery-articles";
@@ -35,6 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: absoluteUrl(`/journal/${article.slug}`),
       publishedTime: `${article.publishedAt}T00:00:00+03:00`,
       modifiedTime: `${article.updatedAt}T00:00:00+03:00`,
+      ...(article.hero ? { images: [{ url: absoluteUrl(article.hero.src), width: article.hero.width, height: article.hero.height, alt: article.hero.alt }] } : {}),
     },
   };
 }
@@ -53,6 +55,7 @@ function articleStructuredData(article: NonNullable<ReturnType<typeof getGallery
         datePublished: article.publishedAt,
         dateModified: article.updatedAt,
         articleSection: article.category,
+        ...(article.hero ? { image: absoluteUrl(article.hero.src) } : {}),
         mainEntityOfPage: { "@type": "WebPage", "@id": url },
         author: { "@type": "Organization", name: article.byline },
         publisher: { "@type": "Organization", name: SITE_NAME, url: `${STORE_ORIGIN}/` },
@@ -96,11 +99,15 @@ export default async function JournalArticlePage({ params }: PageProps) {
           </div>
           <div className={styles.articleRule} aria-hidden="true" />
         </header>
+        {article.hero && <figure className={styles.heroFigure}>
+          <Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height} sizes="(max-width: 780px) 94vw, 740px" quality={75} />
+          <figcaption>{article.hero.caption}</figcaption>
+        </figure>}
         <div className={styles.articleBody}>{article.content}</div>
         <footer className={styles.articleFooter}>
           <Link className={styles.backLink} href="/carousel">חזרה לגלריה <span aria-hidden="true">←</span></Link>
           <span aria-hidden="true"> · </span>
-          <Link className={styles.backLink} href="/journal">לכל המדריכים</Link>
+          <Link className={styles.backLink} href="/journal">לכל המאמרים</Link>
         </footer>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(articleStructuredData(article)) }} />
       </article>

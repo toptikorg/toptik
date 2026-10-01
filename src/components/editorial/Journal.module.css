@@ -130,3 +130,10 @@
   .cardLink span,
   .textLink span { transition: none; }
 }
+
+.archiveImage { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 5px; margin-bottom: 22px; }
+.heroFigure { margin: 0 0 38px; }
+.heroFigure img { display: block; width: 100%; height: auto; border-radius: 6px; }
+.heroFigure figcaption { margin-top: 10px; color: #b9af9f; font-size: 12px; line-height: 1.7; }
+.articleBody a { color: #e5c895; text-underline-offset: 4px; }
+.articleBody a:focus-visible, .archiveCard a:focus-visible { outline: 2px solid #f7d9a4; outline-offset: 4px; }

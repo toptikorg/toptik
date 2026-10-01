@@ -26,7 +26,7 @@ export function GalleryContentSections() {
           <p className={styles.eyebrow}>TopTik · מגזין</p>
           <h2 id="gallery-journal-heading">לראות את ההבדלים מקרוב</h2>
         </div>
-        <Link className={styles.textLink} href="/journal">לכל המדריכים וההשוואות <span aria-hidden="true">←</span></Link>
+        <Link className={styles.textLink} href="/journal">לכל הכתבות במגזין <span aria-hidden="true">←</span></Link>
       </div>
       <div className={styles.teaserGrid}>
         {features.map((article) => (
