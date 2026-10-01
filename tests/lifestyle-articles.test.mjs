@@ -27,13 +27,13 @@ test("ten original lifestyle essays have distinct routes, images and contextual 
   assert.equal(new Set(hashes).size, 10, "new distinct image assets, no reuse");
 });
 test("lifestyle articles join public inventory, render server cards and disclose AI imagery", async () => {
-  const module = (await read("src/lib/editorial/lifestyle-articles.tsx")).toString();
+  const articleModule = (await read("src/lib/editorial/lifestyle-articles.tsx")).toString();
   const inventory = (await read("src/lib/editorial/gallery-articles.tsx")).toString();
   const route = (await read("src/app/journal/[slug]/page.tsx")).toString();
   assert.match(inventory, /\.\.\.lifestyleArticles/);
-  assert.match(module, /ArticleProductCards skus=\{\[story.productSku\]\}/);
-  assert.match(module, /בינה מלאכותית/);
-  assert.match(module, /publishedAt: "2026-10-01"/);
+  assert.match(articleModule, /ArticleProductCards skus=\{\[story.productSku\]\}/);
+  assert.match(articleModule, /בינה מלאכותית/);
+  assert.match(articleModule, /publishedAt: "2026-10-01"/);
   assert.match(route, /image: absoluteUrl\(article.hero.src\)/);
   assert.match(route, /<figcaption>\{article.hero.caption\}<\/figcaption>/);
 });
