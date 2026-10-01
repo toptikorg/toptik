@@ -44,6 +44,8 @@ const bbCategories = [
 ];
 
 // Canonical host only; the public landing page inherits index, follow from root layout.
+// Reuse the visible hero through Next's image optimizer, not its 20MB source.
+const shareImageUrl = absoluteUrl(`/_next/image?url=${encodeURIComponent(homePageImage.src)}&w=1200&q=75`);
 export const metadata: Metadata = {
   title: "גלריית TopTik | מזוודות ותיקי נסיעות",
   description: "הכירו את גלריית TopTik: מבחר מזוודות, טרולי ותיקי נסיעות ממותגים מובילים. עברו לגלריה כדי להשוות בין דגמים, צבעים ומפרטים.",
@@ -56,9 +58,9 @@ export const metadata: Metadata = {
     description: "גלו מזוודות, טרולי ותיקים ממותגים מובילים. השוו דגמים, צבעים ופרטי מוצר, והמשיכו לחנות TopTik.",
     url: absoluteUrl("/"),
     images: [{
-      url: absoluteUrl(homePageImage.src),
-      width: homePageImage.width,
-      height: homePageImage.height,
+      url: shareImageUrl,
+      width: 1200,
+      height: Math.round(homePageImage.height * 1200 / homePageImage.width),
       alt: "גלריית TopTik — מזוודות ותיקי נסיעות",
     }],
   },
@@ -66,7 +68,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "גלריית TopTik | מזוודות ותיקי נסיעות",
     description: "גלו מזוודות, טרולי ותיקים ממותגים מובילים. השוו דגמים, צבעים ופרטי מוצר, והמשיכו לחנות TopTik.",
-    images: [absoluteUrl(homePageImage.src)],
+    images: [shareImageUrl],
   },
 };
 
