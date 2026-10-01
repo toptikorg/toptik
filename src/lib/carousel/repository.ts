@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabasePublicEnv } from "@/lib/supabase/public-env";
 import { applyReviewedCopy } from "./reviewed-copy";
 import { normalizeSyncSku } from "@/lib/shopify/sync-rules";
+import { readCompletePages } from "./read-complete-pages";
 
 // Public, read-only catalog access (anon client + RLS). The service-role save
 // path lives in ./repository-admin.ts so public routes never import it.
@@ -117,12 +118,25 @@ export async function getCarouselPayload(
   }
 
   const itemIds = itemRows.map((row: ItemRow) => row.id);
-  const { data: angleRows, error: anglesError } = await supabase
-    .from("carousel_item_angles")
-    .select("*")
-    .in("item_id", itemIds.length ? itemIds : [""])
-    .order("angle_order", { ascending: true });
-  if (options.rawAdmin && (anglesError || !Array.isArray(angleRows))) throw new Error("GALLERY_ADMIN_READ_INCOMPLETE");
+  // Supabase caps a response at 1,000 rows. Read every angle, including in the
+  // editor: saving a truncated snapshot otherwise removes unreturned angles.
+  // Small ID batches keep the filter URL bounded; stable ordering prevents ties
+  // at page boundaries. Exact counts and duplicate checks reject partial reads.
+  const angleRows: AngleRow[] = [];
+  try {
+    for (let offset = 0; offset < itemIds.length; offset += 100) {
+      const batch = itemIds.slice(offset, offset + 100);
+      angleRows.push(...await readCompletePages<AngleRow>((from, to) => supabase
+        .from("carousel_item_angles")
+        .select("*", { count: "exact" })
+        .in("item_id", batch)
+        .order("angle_order", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to)));
+    }
+  } catch {
+    throw new Error(options.rawAdmin ? "GALLERY_ADMIN_READ_INCOMPLETE" : "GALLERY_READ_INCOMPLETE");
+  }
 
   const anglesByItem = new Map<string, AngleRow[]>();
   for (const angle of (angleRows ?? []) as AngleRow[]) {

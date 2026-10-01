@@ -25,6 +25,7 @@ const { createPublicReader } = await moduleFrom(`export function createPublicRea
   return getPublicCarouselPayload;
 }`);
 const { createReader } = await moduleFrom(`export function createReader(deps) {
+  ${read("src/lib/carousel/read-complete-pages.ts").replace(/^export /gm, "")}
   const { createSupabaseServerClient, applyReviewedCopy } = deps;
   const hasSupabasePublicEnv = () => true;
   const normalizeSyncSku = value => value?.toUpperCase().replace(/[^A-Z0-9]/g, "") ?? null;
@@ -66,8 +67,10 @@ function fixture(readFailures = {}) {
   const db = {
     from(table) {
       let filters = [];
+      let range = [0, Infinity];
       const query = {
         select() { return query; }, order() { return query; },
+        range(from, to) { range = [from, to]; return query; },
         eq(key, value) { filters.push(row => row[key] === value); return query; },
         in(key, values) { filters.push(row => values.includes(row[key])); return query; },
         maybeSingle() { return Promise.resolve(readFailures[table] ?? { data: settings, error: null }); },
@@ -82,7 +85,8 @@ function fixture(readFailures = {}) {
         then(resolve) {
           if (readFailures[table]) return Promise.resolve(readFailures[table]).then(resolve);
           const data = table === "carousel_items" ? rows : table === "carousel_item_angles" ? angles : [];
-          return Promise.resolve({ data: structuredClone(data.filter(row => filters.every(filter => filter(row)))), error: null }).then(resolve);
+          const filtered = data.filter(row => filters.every(filter => filter(row)));
+          return Promise.resolve({ data: structuredClone(filtered.slice(range[0], range[1] + 1)), count: filtered.length, error: null }).then(resolve);
         },
       };
       return query;
