@@ -1,8 +1,9 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
-const url = text => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(text)).toString('base64')}`;
+const url = text => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(resolveImageLimits(text))).toString('base64')}`;
 const core = url(readFileSync(new URL('../src/lib/shopify/media-sync-core.ts', import.meta.url), 'utf8'));
 const source = readFileSync(new URL('../src/lib/shopify/media-read-adapter.ts', import.meta.url), 'utf8');
 const api = await import(url(source.replace('from "./media-sync-core";', `from "${core}";`).replace('from "./media-sync-core";', `from "${core}";`)));
@@ -25,6 +26,12 @@ test('read query pins complete product, variant associations, exact publication 
 test('complete read preserves variant linkage and order without pretending decode',()=>{
   const r=parse(response());assert.equal(r.images.length,2);assert.equal(r.images[0].variantAssigned,true);assert.equal(r.images[1].variantAssigned,false);
   assert.equal(r.variantImageId,'gid://shopify/ProductImage/999');assert.equal(r.images[0].imageId,'gid://shopify/ImageSource/1');assert.equal(r.fingerprint.length,64);assert.equal(r.images[0].contentId,undefined);
+});
+test('existing Shopify 25MP image is retained exactly, while larger or over-edge images are held',()=>{
+  const r=response(),image=r.data.product.media.nodes[0].image;image.width=5000;image.height=5000;
+  assert.equal(parse(r).images[0].width,5000);assert.equal(parse(r).images[0].url,image.url);
+  image.width=5001;assert.throws(()=>parse(r),/MEDIA_IMAGE_INVALID/);
+  image.width=16001;image.height=1;assert.throws(()=>parse(r),/MEDIA_IMAGE_INVALID/);
 });
 for(const [name,edit,code] of [
   ['wrong SKU',p=>p.variants.nodes[0].sku+='-TU','MEDIA_VARIANT_CHANGED'],

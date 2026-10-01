@@ -1,10 +1,11 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { stripTypeScriptTypes } from 'node:module';
 import sharp from 'sharp';
-const mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
+const mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(resolveImageLimits(s))).toString('base64');
 const core=mod(readFileSync('src/lib/shopify/media-sync-core.ts','utf8'));
 const allow=mod(readFileSync('src/lib/catalog-source/source-allowlist.ts','utf8'));
 const dns=mod('export const lookup=async(...args)=>globalThis.__source.dns(...args);');
@@ -26,6 +27,23 @@ test('new source capture returns real decoded pixels and hash without trusting i
   const result=await captureMediaSourceBytes(identity,proof().url,Date.now()+5000);
   assert.equal(result.width,16);assert.equal(result.height,24);assert.equal(result.mime,'image/png');
   assert.equal(result.sha256,proof().sha256);assert.equal(result.byteLength,bytes.length);assert.deepEqual(Buffer.from(result.bytes),bytes);assert.equal(f.calls.length,1);
+}));
+test('25MP original bytes decode without resizing the source; greater pixel count is rejected',()=>run(async f=>{
+  const original=await sharp({create:{width:5000,height:5000,channels:3,background:'#102030'}}).png().toBuffer();
+  f.handler=async()=>new Response(original);
+  const value=await captureMediaSourceBytes(identity,proof().url,Date.now()+10000);
+  assert.equal(value.width,5000);assert.equal(value.height,5000);
+  assert.deepEqual(Buffer.from(value.bytes),original);
+  assert.equal(value.sha256,createHash('sha256').update(original).digest('hex'));
+  const tooLarge=await sharp({create:{width:5001,height:5000,channels:3,background:'#102030'}}).png().toBuffer();
+  f.handler=async()=>new Response(tooLarge);
+  await assert.rejects(captureMediaSourceBytes(identity,proof().url,Date.now()+10000),/DECODE_FAILED/);
+}));
+test('proof bounds retain the edge and byte limits independently of the 25MP ceiling',()=>run(async f=>{
+  for(const change of [p=>{p.width=5001;p.height=5000;},p=>{p.width=16001;p.height=1;},p=>p.byteLength=8388609]){
+    const p=proof();change(p);await assert.rejects(readVerifiedMediaSourceBytes(p,Date.now()+1000),/PROOF_INVALID/);
+  }
+  assert.equal(f.calls.length,0);assert.equal(f.dnsCalls.length,0);
 }));
 test('new source capture cannot bless a PNG header with truncated pixels',()=>run(async f=>{
   f.handler=async()=>new Response(bytes.subarray(0,48));await assert.rejects(captureMediaSourceBytes(identity,proof().url,Date.now()+1000),/DECODE_FAILED/);

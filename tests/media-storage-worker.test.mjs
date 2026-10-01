@@ -1,14 +1,15 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { stripTypeScriptTypes } from 'node:module';
 Error.stackTraceLimit=0;
-const src=n=>readFileSync(`src/lib/shopify/${n}.ts`,'utf8'),mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
+const src=n=>readFileSync(`src/lib/shopify/${n}.ts`,'utf8'),mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(resolveImageLimits(s))).toString('base64');
 const coreUrl=mod(src('media-sync-core')),core=await import(coreUrl);
 const rawUrl=mod(src('media-transport-read').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`)),raw=await import(rawUrl);
 const reqUrl=mod(src('media-transport-requests').replaceAll('from "./media-transport-read";',`from "${rawUrl}";`)),req=await import(reqUrl);
-const sourceBody=stripTypeScriptTypes(src('media-source-bytes')).replace(/^import[\s\S]*?;\r?\n/gm,'');
+const sourceBody=stripTypeScriptTypes(resolveImageLimits(src('media-source-bytes'))).replace(/^import[\s\S]*?;\r?\n/gm,'');
 const proofUrl=mod(`import {mediaSnapshotFingerprint} from '${coreUrl}';${sourceBody}`);
 const stubUrl=mod('export function nope(){throw Error("default transport must not run in fixture");}');
 const body=src('media-storage-worker').replace('import "server-only";','').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`)

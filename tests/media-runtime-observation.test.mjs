@@ -1,9 +1,10 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';import{stripTypeScriptTypes}from'node:module';
 Error.stackTraceLimit=0;
-const src=n=>readFileSync(`src/lib/shopify/${n}.ts`,'utf8'),mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
+const src=n=>readFileSync(`src/lib/shopify/${n}.ts`,'utf8'),mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(resolveImageLimits(s))).toString('base64');
 const coreUrl=mod(src('media-sync-core')),core=await import(coreUrl);
 const readUrl=mod(src('media-read-adapter').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`)),reader=await import(readUrl);
-const body=stripTypeScriptTypes(src('media-runtime-observation')).replace(/^import[\s\S]*?;\r?\n/gm,'');
+const body=stripTypeScriptTypes(resolveImageLimits(src('media-runtime-observation'))).replace(/^import[\s\S]*?;\r?\n/gm,'');
 const api=await import(mod(`import {mediaSnapshotFingerprint} from '${coreUrl}';import{mediaReadToSnapshot}from'${readUrl}';${body}`));
 const id={productId:'gid://shopify/Product/123',variantId:'gid://shopify/ProductVariant/456',itemId:'a0000000-0000-4000-8000-000000000001',exactGallerySku:'ABC',exactShopifySku:'ABC',productHandle:'abc'};
 const stamp='2026-09-30T17:00:00Z',now=Date.parse(stamp),hash='a'.repeat(64),conn=nodes=>({nodes,pageInfo:{hasNextPage:false}});

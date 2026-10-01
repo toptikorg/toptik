@@ -1,3 +1,4 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -5,7 +6,7 @@ import { stripTypeScriptTypes } from 'node:module';
 import { p, fixture, gid, time } from './helpers/commerce-fixtures.mjs';
 import { descriptionModuleUrl } from './helpers/description-module.mjs';
 
-const data = source => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`;
+const data = source => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(resolveImageLimits(source))).toString('base64')}`;
 const policy = data(readFileSync(new URL('../src/lib/shopify/commerce-finalization.ts', import.meta.url), 'utf8').replace("'zod'", JSON.stringify(import.meta.resolve('zod'))));
 const moduleSource = readFileSync(new URL('../src/lib/shopify/commerce-shopify-read.ts', import.meta.url), 'utf8');
 const source = moduleSource.replace('import "server-only";', '')
@@ -80,6 +81,11 @@ test('default no-inventory reader needs products/publications only and never cal
  assert.equal(read.snapshot.commercial.tracked,false);
  assert.ok(s.calls.every(x=>x.query!==m.COMMERCE_LEVELS_QUERY&&x.query!==m.COMMERCE_LOCATIONS_QUERY));
  assert.equal(s.calls.length,6);
+});
+test('existing-product commerce read accepts exact 25MP decode evidence and rejects above it',async()=>{
+ const s=setup();s.product.media.nodes[0].image.width=5000;s.product.media.nodes[0].image.height=5000;
+ const result=await s.read();assert.ok(result.snapshot.copyMediaFingerprint);
+ s.product.media.nodes[0].image.width=5001;await assert.rejects(s.read(),/DECODE_IDENTITY_CHANGED/);
 });
 
 test('complete real reader projection composes with the unchanged finalization policy and raw Gallery nulls', async () => {

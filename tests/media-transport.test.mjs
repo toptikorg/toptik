@@ -1,8 +1,9 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
-const moduleUrl = text => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(text)).toString('base64')}`;
+const moduleUrl = text => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(resolveImageLimits(text))).toString('base64')}`;
 const source = name => readFileSync(new URL(`../src/lib/shopify/${name}.ts`, import.meta.url), 'utf8');
 const coreUrl = moduleUrl(source('media-sync-core'));
 const readUrl = moduleUrl(source('media-transport-read').replaceAll('from "./media-sync-core";', `from "${coreUrl}";`));
@@ -77,6 +78,16 @@ test('create uses immutable item/bytes stage and deterministic filename with col
   assert.equal(r.variables.files[0].originalSource,staged.url);assert.equal(r.variables.files[0].contentType,'IMAGE');
   assert.deepEqual(r,api.buildOwnedMediaCreate(context,staged,'מזוודה'));assert.equal(r.mutationSha256.length,64);
   assert.notEqual(r.mutationSha256,api.buildOwnedMediaCreate(context,staged,'תיק').mutationSha256);
+});
+test('existing 25MP originals pass raw read and staged transport with unchanged byte and edge caps',()=>{
+  const r=response();r.data.product.media.nodes[0].image.width=5000;r.data.product.media.nodes[0].image.height=5000;
+  assert.equal(parse(r).media[0].image.width,5000);
+  r.data.product.media.nodes[0].image.height=5001;assert.throws(()=>parse(r),/IMAGE_INVALID/);
+  const f=fixture();f.staged.width=5000;f.staged.height=5000;
+  assert.equal(api.buildOwnedMediaCreate(f.context,f.staged,'').variables.files[0].originalSource,f.staged.url);
+  for(const change of [s=>s.height=5001,s=>{s.width=16001;s.height=1;},s=>s.byteLength=8388609]){
+    const staged=structuredClone(f.staged);change(staged);assert.throws(()=>api.buildOwnedMediaCreate(f.context,staged,''),/STAGED_SOURCE/);
+  }
 });
 for(const [name,edit,error] of [
   ['mutable supplier URL',s=>s.url='https://bricstore.com/product.jpg',/STAGED_SOURCE/],

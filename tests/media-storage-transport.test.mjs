@@ -1,10 +1,11 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { stripTypeScriptTypes } from 'node:module';
 import sharp from 'sharp';
-const url=source=>`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`;
+const url=source=>`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(resolveImageLimits(source))).toString('base64')}`;
 const read=name=>readFileSync(`src/lib/shopify/${name}.ts`,'utf8');
 const core=url(read('media-sync-core')),raw=url(read('media-transport-read').replaceAll('"./media-sync-core"',JSON.stringify(core)));
 const requests=url(read('media-transport-requests').replaceAll('"./media-transport-read"',JSON.stringify(raw)));
@@ -35,6 +36,16 @@ test('one immutable upload uses exact decoded bytes, pinned project and non-over
 test('readback decodes all bytes and matches exact path/hash/dimensions with no authorization header',()=>run(async f=>{
  const s=source(),result=await readImmutableMedia(s,Date.now()+10000);assert.equal(result.sha256,s.contentSha256);assert.equal(result.storagePath,`sync-media/${identity.itemId}/${s.contentSha256}.png`);
  assert.equal(result.width,16);assert.equal(result.height,24);assert.equal(f.calls.length,1);assert.equal(f.calls[0][1].headers,undefined);
+}));
+test('owned 25MP source readback preserves exact bytes, while over-limit source metadata is rejected',()=>run(async f=>{
+ const original=await sharp({create:{width:5000,height:5000,channels:3,background:'#654321'}}).png().toBuffer();
+ const s={...source(),width:5000,height:5000,byteLength:original.length,contentSha256:createHash('sha256').update(original).digest('hex')};
+ s.url=stagedMediaUrl(identity,s.contentSha256,s.mime);f.handler=()=>new Response(original);
+ const actual=await readImmutableMedia(s,Date.now()+10000);assert.equal(actual.width,5000);assert.equal(actual.height,5000);assert.equal(actual.sha256,s.contentSha256);
+ for(const change of [p=>p.width=5001,p=>{p.width=16001;p.height=1;},p=>p.byteLength=8388609]){
+  const bad={...s};change(bad);await assert.rejects(readImmutableMedia(bad,Date.now()+10000),/SOURCE_INVALID/);
+ }
+ assert.equal(f.calls.length,1);
 }));
 test('lost write response never retries; later exact readback is a separate read-only recovery',()=>run(async f=>{
  f.handler=()=>{throw Error('private provider message');};await assert.rejects(uploadImmutableMedia(source(),bytes,Date.now()+10000),e=>e.message==='MEDIA_STORAGE_UPLOAD_UNCONFIRMED');

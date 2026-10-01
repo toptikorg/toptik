@@ -1,10 +1,11 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 Error.stackTraceLimit=0;
 const src=name=>readFileSync(`src/lib/shopify/${name}.ts`,'utf8');
-const mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
+const mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(resolveImageLimits(s))).toString('base64');
 const coreUrl=mod(src('media-sync-core')),core=await import(coreUrl);
 const readUrl=mod(src('media-transport-read').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`)),read=await import(readUrl);
 const reqUrl=mod(src('media-transport-requests').replaceAll('from "./media-transport-read";',`from "${readUrl}";`)),requests=await import(reqUrl);
@@ -12,7 +13,7 @@ const intentUrl=mod(src('media-transport-journal-intent').replaceAll('from "./me
 const imports=s=>s.replaceAll('from "./media-transport-read";',`from "${readUrl}";`).replaceAll('from "./media-transport-requests";',`from "${reqUrl}";`).replaceAll('from "./media-transport-journal-intent";',`from "${intentUrl}";`);
 const {runMediaTransportPhase}=await import(mod(imports(src('media-transport-worker'))));
 const {recoverShopifyMediaPhase}=await import(mod(imports(src('media-transport-recovery'))));
-const runtime=stripTypeScriptTypes(src('media-runtime')).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
+const runtime=stripTypeScriptTypes(resolveImageLimits(src('media-runtime'))).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
 const {make}=await import(mod(`export function make(deps){const {mediaSnapshotFingerprint,loadMediaRuntimeJob,readMediaRuntimeScopes,createMediaTransportRpc,
   readShopifyMediaTransport,executeShopifyMediaTransport,readDecodedOwnedShopifyMedia,readGalleryMediaSnapshot,runMediaTransportPhase,recoverShopifyMediaPhase,process,Date}=deps;
   ${runtime};return runPersistedShopifyMediaPhase;}`));

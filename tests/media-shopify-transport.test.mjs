@@ -1,3 +1,4 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -6,14 +7,14 @@ import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import { descriptionModuleUrl } from './helpers/description-module.mjs';
 
-const moduleUrl = source => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`;
+const moduleUrl = source => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(resolveImageLimits(source))).toString('base64')}`;
 const source = name => readFileSync(`src/lib/shopify/${name}.ts`, 'utf8');
 const coreUrl = moduleUrl(source('media-sync-core'));
 const readUrl = moduleUrl(source('media-transport-read').replaceAll('from "./media-sync-core";', `from "${coreUrl}";`));
 const readyUrl = moduleUrl(source('media-read-adapter').replaceAll('from "./media-sync-core";', `from "${coreUrl}";`));
 const requestsUrl = moduleUrl(source('media-transport-requests').replaceAll('from "./media-transport-read";', `from "${readUrl}";`));
 const read = await import(readUrl), requests = await import(requestsUrl);
-const body = stripTypeScriptTypes(source('media-shopify-transport')).replace(/^import[\s\S]*?;\r?\n/gm, '').replace(/^export /gm, '');
+const body = stripTypeScriptTypes(resolveImageLimits(source('media-shopify-transport'))).replace(/^import[\s\S]*?;\r?\n/gm, '').replace(/^export /gm, '');
 const { makeAdapter } = await import(moduleUrl(`
   import {buildMediaReadRequest,parseMediaReadResponse,MEDIA_API_VERSION,MEDIA_PUBLICATION_ID} from '${readyUrl}';
   import {assertMediaTransportRead,parseMediaTransportResponse,parseTransportMedia} from '${readUrl}';
@@ -207,7 +208,7 @@ test('real unchanged sharp verifier decodes image bytes in recovery, with only D
   const rulesUrl=moduleUrl(source('sync-rules').replace('"@/lib/catalog-source/vendor-detect"',JSON.stringify(vendorUrl)));
   const policyUrl=moduleUrl(source('onboarding-policy').replace('"./description-document"',JSON.stringify(descriptionModuleUrl)).replace('"./sync-rules"',JSON.stringify(rulesUrl)));
   const guardsUrl=moduleUrl(readFileSync('src/lib/catalog-source/source-allowlist.ts','utf8'));
-  const verifierBody=stripTypeScriptTypes(source('onboarding-worker')).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
+  const verifierBody=stripTypeScriptTypes(resolveImageLimits(source('onboarding-worker'))).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
   const {makeVerifier}=await import(moduleUrl(`import {createHash} from 'node:crypto';import sharp from '${import.meta.resolve('sharp')}';
     import {isPrivateAddress} from '${guardsUrl}';import {normalizeSyncSku} from '${rulesUrl}';
     import {approvedShopifyImageUrl,assertOnboardingShopifyUniqueness,MAX_ONBOARDING_IMAGE_BYTES,ONBOARDING_SHOP_DOMAIN,

@@ -1,9 +1,10 @@
+import { resolveImageLimits } from './helpers/existing-media-limits.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 Error.stackTraceLimit=0;
-const url=source=>`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`;
+const url=source=>`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(resolveImageLimits(source))).toString('base64')}`;
 const source=name=>readFileSync(new URL(`../src/lib/shopify/${name}.ts`,import.meta.url),'utf8');
 const core=url(source('media-sync-core'));
 const readUrl=url(source('media-transport-read').replaceAll('from "./media-sync-core";',`from "${core}";`));

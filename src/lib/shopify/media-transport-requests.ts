@@ -1,3 +1,4 @@
+import { MAX_EXISTING_MEDIA_PIXELS } from "./existing-media-limits";
 import { createHash } from "node:crypto";
 import type { MediaIdentity } from "./media-sync-core";
 import type { ShopifyMediaTransportRead, TransportMedia } from "./media-transport-read";
@@ -80,7 +81,7 @@ const FILE_FIELDS = "id fileStatus alt ... on MediaImage { mediaContentType stat
 export function buildOwnedMediaCreate(context: MediaTransportContext, source: StagedMediaSource, alt: string): MediaTransportRequest {
   contextValid(context); sameIdentity(context.identity, source.identity); altValid(alt);
   if (!KEY.test(source.receiptId) || !validBytes(source.byteLength) || !Number.isInteger(source.width) || !Number.isInteger(source.height) ||
-      source.width < 1 || source.height < 1 || source.width > 16000 || source.height > 16000 || source.width * source.height > 16_000_000 ||
+      source.width < 1 || source.height < 1 || source.width > 16000 || source.height > 16000 || source.width * source.height > MAX_EXISTING_MEDIA_PIXELS ||
       source.url !== stagedMediaUrl(context.identity, source.contentSha256, source.mime)) fail("MEDIA_TRANSPORT_STAGED_SOURCE_REQUIRED");
   return makeRequest(context, "create_owned", `mutation TopTikCreateOwnedMedia($files: [FileCreateInput!]!) {
     fileCreate(files: $files) { files { ${FILE_FIELDS} } userErrors { code field message } }

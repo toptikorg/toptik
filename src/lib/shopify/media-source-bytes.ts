@@ -1,3 +1,4 @@
+import { MAX_EXISTING_MEDIA_PIXELS } from "./existing-media-limits";
 import "server-only";
 import { createHash } from "node:crypto";
 import { lookup } from "node:dns/promises";
@@ -23,7 +24,7 @@ export function assertMediaSourceBytesProof(proof: MediaSourceBytesProof) {
       !["image/png", "image/jpeg", "image/webp", "image/avif"].includes(proof.mime) ||
       !Number.isSafeInteger(proof.byteLength) || proof.byteLength < 1 || proof.byteLength > MAX_BYTES ||
       !Number.isSafeInteger(proof.width) || !Number.isSafeInteger(proof.height) || proof.width < 1 || proof.height < 1 ||
-      proof.width > 16000 || proof.height > 16000 || proof.width * proof.height > 16_000_000 ||
+      proof.width > 16000 || proof.height > 16000 || proof.width * proof.height > MAX_EXISTING_MEDIA_PIXELS ||
       typeof proof.url !== "string" || proof.url.length > 4096 || /[\s\\#]/.test(proof.url)) fail("MEDIA_SOURCE_PROOF_INVALID");
   return sourceUrl(proof.identity, proof.url);
 }
@@ -75,12 +76,12 @@ async function capture(identity: MediaIdentity, address: string, deadline: numbe
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   if (proof && (bytes.byteLength !== proof.byteLength || sha256 !== proof.sha256)) fail("MEDIA_SOURCE_BYTES_CHANGED");
   try {
-    const decoder = sharp(bytes, { failOn: "error", limitInputPixels: 16_000_000 }).timeout({ seconds: Math.max(1, Math.ceil(budget(stop) / 1000)) });
+    const decoder = sharp(bytes, { failOn: "error", limitInputPixels: MAX_EXISTING_MEDIA_PIXELS }).timeout({ seconds: Math.max(1, Math.ceil(budget(stop) / 1000)) });
     const metadata = await bounded(() => decoder.metadata(), stop);
     const formats = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" } as const;
     const mime = metadata.format === "heif" && metadata.compression === "av1" ? "image/avif" : formats[metadata.format as keyof typeof formats];
     if (!mime || !metadata.width || !metadata.height || metadata.width > 16000 || metadata.height > 16000 ||
-        metadata.width * metadata.height > 16_000_000 || (metadata.pages ?? 1) !== 1 ||
+        metadata.width * metadata.height > MAX_EXISTING_MEDIA_PIXELS || (metadata.pages ?? 1) !== 1 ||
         (proof && (mime !== proof.mime || metadata.width !== proof.width || metadata.height !== proof.height))) fail("MEDIA_SOURCE_DECODE_CHANGED");
     await bounded(() => decoder.resize({ width: 64, height: 64, fit: "inside", withoutEnlargement: true }).png().toBuffer(), stop);
     budget(stop); return { bytes: new Uint8Array(bytes), sha256, mime, width: metadata.width, height: metadata.height, byteLength: bytes.length };

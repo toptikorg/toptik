@@ -1,3 +1,4 @@
+import { MAX_EXISTING_MEDIA_PIXELS } from "./existing-media-limits";
 import "server-only";
 import { createHash } from "node:crypto";
 import { lookup } from "node:dns/promises";
@@ -53,7 +54,7 @@ export async function verifyOnboardingImage(media: ShopifyOnboardingSnapshot["me
   const bytes = Buffer.concat(chunks);
   let width: number, height: number, mime: string;
   try {
-    const decoder = sharp(bytes, { failOn: "error", limitInputPixels: 16_000_000 }).timeout({ seconds: Math.max(1, Math.ceil(readTimeout(deadline) / 1000)) });
+    const decoder = sharp(bytes, { failOn: "error", limitInputPixels: MAX_EXISTING_MEDIA_PIXELS }).timeout({ seconds: Math.max(1, Math.ceil(readTimeout(deadline) / 1000)) });
     const metadata = await decoder.metadata();
     const mimeByFormat: Record<string, string> = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif" };
     mime = metadata.format === "heif" && metadata.compression === "av1" ? "image/avif" : mimeByFormat[metadata.format ?? ""];

@@ -1,3 +1,4 @@
+import { MAX_EXISTING_MEDIA_PIXELS } from "./existing-media-limits";
 import "server-only";
 import { z } from "zod";
 import { configuredShopifyDomain, shopifyAdminGraphql } from "./admin-api";
@@ -263,7 +264,7 @@ export async function readCommerceShopify(rawIdentity: CommerceReadIdentity, dea
       values.forEach((raw, index) => {
         const m = chunk[index], value = parse(z.object({ mediaGid: gid("MediaImage"), url: z.string(), width: z.number().int(), height: z.number().int(),
           mime: z.enum(["image/jpeg", "image/png", "image/webp", "image/avif", "image/gif"]), byteLength: z.number().int().positive().max(8388608), sha256: hash }).strict(), raw, "DECODE_INVALID");
-        if (value.mediaGid !== m.id || value.url !== m.image.url || value.width !== m.image.width || value.height !== m.image.height || value.width * value.height > 16000000) fail("DECODE_IDENTITY_CHANGED");
+        if (value.mediaGid !== m.id || value.url !== m.image.url || value.width !== m.image.width || value.height !== m.image.height || value.width * value.height > MAX_EXISTING_MEDIA_PIXELS) fail("DECODE_IDENTITY_CHANGED");
         media.push({ ...value, productGid: p.id, status: "READY", alt: m.alt ?? "", verifiedAt: new Date(started).toISOString() });
       });
     }
