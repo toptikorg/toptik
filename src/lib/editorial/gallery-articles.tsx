@@ -396,7 +396,6 @@ export const galleryArticles: readonly GalleryArticle[] = [
     updatedAt: "2026-09-30",
     readingMinutes: 3,
     byline: "מערכת מגזין TopTik",
-    releaseBlocker: "אין מיפוי מאומת לעמוד מוצר Shopify של המק״ט P10OSV04-05J-TU.",
     sourceUrls: ["https://mandarinaduck.com/en-us/products/eco-coated-trolley-large-expandable-duck-yellow-osv0405j"],
     content: ecoCoatedOrganizationContent,
   },
