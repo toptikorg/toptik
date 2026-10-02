@@ -11,11 +11,13 @@ const { fallbackCarouselPayload, isUnavailableCarouselPayload, CAROUSEL_UNAVAILA
 // modules so public routes cannot reach the service-role client.
 const repository = await read('src/lib/carousel/repository.ts');
 const repositoryAdmin = await read('src/lib/carousel/repository-admin.ts');
+const completePages = await read('src/lib/carousel/read-complete-pages.ts');
 const readStart = repository.indexOf('export async function getCarouselPayload');
 const saveStart = repositoryAdmin.indexOf('export async function saveCarouselPayload');
 assert.ok(readStart > 0 && saveStart > 0);
 assert.ok(!repository.includes('saveCarouselPayload'), 'save path must not live in the public read module');
 const { makeReader, makeSaver } = await moduleFrom(`
+  ${completePages.replace(/^export /gm, '')}
   export function makeReader(deps) {
     const { hasSupabasePublicEnv, createSupabaseServerClient, fallbackCarouselPayload, applyReviewedCopy } = deps;
     ${repository.slice(readStart).replace(/^export /gm, '')}
@@ -49,7 +51,7 @@ function readClient(itemsResult) {
       ? { data: { autoplay_ms: 4500, transition_mode: 'curtain-fade' }, error: null }
       : itemsResult;
     const chain = {
-      select() { return chain; }, order() { return chain; }, eq() { return chain; },
+      select() { return chain; }, order() { return chain; }, eq() { return chain; }, range() { return chain; },
       maybeSingle() { return Promise.resolve(result); },
       then(resolve, reject) { return Promise.resolve(result).then(resolve, reject); },
     };

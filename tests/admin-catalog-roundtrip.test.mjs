@@ -208,3 +208,14 @@ test("editor revisions are admin-only and missing revisions cannot bypass CAS", 
   await assert.rejects(f.save(input), /GALLERY_EDITOR_REVISION_REQUIRED/);
   assert.equal(f.rpcCalls.length, 0);
 });
+
+test("parallel public angles retain exact identity and exclude unrelated rows", async () => {
+  const f = fixture();
+  f.angles.push({...structuredClone(f.angles[0]), id:uuid(888), item_id:uuid(889)});
+  const result = await f.read({includeInactive:true});
+  const expected = f.before.angles.map(a=>a.id).sort();
+  assert.deepEqual(result.items.flatMap(i=>i.angles.map(a=>a.id)).sort(),expected);
+  assert.ok(result.items.every(i=>i.angles.every(a=>a.itemId===i.id)));
+  const failed=fixture({carousel_item_angles:{data:null,error:{message:'offline'},count:null}});
+  await assert.rejects(failed.read(),/GALLERY_READ_INCOMPLETE/);
+});

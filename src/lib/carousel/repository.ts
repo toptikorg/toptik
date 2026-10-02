@@ -74,11 +74,20 @@ export async function getCarouselPayload(
     itemQuery = itemQuery.eq("is_active", true);
   }
 
-  const [{ data: settingsRow, error: settingsError }, { data: itemRows, error: itemsError }, { data: liveLinks, error: linksError }] = await Promise.all([
+  // Public RLS-visible angles are independent of the items query. Start them
+  // together, then attach only to returned item IDs. Admin retains its exact
+  // item-scoped read below. Counts/pagination still reject partial snapshots.
+  const [{ data: settingsRow, error: settingsError }, { data: itemRows, error: itemsError }, { data: liveLinks, error: linksError }, publicAngles] = await Promise.all([
     supabase.from("carousel_settings").select("*").eq("id", 1).maybeSingle<SettingsRow>(),
     itemQuery,
     supabase.from("shopify_gallery_public_links")
       .select("catalog_key,product_handle,variant_id,is_published"),
+    options.rawAdmin ? Promise.resolve(null) : readCompletePages<AngleRow>((from, to) => supabase
+      .from("carousel_item_angles")
+      .select("*", { count: "exact" })
+      .order("angle_order", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to), 100_000, 1000).catch(() => null),
   ]);
 
   // Never let a partial editable snapshot be saved as intentional removal.
@@ -116,16 +125,17 @@ export async function getCarouselPayload(
     };
   }
 
+  if (!options.rawAdmin && publicAngles === null) throw new Error("GALLERY_READ_INCOMPLETE");
   const itemIds = itemRows.map((row: ItemRow) => row.id);
   // Supabase caps a response at 1,000 rows. Read every angle, including in the
   // editor: saving a truncated snapshot otherwise removes unreturned angles.
   // Small ID batches keep the filter URL bounded; stable ordering prevents ties
   // at page boundaries. Exact counts and duplicate checks reject partial reads.
-  const angleRows: AngleRow[] = [];
+  const angleRows: AngleRow[] = publicAngles ?? [];
   try {
     // Three independent batches at a time; preserve complete-page validation
     // and deterministic ordering. No cache and no catalog truncation.
-    for (let offset = 0; offset < itemIds.length; offset += 300) {
+    for (let offset = 0; options.rawAdmin && offset < itemIds.length; offset += 300) {
       const batches = [0, 100, 200]
         .map(delta => itemIds.slice(offset + delta, offset + delta + 100))
         .filter(batch => batch.length > 0);
