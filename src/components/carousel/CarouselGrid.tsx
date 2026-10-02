@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { A11y, Keyboard, Pagination } from "swiper/modules";
+import { A11y, Keyboard } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import { CarouselItem } from "@/lib/carousel/types";
@@ -311,13 +311,13 @@ export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTe
         // Text selection and links keep native pointer behavior; images still swipe.
         noSwiping={true}
         noSwipingClass="swiper-no-swiping"
-        modules={[Pagination, Keyboard, A11y]}
+        modules={[Keyboard, A11y]}
         slidesPerView={1}
         autoHeight={true}
         initialSlide={0}
         speed={450}
         navigation={false}
-        pagination={{ clickable: true }}
+        pagination={false}
         keyboard={{ enabled: true, onlyInViewport: true }}
         a11y={{
           enabled: true,
