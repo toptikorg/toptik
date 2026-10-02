@@ -1,3 +1,4 @@
+import { variantPolicySource } from "./helpers/variant-source-module.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -14,6 +15,7 @@ const eligibilityUrl = url(readFileSync("src/lib/shopify/copy-eligibility.ts", "
 const { readVerifiedCopyEligibility } = await import(eligibilityUrl);
 const workerSource = stripTypeScriptTypes(readFileSync("src/lib/shopify/sync-worker.ts", "utf8")).replace(/^import[\s\S]*?;\r?\n/gm, "");
 const workerModule = await import(url(`
+  ${variantPolicySource}
   import { createHash, randomUUID } from 'node:crypto';
   import { assertVerifiedCopyApproval, assertVerifiedCopyIdentity, configuredShopifySyncMode, configuredSyncCanarySku,
     isSafeShopifyProductHandle, isSyncCanarySku, matchExactSkus, normalizeSyncSku, numericVariantId, shopifyProductGid, staleBindingKeys } from '${rulesUrl}';
@@ -182,6 +184,7 @@ test("lost product lease blocks external Shopify mutation",async()=>verified(asy
 const patchSource=readFileSync("src/app/api/admin/shopify/copy/route.ts","utf8");
 const patchBody=patchSource.slice(patchSource.indexOf("const patchSchema")).replace(/^export /gm,"");
 const {makePatch}=await import(url(`export function makePatch(deps){
+  ${variantPolicySource}
   const {z,requireAdminToken,createSupabaseServiceRoleClient,fetchProductSnapshot,scheduleShopifySync,
     assertSafeDescriptionHtml,descriptionTextFromHtml,plainDescriptionToHtml,configuredShopifySyncMode,
     configuredSyncCanarySku,normalizeSyncSku,readVerifiedCopyEligibility,assertVerifiedCopyApproval,assertVerifiedCopyIdentity}=deps;

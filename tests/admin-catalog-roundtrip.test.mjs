@@ -1,3 +1,4 @@
+import { variantPolicySource } from "./helpers/variant-source-module.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -34,6 +35,7 @@ const { createReader } = await moduleFrom(`export function createReader(deps) {
   return getCarouselPayload;
 }`);
 const { createSaver } = await moduleFrom(`export function createSaver(deps) {
+  ${variantPolicySource}
   const { createSupabaseServiceRoleClient, adminCarouselPayloadSchema,
     plainDescriptionToHtml, descriptionTextFromHtml, assertSafeDescriptionHtml } = deps;
   const isUnavailableCarouselPayload = () => false;

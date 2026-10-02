@@ -3,6 +3,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { adminCarouselPayloadSchema } from "@/lib/validation/carousel";
 import { gallerySyncHash, outboxPayload } from "@/lib/shopify/sync-worker";
 import { normalizeSyncSku } from "@/lib/shopify/sync-rules";
+import { MD20_VARIANTS, isShopifyOwnedVariant, SHOPIFY_OWNED_MESSAGE } from "@/lib/shopify/variant-source-policy";
 import { plainDescriptionToHtml, descriptionTextFromHtml, assertSafeDescriptionHtml } from "@/lib/shopify/description-document";
 
 // Admin-only write path (service role). Moved unchanged from ./repository.ts so
@@ -24,6 +25,28 @@ export async function saveCarouselPayload(input: unknown, mediaActor?: { actorTy
       id: angle.id ?? crypto.randomUUID(),
     })),
   }));
+
+  const ownedItems = normalizedItems.filter(item => isShopifyOwnedVariant(item.id));
+  if (ownedItems.length) {
+    const [current, currentAngles] = await Promise.all([
+      supabase.from("carousel_items").select("*").in("id", MD20_VARIANTS.map(v => v.itemId)),
+      supabase.from("carousel_item_angles").select("*").in("item_id", MD20_VARIANTS.map(v => v.itemId)),
+    ]);
+    if (current.error || currentAngles.error) throw new Error("SYNC_VARIANT_GALLERY_READ_FAILED");
+    const fields = { title: "title", description: "description", descriptionHtml: "description_html", seoTitle: "seo_title",
+      seoDescription: "seo_description", catalogNumber: "catalog_number", coverImagePath: "cover_image_path", coverImageAlt: "cover_image_alt", isActive: "is_active" } as const;
+    for (const item of ownedItems) {
+      const row = current.data.find(r => r.id === item.id);
+      const previousAngles = currentAngles.data.filter(a => a.item_id === item.id);
+      if (!row || Object.entries(fields).some(([client, column]) =>
+        (item[client as keyof typeof fields] ?? null) !== (row[column] ?? null)) ||
+        item.angles.length !== previousAngles.length || item.angles.some(a => {
+          const old = previousAngles.find(p => p.id === a.id);
+          return !old || old.angle_key !== a.angleKey || old.angle_order !== a.angleOrder ||
+            old.image_path !== a.imagePath || (old.image_alt ?? null) !== (a.imageAlt ?? null);
+        })) throw new Error(SHOPIFY_OWNED_MESSAGE);
+    }
+  }
 
   let { data: priorContentRows, error: priorContentError } = await supabase
     .from("carousel_items")

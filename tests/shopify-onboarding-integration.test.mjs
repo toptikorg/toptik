@@ -1,3 +1,4 @@
+import { variantPolicySource } from "./helpers/variant-source-module.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -7,6 +8,7 @@ const source = stripTypeScriptTypes(readFileSync("src/lib/shopify/sync-worker.ts
   .replace(/^import[\s\S]*?;\r?\n/gm, "").replace(/^export /gm, "");
 const encoded = Buffer.from(`
   export function makeWorker(deps) {
+  ${variantPolicySource}
     const { readVerifiedCopyEligibility, ensurePublicShopifyOnboarding } = deps;
     function configuredShopifySyncMode(value) { return value === 'verified_catalog' ? value : 'disabled'; }
     function assertVerifiedCopyApproval(approval) { if (!approval?.enabled) throw new Error('SYNC_COPY_NOT_APPROVED'); }

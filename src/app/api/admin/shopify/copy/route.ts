@@ -8,6 +8,7 @@ import { assertVerifiedCopyApproval, assertVerifiedCopyIdentity, configuredShopi
 import { readVerifiedCopyEligibility } from "@/lib/shopify/copy-eligibility";
 import { assertSafeDescriptionHtml, descriptionTextFromHtml, plainDescriptionToHtml } from "@/lib/shopify/description-document";
 import { scheduleShopifySync } from "@/lib/shopify/schedule-sync";
+import { isShopifyOwnedVariant, SHOPIFY_OWNED_MESSAGE } from "@/lib/shopify/variant-source-policy";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -40,6 +41,7 @@ export async function PATCH(request: NextRequest) {
     const parsed = requestSchema.safeParse(JSON.parse(raw));
     if (!parsed.success) return NextResponse.json({ error: "SYNC_COPY_PATCH_INVALID" }, { status: 400 });
     const body = parsed.data;
+    if (isShopifyOwnedVariant(body.itemId)) return NextResponse.json({ error: SHOPIFY_OWNED_MESSAGE }, { status: 409 });
     const mode = configuredShopifySyncMode(process.env.SHOPIFY_SYNC_MODE);
     if (mode === "disabled") throw new Error("SYNC_MODE_NOT_CONFIGURED");
     const canary = configuredSyncCanarySku(process.env.SHOPIFY_SYNC_CANARY_SKU);

@@ -1,3 +1,4 @@
+import { variantPolicySource } from "./helpers/variant-source-module.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -146,6 +147,7 @@ test("import through save preserves raw SKU identity while storage paths stay sa
   assert.ok(saveStart >= 0);
   const saveBody = repositorySource.slice(saveStart).replace(/^export /gm, "");
   const { createSaver } = await moduleFrom(`export function createSaver(deps) {
+  ${variantPolicySource}
     const { adminCarouselPayloadSchema, createSupabaseServiceRoleClient, applyReviewedCopy, normalizeSyncSku, gallerySyncHash, outboxPayload, plainDescriptionToHtml, descriptionTextFromHtml, assertSafeDescriptionHtml } = deps;
     const isUnavailableCarouselPayload = (input) => input?.unavailable === true;
     ${saveBody}

@@ -1,3 +1,4 @@
+import { variantPolicySource } from "./helpers/variant-source-module.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -8,6 +9,7 @@ import { descriptionHelpers } from "./helpers/description-module.mjs";
 const source = readFileSync("src/app/api/admin/shopify/copy/route.ts", "utf8");
 const body = source.slice(source.indexOf("const patchSchema")).replace(/^export /gm, "");
 const wrapped = `export function createHandler(deps) {
+  ${variantPolicySource}
   const { z, requireAdminToken, createSupabaseServiceRoleClient, fetchProductSnapshot,
     scheduleShopifySync, assertSafeDescriptionHtml, descriptionTextFromHtml, plainDescriptionToHtml } = deps;
   const NextResponse = { json: (value, init) => Response.json(value, init) };
