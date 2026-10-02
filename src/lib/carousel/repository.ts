@@ -74,9 +74,11 @@ export async function getCarouselPayload(
     itemQuery = itemQuery.eq("is_active", true);
   }
 
-  const [{ data: settingsRow, error: settingsError }, { data: itemRows, error: itemsError }] = await Promise.all([
+  const [{ data: settingsRow, error: settingsError }, { data: itemRows, error: itemsError }, { data: liveLinks, error: linksError }] = await Promise.all([
     supabase.from("carousel_settings").select("*").eq("id", 1).maybeSingle<SettingsRow>(),
     itemQuery,
+    supabase.from("shopify_gallery_public_links")
+      .select("catalog_key,product_handle,variant_id,is_published"),
   ]);
 
   // Never let a partial editable snapshot be saved as intentional removal.
@@ -90,9 +92,6 @@ export async function getCarouselPayload(
   // This table is a narrow public projection (SKU key + verified product URL
   // + publication bit). If the sync migration is not installed yet, retain the
   // audited static map in purchase-links.ts as a backwards-compatible fallback.
-  const { data: liveLinks, error: linksError } = await supabase
-    .from("shopify_gallery_public_links")
-    .select("catalog_key,product_handle,variant_id,is_published");
   if (options.rawAdmin && (linksError || !Array.isArray(liveLinks))) throw new Error("GALLERY_ADMIN_READ_INCOMPLETE");
   const liveLinksByKey = new Map((liveLinks ?? []).map((row: {
     catalog_key: string;
@@ -124,15 +123,21 @@ export async function getCarouselPayload(
   // at page boundaries. Exact counts and duplicate checks reject partial reads.
   const angleRows: AngleRow[] = [];
   try {
-    for (let offset = 0; offset < itemIds.length; offset += 100) {
-      const batch = itemIds.slice(offset, offset + 100);
-      angleRows.push(...await readCompletePages<AngleRow>((from, to) => supabase
-        .from("carousel_item_angles")
-        .select("*", { count: "exact" })
-        .in("item_id", batch)
-        .order("angle_order", { ascending: true })
-        .order("id", { ascending: true })
-        .range(from, to)));
+    // Three independent batches at a time; preserve complete-page validation
+    // and deterministic ordering. No cache and no catalog truncation.
+    for (let offset = 0; offset < itemIds.length; offset += 300) {
+      const batches = [0, 100, 200]
+        .map(delta => itemIds.slice(offset + delta, offset + delta + 100))
+        .filter(batch => batch.length > 0);
+      const results = await Promise.all(batches.map(batch =>
+        readCompletePages<AngleRow>((from, to) => supabase
+          .from("carousel_item_angles")
+          .select("*", { count: "exact" })
+          .in("item_id", batch)
+          .order("angle_order", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to))));
+      for (const rows of results) angleRows.push(...rows);
     }
   } catch {
     throw new Error(options.rawAdmin ? "GALLERY_ADMIN_READ_INCOMPLETE" : "GALLERY_READ_INCOMPLETE");

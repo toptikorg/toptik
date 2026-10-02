@@ -234,8 +234,8 @@ export default function CarouselPageClient() {
           <h1 className="collection-title">קולקציה <span>נבחרת</span></h1>
         </div>
         <div className="carousel-header-actions">
-          <Link className="carousel-back-link" href="/">
-            חזרה לדף הבית
+          <Link className="carousel-back-link" href="https://www.toptik.co.il/">
+            חזרה לחנות
           </Link>
         </div>
       </header>

@@ -41,6 +41,7 @@ export default function CarouselPage() {
 
   return (
     <>
+      <link rel="preload" href="/api/carousel" as="fetch" crossOrigin="anonymous" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdString(carouselStructuredData()) }}
@@ -49,7 +50,7 @@ export default function CarouselPage() {
       <GalleryContentSections />
       <footer className="carousel-footer-links" aria-label="קישורי שירות בגלריה" dir="rtl">
         <Link href="/accessibility">הצהרת נגישות</Link>
-        <Link className="carousel-footer-home" href="/">חזרה לדף הבית</Link>
+        <Link className="carousel-footer-home" href="https://www.toptik.co.il/">חזרה לחנות</Link>
       </footer>
     </>
   );
