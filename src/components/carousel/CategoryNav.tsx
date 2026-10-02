@@ -1,16 +1,19 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { CATEGORIES, type CategoryKey } from "@/lib/carousel/categories";
+import { CATEGORIES, categorizeItem, type CategoryKey } from "@/lib/carousel/categories";
+
+import type { CarouselItem } from "@/lib/carousel/types";
 
 type CategoryNavProps = {
+  items: CarouselItem[];
   active: CategoryKey;
   onChange: (key: CategoryKey) => void;
 };
 
 // Outline-stroke icons matching the mockup — Mandarina warm brown, ~22px,
 // stroke-width 1.6 to match the catalog-card-tech-btn family.
-const ICONS: Record<CategoryKey, ReactNode> = {
+const ICONS: Partial<Record<CategoryKey, ReactNode>> = {
   // All products — a shopping/bag glyph for the view-all tab.
   all: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -39,24 +42,25 @@ const ICONS: Record<CategoryKey, ReactNode> = {
   ),
 };
 
-export function CategoryNav({ active, onChange }: CategoryNavProps) {
+export function CategoryNav({ active, onChange, items }: CategoryNavProps) {
+  const available = new Set(items.map(categorizeItem));
+  const categories = CATEGORIES.filter(c => c.key === "all" || c.key === active || available.has(c.key));
   return (
     <aside className="category-nav" dir="rtl" aria-label="קטגוריות מוצרים">
       <h2 className="category-nav-title">קטגוריות</h2>
-      <div className="category-nav-list" role="tablist">
-        {CATEGORIES.map((c) => {
+      <div className="category-nav-list" role="group" aria-label="סינון לפי סוג מוצר">
+        {categories.map((c) => {
           const isActive = active === c.key;
           return (
             <button
               key={c.key}
               type="button"
-              role="tab"
-              aria-selected={isActive}
+              aria-pressed={isActive}
               className={`category-pill${isActive ? " is-active" : ""}`}
               onClick={() => onChange(c.key)}
             >
               <span className="category-pill-label">{c.label}</span>
-              <span className="category-pill-icon">{ICONS[c.key]}</span>
+              <span className="category-pill-icon">{ICONS[c.key] ?? ICONS.all}</span>
             </button>
           );
         })}

@@ -19,9 +19,9 @@ const expected = {
   "BXL58117.101": "carryon", BXL38124101: "carryon", "BXL58145.101": "suitcase",
   "BXL58145.050": "suitcase", "BXL58145.078": "suitcase", "P10SZV24-05J-TU": "carryon",
   "P10SZV24-A83-TU": "carryon", "P10UJV24-A92-TU": "carryon", "P10SZV24-A81-TU": "carryon",
-  "P10OUV24-A89-TU": "carryon", "P10OUN01-A89-TU": null, "P10UJN01-A92-TU": null,
+  "P10OUV24-A89-TU": "carryon", "P10OUN01-A89-TU": "pouches", "P10UJN01-A92-TU": "pouches",
   "ORI05500.909": "carryon", "ORI05500.024": "carryon", "P10OSV04-05J-TU": "suitcase",
-  "P10ZJT06-24U-TU": null,
+  "P10ZJT06-24U-TU": "fashion-bags",
 };
 const items = Object.entries(copy).map(([catalogNumber, entry], index) => ({
   id: String(index), catalogNumber, title: entry.title, description: entry.description,
@@ -46,9 +46,9 @@ test("all 25 exact identities have reviewed fallback categories independent of t
 test("the current catalogue preserves three explicit assignments and fixes verified carry-ons", () => {
   const originalExplicit = items.filter(item => item.techSpecs.category);
   assert.deepEqual(originalExplicit.map(item => item.catalogNumber), ["P10JNV05465", "P10GXV24A32", "P10JNV0508Q"]);
-  const counts = { carryon: 0, suitcase: 0, unassigned: 0 };
+  const counts = { carryon: 0, suitcase: 0, pouches: 0, "fashion-bags": 0 };
   for (const item of items) counts[categorizeItem(item) ?? "unassigned"]++;
-  assert.deepEqual(counts, { carryon: 14, suitcase: 8, unassigned: 3 });
+  assert.deepEqual(counts, { carryon: 14, suitcase: 8, pouches: 2, "fashion-bags": 1 });
   assert.deepEqual(filterByCategory(filterByBrand(items, "porsche-design"), "carryon")
     .map(item => item.catalogNumber), ["ORI05500.909", "ORI05500.024"]);
   assert.equal(filterByCategory(filterByBrand(items, "brics"), "carryon").length, 4);
@@ -57,7 +57,7 @@ test("the current catalogue preserves three explicit assignments and fixes verif
 
 test("explicit future admin choices win over exact SKU evidence without mutating specs", () => {
   for (const item of items) {
-    for (const category of ["carryon", "suitcase"]) {
+    for (const { key: category } of PRODUCT_CATEGORIES) {
       const assigned = { ...item, techSpecs: { ...item.techSpecs, category } };
       const before = structuredClone(assigned);
       assert.equal(categorizeItem(assigned), category);
@@ -69,10 +69,10 @@ test("explicit future admin choices win over exact SKU evidence without mutating
   } }), "carryon");
 });
 
-test("accessories and unverified models are all-only, never guessed from title, prefixes or punctuation", () => {
+test("accessories have their own category; unknown models are never guessed from title or prefixes", () => {
   for (const sku of ["P10OUN01-A89-TU", "P10UJN01-A92-TU", "P10ZJT06-24U-TU"]) {
     const item = items.find(item => item.catalogNumber === sku);
-    assert.equal(categorizeItem(item), null, sku);
+    assert.equal(categorizeItem(item), expected[sku], sku);
     assert.equal(filterByCategory([item], "all").length, 1);
     assert.equal(filterByCategory([item], "suitcase").length, 0);
     assert.equal(filterByCategory([item], "carryon").length, 0);
@@ -86,14 +86,14 @@ test("accessories and unverified models are all-only, never guessed from title, 
 test("filtering keeps identities, all products, display order and existing navigation unchanged", () => {
   const before = structuredClone(items);
   assert.equal(filterByCategory(items, "all"), items);
-  for (const category of ["suitcase", "carryon"]) {
+  for (const { key: category } of PRODUCT_CATEGORIES) {
     const result = filterByCategory(items, category);
     assert.deepEqual(result, items.filter(item => categorizeItem(item) === category));
     result.forEach(item => assert.equal(item, items.find(candidate => candidate.id === item.id)));
   }
   assert.deepEqual(items, before);
-  assert.deepEqual(CATEGORIES.map(category => category.key), ["all", "suitcase", "carryon"]);
-  assert.deepEqual(PRODUCT_CATEGORIES.map(category => category.key), ["suitcase", "carryon"]);
+  assert.deepEqual(CATEGORIES.map(category => category.key), ["all", "suitcase", "carryon", "fashion-bags", "backpacks", "laptop-bags", "travel-bags", "wallets", "pouches"]);
+  assert.deepEqual(PRODUCT_CATEGORIES.map(category => category.key), ["suitcase", "carryon", "fashion-bags", "backpacks", "laptop-bags", "travel-bags", "wallets", "pouches"]);
   for (const raw of [null, undefined, "accessories", "", "unknown"]) assert.equal(parseCategoryParam(raw), "all");
 });
 
@@ -108,4 +108,23 @@ test("admin and Excel consumers handle unassigned products without persisting a 
   assert.match(admin, /checked=\{getItemCategory\(item\) === c.key\}/);
   const exporter = await read("src/lib/carousel/shopify-export.ts");
   assert.match(exporter, /const category = categorizeItem\(item\);\s*const type = category \? TYPE_LABEL\[category\] \?\? "" : "";/);
+});
+
+test("all 257 audited live records have a product type, with no omissions", async () => {
+  const records = JSON.parse(await read("tests/fixtures/gallery-category-coverage-20261002.json"));
+  assert.equal(records.length, 257);
+  for (const row of records) assert.equal(categorizeItem(row), row.expected, row.catalogNumber);
+  const results = PRODUCT_CATEGORIES.flatMap(c => filterByCategory(records, c.key));
+  assert.equal(results.length, records.length);
+  assert.equal(new Set(results.map(i => i.catalogNumber)).size, records.length);
+  for (const c of PRODUCT_CATEGORIES) assert.equal(parseCategoryParam(c.key), c.key);
+});
+
+test("mobile categories wrap rather than hiding categories off screen", async () => {
+  const css = await read("src/app/globals.css");
+  assert.match(css, /\.category-nav-list \{\s*display: grid;\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.category-pill \{\s*min-width: 0;\s*min-height: 44px/);
+  const nav = await read("src/components/carousel/CategoryNav.tsx");
+  assert.match(nav, /items.map\(categorizeItem\)/);
+  assert.match(nav, /aria-pressed=\{isActive\}/);
 });

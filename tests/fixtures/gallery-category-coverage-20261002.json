@@ -1,0 +1,1801 @@
+[
+  {
+    "catalogNumber": "P10JNV05465",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10GXV24A32",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10JNV0508Q",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "BXL38124078",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "BAH08453.001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "BAH08453.006",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "BAH08451.001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "BAH08454.001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "BAH08453.078",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "BXL58117.101",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "BXL38124101",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "BXL58145.101",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "BXL58145.050",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "BXL58145.078",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10SZV24-05J-TU",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10SZV24-A83-TU",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10UJV24-A92-TU",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10SZV24-A81-TU",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10OUV24-A89-TU",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10OUN01-A89-TU",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10UJN01-A92-TU",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "ORI05500.909",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "ORI05500.024",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10OSV04-05J-TU",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10ZJT06-24U-TU",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "KJ114007",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KJ114001",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KJ111001",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KJ109001",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KJ106007",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KL974005",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KL974004",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL974003",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL974002",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL974001",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KT009004",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "KO704007",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KO701007",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KO776007",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KO709007",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KO704006",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KO701006",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KO776006",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KO709006",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KO704005",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KO701005",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KO776005",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KO709005",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KO704011",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "travel-bags"
+  },
+  {
+    "catalogNumber": "KO701011",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "travel-bags"
+  },
+  {
+    "catalogNumber": "KO709011",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "travel-bags"
+  },
+  {
+    "catalogNumber": "KJ17176004",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KJ106001",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KJ344007",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL924004",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL966004",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL901004",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL909004",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL924003",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL966003",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL901003",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL909003",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL924002",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL966002",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL901002",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL909002",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KL924001",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KL924005",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KL966005",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KL901005",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KL909005",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KL966001",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KL901001",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "KL909001",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "S281006",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "S209004",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "KI100005",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "KI106005",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "KI139005",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "KI104005",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "KI101004",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "KI109005",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "P10OSN0105J",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OSN0205J",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OST02651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OSV0116Q",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10OSV0316Q",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10OSV0416Q",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10OSV0505J",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10OSV05651",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10OSV0605J",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10OSV06651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10TKTV8001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10SZV33466",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10SZV35466",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10QMMM301V",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMMM3B03",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMMM3B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMMM3B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMMM3B10",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMMO1B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10QMMO1B10",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10QMN01B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10QMN01B10",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10QMT04B03",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMT09B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT17B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT2809K",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMT28651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMT3201V",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMT32B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMT3901V",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT3909K",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT39465",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT39651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT39B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT39B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT49651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT49B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT5809K",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMT58465",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMT69465",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMT69651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMT7109K",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT71465",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT71651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT71B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT71B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMTT101V",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMTT1B03",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMTT1B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMTT1B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMTT2B03",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMTT2B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10OXT05001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTT7B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTV109K",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTV1651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTV1B03",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT0529O",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTV1B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTV8B03",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTV8B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTV8B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTX501V",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTX5B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTX5B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTX6B03",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTX6B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTZ401V",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMTZ4B03",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMTZ4B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMTZ4B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10TKT34001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10TKTV8A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10TKTZ4001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10TKTZ4A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10UYT32466",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UYT39466",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10UYT39B04",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10UYTT1466",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10UYTT1B04",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10UYTV1466",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UYTV1B04",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UYTV8466",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UYTX5466",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UYTX5B04",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UYTZ4466",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10FZP61A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "wallets"
+  },
+  {
+    "catalogNumber": "P10FZP61B01",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "wallets"
+  },
+  {
+    "catalogNumber": "P10FZP61B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "wallets"
+  },
+  {
+    "catalogNumber": "P10FZT12001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT13001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT46A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10FZT69001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT69A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT79001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT79A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT79B01",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT82001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT82B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZTA7001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10FZTA8001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZTA8B01",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZTA8B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZTA9001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZTA9B09",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXB01001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "travel-bags"
+  },
+  {
+    "catalogNumber": "P10OXB0129O",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "travel-bags"
+  },
+  {
+    "catalogNumber": "P10OXB01645",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "travel-bags"
+  },
+  {
+    "catalogNumber": "P10OXB01A96",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "travel-bags"
+  },
+  {
+    "catalogNumber": "P10OXB01B11",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "travel-bags"
+  },
+  {
+    "catalogNumber": "P10OXM02001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXM0229O",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXM02645",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXM02A96",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXM02B11",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXM04001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXM0429O",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXM04645",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXM04A96",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXM04B11",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OXT01001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT0129O",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT01645",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT01A96",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT01B11",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10TKT34A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT03001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT0329O",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT03645",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT03A96",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT03B11",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMMM1651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT04001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT04B11",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT05645",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT05A96",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT05B11",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT08001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMMM1465",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMMM109K",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10OXT0829O",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10OXT08645",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10OXT08A96",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10OXT08B11",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10OTN01651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OTN0208Q",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OTN02651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "pouches"
+  },
+  {
+    "catalogNumber": "P10OTV0108Q",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10OTV0129U",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10OTV01651",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10OTV0408Q",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10OTV0508Q",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10OTV0529U",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10OTV05651",
+    "techSpecs": {
+      "category": "suitcase"
+    },
+    "expected": "suitcase"
+  },
+  {
+    "catalogNumber": "P10SZV24466",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10SZV24651",
+    "techSpecs": {
+      "category": "carryon"
+    },
+    "expected": "carryon"
+  },
+  {
+    "catalogNumber": "P10UKT01001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UKT01A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UKT03001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UKT03A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UKT04001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UKT04A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UKT07001",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10UKT07A28",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "KM201008",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "KM209008",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "KM203009",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "laptop-bags"
+  },
+  {
+    "catalogNumber": "P10QMT17465",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT49B06",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT17A46",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "backpacks"
+  },
+  {
+    "catalogNumber": "P10QMT58651",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10QMTX5A46",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT73209",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT73B01",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  },
+  {
+    "catalogNumber": "P10FZT73B07",
+    "techSpecs": {
+      "category": null
+    },
+    "expected": "fashion-bags"
+  }
+]

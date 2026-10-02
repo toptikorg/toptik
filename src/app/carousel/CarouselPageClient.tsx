@@ -255,7 +255,7 @@ export default function CarouselPageClient() {
         </div>
       ) : (
         <div className="carousel-page-body" dir="rtl">
-          <CategoryNav active={activeCategory} onChange={onChangeCategory} />
+          <CategoryNav items={filterByBrand(activeItems, activeBrand)} active={activeCategory} onChange={onChangeCategory} />
           <div id="carousel-brand-results" className="carousel-brand-results">
             <p className="carousel-brand-status" role="status">
               {brandLabel}: {visibleItems.length} מוצרים בקטלוג בסינון הנבחר
