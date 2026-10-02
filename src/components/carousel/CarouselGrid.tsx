@@ -279,29 +279,30 @@ export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTe
         <button
           type="button"
           className="carousel-navrow-btn"
-          aria-label="הקודם"
+          aria-label="מוצרים קודמים"
           aria-disabled={prevDisabled}
           disabled={prevDisabled}
           onClick={() => swiperInstance?.slidePrev()}
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
-          <span className="carousel-navrow-label" aria-hidden="true">הקודם</span>
+          <span className="carousel-navrow-label">מוצרים קודמים</span>
         </button>
         <div className="carousel-navrow-info">
           <p className="carousel-position" role="status" aria-live="polite" data-testid="carousel-position">
             {status}
           </p>
+          {pages.length > 1 && <p className="carousel-browse-help">לצפייה בהמשך המבחר, לחצו על ״מוצרים נוספים״</p>}
           <div className="carousel-progress" aria-hidden="true"><span style={{ width: `${progressPct}%` }} /></div>
         </div>
         <button
           type="button"
           className="carousel-navrow-btn"
-          aria-label="הבא"
+          aria-label="מוצרים נוספים"
           aria-disabled={nextDisabled}
           disabled={nextDisabled}
           onClick={() => swiperInstance?.slideNext()}
         >
-          <span className="carousel-navrow-label" aria-hidden="true">הבא</span>
+          <span className="carousel-navrow-label">מוצרים נוספים</span>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
         </button>
       </div>

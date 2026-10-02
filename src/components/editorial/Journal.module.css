@@ -124,6 +124,11 @@
   .collectionTeasersHeader h2 { font-size: 21px; }
   .teaserGrid { grid-template-columns: 1fr; }
   .teaserCard { padding: 16px 18px; }
+  .topline { flex-wrap: wrap; font-size: 1.0625rem; }
+  .topline a, .cardLink, .backLink, .textLink { display: inline-flex; align-items: center; min-height: 48px; font-size: 1.0625rem; white-space: normal; }
+  .archiveCard h2 a { display: block; }
+  .archiveCard > p:not(.cardCategory), .archiveHero > p:last-child, .articleBody { font-size: 1.125rem; }
+  .archiveCardFooter { flex-wrap: wrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {

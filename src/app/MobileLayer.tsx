@@ -9,7 +9,15 @@ import { InfoMenu } from "@/components/InfoMenu";
 const catalogButtonUrl = typeof catalogButton === "string" ? catalogButton : catalogButton.src;
 
 const navItems = [
-  { href: "#deals", label: "מבצעים" },
+  { href: "https://www.toptik.co.il/collections/מזוודות-וטרולי", label: "מזוודות" },
+  { href: "https://www.toptik.co.il/collections/טרולי-carry-on", label: "טרולי לעלייה למטוס" },
+  { href: "https://www.toptik.co.il/collections/fashion-bags", label: "תיקי אופנה" },
+  { href: "https://www.toptik.co.il/collections/backpacks", label: "תיקי גב" },
+  { href: "https://www.toptik.co.il/collections/תיקי-גב-למחשב", label: "תיקים למחשב" },
+  { href: "https://www.toptik.co.il/collections/תיקי-נסיעות", label: "תיקי נסיעות" },
+  { href: "https://www.toptik.co.il/collections/wallets", label: "ארנקים" },
+  { href: "https://www.toptik.co.il/collections/toiletry-pouches", label: "תיקי רחצה ונרתיקים" },
+  { href: "https://www.toptik.co.il/collections/toptik-promotions", label: "מבצעים" },
 ];
 
 const categories = [
@@ -91,6 +99,7 @@ export default function MobileLayer({ isCarouselEnabled = true }: MobileLayerPro
             onClick={() => setOpen((v) => !v)}
           >
             <span className={`m-burger-icon ${open ? "is-open" : ""}`} />
+            <span className="m-burger-text">תפריט</span>
           </button>
         </div>
       </header>
@@ -107,14 +116,24 @@ export default function MobileLayer({ isCarouselEnabled = true }: MobileLayerPro
       )}
 
       {/* Slide-down menu */}
-      <div className={`m-menu ${open ? "is-open" : ""}`} role="dialog" aria-hidden={!open}>
-        <nav dir="rtl">
+      <div className={`m-menu ${open ? "is-open" : ""}`} aria-hidden={!open} inert={!open}>
+        <nav dir="rtl" aria-label="תפריט ראשי">
+          <h2 className="m-menu-heading">גלריית המוצרים</h2>
+          {isCarouselEnabled && <Link href="/carousel" onClick={() => setOpen(false)}>כניסה לגלריית המוצרים</Link>}
+          <h2 className="m-menu-heading">קנייה בחנות לפי סוג מוצר</h2>
           {navItems.map((item) => (
             <a key={item.href} href={item.href} onClick={() => setOpen(false)}>
               {item.label}
             </a>
           ))}
-          <InfoMenu variant="mobile" onItemSelect={() => setOpen(false)} />
+          <h2 className="m-menu-heading">מגזין ושירות</h2>
+          <Link href="/journal" onClick={() => setOpen(false)}>מגזין ומדריכי נסיעות</Link>
+          <InfoMenu variant="mobile" ids={["stores"]} onItemSelect={() => setOpen(false)} />
+          <Link href="/accessibility" onClick={() => setOpen(false)}>הצהרת נגישות</Link>
+          <h2 className="m-menu-heading">על טופ תיק והמותגים</h2>
+          <InfoMenu variant="mobile" ids={["about", "aboutMandarina", "aboutBrics"]} onItemSelect={() => setOpen(false)} />
+          <h2 className="m-menu-heading">מידע נוסף</h2>
+          <InfoMenu variant="mobile" ids={["terms", "privacy", "accessibility"]} onItemSelect={() => setOpen(false)} />
         </nav>
       </div>
 

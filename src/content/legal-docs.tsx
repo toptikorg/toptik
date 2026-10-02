@@ -2,6 +2,7 @@
 // Renderable structure: each doc exposes a React fragment for the InfoModal.
 
 import type { ReactNode } from "react";
+import { AccessibilityStatement } from "@/components/AccessibilityStatement";
 import { StoresPanel, type Store } from "@/components/StoresPanel";
 
 export type DocId =
@@ -26,10 +27,11 @@ export const MENU: MenuEntry[] = [
   { kind: "doc", id: "about" },
   { kind: "doc", id: "aboutMandarina" },
   { kind: "doc", id: "aboutBrics" },
+  { kind: "doc", id: "webAccessibility" },
   {
     kind: "group",
-    title: "פרטיות / נגישות והצהרות",
-    ids: ["accessibility", "webAccessibility", "terms", "privacy"],
+    title: "מידע ושירות",
+    ids: ["accessibility", "terms", "privacy"],
   },
 ];
 
@@ -160,108 +162,7 @@ const AccessibilityBody = (
   </>
 );
 
-const WebAccessibilityBody = (
-  <>
-    <h2>נגישות אתר האינטרנט</h2>
-    <p>
-      חברת טופטיק רואה חשיבות עליונה בהנגשת אתר האינטרנט שלה לאנשים עם מוגבלות. אתר נגיש משפר את
-      הנוחות וקלות השימוש בו לאנשים עם מוגבלות. האתר נבנה בהתאם לתקנות שוויון זכויות לאנשים עם
-      מוגבלות (התאמות נגישות לשירות), התשע&quot;ג–2013, ולתקן Web Content Accessibility Guidelines 2.0
-      (W3C), רמת AA.
-    </p>
-
-    <h3>תפריט הנגישות באתר</h3>
-    <p>
-      בכל עמוד באתר תמצאו כפתור נגישות קבוע (בפינה התחתונה) הפותח תפריט נגישות. התפריט מאפשר לכם,
-      וההעדפות נשמרות אוטומטית לביקורים הבאים:
-    </p>
-    <ul>
-      <li>
-        <strong>הגדלה והקטנה של גודל הטקסט</strong> באתר.
-      </li>
-      <li>
-        <strong>הפעלת ניגודיות גבוהה</strong> להבלטת התוכן.
-      </li>
-      <li>
-        <strong>מעבר לגווני אפור</strong> להפחתת עומס חזותי.
-      </li>
-      <li>
-        <strong>הדגשת קישורים</strong> באמצעות קו תחתון.
-      </li>
-      <li>
-        <strong>עצירת אנימציות ותנועה</strong> לצמצום הסחות דעת.
-      </li>
-      <li>
-        <strong>מעבר לגופן קריא</strong> וברור.
-      </li>
-      <li>
-        <strong>הגדלת סמן העכבר</strong>.
-      </li>
-      <li>
-        <strong>דילוג ישיר לתוכן הראשי</strong> של העמוד.
-      </li>
-      <li>
-        <strong>איפוס</strong> כלל הגדרות הנגישות בלחיצה אחת.
-      </li>
-    </ul>
-
-    <h3>ניווט באמצעות מקלדת</h3>
-    <p>
-      כל הפעולות באתר ניתנות לביצוע באמצעות מקלדת באופן הבא: לחיצה על מקש Tab מעבירה לרכיב הבא,
-      לחיצה על מקש Enter או רווח מפעילה את הרכיב, לחיצה על Shift+Tab מעבירה לרכיב הקודם, ולחיצה על
-      Esc סוגרת חלונות ותפריטים.
-    </p>
-
-    <h3>התאמות למשתמשים עיוורים</h3>
-    <p>האתר מותאם לגולשים המשתמשים בתוכנות קורא מסך, וכולל:</p>
-    <ul>
-      <li>כותרות היררכיות.</li>
-      <li>טקסטים חלופיים לתמונות.</li>
-      <li>חלוקת האתר לאזורי ניווט ולאזור תוכן מרכזי, ואפשרות לדילוג ביניהם.</li>
-      <li>שימוש ב-ARIA לשיפור יכולת הפירוש של קורא המסך.</li>
-    </ul>
-
-    <h2>סייגים לנגישות ופניות בנושא</h2>
-    <p>
-      אנו ממשיכים להשקיע מאמצים רבים בהנגשת האתר. יחד עם זאת, ייתכן שיתגלו חלקים באתר שטרם נגישים.
-      אם נתקלתם בבעיה או שיש לכם הערה או שאלה, נשמח אם תכתבו לדוא&quot;ל{" "}
-      <a href="mailto:talns33@gmail.com">talns33@gmail.com</a> או תתקשרו לטלפון{" "}
-      <a href="tel:0522444203">052-2444203</a>.
-    </p>
-    <p>באפשרותך לצפות בהנחיות להנגשת אתרי אינטרנט 2.0:</p>
-    <ul>
-      <li>
-        בעברית:{" "}
-        <a href="https://www.isoc.org.il/files/w3c-wai/guidelines.html" target="_blank" rel="noopener noreferrer">
-          isoc.org.il/files/w3c-wai/guidelines.html
-        </a>
-      </li>
-      <li>
-        באנגלית:{" "}
-        <a href="http://www.w3.org/TR/2008/REC-WCAG20-20081211" target="_blank" rel="noopener noreferrer">
-          w3.org/TR/2008/REC-WCAG20-20081211
-        </a>
-      </li>
-    </ul>
-
-    <h2>רכז הנגישות ודרכי יצירת קשר</h2>
-    <p>
-      החברה תשמח לקבל פניות לקבלת מידע ו/או הצעות לשיפור על מנת לשפר את השירות ללקוח. לפניות ומידע
-      בנושא נגישות ניתן ליצור קשר עם רכז הנגישות של החברה, מר טל נוסל, באחת מן הדרכים הבאות:
-    </p>
-    <ul>
-      <li>
-        <strong>דוא&quot;ל:</strong> <a href="mailto:talns33@gmail.com">talns33@gmail.com</a>
-      </li>
-      <li>
-        <strong>טלפון:</strong> <a href="tel:0522444203">052-2444203</a>
-      </li>
-      <li>
-        <strong>SMS / וואטסאפ</strong> לאותו מספר.
-      </li>
-    </ul>
-  </>
-);
+const WebAccessibilityBody = <AccessibilityStatement />;
 
 const TermsBody = (
   <>
@@ -606,7 +507,7 @@ const AboutBricsBody = (
 export const DOCS: Record<DocId, Doc> = {
   stores: { title: "סניפים", body: StoresBody },
   accessibility: { title: "נגישות בחנויות", body: AccessibilityBody },
-  webAccessibility: { title: "פרטי נגישות", body: WebAccessibilityBody },
+  webAccessibility: { title: "הצהרת נגישות", body: WebAccessibilityBody },
   terms: { title: "תקנון", body: TermsBody },
   privacy: { title: "מדיניות פרטיות", body: PrivacyBody },
   about: { title: "אודותנו", body: AboutBody },

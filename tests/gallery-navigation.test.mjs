@@ -20,8 +20,10 @@ test("one short status line above the products: brand › category · range of t
 });
 
 test("prev/next sit in their own row above the products, with accessible names, and only move the carousel", () => {
-  assert.match(grid, /aria-label="הקודם"/);
-  assert.match(grid, /aria-label="הבא"/);
+  assert.match(grid, /aria-label="מוצרים קודמים"/);
+  assert.match(grid, /aria-label="מוצרים נוספים"/);
+  assert.ok(!/\.carousel-navrow-label\s*\{\s*display:\s*none/.test(css));
+  assert.match(css, /min-height: 52px/);
   assert.match(grid, /className="carousel-navrow"/);
   assert.match(grid, /swiperInstance\?\.slidePrev\(\)/);
   assert.match(grid, /swiperInstance\?\.slideNext\(\)/);

@@ -8,11 +8,12 @@ type Variant = "desktop" | "mobile";
 
 type Props = {
   variant: Variant;
+  ids?: DocId[];
   // Mobile burger menu wants to close itself when an item is tapped.
   onItemSelect?: () => void;
 };
 
-export function InfoMenu({ variant, onItemSelect }: Props) {
+export function InfoMenu({ variant, ids, onItemSelect }: Props) {
   const [openId, setOpenId] = useState<DocId | null>(null);
   // The "פרטיות / נגישות והצהרות" parent: dropdown open state (desktop) /
   // collapsible section state (mobile).
@@ -99,8 +100,9 @@ export function InfoMenu({ variant, onItemSelect }: Props) {
 
   return (
     <>
-      {MENU.map((entry) => {
+      {(ids ? ids.map((id) => ({ kind: "doc" as const, id })) : MENU).map((entry) => {
         if (entry.kind === "doc") {
+          if (entry.id === "webAccessibility") return <a key={entry.id} className={linkClass} href="/accessibility" onClick={onItemSelect}>הצהרת נגישות</a>;
           return (
             <button
               key={entry.id}
