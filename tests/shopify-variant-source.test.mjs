@@ -7,10 +7,10 @@ import { randomUUID } from 'node:crypto';
 const url = text => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(text)).toString('base64')}`;
 const policy = await import(url(readFileSync('src/lib/shopify/variant-source-policy.ts','utf8')));
 const source = stripTypeScriptTypes(readFileSync('src/lib/shopify/variant-source-worker.ts','utf8')).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
-const { make } = await import(url(`export function make(deps) { const {randomUUID,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,MD20_PRODUCT_GID,MD20_VARIANTS,MD20_LEGACY_UNASSIGNED_MEDIA,exactVariantMedia,process}=deps; ${source}; return reconcileApprovedVariants; }`));
+const { make } = await import(url(`export function make(deps) { const {randomUUID,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,MD20_PRODUCT_GID,MD20_PRODUCT_HANDLE,MD20_VARIANTS,MD20_LEGACY_UNASSIGNED_MEDIA,exactVariantMedia,process}=deps; ${source}; return reconcileApprovedVariants; }`));
 
 function fixture() {
-  const p = { id: policy.MD20_PRODUCT_GID, handle: 'md20', title: 'MD20', descriptionHtml: '<p>Source</p>',
+  const p = { id: policy.MD20_PRODUCT_GID, handle: policy.MD20_PRODUCT_HANDLE, title: 'MD20', descriptionHtml: '<p>Source</p>',
     seo: {title:'MD20',description:'Source'},status:'ACTIVE',updatedAt:'2026-10-03T00:00:00Z',vendor:'Mandarina Duck',productType:'Bag',publishedOnPublication:true,
     variants: { nodes: policy.MD20_VARIANTS.map(v=>({id:`gid://shopify/ProductVariant/${v.variantId}`,sku:v.sku})),pageInfo:{hasNextPage:false}},
     media: {nodes:policy.MD20_VARIANTS.flatMap(v=>[1,2].map(i=>({id:`${v.sku}-${i}`,alt:`Bag | ${v.sku} | ${i}`,status:'READY',mediaContentType:'IMAGE',image:{url:`https://cdn.shopify.com/${v.sku}-${i}.jpg`,altText:null,width:100,height:100}}))),pageInfo:{hasNextPage:false}} };
@@ -36,6 +36,10 @@ test('projects all three colors atomically, decodes every exact image, then sett
   const commit=f.calls.find(c=>c.name);assert.equal(commit.name,'save_gallery_catalog_atomic');assert.equal(commit.args.p_items.length,3);
   for(const v of policy.MD20_VARIANTS){const row=f.tables.carousel_items.find(r=>r.id===v.itemId);assert.ok(row.cover_image_path.includes(v.sku));assert.equal(row.title,'MD20');assert.ok(f.tables.carousel_item_angles.filter(a=>a.item_id===v.itemId).every(a=>a.image_path.includes(v.sku)));}
   assert.equal(f.calls.at(-1).table,'shopify_gallery_content_outbox');assert.equal(f.calls.at(-1).body.status,'synced');
+  assert.ok(!f.calls.some(c=>c.table==='shopify_gallery_public_links'));
+});
+test('changed handle requires review instead of leaving a stale purchase destination',async()=>{
+  const f=fixture();f.p.handle='changed';await assert.rejects(f.run(),/IDENTITY_CONFLICT/);assert.equal(f.calls.length,0);
 });
 test('duplicate or missing angle assignment fails before a write',async()=>{
   const f=fixture();f.p.media.nodes[1].alt=f.p.media.nodes[0].alt;
