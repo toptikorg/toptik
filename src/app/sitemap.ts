@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: absoluteUrl("/"), changeFrequency: "monthly", priority: 1 },
     { url: absoluteUrl("/carousel"), changeFrequency: "weekly", priority: 0.9 },
     { url: absoluteUrl("/journal"), changeFrequency: "weekly", priority: 0.8 },
+    { url: absoluteUrl("/accessibility"), changeFrequency: "monthly", priority: 0.3 },
   ];
 
   const articles: MetadataRoute.Sitemap = publishableGalleryArticles.map((article) => ({

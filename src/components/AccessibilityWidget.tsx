@@ -280,6 +280,7 @@ export function AccessibilityWidget() {
           </button>
 
           <p className="a11y-panel-note">
+            <a href="/accessibility">הצהרת נגישות ועזרה בגלישה</a><br />
             לפניות בנושא נגישות:{" "}
             <a href="mailto:talns33@gmail.com">talns33@gmail.com</a>
           </p>
