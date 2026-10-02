@@ -21,10 +21,17 @@ import { HEBREW_TITLES } from "./product-names";
 // smaller sources are served at their own size rather than upscaled.
 const EXPORT_IMG_WIDTH = 2048;
 
-// The two catalog buckets, in the exact vocabulary the import expects.
+// Catalog product types shared with the gallery filters.
 const TYPE_LABEL: Record<string, string> = {
   suitcase: "מזוודה",
   carryon: "טרולי",
+  "fashion-bags": "תיקי צד וכתף",
+  "backpacks": "תיקי גב",
+  "laptop-bags": "תיקי מחשב",
+  "travel-bags": "תיקי נסיעות",
+  "wallets": "ארנקים",
+  "pouches": "נרתיקים ותיקי רחצה",
+
 };
 
 // Brand names as they should land in Shopify's Vendor field.
