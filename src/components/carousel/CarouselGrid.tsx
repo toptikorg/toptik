@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { A11y, Keyboard } from "swiper/modules";
+import { A11y, Keyboard, Virtual } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import { CarouselItem } from "@/lib/carousel/types";
@@ -311,7 +311,10 @@ export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTe
         // Text selection and links keep native pointer behavior; images still swipe.
         noSwiping={true}
         noSwipingClass="swiper-no-swiping"
-        modules={[Keyboard, A11y]}
+        modules={[Keyboard, A11y, Virtual]}
+        // Mount only the current/adjacent pages. Eager image decode for the
+        // entire catalog exhausted mobile memory before customers could browse.
+        virtual={{ enabled: true, cache: false, addSlidesBefore: 1, addSlidesAfter: 1 }}
         slidesPerView={1}
         autoHeight={true}
         initialSlide={0}
@@ -328,7 +331,7 @@ export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTe
         onSlideChange={(s) => { setIsBeginning(s.isBeginning); setIsEnd(s.isEnd); setActiveIndex(s.activeIndex); }}
       >
         {pages.map((page, pageIndex) => (
-          <SwiperSlide key={`page-${pageIndex}`}>
+          <SwiperSlide key={`page-${pageIndex}`} virtualIndex={pageIndex}>
             <div className="catalog-grid">
               {page.map((item) => (
                 <CatalogCard
