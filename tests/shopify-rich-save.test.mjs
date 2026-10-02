@@ -1,3 +1,4 @@
+import { variantPolicySource } from "./helpers/variant-source-module.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -7,6 +8,7 @@ import { descriptionHelpers } from "./helpers/description-module.mjs";
 const source = readFileSync("src/lib/carousel/repository-admin.ts", "utf8");
 const saveBody = source.slice(source.indexOf("export async function saveCarouselPayload")).replace(/^export /gm, "");
 const wrapped = `export function createSaver(deps) {
+  ${variantPolicySource}
   const { createSupabaseServiceRoleClient, plainDescriptionToHtml, descriptionTextFromHtml, assertSafeDescriptionHtml } = deps;
   const adminCarouselPayloadSchema = { parse: value => structuredClone(value) };
   const applyReviewedCopy = value => value;

@@ -18,6 +18,7 @@ import CommerceExistingEditor from "@/components/admin/CommerceExistingEditor";
 import TypedSpecificationEditor from "@/components/admin/TypedSpecificationEditor";
 import NewProductEditor from "@/components/admin/NewProductEditor";
 import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
+import { isShopifyOwnedVariant, SHOPIFY_OWNED_MESSAGE } from "@/lib/shopify/variant-source-policy";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -1265,6 +1266,7 @@ export default function AdminPage() {
                       הסתר מהגלריה
                     </button>
                   </div>
+                  {isShopifyOwnedVariant(item.id) && <p role="note">{SHOPIFY_OWNED_MESSAGE} <a href="https://admin.shopify.com/store/toptikcoil/products/7512404951290" target="_blank" rel="noopener noreferrer">עריכת המוצר בחנות</a></p>}
                   <div className="admin-item-grid">
                     <label>
                       כותרת

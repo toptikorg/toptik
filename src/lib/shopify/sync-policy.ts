@@ -205,5 +205,5 @@ const REVIEW_CODES = new Set([
 ]);
 
 export function isSyncReviewCode(code: string): boolean {
-  return REVIEW_CODES.has(code);
+  return REVIEW_CODES.has(code) || code === "SYNC_VARIANT_MEDIA_ASSIGNMENT_REQUIRED";
 }

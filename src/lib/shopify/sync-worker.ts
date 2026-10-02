@@ -12,6 +12,8 @@ import {
 import { assertVerifiedCopyApproval, assertVerifiedCopyIdentity, configuredShopifySyncMode, configuredSyncCanarySku, isSafeShopifyProductHandle, isSyncCanarySku, matchExactSkus, normalizeSyncSku, numericVariantId, shopifyProductGid, staleBindingKeys, type VerifiedCopyEligibility } from "./sync-rules";
 import { readVerifiedCopyEligibility } from "./copy-eligibility";
 import { ensurePublicShopifyOnboarding } from "./onboarding-worker";
+import { MD20_PRODUCT_GID, MD20_VARIANTS } from "./variant-source-policy";
+import { reconcileApprovedVariants } from "./variant-source-worker";
 import { isSyncReviewCode, mergeVisibleProductCopy, visibleCopiesEquivalent, type VisibleProductCopy } from "./sync-policy";
 
 const BATCH_SIZE = 20;
@@ -305,6 +307,13 @@ async function reconcileInboxEvent(supabase: SupabaseClient, event: InboxEvent, 
   const mode = configuredShopifySyncMode(process.env.SHOPIFY_SYNC_MODE);
   if (mode === "disabled") throw new Error("SYNC_MODE_NOT_CONFIGURED");
   if (mode === "verified_catalog") {
+    if (productGid === MD20_PRODUCT_GID) {
+      if (event.topic === "products/delete") throw new Error("SYNC_VERIFIED_DELETE_DISABLED");
+      await reconcileApprovedVariants(supabase, deadline);
+      const finalized = await supabase.from("shopify_webhook_events").update({ status: "processed", processed_at: new Date().toISOString(), last_error: null }).eq("id", event.id);
+      if (finalized.error) throw new Error("SYNC_EVENT_FINALIZE_FAILED");
+      return "processed";
+    }
     const approval = await readVerifiedCopyEligibility(supabase, productGid);
     if (!approval && event.topic !== "products/delete" && process.env.SHOPIFY_SYNC_AUTOCREATE === "published_shopify") {
       // Admission creates independent copy baselines in one transaction. Do not
@@ -346,10 +355,16 @@ async function reconcileInboxEvent(supabase: SupabaseClient, event: InboxEvent, 
   return status;
 }
 
-async function processOneOutboxRow(supabase: SupabaseClient, row: OutboxRow, canarySku: string | null) {
+async function processOneOutboxRow(supabase: SupabaseClient, row: OutboxRow, canarySku: string | null, deadline = Date.now() + 35_000) {
   const mode = configuredShopifySyncMode(process.env.SHOPIFY_SYNC_MODE);
   if (mode === "disabled") throw new Error("SYNC_MODE_NOT_CONFIGURED");
   if (mode !== "verified_catalog" && !isSyncCanarySku(row.catalog_key, canarySku)) throw new Error("SYNC_SKU_OUTSIDE_CANARY");
+  if (mode === "verified_catalog" && MD20_VARIANTS.some(v => v.sku === row.catalog_key && v.itemId === row.carousel_item_id)) {
+    return withProductReconciliationLease(supabase, MD20_PRODUCT_GID, async () => {
+      await reconcileApprovedVariants(supabase, deadline);
+      return "synced";
+    });
+  }
   const { data: bindingData, error } = await supabase.from("shopify_gallery_bindings")
     .select("catalog_key,carousel_item_id,product_gid,variant_gid,product_handle,is_published,source_updated_at")
     .eq("catalog_key", row.catalog_key).maybeSingle();
@@ -420,7 +435,7 @@ export async function processShopifySyncQueues(supabase: SupabaseClient, deadlin
   const canarySku = configuredSyncCanarySku(process.env.SHOPIFY_SYNC_CANARY_SKU);
   if (mode === "canary" && !canarySku) throw new Error("SYNC_CANARY_NOT_CONFIGURED");
   const events = await processQueue<InboxEvent>(supabase, "claim_shopify_webhook_events", row => processOneInboxEvent(supabase, row, deadline), deadline);
-  const outbox = await processQueue<OutboxRow>(supabase, "claim_shopify_gallery_outbox", row => processOneOutboxRow(supabase, row, canarySku), deadline);
+  const outbox = await processQueue<OutboxRow>(supabase, "claim_shopify_gallery_outbox", row => processOneOutboxRow(supabase, row, canarySku, deadline), deadline);
   return { events, outbox };
 }
 
