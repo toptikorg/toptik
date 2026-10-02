@@ -511,6 +511,6 @@ export const DOCS: Record<DocId, Doc> = {
   terms: { title: "תקנון", body: TermsBody },
   privacy: { title: "מדיניות פרטיות", body: PrivacyBody },
   about: { title: "אודותנו", body: AboutBody },
-  aboutMandarina: { title: "אודות מנדרינה דאק", body: AboutMandarinaBody },
-  aboutBrics: { title: "אודות בריקס", body: AboutBricsBody },
+  aboutMandarina: { title: "אודות Mandarina Duck", body: AboutMandarinaBody },
+  aboutBrics: { title: "אודות Bric’s", body: AboutBricsBody },
 };
