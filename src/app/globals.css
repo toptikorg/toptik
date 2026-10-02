@@ -3522,10 +3522,15 @@ html.a11y-big-cursor * {
 .carousel-header-actions { position: static; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .carousel-header { flex-wrap: wrap; }
 @media (max-width: 767px) {
-  .carousel-header-actions { flex-basis: 100%; margin-top: 12px; }
+  .carousel-header-actions { display: none; }
   .carousel-header-actions .carousel-back-link { position: static; width: auto; height: auto; min-height: 48px; padding: 10px 12px; font-size: 16px; background: #f2e6cf; color: #241b13; display: inline-flex; align-items: center; }
   .carousel-header-actions .carousel-back-link::before { content: none; }
 }
+
+.carousel-footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px; padding: 12px 60px 24px; }
+.carousel-footer-links a { display: inline-flex; align-items: center; min-height: 44px; color: #ded4c2; font-size: 14px; font-weight: 400; text-decoration: underline; text-underline-offset: 3px; background: none; border: 0; }
+.carousel-footer-links a:focus-visible { outline: 2px solid #d7aa6a; outline-offset: 4px; }
+@media (min-width: 768px) { .carousel-footer-links .carousel-footer-home { display: none; } }
 @media (max-width: 767px) {
   .m-menu .m-menu-heading { font-size: 1.125rem; font-weight: 700; margin: 18px 0 6px; padding: 8px; border-bottom: 1px solid #c9b18c; color: #503718; }
   .m-menu nav a, .m-menu .m-menu-info-link { min-height: 48px; font-size: 1.125rem; line-height: 1.5; text-align: start; }
