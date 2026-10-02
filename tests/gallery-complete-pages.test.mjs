@@ -22,6 +22,19 @@ test("respects a lower server cap without mistaking a short page for completion"
 test("empty catalog is complete", async () => {
   assert.deepEqual(await readCompletePages(async () => ({ data: [], count: 0, error: null })), []);
 });
+
+test("public 1000-row pages remain complete above and below the server cap", async () => {
+  const rows = Array.from({length:1253}, (_, i) => ({id:String(i)}));
+  for (const cap of [1000, 300]) {
+    const calls=[];
+    const actual=await readCompletePages(async (from,to)=>{
+      calls.push([from,to]);
+      return {data:rows.slice(from,Math.min(to+1,from+cap)),count:rows.length,error:null};
+    },100_000,1000);
+    assert.deepEqual(actual,rows);
+    assert.equal(calls.length,Math.ceil(rows.length/cap));
+  }
+});
 for (const [label, second] of Object.entries({
   failure: { data: null, count: null, error: new Error("read failed") },
   truncated: { data: [], count: 2, error: null },
