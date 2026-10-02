@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import type { CarouselItem } from "@/lib/carousel/types";
 import {
   decodeProductImage,
@@ -67,12 +66,15 @@ export function ReliableProductImage({
   const src = visibleFrame?.src ?? candidates[0]?.src;
   if (!src) return null;
   return (
-    <Image
+    // The endpoint already resizes/encodes WebP. Native img keeps the exact
+    // decoded URL: Next Image appends deployment IDs and downloads it again.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={src}
       alt={visibleFrame ? item.title : ""}
       width={width}
       height={width}
-      unoptimized
+      decoding="async"
       loading="eager"
       className={className}
       style={{ visibility: visibleFrame ? undefined : "hidden" }}
