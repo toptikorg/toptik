@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { shopifyAdminGraphql, visibleCopyFromProduct, type ShopifyOnboardingSnapshot } from "./admin-api";
 import { assertSafeDescriptionHtml } from "./description-document";
 import { verifyOnboardingImage } from "./onboarding-worker";
-import { MD20_PRODUCT_GID, MD20_VARIANTS, MD20_LEGACY_UNASSIGNED_MEDIA, exactVariantMedia } from "./variant-source-policy";
+import { MD20_PRODUCT_GID, MD20_PRODUCT_HANDLE, MD20_VARIANTS, MD20_LEGACY_UNASSIGNED_MEDIA, exactVariantMedia } from "./variant-source-policy";
 
 async function snapshot(deadline: number): Promise<ShopifyOnboardingSnapshot> {
   const publicationId = process.env.SHOPIFY_ONLINE_STORE_PUBLICATION_ID?.trim();
@@ -22,7 +22,7 @@ async function snapshot(deadline: number): Promise<ShopifyOnboardingSnapshot> {
     }
   }`, { id: MD20_PRODUCT_GID, publicationId }, 6000, deadline);
   const p = result.product;
-  if (!p || p.id !== MD20_PRODUCT_GID || p.variants.pageInfo.hasNextPage || p.variants.nodes.length !== 3 ||
+  if (!p || p.id !== MD20_PRODUCT_GID || p.handle !== MD20_PRODUCT_HANDLE || p.variants.pageInfo.hasNextPage || p.variants.nodes.length !== 3 ||
       MD20_VARIANTS.some(v => !p.variants.nodes.some(row => row.id === `gid://shopify/ProductVariant/${v.variantId}` && row.sku === v.sku))) {
     throw new Error("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT");
   }
@@ -94,10 +94,9 @@ export async function reconcileApprovedVariants(db: SupabaseClient, deadline: nu
     const row = readAngles.data?.find(r => r.id === p.id);
     return !row || Object.entries(p).some(([key, value]) => row[key] !== value);
   })) throw new Error("SYNC_COPY_READBACK_MISMATCH");
-  const links = await db.from("shopify_gallery_public_links").upsert(MD20_VARIANTS.map(v => ({
-    catalog_key: v.sku, product_handle: source.handle, variant_id: v.variantId, is_published: published,
-  })), { onConflict: "catalog_key" });
-  if (links.error) throw new Error("SYNC_VARIANT_LINK_SAVE_FAILED");
+  // These existing variants use the reviewed static purchase map. Identity and
+  // handle were checked before writing; do not write the read-only public link
+  // projection or enlarge database permissions. A handle change needs review.
   // These rows are audit history, not outbound instructions: Shopify is the
   // approved source. Settle only after all three exact projections read back.
   const settled = await db.from("shopify_gallery_content_outbox").update({ status: "synced", synced_at: new Date().toISOString(), last_error: null })

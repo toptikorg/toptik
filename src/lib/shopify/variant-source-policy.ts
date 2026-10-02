@@ -1,6 +1,7 @@
 // Owner-approved 2026-10-03: these existing colors are Shopify-owned projections.
 // This is not permission to admit arbitrary multi-variant products.
 export const MD20_PRODUCT_GID = "gid://shopify/Product/7512404951290";
+export const MD20_PRODUCT_HANDLE = "md-20-תיק-פאוץ-מבית-מנדרינה-דאק";
 // Pre-existing unassigned media verified on 2026-10-03. Do not infer their
 // colors or expose them in the gallery; new unassigned media requires review.
 export const MD20_LEGACY_UNASSIGNED_MEDIA = new Set([
