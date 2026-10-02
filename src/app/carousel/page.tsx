@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import CarouselPageClient from "./CarouselPageClient";
 import { GalleryContentSections } from "@/components/carousel/GalleryContentSections";
@@ -46,6 +47,10 @@ export default function CarouselPage() {
       />
       <CarouselPageClient />
       <GalleryContentSections />
+      <footer className="carousel-footer-links" aria-label="קישורי שירות בגלריה" dir="rtl">
+        <Link href="/accessibility">הצהרת נגישות</Link>
+        <Link className="carousel-footer-home" href="/">חזרה לדף הבית</Link>
+      </footer>
     </>
   );
 }

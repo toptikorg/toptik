@@ -234,7 +234,6 @@ export default function CarouselPageClient() {
           <h1 className="collection-title">קולקציה <span>נבחרת</span></h1>
         </div>
         <div className="carousel-header-actions">
-          <Link className="carousel-back-link" href="/accessibility">הצהרת נגישות ועזרה</Link>
           <Link className="carousel-back-link" href="/">
             חזרה לדף הבית
           </Link>
