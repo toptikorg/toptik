@@ -106,20 +106,7 @@ export default function CarouselPageClient() {
           throw new Error("Invalid carousel payload");
         }
         setPayload(data);
-        // Fallback warming: most visitors arrive via the landing page which
-        // already pre-warms. This catches deep-link visits to /carousel.
-        const cold = data.items
-          .filter((it) => it.isActive && it.sourceUrl && !it.techSpecs)
-          .map((it) => it.sourceUrl!);
-        if (cold.length > 0) {
-          void Promise.all(
-            cold.map((url) =>
-              fetch(`/api/product-details?url=${encodeURIComponent(url)}`, {
-                signal: controller.signal,
-              }).catch(() => {}),
-            ),
-          );
-        }
+
       })
       .catch((error) => {
         if (controller.signal.aborted) return;
@@ -261,7 +248,7 @@ export default function CarouselPageClient() {
       </p>
 
       {isLoading ? (
-        <div className="carousel-loading">טוען מוצרים...</div>
+        <div className="carousel-loading" role="status" aria-live="polite"><h2>טוענים את המוצרים…</h2><p>אפשר להמתין כאן. הגלריה תופיע כשהטעינה תסתיים.</p></div>
       ) : galleryUnavailable ? (
         <div id="carousel-brand-results" className="carousel-loading carousel-brand-empty" role="status" dir="rtl">
           <p>{CAROUSEL_UNAVAILABLE_MESSAGE}</p>
