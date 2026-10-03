@@ -224,7 +224,7 @@ export default function CarouselPageClient() {
         aria-label="כניסת אדמין"
       />
       <header className="carousel-header">
-        <div className="carousel-title-block">
+        <div className="carousel-title-block" id="brand-selection" tabIndex={-1}>
           <BrandPicker
             brands={brands}
             value={activeBrand}
