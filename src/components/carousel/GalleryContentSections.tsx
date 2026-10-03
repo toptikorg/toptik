@@ -23,7 +23,7 @@ export function GalleryContentSections() {
     <section className={styles.collectionTeasers} aria-labelledby="gallery-journal-heading" dir="rtl">
       <div className={styles.collectionTeasersHeader}>
         <div>
-          <p className={styles.eyebrow}>TopTik · מגזין</p>
+          <p className={styles.eyebrow}><Link href="/journal" className={styles.magazineHomeLink}>TopTik · מגזין</Link></p>
           <h2 id="gallery-journal-heading">לראות את ההבדלים מקרוב</h2>
         </div>
         <Link className={styles.textLink} href="/journal">לכל הכתבות במגזין <span aria-hidden="true">←</span></Link>
