@@ -3536,7 +3536,7 @@ html.a11y-big-cursor * {
 .carousel-footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px; padding: 12px 60px 24px; }
 .carousel-footer-links a { display: inline-flex; align-items: center; min-height: 44px; color: #ded4c2; font-size: 14px; font-weight: 400; text-decoration: underline; text-underline-offset: 3px; background: none; border: 0; }
 .carousel-footer-links a:focus-visible { outline: 2px solid #d7aa6a; outline-offset: 4px; }
-@media (min-width: 768px) { .carousel-footer-links .carousel-footer-home { display: none; } }
+.carousel-social-links { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 18px; color: #ded4c2; font-size: 14px; }
 @media (max-width: 767px) {
   .m-menu .m-menu-heading { font-size: 1.125rem; font-weight: 700; margin: 18px 0 6px; padding: 8px; border-bottom: 1px solid #c9b18c; color: #503718; }
   .m-menu nav a, .m-menu .m-menu-info-link { min-height: 48px; font-size: 1.125rem; line-height: 1.5; text-align: start; }
