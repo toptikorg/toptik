@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { premiumArticles } from "./premium-articles";
 import { lifestyleArticles } from "./lifestyle-articles";
 import { practicalArticles } from "./practical-articles";
 import { collectionArticles } from "./collection-articles";
@@ -16,7 +17,7 @@ export type GalleryArticle = {
   byline: string;
   sourceUrls: readonly string[];
   releaseBlocker?: string;
-  hero?: { src: string; alt: string; width: number; height: number; caption: string };
+  hero?: { src: string; alt: string; width: number; height: number; caption: string; href?: string };
   content: ReactNode;
 };
 
@@ -259,6 +260,7 @@ const samsoniteRespark79MaterialsContent: ReactNode = <>
 </>;
 
 export const galleryArticles: readonly GalleryArticle[] = [
+  ...premiumArticles,
   ...collectionArticles,
   ...practicalArticles,
   ...lifestyleArticles,
