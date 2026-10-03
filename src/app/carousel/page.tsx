@@ -51,6 +51,12 @@ export default function CarouselPage() {
       <footer className="carousel-footer-links" aria-label="קישורי שירות בגלריה" dir="rtl">
         <Link href="/accessibility">הצהרת נגישות</Link>
         <Link className="carousel-footer-home" href="https://www.toptik.co.il/">חזרה לחנות</Link>
+        <nav className="carousel-social-links" aria-label="עקבו אחרינו">
+          <span>עקבו אחרינו</span>
+          <a href="https://www.facebook.com/TopTik.il/">פייסבוק</a>
+          <a href="https://www.instagram.com/toptikltd/">אינסטגרם</a>
+          <a href="https://www.youtube.com/user/MandarinaDuck09">יוטיוב</a>
+        </nav>
       </footer>
     </>
   );
