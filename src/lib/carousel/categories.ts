@@ -57,6 +57,19 @@ export function parseCategoryParam(raw: string | null | undefined): CategoryKey 
 // A category here is not a guarantee of acceptance by any particular airline.
 // Null keeps accessories and unverified models in "all" without mislabelling.
 const REVIEWED_CATEGORY_BY_SKU: Record<string, ProductCategory | null> = {
+  // Exact Bric's additions verified 2026-10-03 against manufacturer / retailer SKU evidence.
+  BOO05956003: "backpacks",
+  BAH08450001: "carryon",
+  BAH08450006: "carryon",
+  BAH08451006: "carryon",
+  BAH08451078: "carryon",
+  BAH08454006: "suitcase",
+  BAH08454078: "suitcase",
+  BXL43756101: "backpacks",
+  BXG45072078: "fashion-bags",
+  BXG45072101: "fashion-bags",
+  BXL44649050: "backpacks",
+  BXL44649001: "backpacks",
   P10JNV05465: null,
   P10GXV24A32: null,
   P10JNV0508Q: null,

@@ -12,6 +12,25 @@ const { categorizeItem, filterByCategory, CATEGORIES, PRODUCT_CATEGORIES, parseC
   await load("src/lib/carousel/categories.ts");
 const { filterByBrand } = await load("src/lib/carousel/brands.ts");
 const copy = JSON.parse(await read("src/lib/carousel/reviewed-copy.json"));
+test("verified October 3 Bric's additions appear in their exact product categories", () => {
+  const additions = {
+    BOO05956003: "backpacks", BXL43756101: "backpacks",
+    BXL44649050: "backpacks", BXL44649001: "backpacks",
+    BXG45072078: "fashion-bags", BXG45072101: "fashion-bags",
+    BAH08450001: "carryon", BAH08450006: "carryon",
+    BAH08451006: "carryon", BAH08451078: "carryon",
+    BAH08454006: "suitcase", BAH08454078: "suitcase",
+  };
+  for (const [catalogNumber, category] of Object.entries(additions)) {
+    const item = { catalogNumber, techSpecs: { category: null } };
+    assert.equal(categorizeItem(item), category, catalogNumber);
+    assert.equal(filterByCategory([item], category).length, 1);
+    assert.equal(categorizeItem({ ...item, techSpecs: { category: "wallets" } }), "wallets");
+  }
+  for (const catalogNumber of ["BXL30599050", "BXL30599078", "BXG45283910"]) {
+    assert.equal(categorizeItem({ catalogNumber }), null, "unverified identity stays unassigned");
+  }
+});
 const expected = {
   P10JNV05465: null, P10GXV24A32: null, P10JNV0508Q: null,
   BXL38124078: "carryon", "BAH08453.001": "suitcase", "BAH08453.006": "suitcase",
