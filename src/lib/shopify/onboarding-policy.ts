@@ -17,6 +17,7 @@ const CATEGORY_TYPES: Record<string, ProductCategory> = {
   "carry-on luggage": "carryon", "cabin luggage": "carryon", "מזוודת עלייה למטוס": "carryon",
   "checked luggage": "suitcase", "checked suitcase": "suitcase", "מזוודה לבטן המטוס": "suitcase",
   "תיק צד": "fashion-bags", "תיק כתף": "fashion-bags", "תיק יד": "fashion-bags",
+  "תיק חגורה": "fashion-bags", "פאוץ׳": "fashion-bags", "belt bag": "fashion-bags", "bum bag": "fashion-bags",
   "crossbody bag": "fashion-bags", "shoulder bag": "fashion-bags", "handbag": "fashion-bags",
   "תיק גב": "backpacks", "backpack": "backpacks",
   "תיק מחשב": "laptop-bags", "laptop bag": "laptop-bags",

@@ -376,7 +376,9 @@ const SHOPIFY_CATEGORY_BY_SKU: Record<string, ProductCategory> = {
   "P10QMTX5A46": "fashion-bags",
   "P10FZT73209": "fashion-bags",
   "P10FZT73B01": "fashion-bags",
-  "P10FZT73B07": "fashion-bags"
+  "P10FZT73B07": "fashion-bags",
+  // Exact FZT73 A61 product and color verified at e-mala.gr, 2026-10-04.
+  "P10FZT73A61": "fashion-bags"
 };
 
 // A deliberate admin choice wins. Otherwise use only verified exact SKU

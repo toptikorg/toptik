@@ -12,6 +12,13 @@ const { categorizeItem, filterByCategory, CATEGORIES, PRODUCT_CATEGORIES, parseC
   await load("src/lib/carousel/categories.ts");
 const { filterByBrand } = await load("src/lib/carousel/brands.ts");
 const copy = JSON.parse(await read("src/lib/carousel/reviewed-copy.json"));
+
+test("verified Iceberg Green belt bag is included in fashion filters", () => {
+  const item = { catalogNumber: "P10FZT73A61", techSpecs: { category: null } };
+  assert.equal(categorizeItem(item), "fashion-bags");
+  assert.deepEqual(filterByCategory([item], "fashion-bags"), [item]);
+  assert.equal(categorizeItem({ ...item, catalogNumber: "P10FZT73XXX" }), null);
+});
 test("verified October 3 Bric's additions appear in their exact product categories", () => {
   const additions = {
     BOO05956003: "backpacks", BXL43756101: "backpacks",
