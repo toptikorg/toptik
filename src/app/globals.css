@@ -674,7 +674,7 @@ body {
 
 .carousel-page-body {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: stretch;
   gap: 18px;
   flex: 0 0 auto;

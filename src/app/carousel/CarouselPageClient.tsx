@@ -37,15 +37,6 @@ export default function CarouselPageClient() {
   const [techSpecsItem, setTechSpecsItem] = useState<CarouselItem | null>(null);
   const [requestedSeries, setRequestedSeries] = useState(() =>
     typeof window === "undefined" ? "all" : new URL(window.location.href).searchParams.get("series") ?? "all");
-  const onChangeSeries = useCallback((key: string) => {
-    setRequestedSeries(key);
-    setSelectedItem(null);
-    setTechSpecsItem(null);
-    const url = new URL(window.location.href);
-    if (key === "all") url.searchParams.delete("series");
-    else url.searchParams.set("series", key);
-    window.history.replaceState(window.history.state, "", url.toString());
-  }, []);
   const [requestedBrand, setRequestedBrand] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return new URL(window.location.href).searchParams.get("brand");
@@ -56,6 +47,18 @@ export default function CarouselPageClient() {
     return parseCategoryParam(param);
   });
 
+  const onApplyFilters = useCallback((series: string, category: CategoryKey) => {
+    setRequestedSeries(series);
+    setActiveCategory(category);
+    setSelectedItem(null);
+    setTechSpecsItem(null);
+    const url = new URL(window.location.href);
+    if (series === "all") url.searchParams.delete("series");
+    else url.searchParams.set("series", series);
+    if (category === "all") url.searchParams.delete("category");
+    else url.searchParams.set("category", category);
+    window.history.replaceState(window.history.state, "", url.toString());
+  }, []);
   const onChangeCategory = useCallback((key: CategoryKey) => {
     setActiveCategory(key);
     if (typeof window === "undefined") return;
@@ -82,11 +85,16 @@ export default function CarouselPageClient() {
   // too, so one Back drops the visitor exactly where they left the gallery.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const key = `carousel-scroll:${window.location.search}`;
     const save = () => {
-      try { sessionStorage.setItem(key, String(window.scrollY)); } catch { /* private mode */ }
+      try { sessionStorage.setItem(`carousel-scroll:${window.location.search}`, String(window.scrollY)); } catch { /* private mode */ }
     };
     window.addEventListener("pagehide", save);
+    return () => window.removeEventListener("pagehide", save);
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+    const key = `carousel-scroll:${window.location.search}`;
     const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
     if (nav?.type === "back_forward") {
       try {
@@ -96,8 +104,7 @@ export default function CarouselPageClient() {
         }
       } catch { /* private mode */ }
     }
-    return () => window.removeEventListener("pagehide", save);
-  }, []);
+  }, [isLoading]);
 
   useEffect(() => {
     const onPopState = () => {
@@ -274,8 +281,8 @@ export default function CarouselPageClient() {
         </div>
       ) : (
         <div className="carousel-page-body" dir="rtl">
-          <CategoryNav items={seriesItems} active={activeCategory} onChange={onChangeCategory}
-            seriesItems={brandItems} activeSeries={activeSeries} onChangeSeries={onChangeSeries} />
+          <CategoryNav key={activeBrand} items={brandItems} active={activeCategory}
+            activeSeries={activeSeries} onApply={onApplyFilters} />
           <div id="carousel-brand-results" className="carousel-brand-results">
             <p className="carousel-brand-status" role="status">
               {brandLabel}: {visibleItems.length} מוצרים בקטלוג בסינון הנבחר

@@ -139,11 +139,21 @@ test("all 257 audited live records have a product type, with no omissions", asyn
   for (const c of PRODUCT_CATEGORIES) assert.equal(parseCategoryParam(c.key), c.key);
 });
 
-test("mobile categories wrap rather than hiding categories off screen", async () => {
-  const css = await read("src/app/globals.css");
-  assert.match(css, /\.category-nav-list \{\s*display: grid;\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(css, /\.category-pill \{\s*min-width: 0;\s*min-height: 44px/);
+test("compact filters have platform layouts, accessible choices and an explicit apply action", async () => {
+  const css = await read("src/components/carousel/CompactFilters.module.css");
+  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /min-height: 48px/);
+  assert.match(css, /max-height: 85dvh/);
+  assert.match(css, /overflow-y: auto/);
   const nav = await read("src/components/carousel/CategoryNav.tsx");
-  assert.match(nav, /items.map\(categorizeItem\)/);
-  assert.match(nav, /aria-pressed=\{isActive\}/);
+  assert.match(nav, /draftItems.map\(categorizeItem\)/);
+  assert.match(nav, /aria-haspopup="dialog"/);
+  assert.match(nav, /aria-expanded=\{panel === "series"\}/);
+  assert.match(nav, /type="radio"/);
+  assert.match(nav, /element.showModal\(\)/);
+  assert.match(nav, /onApply\(draftSeries, draftCategory\)/);
+  assert.match(nav, /filterByCategory\(filterBySeries\(items, key\), draftCategory\).length/);
+  assert.match(nav, /opener.current\?\.focus\(/);
+  assert.match(nav, /window.addEventListener\("resize", reposition\)/);
+  assert.match(nav, /onKeyDown=\{event => event.stopPropagation\(\)\}/);
 });
