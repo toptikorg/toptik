@@ -139,3 +139,24 @@ test('public client distinguishes loading, temporary unavailable, and confirmed 
   assert.match(client, /setPayload\(fallbackCarouselPayload\)/);
   assert.match(client, /אין כרגע מוצרים להצגה בגלריה/);
 });
+
+test('public catalog signals dependency failure with 503 and retry without caching', async () => {
+  const route = await read('src/app/api/carousel/route.ts');
+  const body = route.slice(route.indexOf('export async function GET')).replace(/^export /gm, '');
+  const { makeGet } = await moduleFrom(`export function makeGet(getPublicCarouselPayload, isUnavailableCarouselPayload) {
+    const console = { error() {} };
+    const NextResponse = { json: (body, options) => ({ body, status: options?.status ?? 200, headers: options?.headers }) };
+    ${body}
+    return GET;
+  }`);
+  const failure = await makeGet(async () => fallbackCarouselPayload, isUnavailableCarouselPayload)();
+  assert.equal(failure.status, 503);
+  assert.equal(failure.body.unavailable, true);
+  assert.equal(failure.headers['Retry-After'], '60');
+  assert.match(failure.headers['Cache-Control'], /no-store/);
+  for (const items of [[], [{ id: 'real-product' }]]) {
+    const success = await makeGet(async () => ({ items }), isUnavailableCarouselPayload)();
+    assert.equal(success.status, 200);
+    assert.deepEqual(success.body.items, items);
+  }
+});
