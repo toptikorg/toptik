@@ -51,3 +51,10 @@ test('live store classification overrides a reviewed fallback and follows explic
  assert.equal(applyStoreClassification([p],classificationIndex([product,product]))[0],p);
  assert.equal(applyStoreClassification([p],classificationIndex([{...product,vendor:"Bric's"}]))[0],p);
 });
+
+test('verified WEEK-END medium suitcase has a separate series and never enters Mellow Leather',()=>{
+ const p=item('P10JLV03651','mandarina-duck');
+ assert.equal(seriesForItem(p).key,'mandarina-duck-weekend');
+ assert.deepEqual(filterBySeries([p],'mandarina-duck-mellow-leather'),[]);
+ assert.deepEqual(filterBySeries([p],'mandarina-duck-weekend'),[p]);
+});
