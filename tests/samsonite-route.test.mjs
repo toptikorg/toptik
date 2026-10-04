@@ -6,6 +6,7 @@ const source = await readFile(new URL('../src/app/api/carousel/route.ts', import
 const body = source.slice(source.indexOf('export async function GET')).replace(/^export /gm, '');
 const code = stripTypeScriptTypes(`export function makeGet(deps) {
   const { getPublicCarouselPayload } = deps;
+  const isUnavailableCarouselPayload = payload => payload?.unavailable === true;
   const NextResponse = { json: (body, options) => ({ body, options }) };
   ${body}
   return GET;
@@ -24,6 +25,8 @@ test('public carousel route returns the shared active catalog and never masks a 
   assert.deepEqual(result.body.items, [publicItem]);
   assert.equal(result.options.headers['Cache-Control'], 'no-store, max-age=0, must-revalidate');
   const unavailable = { unavailable: true, items: [], settings: {} };
-  assert.equal((await makeGet({ getPublicCarouselPayload: async () => unavailable })()).body, unavailable);
+  const failed = await makeGet({ getPublicCarouselPayload: async () => unavailable })();
+  assert.equal(failed.body, unavailable);
+  assert.equal(failed.options.status, 503);
   assert.equal(calls, 1);
 });

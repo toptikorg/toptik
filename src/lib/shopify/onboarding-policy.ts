@@ -8,10 +8,12 @@ export const ONBOARDING_SHOP_DOMAIN = "toptikcoil.myshopify.com";
 export const MAX_ONBOARDING_IMAGES = 20;
 export const MAX_ONBOARDING_IMAGE_BYTES = 8 * 1024 * 1024;
 const HELD_SKUS = new Set(["P10OSV0405J", "P10ZJT0624U"]);
-const BRANDS: Record<string, "Mandarina Duck" | "Bric's" | "Samsonite"> = {
+const BRANDS: Record<string, "Mandarina Duck" | "Bric's" | "Samsonite" | "American Tourister"> = {
+  "american tourister": "American Tourister",
   "mandarina duck": "Mandarina Duck", "bric's": "Bric's", "bric’s": "Bric's", brics: "Bric's", samsonite: "Samsonite",
 };
 const CATEGORY_TYPES: Record<string, ProductCategory> = {
+  "מזוודה": "suitcase", "טרולי": "carryon", "תיק גב למחשב": "laptop-bags",
   "carry-on luggage": "carryon", "cabin luggage": "carryon", "מזוודת עלייה למטוס": "carryon",
   "checked luggage": "suitcase", "checked suitcase": "suitcase", "מזוודה לבטן המטוס": "suitcase",
   "תיק צד": "fashion-bags", "תיק כתף": "fashion-bags", "תיק יד": "fashion-bags",

@@ -1,6 +1,7 @@
 import { getCarouselPayload } from "@/lib/carousel/repository";
 import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { appendSamsoniteItems } from "@/lib/carousel/samsonite-catalog";
+import { readStoreClassification, applyStoreClassification } from "./store-classification";
 
 /**
  * The public gallery catalog includes the reviewed Samsonite supplement and
@@ -8,7 +9,9 @@ import { appendSamsoniteItems } from "@/lib/carousel/samsonite-catalog";
  * article product cards resolve against the same active SKUs as /api/carousel.
  */
 export async function getPublicCarouselPayload() {
-  const payload = await getCarouselPayload({ includeInactive: true });
+  const [payload, classification] = await Promise.all([
+    getCarouselPayload({ includeInactive: true }), readStoreClassification(),
+  ]);
   if (isUnavailableCarouselPayload(payload)) return payload;
 
   let items = appendSamsoniteItems(payload.items).filter((item) => item.isActive);
@@ -16,5 +19,5 @@ export async function getPublicCarouselPayload() {
     const { applyPublicTypedSpecs } = await import("@/lib/shopify/typed-spec-public");
     items = await applyPublicTypedSpecs(items);
   }
-  return { ...payload, items };
+  return { ...payload, items: applyStoreClassification(items, classification) };
 }

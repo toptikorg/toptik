@@ -107,7 +107,9 @@ test("page wires the labeled brand control, URL restoration, combined filtering 
   assert.match(source, /id="carousel-brand-help"/);
   assert.match(source, /לחצו על שם המותג מעל הקולקציה/);
   assert.match(source, /publicCollectionItems\(/);
-  assert.match(source, /filterByCategory\(filterByBrand\(activeItems, activeBrand\), activeCategory\)/);
+  assert.match(source, /filterByBrand\(activeItems, activeBrand\)/);
+  assert.match(source, /filterBySeries\(brandItems, activeSeries\)/);
+  assert.match(source, /filterByCategory\(seriesItems, activeCategory\)/);
   assert.match(source, /window\.addEventListener\("popstate", onPopState\)/);
   assert.match(source, /window\.removeEventListener\("popstate", onPopState\)/);
   assert.match(source, /visibleItems\.length > 0 \? \(/);

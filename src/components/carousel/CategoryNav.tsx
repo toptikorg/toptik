@@ -4,11 +4,15 @@ import type { ReactNode } from "react";
 import { CATEGORIES, categorizeItem, type CategoryKey } from "@/lib/carousel/categories";
 
 import type { CarouselItem } from "@/lib/carousel/types";
+import { SeriesNav } from "./SeriesNav";
 
 type CategoryNavProps = {
   items: CarouselItem[];
   active: CategoryKey;
   onChange: (key: CategoryKey) => void;
+  seriesItems: CarouselItem[];
+  activeSeries: string;
+  onChangeSeries: (key: string) => void;
 };
 
 // Outline-stroke icons matching the mockup — Mandarina warm brown, ~22px,
@@ -42,11 +46,12 @@ const ICONS: Partial<Record<CategoryKey, ReactNode>> = {
   ),
 };
 
-export function CategoryNav({ active, onChange, items }: CategoryNavProps) {
+export function CategoryNav({ active, onChange, items, seriesItems, activeSeries, onChangeSeries }: CategoryNavProps) {
   const available = new Set(items.map(categorizeItem));
   const categories = CATEGORIES.filter(c => c.key === "all" || c.key === active || available.has(c.key));
   return (
     <aside className="category-nav" dir="rtl" aria-label="קטגוריות מוצרים">
+      <SeriesNav items={seriesItems} active={activeSeries} onChange={onChangeSeries} />
       <h2 className="category-nav-title">קטגוריות</h2>
       <div className="category-nav-list" role="group" aria-label="סינון לפי סוג מוצר">
         {categories.map((c) => {

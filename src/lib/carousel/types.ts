@@ -32,6 +32,8 @@ export interface CarouselColor {
 }
 
 export interface CarouselItem {
+  /** Exact public Shopify SKU classification; null explicitly clears a series. */
+  series?: { key: string; label: string; brand: string } | null;
   id: string;
   title: string;
   description: string | null;
