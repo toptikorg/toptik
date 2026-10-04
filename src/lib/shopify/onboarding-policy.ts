@@ -1,6 +1,7 @@
 import type { ShopifyOnboardingSnapshot, ShopifyOnboardingVariant } from "./admin-api";
 import { assertSafeDescriptionHtml, descriptionTextFromHtml } from "./description-document";
 import { isSafeShopifyProductHandle, normalizeSyncSku } from "./sync-rules";
+import type { ProductCategory } from "../carousel/categories";
 
 export const PUBLIC_ONBOARDING_POLICY = "published-shopify-v1";
 export const ONBOARDING_SHOP_DOMAIN = "toptikcoil.myshopify.com";
@@ -10,9 +11,16 @@ const HELD_SKUS = new Set(["P10OSV0405J", "P10ZJT0624U"]);
 const BRANDS: Record<string, "Mandarina Duck" | "Bric's" | "Samsonite"> = {
   "mandarina duck": "Mandarina Duck", "bric's": "Bric's", "bric’s": "Bric's", brics: "Bric's", samsonite: "Samsonite",
 };
-const CATEGORY_TYPES: Record<string, "carryon" | "suitcase"> = {
+const CATEGORY_TYPES: Record<string, ProductCategory> = {
   "carry-on luggage": "carryon", "cabin luggage": "carryon", "מזוודת עלייה למטוס": "carryon",
   "checked luggage": "suitcase", "checked suitcase": "suitcase", "מזוודה לבטן המטוס": "suitcase",
+  "תיק צד": "fashion-bags", "תיק כתף": "fashion-bags", "תיק יד": "fashion-bags",
+  "crossbody bag": "fashion-bags", "shoulder bag": "fashion-bags", "handbag": "fashion-bags",
+  "תיק גב": "backpacks", "backpack": "backpacks",
+  "תיק מחשב": "laptop-bags", "laptop bag": "laptop-bags",
+  "תיק נסיעות": "travel-bags", "travel bag": "travel-bags",
+  "ארנק": "wallets", "ארנק עור": "wallets", "wallet": "wallets",
+  "נרתיק": "pouches", "תיק רחצה": "pouches", "pouch": "pouches", "toiletry bag": "pouches",
 };
 
 export type OnboardingImageEvidence = { mediaGid: string; url: string; width: number; height: number;
