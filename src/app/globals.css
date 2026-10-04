@@ -3479,15 +3479,17 @@ html.a11y-big-cursor * {
 @media (prefers-reduced-motion: reduce) { .carousel-progress > span { transition: none; } }
 /* Prev/next live in their own quiet row above the products (like a browser's back/forward), never over a photo. */
 .carousel-navrow {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
   justify-content: center;
   gap: 10px;
   max-width: 520px;
+  width: 100%;
   margin: 0 auto 10px;
   padding: 0 12px;
 }
-.carousel-navrow-info { flex: 1; min-width: 0; text-align: center; }
+.carousel-navrow-info { grid-column: 1 / -1; grid-row: 1; min-width: 0; text-align: center; }
 .carousel-navrow-btn {
   display: inline-flex;
   align-items: center;
