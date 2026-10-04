@@ -100,7 +100,7 @@ export default async function JournalArticlePage({ params }: PageProps) {
           <div className={styles.articleRule} aria-hidden="true" />
         </header>
         {article.hero && <figure className={styles.heroFigure}>
-          {article.hero.href ? <Link href={article.hero.href} aria-label="לצפייה במוצרים בגלריה">
+          {article.hero.href ? <Link href={article.hero.href} aria-label={article.hero.href.startsWith("https://www.toptik.co.il/products/") ? "לפרטי המוצר בחנות" : "לצפייה במוצרים בגלריה"}>
             <Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height} sizes="(max-width: 780px) 94vw, 740px" quality={75} />
           </Link> : <Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height} sizes="(max-width: 780px) 94vw, 740px" quality={75} />}
           <figcaption>{article.hero.caption}</figcaption>
