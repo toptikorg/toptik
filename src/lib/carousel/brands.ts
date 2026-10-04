@@ -5,9 +5,10 @@ export interface GalleryBrand { key: BrandKey; label: string }
 
 // Public collection selection approved by the owner on 2026-09-29.
 // This is a presentation policy, not a deletion or a brand-identity rewrite.
-const PUBLIC_BRAND_KEYS = new Set(["mandarina-duck", "brics", "samsonite"]);
+const PUBLIC_BRAND_KEYS = new Set(["mandarina-duck", "brics", "samsonite", "american-tourister"]);
 
 const NAMED_BRANDS: Record<string, GalleryBrand> = {
+  "american tourister": { key: "american-tourister", label: "American Tourister" },
   "mandarina duck": { key: "mandarina-duck", label: "Mandarina Duck" },
   "מנדרינה דאק": { key: "mandarina-duck", label: "Mandarina Duck" },
   "bric's": { key: "brics", label: "Bric's" },

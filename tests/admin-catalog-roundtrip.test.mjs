@@ -21,6 +21,8 @@ const { appendSamsoniteItems } = await moduleFrom(read("src/lib/carousel/samsoni
 const publicRepository = read("src/lib/carousel/public-payload.ts");
 const { createPublicReader } = await moduleFrom(`export function createPublicReader(deps) {
   const { getCarouselPayload, appendSamsoniteItems } = deps;
+  const readStoreClassification = async () => null;
+  const applyStoreClassification = items => items;
   const isUnavailableCarouselPayload = () => false;
   ${publicRepository.slice(publicRepository.indexOf("export async function getPublicCarouselPayload")).replace(/^export /gm, "")}
   return getPublicCarouselPayload;

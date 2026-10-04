@@ -15,6 +15,7 @@ import {
   isUnavailableCarouselPayload,
 } from "@/lib/carousel/fallback-data";
 import { buildModelSiblingSwatches, resolveItemSwatches } from "@/lib/carousel/colors";
+import { availableSeries, filterBySeries } from "@/lib/carousel/series";
 import {
   availableBrands,
   filterByBrand,
@@ -34,6 +35,17 @@ export default function CarouselPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<CarouselItem | null>(null);
   const [techSpecsItem, setTechSpecsItem] = useState<CarouselItem | null>(null);
+  const [requestedSeries, setRequestedSeries] = useState(() =>
+    typeof window === "undefined" ? "all" : new URL(window.location.href).searchParams.get("series") ?? "all");
+  const onChangeSeries = useCallback((key: string) => {
+    setRequestedSeries(key);
+    setSelectedItem(null);
+    setTechSpecsItem(null);
+    const url = new URL(window.location.href);
+    if (key === "all") url.searchParams.delete("series");
+    else url.searchParams.set("series", key);
+    window.history.replaceState(window.history.state, "", url.toString());
+  }, []);
   const [requestedBrand, setRequestedBrand] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return new URL(window.location.href).searchParams.get("brand");
@@ -55,9 +67,14 @@ export default function CarouselPageClient() {
 
   const onChangeBrand = useCallback((key: string) => {
     setRequestedBrand(key);
+    setRequestedSeries("all");
+    setActiveCategory(DEFAULT_CATEGORY);
     setSelectedItem(null);
     setTechSpecsItem(null);
-    window.history.replaceState(window.history.state, "", urlWithBrand(window.location.href, key));
+    const url = new URL(urlWithBrand(window.location.href, key));
+    url.searchParams.delete("series");
+    url.searchParams.delete("category");
+    window.history.replaceState(window.history.state, "", url.toString());
   }, []);
 
   // GAL-027: the purchase button navigates to the store in the same tab. The
@@ -87,6 +104,7 @@ export default function CarouselPageClient() {
       const params = new URL(window.location.href).searchParams;
       setRequestedBrand(params.get("brand"));
       setActiveCategory(parseCategoryParam(params.get("category")));
+      setRequestedSeries(params.get("series") ?? "all");
       setSelectedItem(null);
       setTechSpecsItem(null);
     };
@@ -180,10 +198,11 @@ export default function CarouselPageClient() {
   const onOpenTechSpecs = useCallback((item: CarouselItem) => setTechSpecsItem(item), []);
   const onCloseTechSpecs = useCallback(() => setTechSpecsItem(null), []);
 
-  const visibleItems = useMemo(
-    () => filterByCategory(filterByBrand(activeItems, activeBrand), activeCategory),
-    [activeItems, activeBrand, activeCategory],
-  );
+  const brandItems = useMemo(() => filterByBrand(activeItems, activeBrand), [activeItems, activeBrand]);
+  const series = useMemo(() => availableSeries(brandItems), [brandItems]);
+  const activeSeries = series.some(entry => entry.key === requestedSeries) ? requestedSeries : "all";
+  const seriesItems = useMemo(() => filterBySeries(brandItems, activeSeries), [brandItems, activeSeries]);
+  const visibleItems = useMemo(() => filterByCategory(seriesItems, activeCategory), [seriesItems, activeCategory]);
 
   return (
     <main className="carousel-page" id="main-content">
@@ -255,7 +274,8 @@ export default function CarouselPageClient() {
         </div>
       ) : (
         <div className="carousel-page-body" dir="rtl">
-          <CategoryNav items={filterByBrand(activeItems, activeBrand)} active={activeCategory} onChange={onChangeCategory} />
+          <CategoryNav items={seriesItems} active={activeCategory} onChange={onChangeCategory}
+            seriesItems={brandItems} activeSeries={activeSeries} onChangeSeries={onChangeSeries} />
           <div id="carousel-brand-results" className="carousel-brand-results">
             <p className="carousel-brand-status" role="status">
               {brandLabel}: {visibleItems.length} מוצרים בקטלוג בסינון הנבחר

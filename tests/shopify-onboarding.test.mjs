@@ -67,7 +67,7 @@ test("published product creates exact raw pair and decoded-image evidence throug
 });
 
 test("draft/unpublished/other-brand and both held SKUs never create or fetch media",async()=>{
-  for(const change of [p=>{p.status="DRAFT";},p=>{p.status="ARCHIVED";},p=>{p.publishedOnPublication=false;},p=>{p.vendor="American Tourister";},
+  for(const change of [p=>{p.status="DRAFT";},p=>{p.status="ARCHIVED";},p=>{p.publishedOnPublication=false;},p=>{p.vendor="Unknown brand";},
     p=>{p.variants[0].sku="P10OSV04-05J-TU";},p=>{p.variants[0].sku="P10ZJT0624U";}]){
     const product=snapshot();change(product);const f=fixture({product});assert.equal(await f.run(),false);assert.equal(f.rpcCalls.length,0);assert.equal(f.counts().variantReads,0);
   }
