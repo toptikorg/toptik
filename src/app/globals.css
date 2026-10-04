@@ -3529,6 +3529,9 @@ html.a11y-big-cursor * {
 .a11y-panel-note { font-size: 1rem; }
 .carousel-header-actions { position: static; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .carousel-header { flex-wrap: wrap; }
+@media (min-width: 768px) {
+  .carousel-back-link { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 6px 10px; font-size: 0.875rem; line-height: 1.25; white-space: nowrap; }
+}
 @media (max-width: 767px) {
   .carousel-header-actions { display: none; }
   .carousel-header-actions .carousel-back-link { position: static; width: auto; height: auto; min-height: 48px; padding: 10px 12px; font-size: 16px; background: #f2e6cf; color: #241b13; display: inline-flex; align-items: center; }

@@ -282,6 +282,7 @@ export default function CarouselPageClient() {
       ) : (
         <div className="carousel-page-body" dir="rtl">
           <CategoryNav key={activeBrand} items={brandItems} active={activeCategory}
+            brandLabel={activeBrand === "all" ? undefined : brandLabel}
             activeSeries={activeSeries} onApply={onApplyFilters} />
           <div id="carousel-brand-results" className="carousel-brand-results">
             <p className="carousel-brand-status" role="status">

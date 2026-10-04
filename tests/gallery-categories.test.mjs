@@ -156,4 +156,8 @@ test("compact filters have platform layouts, accessible choices and an explicit 
   assert.match(nav, /opener.current\?\.focus\(/);
   assert.match(nav, /window.addEventListener\("resize", reposition\)/);
   assert.match(nav, /onKeyDown=\{event => event.stopPropagation\(\)\}/);
+  assert.match(nav, /aria-label=\{seriesTitle\}/);
+  assert.match(nav, /brandLabel \? `בחירת סדרה, \$\{brandLabel\}` : "בחירת סדרה"/);
+  const page = await read("src/app/carousel/CarouselPageClient.tsx");
+  assert.match(page, /brandLabel=\{activeBrand === "all" \? undefined : brandLabel\}/);
 });
