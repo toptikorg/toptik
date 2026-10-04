@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPublicCarouselPayload } from "@/lib/carousel/public-payload";
+import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 
 // Always serve the CURRENT catalog — no edge/browser caching. A product added
 // or edited in the admin must appear immediately; the previous aggressive edge
@@ -11,6 +12,16 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const publicPayload = await getPublicCarouselPayload();
+    if (isUnavailableCarouselPayload(publicPayload)) {
+      console.error("GALLERY_CATALOG_UNAVAILABLE");
+      return NextResponse.json(publicPayload, {
+        status: 503,
+        headers: {
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+          "Retry-After": "60",
+        },
+      });
+    }
     return NextResponse.json(publicPayload, {
       headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" },
     });
