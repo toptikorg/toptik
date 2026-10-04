@@ -38,6 +38,10 @@ test("explicit bag, wallet and accessory types retain their exact gallery catego
     assert.equal(policy.publicOnboardingCandidate({...snapshot(),productType}).category,category);
   }
 });
+test("belt bag product types onboard into fashion bags",()=>{
+  for (const productType of ["תיק חגורה", "פאוץ׳", "belt bag", "bum bag"])
+    assert.equal(policy.publicOnboardingCandidate({...snapshot(),productType}).category,"fashion-bags");
+});
 function fixture(options={}){
   const product=options.product??snapshot(),rpcCalls=[],reads=[];let snapshots=0,variantReads=0;
   const rows=options.gallery??[];
