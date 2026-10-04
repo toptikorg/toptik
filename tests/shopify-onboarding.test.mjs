@@ -33,6 +33,11 @@ const productId="gid://shopify/Product/999",variantId="gid://shopify/ProductVari
 const input={eventId:"00000000-0000-4000-8000-000000000001",productGid:productId,leaseOwner:"00000000-0000-4000-8000-000000000002"};
 function snapshot(){return {id:productId,handle:"new-product",title:"New verified product",descriptionHtml:'<p>A <strong>bag</strong>.</p><table><tr><td>Size</td><td>55</td></tr></table>',seoTitle:"SEO",seoDescription:"Description",status:"ACTIVE",updatedAt:"2026-09-30T12:00:00Z",publishedOnPublication:true,
   vendor:"Samsonite",productType:"carry-on luggage",variants:[{id:variantId,sku:"NEW-001"}],media:[{id:"gid://shopify/MediaImage/77",mediaContentType:"IMAGE",status:"READY",alt:null,image:{url:"https://cdn.shopify.com/s/files/1/verified.png?v=1",width:40,height:60,altText:null}}]};}
+test("explicit bag, wallet and accessory types retain their exact gallery categories",()=>{
+  for(const [productType,category] of [["תיק צד","fashion-bags"],["תיק כתף","fashion-bags"],["תיק גב","backpacks"],["תיק מחשב","laptop-bags"],["תיק נסיעות","travel-bags"],["ארנק עור","wallets"],["תיק רחצה","pouches"],["unknown",null]]){
+    assert.equal(policy.publicOnboardingCandidate({...snapshot(),productType}).category,category);
+  }
+});
 function fixture(options={}){
   const product=options.product??snapshot(),rpcCalls=[],reads=[];let snapshots=0,variantReads=0;
   const rows=options.gallery??[];
