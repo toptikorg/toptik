@@ -10,6 +10,7 @@ type CategoryNavProps = {
   items: CarouselItem[];
   active: CategoryKey;
   activeSeries: string;
+  brandLabel?: string;
   onApply: (series: string, category: CategoryKey) => void;
 };
 type Panel = "series" | "category";
@@ -23,7 +24,7 @@ function positionPanel(element: HTMLDialogElement, button: HTMLButtonElement) {
   element.style.setProperty("--filter-height", String(window.innerHeight - top - 16) + "px");
 }
 
-export function CategoryNav({ active, items, activeSeries, onApply }: CategoryNavProps) {
+export function CategoryNav({ active, items, activeSeries, brandLabel, onApply }: CategoryNavProps) {
   const id = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
@@ -37,6 +38,7 @@ export function CategoryNav({ active, items, activeSeries, onApply }: CategoryNa
   const count = filterByCategory(draftItems, draftCategory).length;
   const seriesLabel = series.find(s => s.key === activeSeries)?.label;
   const categoryLabel = CATEGORIES.find(c => c.key === active)?.label;
+  const seriesTitle = brandLabel ? `בחירת סדרה, ${brandLabel}` : "בחירת סדרה";
 
   useEffect(() => {
     if (!panel) return;
@@ -70,8 +72,9 @@ export function CategoryNav({ active, items, activeSeries, onApply }: CategoryNa
     <section className={styles.root} dir="rtl" aria-label="בחירת סדרה וסוג מוצר">
       <div className={styles.triggers}>
         <button type="button" className={styles.trigger} aria-haspopup="dialog" aria-expanded={panel === "series"}
-          aria-controls={id} onClick={event => openPanel("series", event.currentTarget)}>
-          בחירת סדרה <span aria-hidden="true">⌄</span>
+          aria-label={seriesTitle} aria-controls={id} onClick={event => openPanel("series", event.currentTarget)}>
+          <span className={styles.triggerLabel}>בחירת סדרה{brandLabel && <bdi className={styles.brandLabel}>{brandLabel}</bdi>}</span>
+          <span aria-hidden="true">⌄</span>
         </button>
         <button type="button" className={styles.trigger} aria-haspopup="dialog" aria-expanded={panel === "category"}
           aria-controls={id} onClick={event => openPanel("category", event.currentTarget)}>
@@ -95,7 +98,7 @@ export function CategoryNav({ active, items, activeSeries, onApply }: CategoryNa
           if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closePanel();
         }}>
         <div className={styles.header}>
-          <h2 id={id + "-title"}>{panel === "series" ? "בחירת סדרה" : "בחירת סוג מוצר"}</h2>
+          <h2 id={id + "-title"}>{panel === "series" ? <>בחירת סדרה{brandLabel && <bdi className={styles.brandLabel}>{brandLabel}</bdi>}</> : "בחירת סוג מוצר"}</h2>
           <button type="button" onClick={closePanel} aria-label="סגירת חלונית הבחירה">סגירה <span aria-hidden="true">×</span></button>
         </div>
         <div className={styles.options}>
