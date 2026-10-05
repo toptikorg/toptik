@@ -27,45 +27,76 @@ Code: `src/lib/admin/authz-core.ts` (rules), `src/lib/admin/authz.ts` (gates),
 | `requireAdminUser()` | vault challenge / unlock, `authStepUp` (vault CRUD) | 401 / 403 JSON |
 | `requireOwnerUser()` | `/api/panel/users` (GET, POST, DELETE), `/api/panel/users/reset` | 401 / 403 JSON |
 | `requireAdminPage()` | `/dashboard`, `/settings` (user management shown to owners only) | redirect `/login` or `/login?error=forbidden` |
-| `requireAdminToken(req)` | legacy `/api/admin/*` (gallery editor, imports, warm-ups, probes) | 401 JSON; constant-time token; cron secret only where allowed |
+| `authorizeGalleryAdmin(req)` / `requireGalleryAdmin(req)` | interactive gallery routes (editor, upload, import, translation, commerce and specs) | valid admin token or an authorized panel session; session mutations require the allowed origin policy |
+| `requireAdminToken(req)` | worker/bootstrap routes, warm-colors, colors-probe, debug-scrape and other token-only automation | 401 JSON; constant-time token; cron secret only where allowed |
 | `isValidSetupToken()` | `POST /api/panel/setup` (refuses once any account exists) | 401 |
 
-The legacy `/api/admin/*` routes never read a Supabase session, so a signed-in
-user cannot reach them without `ADMIN_PANEL_TOKEN`. Moving the gallery editor
-behind `requireAdminUser` is a separate, later change (the editor runs on
-`landing.toptik.co.il/admin` with a browser-stored token today).
+The interactive gallery routes already accept either `ADMIN_PANEL_TOKEN` or a
+panel session authorized by `requireAdminUser`; their session requests also
+pass the gallery origin/mutation policy. Removing the email fallback therefore
+closes this session path for the former legacy owner. The token path remains
+independent of the user's identity.
+
+Worker and other automation routes retain their token-only gates and do not
+read a Supabase session. A signed-in panel user cannot reach those routes
+without `ADMIN_PANEL_TOKEN` (or `CRON_SECRET` on routes that explicitly allow it).
 
 `/login` and `/setup` no longer read anything with the service role: the old
 "no accounts yet" check and the public `GET /api/panel/setup` were removed.
 
-## Temporary compatibility (existing accounts)
+## Access handover — pending release, 2026-10-05
 
-The two accounts created on 2026-06-21 carry their role in `user_metadata`
-only. By the owner's decision (2026-09-29 16:17) nothing in those accounts is
-changed, so `LEGACY_ROLE_BY_EMAIL` maps exactly these two addresses:
+The owner requested the work needed to remove Ramy's access safely. This branch
+removes the email-only owner fallback for `rordan@gmail.com`. It is **pending
+release**: local code and tests are not proof that Production has changed.
+The repository workflow still requires a verified Preview and the owner's
+approval of this specific release before merging to `master`.
+
+A confirmed `rordan@gmail.com` session without `app_metadata.role` now receives
+**403** from the protected APIs, including case and whitespace variants and a
+forged role in `user_metadata`. Panel pages redirect it to
+`/login?error=forbidden`; user management and the vault are refused, even with a
+valid vault step-up cookie. Confirmed owners authorized via `app_metadata.role`,
+including `info@toptik.co.il`, retain access.
+
+Removing this fallback does not remove organization memberships, Supabase Auth
+users, an explicit `app_metadata.role`, or access through `ADMIN_PANEL_TOKEN`.
+Those must be checked separately during the handover. Preserve shared Supabase
+content before removing the organization member.
+
+## Temporary compatibility (remaining legacy admin)
+
+The two historical accounts created on 2026-06-21 originally used a fallback
+because their roles were in `user_metadata` only. The 2026-09-29 decision kept
+them unchanged. For the 2026-10-05 handover, this branch removes the former
+`rordan@gmail.com` owner entry; `LEGACY_ROLE_BY_EMAIL` now maps only the remaining
+legacy admin, whose migration is a separate decision:
 
 | Email | Role |
 |---|---|
-| rordan@gmail.com | owner |
 | service@toptik.com | admin |
 
 It applies only to a confirmed email-password account (`app_metadata.provider =
 "email"`) that has **no** `app_metadata.role`. There is no domain or pattern
 match and no other path. Supabase keeps emails unique, so another account
-cannot claim these addresses. Remove the list once the accounts carry
-`app_metadata` roles (see the plan below).
+cannot claim this address. Remove the list once the remaining account's
+migration is verified (see the plan below).
 
 Known risk kept by decision: `service@toptik.com` is on the `toptik.com`
 domain, not `toptik.co.il`. Whoever receives mail for that address can use
 "forgot password" to sign in as this admin.
 
-## Future migration plan — NOT to be executed without the owner's approval
+## Remaining migration plan — separate owner approval required
 
-1. Owner creates the mailboxes `info@toptik.co.il` and `service@toptik.co.il`.
-2. Owner (in the panel) creates the new accounts; they get `app_metadata.role`
-   (owner / admin) from `createAdminWithPassword` / a one-off service-role step.
-3. The new accounts sign in and are verified (panel, vault OTP).
-4. Owner decides about the old accounts (`rordan@gmail.com`,
-   `service@toptik.com`): keep, set `app_metadata.role`, or remove.
-5. Remove `LEGACY_ROLE_BY_EMAIL` in a separate commit, with the test updated.
-6. Only then turn the legacy editor to `requireAdminUser` if wanted.
+1. Verify `info@toptik.co.il` can sign in as an `app_metadata` owner in the panel
+   and complete vault OTP before releasing this access change.
+2. Owner verifies control of the intended `service@toptik.co.il` mailbox and
+   creates or verifies its admin account through the panel. The role must be in
+   `app_metadata`, set server-side.
+3. Verify the new admin can sign in and complete vault OTP.
+4. Owner decides whether to migrate or retire `service@toptik.com`.
+5. Remove its remaining `LEGACY_ROLE_BY_EMAIL` entry in a separate reviewed
+   commit, with the test updated.
+6. Review whether the editor should retain its independent admin-token path;
+   any token retirement or rotation is a separate change coordinated with the
+   workers and other automation that use it.

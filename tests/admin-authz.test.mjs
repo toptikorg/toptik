@@ -9,7 +9,7 @@ import { z } from "zod";
 
 // Admin-panel authorization (owner decision 2026-09-29): a signed-in Supabase
 // user is not an admin by default; roles come from app_metadata only (plus a
-// closed, temporary list of the two existing accounts); user_metadata is never
+// closed, temporary list for the remaining legacy admin); user_metadata is never
 // authority; user management is owner-only; the vault needs an authorized admin
 // AND a valid OTP; anonymous → 401, signed in without a role → 403; public
 // sign-up can never create an admin; every service-role entry point is gated.
@@ -43,7 +43,9 @@ const USERS = {
     app_metadata: { provider: "email", role: "admin" }, user_metadata: { role: "owner" } },
   appOwner: { id: "ow1", email: "owner@example.com", email_confirmed_at: CONFIRMED,
     app_metadata: { provider: "email", role: "owner" } },
-  legacyOwner: { id: "l1", email: "rordan@gmail.com", email_confirmed_at: CONFIRMED,
+  infoOwner: { id: "ow2", email: "info@toptik.co.il", email_confirmed_at: CONFIRMED,
+    app_metadata: { provider: "email", role: "owner" } },
+  revokedLegacyOwner: { id: "l1", email: "rordan@gmail.com", email_confirmed_at: CONFIRMED,
     app_metadata: { provider: "email", providers: ["email"] }, user_metadata: { role: "owner" } },
   legacyAdmin: { id: "l2", email: "service@toptik.com", email_confirmed_at: CONFIRMED,
     app_metadata: { provider: "email", providers: ["email"] }, user_metadata: { role: "admin" } },
@@ -52,7 +54,7 @@ const USERS = {
 test("authorization rules: 401 / 403 / roles", () => {
   const decide = (name, required) => core.authorizePanelUser(USERS[name], required);
   assert.deepEqual(decide("anonymous", "admin"), { ok: false, status: 401, reason: "anonymous" });
-  for (const name of ["signupForgedOwner", "signupForgedAdmin", "signedInNoRole"]) {
+  for (const name of ["signupForgedOwner", "signupForgedAdmin", "signedInNoRole", "revokedLegacyOwner"]) {
     assert.equal(decide(name, "admin").status, 403, `${name}: user_metadata never grants access`);
     assert.equal(decide(name, "owner").status, 403, name);
   }
@@ -61,19 +63,20 @@ test("authorization rules: 401 / 403 / roles", () => {
   assert.deepEqual(decide("appAdmin", "admin"), { ok: true, role: "admin", source: "app_metadata" });
   assert.equal(decide("appAdmin", "owner").status, 403, "admin is not owner (user_metadata owner ignored)");
   assert.deepEqual(decide("appOwner", "owner"), { ok: true, role: "owner", source: "app_metadata" });
-  assert.deepEqual(decide("legacyOwner", "owner"), { ok: true, role: "owner", source: "legacy_email" });
+  assert.deepEqual(decide("infoOwner", "owner"), { ok: true, role: "owner", source: "app_metadata" });
   assert.deepEqual(decide("legacyAdmin", "admin"), { ok: true, role: "admin", source: "legacy_email" });
   assert.equal(decide("legacyAdmin", "owner").status, 403);
 });
 
 test("the temporary legacy list is closed, exact and cannot become a general path", () => {
-  assert.deepEqual({ ...core.LEGACY_ROLE_BY_EMAIL }, { "rordan@gmail.com": "owner", "service@toptik.com": "admin" });
+  assert.deepEqual({ ...core.LEGACY_ROLE_BY_EMAIL }, { "service@toptik.com": "admin" });
   assert.ok(Object.isFrozen(core.LEGACY_ROLE_BY_EMAIL));
   const variants = [
-    { email: "RORDAN@gmail.com " }, // same account, normalised
+    { email: " SERVICE@TOPTIK.COM " }, // same remaining account, normalised
   ];
   for (const v of variants) {
-    assert.equal(core.authorizePanelUser({ ...USERS.legacyOwner, ...v }, "owner").ok, true);
+    assert.deepEqual(core.authorizePanelUser({ ...USERS.legacyAdmin, ...v }, "admin"),
+      { ok: true, role: "admin", source: "legacy_email" });
   }
   const refused = [
     { email: "rordan@gmail.co" }, { email: "xrordan@gmail.com" }, { email: "service@toptik.co.il" },
@@ -83,11 +86,21 @@ test("the temporary legacy list is closed, exact and cannot become a general pat
     { app_metadata: { provider: "email", role: "viewer" } },   // explicit app role wins
   ];
   for (const change of refused) {
-    const user = { ...USERS.legacyOwner, ...change };
+    const user = { ...USERS.legacyAdmin, ...change };
     assert.equal(core.authorizePanelUser(user, "admin").ok, false, JSON.stringify(change));
   }
   // No pattern or domain matching anywhere in the rules.
   assert.doesNotMatch(coreSource, /endsWith\(|\.includes\(|RegExp|\.match\(|\.test\(|indexOf\(/);
+});
+
+test("the former rordan legacy owner cannot regain access by email or user_metadata", () => {
+  for (const email of ["rordan@gmail.com", "RORDAN@gmail.com", " Rordan@Gmail.Com "]) {
+    const user = { ...USERS.revokedLegacyOwner, email };
+    for (const required of ["admin", "owner"]) {
+      assert.deepEqual(core.authorizePanelUser(user, required),
+        { ok: false, status: 403, reason: "no-panel-role" }, `${email}: ${required}`);
+    }
+  }
 });
 
 test("user_metadata is never read for authorization anywhere in src", async () => {
@@ -210,15 +223,15 @@ test("user management is owner-only: 401 anonymous, 403 for everyone else", asyn
     () => reset.mod.POST(request({ id: "ow1", password: "0123456789ab" })),
   ];
   for (const [name, status] of [["anonymous", 401], ["signupForgedOwner", 403], ["signedInNoRole", 403],
-    ["unconfirmedAppAdmin", 403], ["appAdmin", 403], ["legacyAdmin", 403]]) {
+    ["unconfirmedAppAdmin", 403], ["appAdmin", 403], ["legacyAdmin", 403], ["revokedLegacyOwner", 403]]) {
     for (const attempt of attempts) {
       const res = await asUser(name, attempt);
       assert.equal(res.status, status, `${name}`);
     }
   }
   assert.deepEqual([...calls, ...reset.calls], [], "no service-role operation was reached");
-  // Owners (app_metadata or the legacy owner) reach the operations.
-  for (const name of ["appOwner", "legacyOwner"]) {
+  // Owners authorized through app_metadata retain their operations.
+  for (const name of ["appOwner", "infoOwner"]) {
     assert.equal((await asUser(name, () => mod.GET())).status, 200, name);
   }
   assert.deepEqual(calls, ["listAdminUsers", "listAdminUsers"]);
@@ -236,7 +249,7 @@ test("the vault needs an authorized admin first — an OTP alone never opens it"
   const vault = await routeHarness("src/app/api/panel/vault/route.ts", {
     authStepUp: stepUp.authStepUp, parseVaultInput: stepUp.parseVaultInput,
   });
-  for (const [name, status] of [["anonymous", 401], ["signupForgedOwner", 403], ["signedInNoRole", 403], ["unconfirmedAppAdmin", 403]]) {
+  for (const [name, status] of [["anonymous", 401], ["signupForgedOwner", 403], ["signedInNoRole", 403], ["unconfirmedAppAdmin", 403], ["revokedLegacyOwner", 403]]) {
     assert.equal((await asUser(name, () => challenge.mod.POST())).status, status, `challenge ${name}`);
     assert.equal((await asUser(name, () => unlock.mod.POST(request({ code: "123456" })))).status, status, `unlock ${name}`);
     // Even with a valid step-up cookie, a non-admin is refused.
@@ -254,12 +267,13 @@ test("the vault needs an authorized admin first — an OTP alone never opens it"
 
 test("panel pages send non-admins away before rendering", async () => {
   redirects.length = 0;
-  for (const [name, target] of [["anonymous", "/login"], ["signupForgedOwner", "/login?error=forbidden"], ["signedInNoRole", "/login?error=forbidden"]]) {
+  for (const [name, target] of [["anonymous", "/login"], ["signupForgedOwner", "/login?error=forbidden"], ["signedInNoRole", "/login?error=forbidden"], ["revokedLegacyOwner", "/login?error=forbidden"]]) {
     await asUser(name, () => assert.rejects(authz.requireAdminPage(), /REDIRECT/));
     assert.equal(redirects.at(-1), target, name);
   }
   await asUser("appAdmin", () => assert.rejects(authz.requireOwnerPage(), /REDIRECT/));
   assert.deepEqual(await asUser("appAdmin", () => authz.requireAdminPage()), { user: USERS.appAdmin, role: "admin" });
+  assert.deepEqual(await asUser("infoOwner", () => authz.requireOwnerPage()), { user: USERS.infoOwner, role: "owner" });
   assert.deepEqual(await asUser("signupForgedOwner", () => authz.getPanelAccess()), { user: USERS.signupForgedOwner, role: null });
 });
 

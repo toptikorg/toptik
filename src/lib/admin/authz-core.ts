@@ -4,9 +4,10 @@
 // server only, from:
 //   1. app_metadata.role ("owner" | "admin"). app_metadata can be written only
 //      with the service role, never by the user or by public sign-up.
-//   2. TEMPORARY: the two accounts that existed before roles moved to
-//      app_metadata, matched by exact email (LEGACY_ROLE_BY_EMAIL). See
-//      docs/ADMIN-AUTHZ.md — remove once those accounts carry app_metadata roles.
+//   2. TEMPORARY: the remaining legacy admin account, matched by exact email
+//      (LEGACY_ROLE_BY_EMAIL). See docs/ADMIN-AUTHZ.md — remove once that
+//      account carries an app_metadata role. The former rordan owner fallback
+//      was removed for the access handover on 2026-10-05.
 // user_metadata is user-editable (sign-up `options.data`, `updateUser`) and is
 // never a source of authority. A user with no role gets 403; nobody without a
 // session gets past 401. tests/admin-authz.test.mjs enforces all of this.
@@ -26,14 +27,13 @@ export interface AuthzUser {
   app_metadata?: Record<string, unknown> | null;
 }
 
-// TEMPORARY compatibility (owner decision 2026-09-29 16:17: existing users stay
-// exactly as they are, nothing is changed in their metadata). These two accounts
-// were created before roles moved to app_metadata; without this list they would
-// be locked out. It is a closed list of exact addresses — no domains, no
-// patterns, no other path — and it applies only to confirmed email-password
-// accounts that carry no app_metadata role of their own.
+// TEMPORARY compatibility for the remaining admin from the owner decision
+// 2026-09-29 16:17. The 2026-10-05 handover removes rordan's email-only access;
+// service@toptik.com's compatibility stays until its separate migration.
+// It is a closed list of exact addresses — no domains, no patterns, no other
+// path — and applies only to confirmed email-password accounts that carry no
+// app_metadata role of their own.
 export const LEGACY_ROLE_BY_EMAIL: Readonly<Record<string, PanelRole>> = Object.freeze({
-  "rordan@gmail.com": "owner",
   "service@toptik.com": "admin",
 });
 
