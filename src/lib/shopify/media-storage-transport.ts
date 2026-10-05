@@ -69,11 +69,14 @@ export async function uploadImmutableMedia(source: StagedMediaSource, bytes: Uin
   const uploadBytes = new Uint8Array(bytes); // Caller mutation cannot change bytes after verification.
   matches(source, await decode(uploadBytes, deadline));
   await publicDns(deadline);
+  const key = supabaseEnv.serviceRoleKey!;
   let response: Response;
   try {
     response = await fetch(`${ORIGIN}/storage/v1/object/carousel-media/${path}`, {
       method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(remaining(deadline)),
-      headers: { apikey: supabaseEnv.serviceRoleKey!, authorization: `Bearer ${supabaseEnv.serviceRoleKey!}`,
+      // Opaque secret keys authenticate through apikey, not a JWT Bearer token.
+      // Keep the legacy service_role header while both key types are supported.
+      headers: { apikey: key, ...(key.startsWith("sb_secret_") ? {} : { authorization: `Bearer ${key}` }),
         "content-type": source.mime, "cache-control": "max-age=31536000", "x-upsert": "false" },
       body: uploadBytes,
     });

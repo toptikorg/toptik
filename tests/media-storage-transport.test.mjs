@@ -12,6 +12,7 @@ const requests=url(read('media-transport-requests').replaceAll('"./media-transpo
 const allow=url(readFileSync('src/lib/catalog-source/source-allowlist.ts','utf8'));
 const dns=url('export const lookup=async()=>{globalThis.__storage.dnsCalls++;return globalThis.__storage.addresses;}');
 const env=url('export const supabaseEnv={publicUrl:"https://ekgpaoavsavrtbhlbwdg.supabase.co",serviceRoleKey:"test-only-key"}; export const hasSupabaseAdminEnv=()=>true;');
+const {supabaseEnv:envFixture}=await import(env);
 const code=read('media-storage-transport').replace('import "server-only";','').replace('"sharp"',JSON.stringify(import.meta.resolve('sharp')))
  .replace('"node:dns/promises"',JSON.stringify(dns)).replace('"@/lib/catalog-source/source-allowlist"',JSON.stringify(allow))
  .replace('"@/lib/supabase/env"',JSON.stringify(env)).replaceAll('"./media-transport-requests"',JSON.stringify(requests));
@@ -22,21 +23,36 @@ const identity={productId:'gid://shopify/Product/123',variantId:'gid://shopify/P
 const bytes=await sharp({create:{width:16,height:24,channels:3,background:'#654321'}}).png().toBuffer();
 function source(){const sha=createHash('sha256').update(bytes).digest('hex');return {identity,contentSha256:sha,mime:'image/png',byteLength:bytes.length,width:16,height:24,
  url:stagedMediaUrl(identity,sha,'image/png'),receiptId:'private-proof'};}
-async function run(fn){const fetchBefore=globalThis.fetch,vercel=process.env.VERCEL_ENV,flag=process.env.SHOPIFY_MEDIA_SYNC;
+async function run(fn,key='test-only-key'){const fetchBefore=globalThis.fetch,vercel=process.env.VERCEL_ENV,flag=process.env.SHOPIFY_MEDIA_SYNC,previousKey=envFixture.serviceRoleKey;
  const f=globalThis.__storage={dnsCalls:0,addresses:[{address:'8.8.8.8',family:4}],calls:[],handler:()=>new Response(bytes,{status:200})};
- globalThis.fetch=async(...args)=>{f.calls.push(args);return f.handler(...args);};process.env.VERCEL_ENV='production';process.env.SHOPIFY_MEDIA_SYNC='enabled_v1';
- try{await fn(f);}finally{globalThis.fetch=fetchBefore;if(vercel===undefined)delete process.env.VERCEL_ENV;else process.env.VERCEL_ENV=vercel;
+ globalThis.fetch=async(...args)=>{f.calls.push(args);return f.handler(...args);};process.env.VERCEL_ENV='production';process.env.SHOPIFY_MEDIA_SYNC='enabled_v1';envFixture.serviceRoleKey=key;
+ try{await fn(f);}finally{globalThis.fetch=fetchBefore;envFixture.serviceRoleKey=previousKey;if(vercel===undefined)delete process.env.VERCEL_ENV;else process.env.VERCEL_ENV=vercel;
   if(flag===undefined)delete process.env.SHOPIFY_MEDIA_SYNC;else process.env.SHOPIFY_MEDIA_SYNC=flag;delete globalThis.__storage;}}
 test('one immutable upload uses exact decoded bytes, pinned project and non-overwrite POST; no completion claim',()=>run(async f=>{
  const s=source();assert.deepEqual(await uploadImmutableMedia(s,bytes,Date.now()+10000),{outcome:'accepted'});
  assert.equal(f.calls.length,1);const [address,init]=f.calls[0];assert.equal(address,s.url.replace('/object/public/','/object/'));
  assert.equal(init.method,'POST');assert.equal(init.headers['x-upsert'],'false');assert.equal(init.headers['content-type'],'image/png');
+ assert.equal(init.headers.apikey,'test-only-key');assert.equal(init.headers.authorization,'Bearer test-only-key');
  assert.equal(init.redirect,'error');assert.deepEqual(Buffer.from(init.body),bytes);assert.ok(init.signal instanceof AbortSignal);
 }));
-test('readback decodes all bytes and matches exact path/hash/dimensions with no authorization header',()=>run(async f=>{
- const s=source(),result=await readImmutableMedia(s,Date.now()+10000);assert.equal(result.sha256,s.contentSha256);assert.equal(result.storagePath,`sync-media/${identity.itemId}/${s.contentSha256}.png`);
- assert.equal(result.width,16);assert.equal(result.height,24);assert.equal(f.calls.length,1);assert.equal(f.calls[0][1].headers,undefined);
-}));
+test('opaque secret key upload uses apikey without putting a non-JWT in Bearer',()=>run(async f=>{
+ const s=source();assert.deepEqual(await uploadImmutableMedia(s,bytes,Date.now()+10000),{outcome:'accepted'});
+ assert.equal(f.calls.length,1);const [address,init]=f.calls[0];assert.equal(address,s.url.replace('/object/public/','/object/'));
+ assert.equal(init.headers.apikey,'sb_secret_test-only-key');assert.equal(Object.hasOwn(init.headers,'authorization'),false);
+ assert.equal(init.method,'POST');assert.equal(init.headers['x-upsert'],'false');assert.equal(init.redirect,'error');
+ assert.deepEqual(Buffer.from(init.body),bytes);
+},'sb_secret_test-only-key'));
+for(const [kind,key] of [['legacy','test-only-key'],['opaque','sb_secret_test-only-key']]){
+ test(`${kind} key readback decodes all bytes with no credential headers`,()=>run(async f=>{
+  const s=source(),result=await readImmutableMedia(s,Date.now()+10000);assert.equal(result.sha256,s.contentSha256);assert.equal(result.storagePath,`sync-media/${identity.itemId}/${s.contentSha256}.png`);
+  assert.equal(result.width,16);assert.equal(result.height,24);assert.equal(f.calls.length,1);assert.equal(f.calls[0][1].headers,undefined);
+ },key));
+ test(`${kind} key rejection is sanitized and never retries or exposes the provider body`,()=>run(async f=>{
+  f.handler=()=>new Response(`private provider rejection ${key}`,{status:401});
+  await assert.rejects(uploadImmutableMedia(source(),bytes,Date.now()+10000),e=>e.message==='MEDIA_STORAGE_UPLOAD_UNCONFIRMED');
+  assert.equal(f.calls.length,1);assert.equal(f.calls[0][1].headers['x-upsert'],'false');
+ },key));
+}
 test('owned 25MP source readback preserves exact bytes, while over-limit source metadata is rejected',()=>run(async f=>{
  const original=await sharp({create:{width:5000,height:5000,channels:3,background:'#654321'}}).png().toBuffer();
  const s={...source(),width:5000,height:5000,byteLength:original.length,contentSha256:createHash('sha256').update(original).digest('hex')};
