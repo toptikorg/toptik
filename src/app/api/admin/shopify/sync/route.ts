@@ -62,10 +62,14 @@ export async function GET(request: NextRequest) {
     const supabase = createSupabaseServiceRoleClient();
     if (runWorker) {
       if (!isShopifySyncConfigured()) return NextResponse.json({ error: "Shopify sync is not configured" }, { status: 503 });
+      // Frequent ticks drain existing work only. The original daily invocation
+      // retains the full reconciliation sweep; re-enqueuing the whole catalog
+      // every five minutes would manufacture work faster than it can complete.
+      const pendingOnly = request.nextUrl.searchParams.get("pending") === "1";
       const [result] = await Promise.all([
         drainShopifySyncQueues(supabase),
-        recoverMediaWork().catch(() => console.error("Media recovery pending", { code: "MEDIA_RECOVERY_FAILED" })),
-        recoverTypedSpecQueue(supabase).catch(error => {
+        pendingOnly ? Promise.resolve() : recoverMediaWork().catch(() => console.error("Media recovery pending", { code: "MEDIA_RECOVERY_FAILED" })),
+        pendingOnly ? Promise.resolve() : recoverTypedSpecQueue(supabase).catch(error => {
           const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "SPEC_RECOVERY_FAILED";
           console.error("Typed specification recovery pending", { code });
         }),

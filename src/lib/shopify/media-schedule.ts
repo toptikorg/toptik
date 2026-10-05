@@ -10,7 +10,7 @@ export async function dispatchMediaSync(hop = 0): Promise<void> {
   if (!Number.isSafeInteger(hop) || hop < 0 || hop > MAX_MEDIA_HOPS) throw new Error("MEDIA_CONTINUATION_INVALID");
   const token = process.env.ADMIN_PANEL_TOKEN; if (!token) throw new Error("MEDIA_CONTINUATION_AUTH_UNAVAILABLE");
   const response = await fetch(`${URL}?hop=${hop}`, { method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(8000), headers: { "x-admin-token": token } });
-  try { if (response.status !== 202 || response.redirected) throw new Error("MEDIA_CONTINUATION_NOT_ACCEPTED"); }
+  try { if (response.status !== 202 || response.redirected) throw new Error(`MEDIA_CONTINUATION_NOT_ACCEPTED_HTTP_${response.status}`); }
   finally { await response.body?.cancel(); }
 }
 function report(error: unknown) { console.error("Media synchronization pending", { code: error instanceof Error && /^MEDIA_[A-Z0-9_]{1,90}$/.test(error.message) ? error.message : "MEDIA_BACKGROUND_FAILED" }); }
@@ -20,7 +20,13 @@ export function scheduleMediaSync(hop = 0): void {
   if (!mediaSyncEnabled()) return;
   if (!Number.isSafeInteger(hop) || hop < 0 || hop > MAX_MEDIA_HOPS) throw new Error("MEDIA_CONTINUATION_INVALID");
   after(async () => { try {
-    const result = await drainMediaWork(Date.now() + 40000);
-    if (result.continuationNeeded) { if (hop >= MAX_MEDIA_HOPS) throw new Error("MEDIA_CONTINUATION_CHAIN_LIMIT"); await dispatchMediaSync(hop + 1); }
+    // Reuse one fixed deadline across the batch, never reset the time budget.
+    // Only real progress can claim another item; failure/busy/empty stops here.
+    const deadline = Date.now() + 40000;
+    for (let round = 0; round < 10 && Date.now() + 12000 < deadline; round++) {
+      const result = await drainMediaWork(deadline);
+      if (!result.continuationNeeded || result.failed || result.reviewed) break;
+    }
+    // Durable pending work resumes on the next independent cron tick.
   } catch (error) { report(error); } });
 }
