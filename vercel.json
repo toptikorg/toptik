@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "src/app/api/carousel/route.ts": {
+      "regions": ["syd1"]
+    }
+  },
   "crons": [
     {
       "path": "/api/admin/warm-tech-specs?force=1",
