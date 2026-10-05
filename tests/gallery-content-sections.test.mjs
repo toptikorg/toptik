@@ -49,7 +49,7 @@ test("contextual product cards are server-selected by exact active SKU and safe 
   const publicPayload = await read("src/lib/carousel/public-payload.ts");
   const carouselRoute = await read("src/app/api/carousel/route.ts");
   assert.match(serverCards, /await getPublicCarouselPayload\(\)/);
-  assert.match(carouselRoute, /getPublicCarouselPayload\(\)/);
+  assert.match(carouselRoute, /getPublicCarouselPayload\(/);
   assert.match(publicPayload, /getCarouselPayload\(\{ includeInactive: true \}\)/);
   assert.match(publicPayload, /appendSamsoniteItems\(payload\.items\)\.filter\(\(item\) => item\.isActive\)/);
   assert.match(serverCards, /normalizeCatalogKey\(candidate\.catalogNumber\) === key/);

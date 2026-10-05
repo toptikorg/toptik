@@ -16,7 +16,8 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    const publicPayload = await getPublicCarouselPayload();
+    const timings: string[] = [];
+    const publicPayload = await getPublicCarouselPayload((name, ms) => timings.push(`${name};dur=${ms.toFixed(1)}`));
     if (isUnavailableCarouselPayload(publicPayload)) {
       console.error("GALLERY_CATALOG_UNAVAILABLE");
       return NextResponse.json(publicPayload, {
@@ -28,7 +29,7 @@ export async function GET() {
       });
     }
     return NextResponse.json(publicPayload, {
-      headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" },
+      headers: { "Cache-Control": "no-store, max-age=0, must-revalidate", "Server-Timing": timings.join(", ") },
     });
   } catch (error) {
     console.error("GET /api/carousel failed", error);
