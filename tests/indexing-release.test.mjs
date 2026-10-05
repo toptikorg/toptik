@@ -16,7 +16,10 @@ const { metadata } = await moduleFrom(metadataSource);
 test("public root metadata allows indexing and contains the GSC ownership token", () => {
   assert.deepEqual(metadata.robots, { index: true, follow: true });
   assert.equal(metadata.metadataBase.href, "https://landing.toptik.co.il/");
-  assert.equal(metadata.verification.google, "SOL1x5W_O4mnV5j6IGHiH-mW4jopb3hJjIOWZXlaLbg");
+  assert.deepEqual(metadata.verification.google, [
+    "SOL1x5W_O4mnV5j6IGHiH-mW4jopb3hJjIOWZXlaLbg",
+    "i3_TvaN0Unb_P7E8uqkDjZ7ag4kwTx-WBgkUTIj7Ssk",
+  ]);
 });
 
 test("robots permits public HTML crawl, blocks API crawl, and advertises the canonical sitemap", () => {
