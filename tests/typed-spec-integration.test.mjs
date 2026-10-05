@@ -73,11 +73,11 @@ test('daily optional typed recovery starts alongside copy and failure never bloc
 const makeSchedule=await factory(read('src/lib/shopify/schedule-sync.ts'),
  'after,createSupabaseServiceRoleClient,hasSupabaseAdminEnv,isShopifySyncConfigured,drainShopifySyncQueues,dispatchTypedSpecSync,dispatchMediaSync,process,fetch,console',
  'runScheduledShopifySync,scheduleShopifySyncContinuation');
-test('copy continuation and typed wakeup start together after lease release instead of serial eight-second tails',async()=>{
+test('typed and media wakeups start together after lease release instead of serial eight-second tails',async()=>{
  for(const synchronous of [false,true]){
   const calls=[],afters=[],started=[];let release;
   const wait=new Promise(resolve=>{release=resolve;});
-  async function dispatch(name){calls.push(name);started.push(name);if(started.length===3)release();await wait;}
+  async function dispatch(name){calls.push(name);started.push(name);if(started.length===2)release();await wait;}
   const schedule=makeSchedule({after:fn=>afters.push(fn),createSupabaseServiceRoleClient:()=>({}),hasSupabaseAdminEnv:()=>true,isShopifySyncConfigured:()=>true,
    process:{env:{VERCEL_ENV:'production',ADMIN_PANEL_TOKEN:'fixture'}},console:{error:()=>{}},
    drainShopifySyncQueues:async()=>{calls.push('drainReleased');return {continuationNeeded:true};},
@@ -85,7 +85,7 @@ test('copy continuation and typed wakeup start together after lease release inst
   });
   if(synchronous){schedule.scheduleShopifySyncContinuation();assert.equal(calls.length,0);await afters[0]();}
   else await schedule.runScheduledShopifySync();
-  assert.deepEqual(calls,synchronous?['copyWakeup','typedWakeup','mediaWakeup']:['drainReleased','copyWakeup','typedWakeup','mediaWakeup']);
+  assert.deepEqual(calls,synchronous?['typedWakeup','mediaWakeup']:['drainReleased','typedWakeup','mediaWakeup']);
  }
 });
 
@@ -121,7 +121,17 @@ test('typed worker endpoint ACK precedes drain and rejects unauthenticated/inval
    assert.equal((await POST(request)).status,authorized?(hop==='0'?202:400):401);
   }
  }
- assert.equal(f.calls.length,0);assert.equal(f.afters.length,1);await f.afters.shift()();assert.equal(f.calls[0][0],'drain');assert.match(f.calls[1][1],/hop=1$/);
+ assert.equal(f.calls.length,0);assert.equal(f.afters.length,1);await f.afters.shift()();assert.equal(f.calls[0][0],'drain');assert.equal(f.calls.length,1,'pending work waits for independent cron');
  f.calls.length=0;f.scheduler.scheduleTypedSpecSync(100);await f.afters.shift()();assert.equal(f.calls.length,1,'hop100 drains but cannot dispatch hop101');
- assert.equal(f.logs.at(-1)[1].code,'SPEC_CONTINUATION_CHAIN_LIMIT');
+ assert.equal(f.logs.length,0);
+});
+
+test('frequent authenticated tick drains durable work without re-enqueuing completed catalog',async()=>{
+ const calls=[];
+ const {GET}=makeCron({NextResponse:JsonResponse,requireAdminToken:(_req,options)=>{assert.equal(options.allowCron,true);return null;},hasSupabaseAdminEnv:()=>true,isShopifySyncConfigured:()=>true,
+ createSupabaseServiceRoleClient:()=>({}),console:{error:()=>{}},drainShopifySyncQueues:async()=>{calls.push('copy');return {continuationNeeded:true};},
+ recoverTypedSpecQueue:async()=>{throw Error('must not sweep');},recoverMediaWork:async()=>{throw Error('must not sweep');},
+ scheduleShopifySyncContinuation:()=>calls.push('dependentWakeups'),scheduleMediaSyncWakeup:()=>{},scheduleTypedSpecWakeup:()=>{}});
+ const request=new Request('https://landing.toptik.co.il/api/admin/shopify/sync?run=1&pending=1');request.nextUrl=new URL(request.url);
+ assert.equal((await GET(request)).status,200);assert.deepEqual(calls,['copy','dependentWakeups']);
 });

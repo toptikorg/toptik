@@ -21,8 +21,9 @@ export async function dispatchTypedSpecSync(hop = 0): Promise<void> {
   if (!token) throw new Error("SPEC_CONTINUATION_AUTH_UNAVAILABLE");
   const response = await fetch(`${WORKER_URL}?hop=${hop}`, { method: "POST", redirect: "error", cache: "no-store",
     signal: AbortSignal.timeout(8_000), headers: { "x-admin-token": token } });
-  if (response.status !== 202) throw new Error("SPEC_CONTINUATION_NOT_ACCEPTED");
-  await response.body?.cancel();
+  try {
+    if (response.status !== 202 || response.redirected) throw new Error(`SPEC_CONTINUATION_NOT_ACCEPTED_HTTP_${response.status}`);
+  } finally { await response.body?.cancel(); }
 }
 
 /** Synchronous copy/cron requests only hand off, never run a second40s worker. */
@@ -41,12 +42,9 @@ export function scheduleTypedSpecSync(hop = 0): void {
   if (!typedSpecSyncEnabled() || !hasSupabaseAdminEnv() || !isShopifySyncConfigured()) return;
   after(async () => {
     try {
-      const result = await drainTypedSpecQueue(createSupabaseServiceRoleClient(), Date.now() + 40_000);
-      // A stopped/failed/busy drain never produces an immediate retry chain.
-      if (result.continuationNeeded) {
-        if (hop >= MAX_TYPED_SPEC_HOPS) throw new Error("SPEC_CONTINUATION_CHAIN_LIMIT");
-        await dispatchTypedSpecSync(hop + 1);
-      }
+      // Cron supplies independent wakeups. Never recursively call this worker:
+      // pending work and existing retry/lease rules remain in the database.
+      await drainTypedSpecQueue(createSupabaseServiceRoleClient(), Date.now() + 40_000);
     } catch (error) {
       const code = error instanceof Error && /^[A-Z0-9_]{1,100}$/.test(error.message) ? error.message : "SPEC_BACKGROUND_FAILED";
       console.error("Typed product specification sync pending", { code, hop });

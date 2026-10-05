@@ -66,20 +66,15 @@ function fixture({count=78,env="production",failure=false,busy=false,hopResponse
     async finish(){let turns=0;while(callbacks.length){assert.ok(++turns<=105,"chain must terminate");await callbacks.shift()();}return turns;}};
 }
 
-test("one scheduled save drains all78 durable rows through authenticated bounded202 continuations",async()=>{
+test("independent wakeups drain all78 durable rows without a recursive HTTP chain",async()=>{
   const f=fixture();
-  f.schedule.scheduleShopifySync();
-  assert.equal(f.rounds(),0,"after() must defer work until response");
-  assert.equal(await f.finish(),8);
-  assert.equal(f.rows.filter(row=>row.status==="synced").length,78);
-  assert.equal(f.requests.length,7);
-  assert.deepEqual(f.requests.map(r=>new URL(r.url).searchParams.get("hop")),["1","2","3","4","5","6","7"]);
-  for(const request of f.requests){
-    assert.equal(new URL(request.url).origin,"https://landing.toptik.co.il");
-    assert.equal(new URL(request.url).pathname,"/api/admin/shopify/sync");
-    assert.equal(request.options.headers["x-admin-token"],"server-only-fixture-token");
-    assert.ok(request.options.signal instanceof AbortSignal);
-    assert.ok(!request.url.includes("fixture-token"));
+  for(let tick=0;tick<8;tick++){
+    const before=f.rows.filter(row=>row.status==="synced").length;
+    f.schedule.scheduleShopifySync();
+    assert.equal(f.rows.filter(row=>row.status==="synced").length,before,"after defers work");
+    assert.equal(await f.finish(),1,"each external tick has exactly one bounded drain");
+    assert.equal(f.rows.filter(row=>row.status==="synced").length,Math.min(78,(tick+1)*10));
+    assert.equal(f.requests.length,0,"no recursive copy request, including beyond former hop4 failure");
   }
   assert.equal(f.logs.length,0);
 });
@@ -110,15 +105,15 @@ test("an empty inbox crossing the reserve still continues pending outbox after e
   }
 });
 
-test("Preview never dispatches credentials to Production; failed dispatch retains pending work without retry",async()=>{
-  const preview=fixture({env:"preview"});preview.schedule.scheduleShopifySync();await preview.finish();
-  assert.equal(preview.requests.length,0);assert.equal(preview.rows.filter(r=>r.status==="pending").length,68);
-  for(const options of [{hopResponse:302},{hopResponse:503},{networkError:true},{remainingError:true}]){
-    const f=fixture(options);f.schedule.scheduleShopifySync();await f.finish();
-    assert.equal(f.requests.length,options.remainingError?0:1);assert.equal(f.rows.filter(r=>r.status==="pending").length,68);
-    assert.equal(f.logs.length,1);assert.match(f.logs[0][1].code,/^SYNC_[A-Z_]+$/);
-    assert.ok(!JSON.stringify(f.logs).includes("fixture-token"));assert.ok(!JSON.stringify(f.logs).includes("raw provider"));
+test("pending work survives a bounded drain and queue-read failures are sanitized",async()=>{
+  for(const env of ["preview","production"]){
+    const f=fixture({env});f.schedule.scheduleShopifySync();await f.finish();
+    assert.equal(f.requests.length,0);assert.equal(f.rows.filter(r=>r.status==="pending").length,68);
   }
+  const f=fixture({remainingError:true});f.schedule.scheduleShopifySync();await f.finish();
+  assert.equal(f.requests.length,0);assert.equal(f.logs.length,1);
+  assert.equal(f.logs[0][1].code,"SYNC_CONTINUATION_QUEUE_READ_FAILED");
+  assert.ok(!JSON.stringify(f.logs).includes("fixture-token"));
 });
 
 test("continuation auth, explicit mode and hop bounds gate scheduling before any work",async()=>{
@@ -130,7 +125,7 @@ test("continuation auth, explicit mode and hop bounds gate scheduling before any
   assert.equal((await f.post({nextUrl:new URL("https://landing.toptik.co.il/api/admin/shopify/sync?continue=1&hop=1"),headers:new Headers()})).status,401);
   assert.equal(f.callbacks.length,0);assert.equal(f.rounds(),0);
   f.schedule.scheduleShopifySync(100);await f.finish();
-  assert.equal(f.requests.length,0);assert.equal(f.logs[0][1].code,"SYNC_CONTINUATION_CHAIN_LIMIT");
+  assert.equal(f.requests.length,0);assert.equal(f.logs.length,0,"legacy hop100 still runs one pass without chaining");
   assert.equal(f.rows.filter(r=>r.status==="pending").length,68);
 });
 
@@ -138,7 +133,15 @@ test("synchronous admin drain schedules only dispatch after response, not a seco
   const f=fixture();
   const result=await f.post({nextUrl:new URL("https://landing.toptik.co.il/api/admin/shopify/sync"),headers:new Headers({"x-admin-token":"server-only-fixture-token"})});
   assert.equal(result.status,200);assert.equal(result.body.continuationNeeded,true);assert.equal(f.rounds(),10);
-  assert.equal(f.requests.length,0);await f.finish();assert.equal(f.rows.filter(r=>r.status==="synced").length,78);
+  assert.equal(f.requests.length,0);await f.finish();assert.equal(f.rows.filter(r=>r.status==="synced").length,10);assert.equal(f.requests.length,0);
   assert.match(route,/if \(result\.continuationNeeded\) scheduleShopifySyncContinuation\(\);/);
   assert.equal((route.match(/if \(result\.continuationNeeded\) scheduleShopifySyncContinuation\(\);/g)??[]).length,2,"POST and cron GET both continue");
+});
+
+test("existing authenticated recovery cron runs every five minutes with no duplicate jobs",()=>{
+ const config=JSON.parse(readFileSync("vercel.json","utf8"));
+ const jobs=config.crons.filter(job=>job.path==="/api/admin/shopify/sync?run=1&pending=1");
+ assert.equal(jobs.length,1);assert.equal(jobs[0].schedule,"*/5 * * * *");
+ assert.equal(config.crons.find(job=>job.path==="/api/admin/shopify/sync?run=1").schedule,"0 4 * * *");
+ assert.match(route,/allowCron: runWorker/);
 });
