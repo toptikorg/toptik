@@ -74,9 +74,10 @@ export async function drainMediaWork(deadline: number, client?: Db,
     status = outcome.status === "done" ? "done" : outcome.status === "review" ? "review" : "pending";
     if (status === "review") result.reviewed++;
     if (outcome.progressed) result.processed++;
-    // One read-only recovery continuation after a sent call is safe; the next
-    // unchanged pending/busy run stops. Daily recovery retains delayed work.
-    progress = outcome.progressed || outcome.executed;
+    // Completing an already-equal product advances the durable queue even when
+    // no media mutation is necessary. Busy/unchanged pending work still stops;
+    // do not confuse a no-op completion with a stalled reconciliation.
+    progress = status === "done" || outcome.progressed || outcome.executed;
   } catch (e) {
     const code = e instanceof Error && /^MEDIA_[A-Z0-9_]{1,90}$/.test(e.message) ? e.message : "MEDIA_WORK_FAILED";
     error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED/.test(code) ? "review" : "failed";
