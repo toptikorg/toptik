@@ -65,7 +65,10 @@ export const metadata: Metadata = {
   description: "גלו מקרוב מזוודות, טרולי ותיקי נסיעות של Mandarina Duck, Bric’s ו-Samsonite. השוו בין דגמים, צבעים ופרטי מוצר, והמשיכו לעמוד המוצר בחנות TopTik.",
   robots: { index: true, follow: true },
   verification: {
-    google: "SOL1x5W_O4mnV5j6IGHiH-mW4jopb3hJjIOWZXlaLbg",
+    google: [
+      "SOL1x5W_O4mnV5j6IGHiH-mW4jopb3hJjIOWZXlaLbg",
+      "i3_TvaN0Unb_P7E8uqkDjZ7ag4kwTx-WBgkUTIj7Ssk",
+    ],
   },
 };
 
