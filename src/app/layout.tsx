@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { GalleryAnalytics } from "@/components/GalleryAnalytics";
 
 const italiana = localFont({
   src: "./fonts/Italiana-Regular.woff2",
@@ -89,6 +90,7 @@ export default function RootLayout({
         className={`${italiana.variable} ${greatVibes.variable} ${rubik.variable} ${playfair.variable} ${assistant.variable} ${poppins.variable} ${heebo.variable} antialiased`}
       >
         {children}
+        <GalleryAnalytics />
       </body>
     </html>
   );
