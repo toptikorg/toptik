@@ -7,7 +7,12 @@ import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 // cache (s-maxage=3600 + stale-while-revalidate=86400) kept serving a stale
 // product list for up to a day, so newly-saved products didn't show. Independent
 // catalog reads run concurrently, with completeness checks and no stale cache.
-export const dynamic = "force-dynamic";
+// Keep the response and default database fetches uncached, while honoring the
+// explicit five-minute cache of the public store classification lookup.
+// force-dynamic overrides that lookup's positive revalidate and downloads the
+// store catalog on every gallery visit. Prices and availability are not sourced
+// from that lookup.
+export const revalidate = 0;
 
 export async function GET() {
   try {
