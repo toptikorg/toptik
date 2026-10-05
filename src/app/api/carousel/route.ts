@@ -7,11 +7,17 @@ import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 // cache (s-maxage=3600 + stale-while-revalidate=86400) kept serving a stale
 // product list for up to a day, so newly-saved products didn't show. Independent
 // catalog reads run concurrently, with completeness checks and no stale cache.
-export const dynamic = "force-dynamic";
+// Keep the response and default database fetches uncached, while honoring the
+// explicit five-minute cache of the public store classification lookup.
+// force-dynamic overrides that lookup's positive revalidate and downloads the
+// store catalog on every gallery visit. Prices and availability are not sourced
+// from that lookup.
+export const revalidate = 0;
 
 export async function GET() {
   try {
-    const publicPayload = await getPublicCarouselPayload();
+    const timings: string[] = [];
+    const publicPayload = await getPublicCarouselPayload((name, ms) => timings.push(`${name};dur=${ms.toFixed(1)}`));
     if (isUnavailableCarouselPayload(publicPayload)) {
       console.error("GALLERY_CATALOG_UNAVAILABLE");
       return NextResponse.json(publicPayload, {
@@ -23,7 +29,7 @@ export async function GET() {
       });
     }
     return NextResponse.json(publicPayload, {
-      headers: { "Cache-Control": "no-store, max-age=0, must-revalidate" },
+      headers: { "Cache-Control": "no-store, max-age=0, must-revalidate", "Server-Timing": timings.join(", ") },
     });
   } catch (error) {
     console.error("GET /api/carousel failed", error);
