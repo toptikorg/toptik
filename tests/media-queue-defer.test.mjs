@@ -5,9 +5,10 @@ Error.stackTraceLimit=0;
 const {make}=await import(mod(`import{randomUUID}from'node:crypto';export function make(deps){const{process,createSupabaseServiceRoleClient,reconcilePersistedMediaProduct}=deps;const bootstrapProductionMedia=async(...a)=>deps.bootstrap(...a);${stripped('media-work-queue').replace(/^export /gm,'')}return{drainMediaWork};}`));
 const runtime=await import(mod(`import{randomUUID}from'node:crypto';import{reconcileMedia,mediaSnapshotFingerprint}from'${coreUrl}';${stripped('media-product-runtime')}`));
 const other='gid://shopify/Product/1234567';
-function queue(outcome,{deferFails=false}={}){
+function queue(outcome,{deferFails=false,deferHangs=false}={}){
  const calls=[],env={VERCEL_ENV:'production',SHOPIFY_MEDIA_SYNC:'enabled_v1'};
  const db={rpc(name,args){calls.push({name,args});return{abortSignal(){
+  if(name==='defer_toptik_media_work'&&deferHangs)return new Promise(()=>{});
   if(name==='defer_toptik_media_work'&&deferFails)return Promise.resolve({data:null,error:{message:'function public.defer_toptik_media_work does not exist'}});
   return Promise.resolve({data:name.startsWith('claim_toptik_media_work')?{productId:id.productId,claimId:args.p_claim_id,generation:3,initialized:true,evidence:{}}:
    name.startsWith('toptik_media_work_pending')?true:true,error:null});}};}};
@@ -35,6 +36,11 @@ test('ordinary outcomes are unchanged: done, review, progress and diagnostics st
 test('missing migration or a changed claim falls back to the ordinary finish (never left processing)',async()=>{
  const q=queue(deferred,{deferFails:true});await q.run([other]);
  assert.deepEqual(names(q).filter(n=>n==='defer_toptik_media_work'||n==='finish_toptik_media_work'),['defer_toptik_media_work','finish_toptik_media_work']);
+});
+test('a hung defer RPC is bounded to 2 s and finish still runs in its own window',async()=>{
+ const q=queue(deferred,{deferHangs:true}),t=Date.now();const r=await q.run([other]);
+ assert.ok(Date.now()-t<4000,'defer must not consume the finish window');
+ assert.equal(q.calls.find(c=>c.name==='finish_toptik_media_work').args.p_status,'pending');assert.equal(r.failed,0);
 });
 test('runtime marks deferred only when planning left less than 12 s for the phase',async()=>{
  const v=planningFixture(),calls=[];let time=now;

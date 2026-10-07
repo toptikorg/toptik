@@ -118,8 +118,9 @@ export async function drainMediaWork(deadline: number, client?: Db,
   // batch's full budget; the first claim of a batch always finishes normally, so
   // a product whose planning alone exceeds the budget cannot monopolize the head.
   let released = false;
-  if (deferred && excluded !== undefined && excluded.length > 0) {
-    try { released = await call(db, "defer_toptik_media_work", { p_product_gid: claim.productId, p_claim_id: claimId, p_generation: claim.generation }, deadline - 1000) === true; }
+  // The defer call is bounded to 2 s so a hung RPC still leaves finish its own window.
+  if (deferred && excluded !== undefined && excluded.length > 0 && deadline - Date.now() > 5000) {
+    try { released = await call(db, "defer_toptik_media_work", { p_product_gid: claim.productId, p_claim_id: claimId, p_generation: claim.generation }, Math.min(deadline - 1000, Date.now() + 2000)) === true; }
     catch { /* migration absent or claim changed: fall back to the ordinary finish below */ }
   }
   if (!released) await call(db, "finish_toptik_media_work", { p_product_gid: claim.productId, p_claim_id: claimId, p_generation: claim.generation, p_status: status, p_error: error }, deadline - 1000);
