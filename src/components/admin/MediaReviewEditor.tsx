@@ -7,6 +7,7 @@ import { prepareMediaReview, type MediaReviewPreview, type ReviewCatalogItem } f
 export default function MediaReviewEditor({ catalog }: { catalog: ReviewCatalogItem[] }) {
   const [text, setText] = useState("");
   const [preview, setPreview] = useState<MediaReviewPreview[]>([]);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const [loaded, setLoaded] = useState<Record<string, boolean>>({});
   const [accepted, setAccepted] = useState(false);
   const [registered, setRegistered] = useState<Record<string, boolean>>({});
@@ -14,6 +15,8 @@ export default function MediaReviewEditor({ catalog }: { catalog: ReviewCatalogI
   const [busy, setBusy] = useState(false);
   const sending = useRef(false);
   function showPreview() {
+    // A repeated plan still needs fresh load events after resetting its gate.
+    setPreviewVersion(version => version + 1);
     setPreview([]); setLoaded({}); setRegistered({}); setAccepted(false); setMessage("");
     try { setPreview(prepareMediaReview(text, catalog)); }
     catch (e) { setMessage(e instanceof Error ? e.message : "לא ניתן להציג את התוכנית."); }
@@ -48,7 +51,7 @@ export default function MediaReviewEditor({ catalog }: { catalog: ReviewCatalogI
     <button type="button" disabled={busy || !text.trim()} onClick={showPreview}>הצגת התמונות לבדיקה</button>
     {preview.length > 0 && <>
       <ol style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 20, padding: 0, listStyle: "none", marginBlock: 24 }}>
-        {preview.map(entry => <li key={entry.key} style={{ border: "1px solid #b7a77d", padding: 16, borderRadius: 8, overflowWrap: "anywhere" }}>
+        {preview.map(entry => <li key={`${previewVersion}:${entry.key}`} style={{ border: "1px solid #b7a77d", padding: 16, borderRadius: 8, overflowWrap: "anywhere" }}>
           <h2 style={{ fontSize: "1.1rem" }}>{entry.item.title}</h2>
           <p>מק״ט: <bdi>{entry.item.sku}</bdi></p><p>צבע מתועד: {entry.item.color || "יש לבדוק בתמונה ובמקור היצרן"}</p>
           <Image src={entry.input.imageUrl} alt={`תמונה לבדיקה עבור ${entry.item.title}, ${entry.item.sku}`} width={260} height={260} unoptimized

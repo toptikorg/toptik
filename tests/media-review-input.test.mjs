@@ -36,6 +36,19 @@ test('image decode and explicit review gate precede same-origin registration', (
   assert.match(source,/if \(registered\[entry.key\]\) continue/);
   assert.ok(!source.includes('localStorage')); assert.ok(!source.includes('dangerouslySetInnerHTML'));
 });
+
+test('repeated identical previews remount images and require fresh acknowledgement', () => {
+  const source=read('src/components/admin/MediaReviewEditor.tsx');
+  const handler=source.slice(source.indexOf('function showPreview()'),source.indexOf('\n  async function register()'));
+  const context={text:JSON.stringify([input]),catalog:[item],prepareMediaReview:api.prepareMediaReview,version:0,preview:[],loaded:{old:true},registered:{old:true},accepted:true,message:'old',
+    setPreviewVersion(update){this.version=update(this.version);},setPreview(v){this.preview=v;},setLoaded(v){this.loaded=v;},setRegistered(v){this.registered=v;},setAccepted(v){this.accepted=v;},setMessage(v){this.message=v;}};
+  for(const name of ['setPreviewVersion','setPreview','setLoaded','setRegistered','setAccepted','setMessage'])context[name]=context[name].bind(context);
+  const show=Function('context',`with(context){${handler};return showPreview;}`)(context);
+  show();const firstKey=context.version+':'+context.preview[0].key;context.loaded[context.preview[0].key]=true;context.accepted=true;
+  show();const secondKey=context.version+':'+context.preview[0].key;
+  assert.notEqual(firstKey,secondKey);assert.deepEqual(context.loaded,{});assert.deepEqual(context.registered,{});assert.equal(context.accepted,false);
+  assert.match(source,/key=\{`\$\{previewVersion\}:\$\{entry.key\}`\}/);
+});
 test('page is authenticated before reading catalog and excluded from index', () => {
   const source=read('src/app/(panel)/dashboard/media-review/page.tsx');
   assert.ok(source.indexOf('await requireAdminPage()') < source.indexOf('await getCarouselPayload'));
