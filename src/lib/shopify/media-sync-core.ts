@@ -114,7 +114,8 @@ function repositioned(baseline: MediaSnapshot, current: MediaSnapshot, key: stri
  * acknowledgement only: it creates no patch, no counterpart and no mapping, and
  * the baseline still advances only through the ordinary reserved operation and
  * a fresh verified readback commit. Any doubt keeps MEDIA_TARGET_MAPPING_REQUIRED. */
-function independentLocalAlt(baseline: MediaPair, current: MediaPair, source: MediaSide, key: string, removalKeys: ReadonlySet<string>): boolean {
+function independentLocalAlt(baseline: MediaPair, current: MediaPair, source: MediaSide, key: string, removalKeys: ReadonlySet<string>,
+  removedByEvidence: ReadonlySet<string>): boolean {
   const target = other(source);
   const before = baseline[source].assets.find(a => a.key === key), now = current[source].assets.find(a => a.key === key);
   if (!before || !now || before.alt === now.alt) return false;
@@ -126,8 +127,16 @@ function independentLocalAlt(baseline: MediaPair, current: MediaPair, source: Me
   if ([baseline[target], current[target]].some(s => s.assets.some(a => a.key === key)) ||
       SIDES.some(side => removalKeys.has(`${side}:${key}`))) return false;
   // No possible counterpart or alternate key: the same bytes or source proof under any other key, on either side.
+  // Only exception: a same-side duplicate that existed in this side's baseline alone, was removed with explicit
+  // removal evidence, and is gone from every current snapshot (e.g. a deleted duplicate angle). It is history,
+  // not a counterpart; a twin that still exists anywhere, or one removed without evidence, keeps the hold.
+  // Only explicit removal evidence counts here, never a detach receipt alone.
+  const removedDuplicate = (snapshot: MediaSnapshot, a: MediaAsset) => snapshot === baseline[source] &&
+    removedByEvidence.has(`${source}:${a.key}`) && !baseline[target].assets.some(x => x.key === a.key) &&
+    !current.gallery.assets.some(x => x.key === a.key) && !current.shopify.assets.some(x => x.key === a.key);
   for (const snapshot of [baseline.gallery, baseline.shopify, current.gallery, current.shopify]) {
-    if (snapshot.assets.some(a => a.key !== key && (a.contentId === now.contentId || a.evidenceId === now.evidenceId))) return false;
+    if (snapshot.assets.some(a => a.key !== key && (a.contentId === now.contentId || a.evidenceId === now.evidenceId) &&
+        !removedDuplicate(snapshot, a))) return false;
   }
   // Membership and relative order of this image are unchanged.
   return !repositioned(baseline[source], current[source], key);
@@ -166,7 +175,7 @@ export function independentLocalAltChanges(baseline: MediaPair, current: MediaPa
   const removalKeys = new Set([...removals.map(r => `${r.side}:${r.key}`), ...detached.map(d => `${d.target}:${d.key}`)]);
   const result: Array<{ side: MediaSide; key: string; previousAlt: string; currentAlt: string }> = [];
   for (const side of SIDES) for (const asset of current[side].assets) {
-    if (!independentLocalAlt(baseline, current, side, asset.key, removalKeys)) continue;
+    if (!independentLocalAlt(baseline, current, side, asset.key, removalKeys, new Set(removals.map(r => `${r.side}:${r.key}`)))) continue;
     result.push({ side, key: asset.key, previousAlt: baseline[side].assets.find(a => a.key === asset.key)!.alt, currentAlt: asset.alt });
   }
   return result;
@@ -187,6 +196,7 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
     if (removalKeys.has(key)) fail("MEDIA_REMOVAL_EVIDENCE_DUPLICATE");
     removalKeys.add(key);
   }
+  const removedByEvidence: ReadonlySet<string> = new Set(removalKeys);
   if (!Array.isArray(detached) || detached.length > MAX_ASSETS * 2) fail("MEDIA_DETACH_RECEIPT_INVALID");
   // An independent removal intent on the target and the transport's verified
   // receipt can attest the same absence. Only repeated receipts are duplicates.
@@ -277,7 +287,7 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
     }
     if (!c.gallery.has(key) || !c.shopify.has(key)) {
       for (const source of SIDES) if (!same(semantic(c[source].get(key)), semantic(b[source].get(key))) &&
-          !independentLocalAlt(baseline, current, source, key, removalKeys)) {
+          !independentLocalAlt(baseline, current, source, key, removalKeys, removedByEvidence)) {
         conflict(key, "membership", "MEDIA_TARGET_MAPPING_REQUIRED");
       }
       continue;
