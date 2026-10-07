@@ -16,6 +16,7 @@ const finalized=url(read('src/lib/shopify/creation-finalization-read.ts').replac
  .replace('"@/lib/supabase/service-role"',JSON.stringify(service)));
 const inject=s=>base(s).replace('import "server-only";','').replace('"@/lib/supabase/service-role"',JSON.stringify(service))
  .replace('"./creation-runtime"',JSON.stringify(mode)).replace('"./creation-finalization-read"',JSON.stringify(finalized))
+ .replace('import { assertReviewedImport } from "./reviewed-media-policy";', 'const assertReviewedImport = async () => {};')
  .replace('"./creation-intent"',JSON.stringify(intent)).replace('"@/lib/validation/carousel"',JSON.stringify(schema));
 const flow=await import(url(inject(read('src/lib/shopify/creation-import.ts'))));
 const bridge=await import(url(inject(read('src/lib/shopify/creation-catalog-bridge.ts'))));

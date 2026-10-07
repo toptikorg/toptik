@@ -15,6 +15,8 @@ const routeFactory = await moduleOf(`export function createRoute(deps) {
   const { NextResponse, getCarouselPayload, saveCarouselPayload, requireGalleryAdmin, authorizeGalleryAdmin,
     isUnavailableCarouselPayload, prepareExistingCatalogSave, visibleAdminCatalog, scheduleShopifySync, scheduleMediaSyncWakeup } = deps;
   const CAROUSEL_UNAVAILABLE_MESSAGE = "unavailable";
+  const assertReviewedCatalogSave = deps.assertReviewedCatalogSave ?? (async () => {});
+  const mediaReviewMessage = () => null;
   ${withoutImports(read("src/app/api/admin/carousel/route.ts"))}
   return { GET, PUT };
 }`);

@@ -146,6 +146,36 @@ test('trusted exact detach receipt acknowledges lost reply without a second user
     assert.throws(()=>api.reconcileMedia(base,now,[intent],[{...receipt,...change}]),/DETACH_RECEIPT_INVALID/);
   }
 });
+
+for (const source of ['gallery', 'shopify']) test(`verified ${source} detach and independent target intent attest one absence without duplicate failure`, () => {
+  const target = source === 'gallery' ? 'shopify' : 'gallery';
+  const base = pair(), now = clone(base);
+  now.gallery.assets.pop(); now.shopify.assets.pop();
+  now.gallery.revision = 'gallery-readback'; now.shopify.revision = 'shopify-readback';
+  const sourceIntent = removal(base, source, 'b');
+  const targetIntent = { ...removal(base, target, 'b'), requestId: 'cccc1111-1111-4111-8111-111111111111' };
+  const receipt = { source, target, key: 'b', operationId: 'aaaa1111-1111-4111-8111-111111111111', sourceIntentId: sourceIntent.requestId,
+    sourceBaselineFingerprint: api.mediaSnapshotFingerprint(base[source]), targetBaselineFingerprint: api.mediaSnapshotFingerprint(base[target]),
+    targetAbsentReadbackRevision: now[target].revision };
+  const intents = [sourceIntent, targetIntent];
+  const plan = api.reconcileMedia(base, now, intents, [receipt]);
+  noMutation(plan); assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(api.reconcileMedia(base, now, intents, [receipt]), plan);
+  const reciprocal = { ...receipt, source: target, target: source, operationId: 'bbbb1111-1111-4111-8111-111111111111',
+    sourceIntentId: targetIntent.requestId, sourceBaselineFingerprint: api.mediaSnapshotFingerprint(base[target]),
+    targetBaselineFingerprint: api.mediaSnapshotFingerprint(base[source]), targetAbsentReadbackRevision: now[source].revision };
+  const both = api.reconcileMedia(base, now, intents, [receipt, reciprocal]);
+  noMutation(both); assert.deepEqual(both.conflicts, []);
+  assert.throws(() => api.reconcileMedia(base, now, intents, [receipt, { ...receipt, operationId: reciprocal.operationId }]), /DETACH_RECEIPT_DUPLICATE/);
+  assert.throws(() => api.reconcileMedia(base, now, [targetIntent], [receipt]), /DETACH_RECEIPT_INVALID/);
+  for (const change of [{ sourceBaselineFingerprint: '0'.repeat(64) }, { targetBaselineFingerprint: '0'.repeat(64) }, { targetAbsentReadbackRevision: 'stale' }]) {
+    assert.throws(() => api.reconcileMedia(base, now, intents, [{ ...receipt, ...change }]), /DETACH_RECEIPT_INVALID/);
+  }
+  for (const side of [source, target]) {
+    const reappeared = clone(now); reappeared[side].assets.push(asset('b'));
+    assert.throws(() => api.reconcileMedia(base, reappeared, intents, [receipt]), /DETACH_RECEIPT_INVALID/);
+  }
+});
 test('independent additions in the same gap converge with deterministic order and retain each sequence', () => {
   for (const [g,s] of [[['g'],['s']],[['z','g'],['y','s']]]) {
     const base=pair(), now=clone(base);

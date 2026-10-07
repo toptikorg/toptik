@@ -21,11 +21,12 @@ export function scheduleMediaSync(hop = 0): void {
   if (!Number.isSafeInteger(hop) || hop < 0 || hop > MAX_MEDIA_HOPS) throw new Error("MEDIA_CONTINUATION_INVALID");
   after(async () => { try {
     // Reuse one fixed deadline across the batch, never reset the time budget.
-    // Only real progress can claim another item; failure/busy/empty stops here.
+    // Durable terminal review/failure may advance independent pending items.
+    // Busy/no-progress still stops; pending-only continuation cannot spin on failures.
     const deadline = Date.now() + 40000;
     for (let round = 0; round < 10 && Date.now() + 12000 < deadline; round++) {
       const result = await drainMediaWork(deadline);
-      if (!result.continuationNeeded || result.failed || result.reviewed) break;
+      if (!result.continuationNeeded) break;
     }
     // Durable pending work resumes on the next independent cron tick.
   } catch (error) { report(error); } });

@@ -7,6 +7,10 @@ import { scheduleMediaSyncWakeup } from "@/lib/shopify/media-schedule";
 import { scheduleShopifySync } from "@/lib/shopify/schedule-sync";
 import { prepareExistingCatalogSave, visibleAdminCatalog } from "@/lib/shopify/creation-catalog-bridge";
 
+import { mediaReviewMessage } from "@/lib/shopify/reviewed-media-guard";
+
+import { assertReviewedCatalogSave } from "@/lib/shopify/reviewed-media-policy";
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -35,6 +39,7 @@ export async function PUT(req: NextRequest) {
     const current = await getCarouselPayload({ includeInactive: true, rawAdmin: true });
     if (isUnavailableCarouselPayload(current)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
     const candidate = await prepareExistingCatalogSave(body, current);
+    await assertReviewedCatalogSave(candidate, current, Date.now() + 35000);
     // Media removal provenance uses its existing fixed token principal. Keep
     // the shared authorization actor unchanged for copy/other audited paths.
     const mediaActor = auth.authMethod === "session"
@@ -50,7 +55,7 @@ export async function PUT(req: NextRequest) {
     // rolled-back lock conflict remains a 409; do not expose SQL details.
     const busyCopy = typeof error === "object" && error !== null &&
       "message" in error && error.message === "SYNC_COPY_BUSY_RETRY";
-    const message = error instanceof Error ? error.message : busyCopy ? "SYNC_COPY_BUSY_RETRY" : "Failed to save carousel data";
+    const message = mediaReviewMessage(error) ?? (error instanceof Error ? error.message : busyCopy ? "SYNC_COPY_BUSY_RETRY" : "Failed to save carousel data");
     const status = message.includes("Missing Supabase admin env vars") ? 500 : /STALE|BUSY|REVISION_REQUIRED/.test(message) ? 409 : 400;
     return NextResponse.json({ error: message }, { status });
   }

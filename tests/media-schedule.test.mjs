@@ -11,9 +11,11 @@ test('no progress, hop limit, failure and missing secret never retry or spin',as
 test('hop values strict; no overflow, signs, fractions or padded numbers',()=>{const x=fixture();for(const v of[null,'','01','-1','+1','1.5','251','9999'])assert.equal(x.api.validMediaHop(v),null);for(const v of['0','1','250'])assert.equal(x.api.validMediaHop(v),Number(v));});
 test('private route validates authorization and hop before scheduling any work',async()=>{const b=stripTypeScriptTypes(readFileSync('src/app/api/admin/shopify/media/worker/route.ts','utf8')).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');const{create}=await import(mod(`export function create(deps){const{requireAdminToken,mediaSyncEnabled,scheduleMediaSync,validMediaHop}=deps;const NextResponse={json:(body,options)=>({body,...options})};${b};return POST;}`));const x=fixture(),scheduled=[],deps={requireAdminToken:()=>({status:401}),mediaSyncEnabled:()=>true,scheduleMediaSync:h=>scheduled.push(h),validMediaHop:x.api.validMediaHop},req=h=>({nextUrl:new URL('https://landing.toptik.co.il/api/admin/shopify/media/worker?hop='+h)});const post=create(deps);assert.equal((await post(req('0'))).status,401);deps.requireAdminToken=()=>null;const authorized=create(deps);assert.equal((await authorized(req('251'))).status,400);assert.equal(scheduled.length,0);assert.equal((await authorized(req('0'))).status,202);assert.deepEqual(scheduled,[0]);});
 
-test('failed or review outcomes stop a batch even when continuation is reported',async()=>{
- for(const outcome of [{failed:1},{reviewed:1},{continuationNeeded:false}]){
-  const x=fixture();x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return {continuationNeeded:true,...outcome};};
-  const api=make(x.deps);api.scheduleMediaSync();await x.jobs[0]();assert.equal(x.calls.length,1);assert.equal(x.jobs.length,1);
+test('durable failed/review row does not block independent pending products; no pending stops',async()=>{
+ for(const outcome of [{failed:1},{reviewed:1}]){
+  const x=fixture();x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return {continuationNeeded:x.calls.length<3,...outcome};};
+  const api=make(x.deps);api.scheduleMediaSync();await x.jobs[0]();assert.equal(x.calls.length,3);assert.equal(x.jobs.length,1);
  }
+ const x=fixture();x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return {continuationNeeded:false,failed:1};};
+ const api=make(x.deps);api.scheduleMediaSync();await x.jobs[0]();assert.equal(x.calls.length,1);
 });

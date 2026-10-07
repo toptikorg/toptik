@@ -80,10 +80,13 @@ export async function drainMediaWork(deadline: number, client?: Db,
     progress = status === "done" || outcome.progressed || outcome.executed;
   } catch (e) {
     const code = e instanceof Error && /^MEDIA_[A-Z0-9_]{1,90}$/.test(e.message) ? e.message : "MEDIA_WORK_FAILED";
-    error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED/.test(code) ? "review" : "failed";
+    error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE/.test(code) ? "review" : "failed";
     if (status === "review") result.reviewed++; else result.failed++;
   }
   await call(db, "finish_toptik_media_work", { p_product_gid: claim.productId, p_claim_id: claimId, p_generation: claim.generation, p_status: status, p_error: error }, deadline - 1000);
-  if (progress && !result.failed && !result.reviewed) result.continuationNeeded = await call(db, "toptik_media_work_pending", {}, deadline) === true;
+  // Review rows are no longer claimable; failed rows move behind existing
+  // pending work. This RPC counts pending only, so terminal failures do not
+  // create a retry loop when no independent pending product remains.
+  if (progress || status === "review" || status === "failed") result.continuationNeeded = await call(db, "toptik_media_work_pending", {}, deadline) === true;
   return result;
 }

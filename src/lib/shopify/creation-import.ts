@@ -12,6 +12,8 @@ import { plainDescriptionToHtml, descriptionTextFromHtml } from "./description-d
 
 type ImportResult = { ok: boolean; item: CarouselItem; source: { vendor: string; catalogNumber: string; sourceUrl: string; importedImages: number } };
 type Importer = (vendor: CatalogVendor, source: SourceProduct, target: string | undefined, inputLabel: string) => Promise<ImportResult>;
+import { assertReviewedImport } from "./reviewed-media-policy";
+
 const ACTOR = "f4a10335-5d41-4b70-9e16-93bb74a52eba";
 
 /** Import facts stay distinct from merchant commerce and exact store identity. */
@@ -54,6 +56,7 @@ export async function runAdminManufacturerImport(vendor: CatalogVendor, source: 
     if (error && !(!galleryDraftCreationMode() && ["42P01", "PGRST205"].includes(error.code) &&
       error.message.includes("shopify_gallery_creation_drafts"))) throw new Error("SYNC_CREATION_IMPORT_IDENTITY_READ_FAILED");
     if (!privateDraft || (await finalizedCreationIds([existing.id], db)).has(existing.id)) {
+      await assertReviewedImport(existing.id, sku, source.imageUrls, Date.now() + 20000);
       return importer(vendor, source, existing.id, inputLabel);
     }
     const receipt = await db.from("shopify_gallery_creation_imports").select("intent_id")

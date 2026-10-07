@@ -124,6 +124,9 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
     removalKeys.add(key);
   }
   if (!Array.isArray(detached) || detached.length > MAX_ASSETS * 2) fail("MEDIA_DETACH_RECEIPT_INVALID");
+  // An independent removal intent on the target and the transport's verified
+  // receipt can attest the same absence. Only repeated receipts are duplicates.
+  const detachReceiptKeys = new Set<string>();
   for (const receipt of detached) {
     if (!receipt || !SIDES.includes(receipt.source) || receipt.target !== other(receipt.source) || !KEY.test(receipt.key) ||
         !UUID.test(receipt.operationId) || !UUID.test(receipt.sourceIntentId) ||
@@ -135,7 +138,8 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
       fail("MEDIA_DETACH_RECEIPT_INVALID");
     }
     const key = `${receipt.target}:${receipt.key}`;
-    if (removalKeys.has(key)) fail("MEDIA_DETACH_RECEIPT_DUPLICATE");
+    if (detachReceiptKeys.has(key)) fail("MEDIA_DETACH_RECEIPT_DUPLICATE");
+    detachReceiptKeys.add(key);
     removalKeys.add(key);
   }
   const plan: MediaPlan = { identity: clone(identity), preconditions: {

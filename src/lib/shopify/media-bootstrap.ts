@@ -76,7 +76,7 @@ export async function bootstrapProductionMedia(productId: string, enable: boolea
       shopify: { identity: id, side: "shopify", complete: true, revision: "uninitialized", assets: [] } };
     const context: MediaPlanningContext = { identity: id, stateVersion: 1, baselines: empty, removals: [], detached: [], operations: [], steps: [],
       galleryRaw: raw, galleryRefs: [], provenance: [] };
-    const observed = matchBootstrapExactBytes(await (dependencies.capture ?? captureMediaPlanningPair)(context, lease.owner, work)); check();
+    const observed = matchBootstrapExactBytes(await (dependencies.capture ?? captureMediaPlanningPair)(context, lease.owner, work, { observationOnlyBootstrap: true })); check();
     const approvalId = randomUUID();
     const result = await call("initialize_toptik_media_observation", { ...args, p_approval_id: approvalId,
       p_pair: observed.pair, p_proofs: observed.proofs, p_refs: observed.refs, p_enable: enable,
