@@ -126,8 +126,15 @@ function independentLocalAlt(baseline: MediaPair, current: MediaPair, source: Me
   if ([baseline[target], current[target]].some(s => s.assets.some(a => a.key === key)) ||
       SIDES.some(side => removalKeys.has(`${side}:${key}`))) return false;
   // No possible counterpart or alternate key: the same bytes or source proof under any other key, on either side.
+  // Only exception: a same-side duplicate that existed in this side's baseline alone, was removed with explicit
+  // removal evidence, and is gone from every current snapshot (e.g. a deleted duplicate angle). It is history,
+  // not a counterpart; a twin that still exists anywhere, or one removed without evidence, keeps the hold.
+  const removedDuplicate = (snapshot: MediaSnapshot, a: MediaAsset) => snapshot === baseline[source] &&
+    removalKeys.has(`${source}:${a.key}`) && !baseline[target].assets.some(x => x.key === a.key) &&
+    !current.gallery.assets.some(x => x.key === a.key) && !current.shopify.assets.some(x => x.key === a.key);
   for (const snapshot of [baseline.gallery, baseline.shopify, current.gallery, current.shopify]) {
-    if (snapshot.assets.some(a => a.key !== key && (a.contentId === now.contentId || a.evidenceId === now.evidenceId))) return false;
+    if (snapshot.assets.some(a => a.key !== key && (a.contentId === now.contentId || a.evidenceId === now.evidenceId) &&
+        !removedDuplicate(snapshot, a))) return false;
   }
   // Membership and relative order of this image are unchanged.
   return !repositioned(baseline[source], current[source], key);

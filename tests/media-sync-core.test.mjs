@@ -388,3 +388,32 @@ test('held: target ALT unchanged but copy ALT differs stays the original pre-exi
   now.gallery.assets.push(asset('b')); const plan = api.reconcileMedia(base, now); noMutation(plan);
   assert.equal(plan.conflicts[0].code, 'MEDIA_EXISTING_TARGET_DIFFERENT');
 });
+// 2026-10-07: a same-side duplicate (identical bytes) that was deleted with explicit removal evidence is history.
+// After the deletion the surviving image's ALT-only edit is local again; any other twin still keeps the hold.
+const withRemovedDuplicate = () => {
+  const base = independent(); base.gallery.assets.push(asset('w', { contentId: base.gallery.assets[1].contentId }));
+  const now = clone(base); now.gallery.assets.pop(); now.gallery.assets[1].alt = 'local after duplicate removal';
+  return { base, now };
+};
+test('removed same-side duplicate with removal evidence no longer blocks the survivor local ALT', () => {
+  const { base, now } = withRemovedDuplicate();
+  const plan = api.reconcileMedia(base, now, [removal(base, 'gallery', 'w')]);
+  noMutation(plan); assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(api.independentLocalAltChanges(base, now, [removal(base, 'gallery', 'w')]).map(x => [x.side, x.key]), [['gallery', 'x']]);
+});
+test('removed duplicate WITHOUT removal evidence still holds (removal intent + mapping)', () => {
+  const { base, now } = withRemovedDuplicate();
+  const codes = api.reconcileMedia(base, now).conflicts.map(c => c.code);
+  assert.ok(codes.includes('MEDIA_REMOVAL_INTENT_REQUIRED')); assert.ok(codes.includes('MEDIA_TARGET_MAPPING_REQUIRED'));
+});
+for (const [name, mutate] of [
+  ['the twin still exists on the same side now', (b, n) => { n.gallery.assets.push(clone(b.gallery.assets[2])); }],
+  ['the twin was also in the other side baseline', (b, n) => { b.shopify.assets.push(clone(b.gallery.assets[2])); n.shopify.assets.push(clone(b.gallery.assets[2])); }],
+  ['a twin under another key appears on the other side now', (b, n) => { n.shopify.assets.push(asset('v', { contentId: n.gallery.assets[1].contentId })); }],
+  ['a second twin without removal remains in the baseline of the other side', (b, n) => { b.shopify.assets.push(asset('u', { contentId: n.gallery.assets[1].contentId })); n.shopify.assets.push(asset('u', { contentId: n.gallery.assets[1].contentId })); }],
+]) test(`removed-duplicate exception is narrow: ${name}`, () => {
+  const { base, now } = withRemovedDuplicate(); mutate(base, now);
+  let rem; try { rem = [removal(base, 'gallery', 'w')]; } catch { rem = []; }
+  const plan = api.reconcileMedia(base, now, rem);
+  assert.ok(plan.conflicts.some(c => c.key === 'x' && c.code === 'MEDIA_TARGET_MAPPING_REQUIRED'), JSON.stringify(plan.conflicts));
+});
