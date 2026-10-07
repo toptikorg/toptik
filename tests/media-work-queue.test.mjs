@@ -37,13 +37,13 @@ test('verified progress advances at most three phases in one claim with one dead
  assert.equal(runs.length,3);assert.equal(r.processed,1);
  assert.ok(runs.every(a=>a[0]===id.productId&&a[2]===deadline-5000));
  // A still-pending in-flight operation keeps its position (defer), never re-queues behind every product.
- assert.deepEqual(f.calls.filter(c=>c.name).map(c=>c.name),['claim_toptik_media_work','defer_toptik_media_work','toptik_media_work_pending']);
+ assert.deepEqual(f.calls.filter(c=>c.name).map(c=>c.name),['claim_toptik_media_work','keep_toptik_media_work_in_flight','toptik_media_work_pending']);
 });
 
 test('repeated verified cursor stops instead of spinning, while finish retains original generation',async()=>{
  const f=fixture();let n=0;const run=async()=>{n++;return{status:'pending',progressed:true,executed:false,verifiedCheckpoint:'same:cursor'};};
  await f.api.drainMediaWork(Date.now()+40000,f.db,run);assert.equal(n,2);
- const defer=f.calls.find(c=>c.name==='defer_toptik_media_work');assert.equal(defer.args.p_generation,1);assert.ok(!f.calls.some(c=>c.name==='finish_toptik_media_work'));
+ const keep=f.calls.find(c=>c.name==='keep_toptik_media_work_in_flight');assert.equal(keep.args.p_generation,1);assert.ok(!f.calls.some(c=>c.name==='finish_toptik_media_work'));
 });
 
 test('preparation or uncertain execution alone cannot immediately repeat a product',async()=>{
@@ -54,7 +54,7 @@ test('preparation or uncertain execution alone cannot immediately repeat a produ
 
 test('remaining deadline reserve prevents another call even after verified progress',async()=>{
  const f=fixture();let n=0;await f.api.drainMediaWork(Date.now()+22000,f.db,async()=>{n++;return{status:'pending',progressed:true,executed:true,verifiedCheckpoint:'verified'};});
- assert.equal(n,1);assert.ok(f.calls.some(c=>c.name==='defer_toptik_media_work'));assert.ok(!f.calls.some(c=>c.name==='finish_toptik_media_work'));
+ assert.equal(n,1);assert.ok(f.calls.some(c=>c.name==='keep_toptik_media_work_in_flight'));assert.ok(!f.calls.some(c=>c.name==='finish_toptik_media_work'));
 });
 
 test('done, busy, review and uncertain outcomes after progress stop immediately',async()=>{
@@ -64,7 +64,7 @@ test('done, busy, review and uncertain outcomes after progress stop immediately'
   // done/review finish normally; a still-pending outcome after a verified phase keeps its position.
   if(status==='done'||status==='review'){assert.equal(f.calls.filter(c=>c.name==='finish_toptik_media_work').length,1);
    assert.equal(f.calls.find(c=>c.name==='finish_toptik_media_work').args.p_status,status);}
-  else{assert.equal(f.calls.filter(c=>c.name==='defer_toptik_media_work').length,1);assert.ok(!f.calls.some(c=>c.name==='finish_toptik_media_work'));}
+  else{assert.equal(f.calls.filter(c=>c.name==='keep_toptik_media_work_in_flight').length,1);assert.ok(!f.calls.some(c=>c.name==='finish_toptik_media_work'));}
  }
 });
 

@@ -161,6 +161,7 @@ const EXPLAIN: Record<string, Explanation> = {
   MEDIA_REVIEW_BYTES_CHANGED: { title: "התמונה שונה מזו שאושרה", detail: "הקובץ הנוכחי שונה מהקובץ שאושר. נדרש אישור מחדש." },
   MEDIA_STORAGE_CONFIGURATION_INVALID: { title: "הגדרות האחסון אינן תקינות", detail: "לא נשלחה העלאה. יש לבדוק את הגדרות השרת." },
   MEDIA_STORAGE_DNS_UNSAFE: { title: "כתובת האחסון אינה בטוחה", detail: "לא נשלחה העלאה. יש לבדוק את הגדרות השרת." },
+  MEDIA_QUEUE_IN_FLIGHT_CONTINUES: { title: "העבודה מתקדמת", detail: "שלב אומת והמוצר ממשיך בהפעלה הבאה בלי לחזור לסוף התור." },
   MEDIA_ERROR_UNRECOGNIZED: { title: "קוד לא מוכר", detail: "השרת החזיר קוד שאינו מוכר למסך זה. יש להעביר לבדיקה טכנית." },
 };
 export function explainMediaCode(value: string | null): Explanation & { code: string | null } {
