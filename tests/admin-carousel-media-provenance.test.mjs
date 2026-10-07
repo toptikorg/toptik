@@ -21,7 +21,7 @@ const routeFactory = await moduleOf(`export function createRoute(deps) {
 const automationActor = "f4a10335-5d41-4b70-9e16-93bb74a52eba";
 const sessionActor = "c63f74e3-4b30-483b-8277-d2c6b3191e35";
 const origin = "https://admin.toptik.co.il";
-function fixture(method) {
+function fixture(method, saveError) {
   const calls = [], NextResponse = { json: (body, init = {}) => ({ body, status: init.status ?? 200 }) };
   const gate = gateFactory.createGate({ NextResponse,
     requireAdminToken: () => method === "token" ? null : { status: 401 },
@@ -30,7 +30,7 @@ function fixture(method) {
   const payload = { settings: { editorRevision: 3 }, items: [{ id: "fixed-item", editorRevision: 7 }] };
   const route = routeFactory.createRoute({ NextResponse, ...gate,
     getCarouselPayload: async options => { calls.push(["read", options]); return payload; },
-    saveCarouselPayload: async (candidate, actor) => { calls.push(["save", candidate, actor]); },
+    saveCarouselPayload: async (candidate, actor) => { calls.push(["save", candidate, actor]); if (saveError) throw saveError; },
     isUnavailableCarouselPayload: () => false,
     prepareExistingCatalogSave: async body => body, visibleAdminCatalog: async data => data,
     scheduleShopifySync: () => calls.push(["copy"]), scheduleMediaSyncWakeup: () => calls.push(["media"]),
@@ -62,6 +62,21 @@ test("session origin rejection occurs before catalog reads or provenance writes"
     assert.equal((await f.route.PUT(f.request(headers))).status, 403);
     assert.deepEqual(f.calls, []);
   }
+});
+
+test("plain-object copy lock conflict returns safe 409 without scheduling work or leaking SQL details", async () => {
+  const f = fixture("session", { code: "P0001", message: "SYNC_COPY_BUSY_RETRY", details: "private SQL details" });
+  const response = await f.route.PUT(f.request());
+  assert.equal(response.status, 409);
+  assert.deepEqual(response.body, { error: "SYNC_COPY_BUSY_RETRY" });
+  assert.ok(!f.calls.some(call => ["copy", "media"].includes(call[0])));
+});
+
+test("unknown database error objects keep the generic response", async () => {
+  const f = fixture("session", { message: "private SQL details", code: "XX000" });
+  const response = await f.route.PUT(f.request());
+  assert.equal(response.status, 400);
+  assert.deepEqual(response.body, { error: "Failed to save carousel data" });
 });
 test("mapped token principal matches the frozen media SQL and removal contracts", () => {
   const sql = read("supabase/migrations/20261001_media_planning_runtime.sql");
