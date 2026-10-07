@@ -3,6 +3,34 @@ import{mod,stripped,galleryUrl,readyUrl,ready,core,fixture,id,owner,now,url}from
 Error.stackTraceLimit=0;
 const api=await import(mod(`import{createHash}from'node:crypto';import{galleryRawToSnapshot}from'${galleryUrl}';import{mediaReadToSnapshot}from'${readyUrl}';const assertNotDeniedMedia=()=>{};const requireReviewedMedia=()=>{};const isReviewedMediaProof=()=>false;const reviewedMediaRegistry=()=>({});const loadReviewedMedia=async()=>[];${stripped('media-planning-observation')}`));
 function f(){const v=fixture(),calls=[];const deps={now:()=>now,capture:async(i,u,d)=>{calls.push(['decode',i,u,d]);return v.bytes;},shopify:async()=>v.read,gallery:()=>({read:async()=>v.raw})};return {...v,calls,deps,run:()=>api.captureMediaPlanningPair(v.context,owner,now+30000,deps)};}
+
+test('capture prefetch deduplicates exact URLs and has at most three active decoders',async()=>{
+ const x=f(),started=[],releases=[];let active=0,max=0;
+ const run=api.captureMediaMetadataSources(['a','b','a','c','d','e'],async u=>{started.push(u);active++;max=Math.max(max,active);await new Promise(r=>releases.push(r));active--;return x.bytes;},()=>{});
+ assert.deepEqual(started,['a','b','c']);releases.splice(0).forEach(r=>r());await new Promise(r=>setImmediate(r));assert.deepEqual(started,['a','b','c','d','e']);
+ releases.splice(0).forEach(r=>r());const out=await run;
+ assert.equal(max,3);assert.equal(active,0);assert.equal(out.size,5);assert.ok([...out.values()].every(v=>!Object.hasOwn(v,'bytes')));
+});
+test('capture prefetch joins every started read on failure and never schedules the remaining URLs',async()=>{
+ const x=f(),started=[],pending=new Map(),error=Error('MEDIA_SOURCE_DOWNLOAD_FAILED');let settled=false;
+ const run=api.captureMediaMetadataSources(['a','b','c','d','e'],async u=>{started.push(u);return new Promise((resolve,reject)=>pending.set(u,{resolve,reject}));},()=>{});
+ const outcome=run.then(()=>{settled=true;return null;},e=>{settled=true;return e;});pending.get('a').reject(error);
+ await new Promise(r=>setImmediate(r));assert.equal(settled,false);assert.deepEqual(started,['a','b','c']);
+ pending.get('b').resolve(x.bytes);await new Promise(r=>setImmediate(r));assert.equal(settled,false);
+ pending.get('c').reject(Error('LATER_ERROR'));assert.equal(await outcome,error);assert.deepEqual(started,['a','b','c']);
+});
+test('capture prefetch preserves the shared deadline and joins reads after expiry',async()=>{
+ const x=f(),pending=[],started=[];let expired=false,settled=false;
+ const check=()=>{if(expired)throw Error('MEDIA_PLANNING_TIME_BUDGET');};
+ const run=api.captureMediaMetadataSources(['a','b','c','d'],async u=>{started.push(u);await new Promise(r=>pending.push(r));return x.bytes;},check);
+ const outcome=run.then(()=>{settled=true;},e=>{settled=true;return e;});expired=true;pending.shift()();await new Promise(r=>setImmediate(r));assert.equal(settled,false);
+ pending.splice(0).forEach(r=>r());assert.match((await outcome).message,/TIME_BUDGET/);assert.deepEqual(started,['a','b','c']);
+});
+test('prefetch does not read the byte buffer and exact query variants remain separate',async()=>{
+ const x=f(),urls=[];Object.defineProperty(x.bytes,'bytes',{get(){throw Error('BUFFER_RETAINED');}});
+ const out=await api.captureMediaMetadataSources(['a?v=1','a?v=2','a?v=1'],async u=>{urls.push(u);return x.bytes;},()=>{});
+ assert.deepEqual(urls,['a?v=1','a?v=2']);assert.equal(out.size,2);
+});
 test('actual mappers preserve both independent baselines and immutable provenance',async()=>{const x=f(),out=await x.run();assert.deepEqual(out.pair,x.pair);assert.deepEqual(out.refs,x.refs);assert.equal(out.proofs.length,2);assert.equal(x.calls.length,1,'same bytes at same URL decode once');assert.deepEqual(x.calls[0][1],id);});
 test('planning consumes metadata only and never retains or reads source byte buffers',async()=>{
  const x=f();Object.defineProperty(x.bytes,'bytes',{get(){throw Error('PLANNING_MUST_NOT_READ_OR_RETAIN_BYTES');},enumerable:true});
