@@ -19,6 +19,31 @@ function stable(v: unknown): string { return Array.isArray(v) ? `[${v.map(stable
 function same(a: unknown, b: unknown) { return stable(a) === stable(b); }
 function registered(p: MediaProofRow): MediaRegisteredProof { return { evidenceId: p.evidence_id, key: p.asset_key, side: p.side, contentId: p.content_id, proof: structuredClone(p.proof) }; }
 
+/** Only independent byte reads run in parallel. Every started read settles
+ * before returning or throwing, so callers can safely release their lease.
+ * Retain metadata only; three decoders is a hard resource bound, not a retry. */
+export async function captureMediaMetadataSources(urls: string[], capture: (url: string) => Promise<CapturedMediaBytes>, check: () => void): Promise<Map<string, CapturedMediaMetadata>> {
+  const unique = [...new Set(urls)], result = new Map<string, CapturedMediaMetadata>();
+  let next = 0, failed = false, firstError: unknown;
+  const worker = async () => {
+    while (!failed && next < unique.length) {
+      const url = unique[next++];
+      try {
+        check();
+        const decoded = await capture(url);
+        check();
+        result.set(url, { sha256: decoded.sha256, mime: decoded.mime, width: decoded.width, height: decoded.height, byteLength: decoded.byteLength });
+      } catch (error) {
+        if (!failed) { failed = true; firstError = error; }
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, unique.length) }, worker));
+  if (failed) throw firstError;
+  check();
+  return result;
+}
+
 /** Refresh only real current row/platform references. New logical keys derive
  * from immutable angle UUIDs/MediaImage IDs within this exact approved product.
  * An untracked Gallery reference to the exact current Shopify URL may reuse
@@ -47,12 +72,12 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
       check(extraReviews);
     }
   };
-  const proofs: MediaRegisteredProof[] = [], captured = new Map<string, CapturedMediaMetadata>();
-  const capture = async (url: string) => { check(); let value = captured.get(url); if (!value) {
-    const decoded = await (dependencies.capture ?? captureMediaSourceBytes)(id, url, deadline);
-    // Planning needs hashes/metadata, never original buffers. Do not retain 8MiB per URL.
-    value = { sha256: decoded.sha256, mime: decoded.mime, width: decoded.width, height: decoded.height, byteLength: decoded.byteLength };
-    captured.set(url, value); } check(); return value; };
+  const proofs: MediaRegisteredProof[] = [];
+  const captured = await captureMediaMetadataSources([
+    ...c.galleryRaw.angles.map(angle => angle.image_path), c.galleryRaw.item.cover_image_path, ...shop.images.map(image => image.url),
+  ], url => (dependencies.capture ?? captureMediaSourceBytes)(id, url, deadline), check);
+  const capture = async (url: string) => { check(); const value = captured.get(url);
+    if (!value) fail("MEDIA_PLANNING_CAPTURE_MISSING"); return value; };
   const choose = async (side: MediaSide, key: string, url: string, platformRef: string, bytes: CapturedMediaMetadata): Promise<MediaRegisteredProof> => {
     assertNotDeniedMedia(url, bytes.sha256);
     const matches = c.provenance.filter(p => p.side === side && p.asset_key === key && p.proof.url === url &&
