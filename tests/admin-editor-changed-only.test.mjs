@@ -319,6 +319,7 @@ test("(iii) order checks never involve unedited products, even if they already s
     assert.deepEqual(error.conflicts.map(c => [c.id, c.requested, c.heldBy]),
       [["e", 1, "a"], ["new-1", 3, "d"], ["new-2", 9, "new-3"], ["new-3", 9, "new-2"]]);
     assert.ok(error.conflicts.every(c => c.suggestion !== null && ![1, 2, 3, 7, 9].includes(c.suggestion)));
+    assert.equal(new Set(error.conflicts.map(c => c.suggestion)).size, 4, "each refused product gets a distinct suggestion");
     return true;
   });
   assert.equal(collide.items[4].displayOrder, 1, "the editor state is left as typed, not moved");

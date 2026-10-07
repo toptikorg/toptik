@@ -109,14 +109,21 @@ export function planChangedOnlySave(snapshot: CarouselPayload, next: CarouselPay
     if (isValidDisplayOrder(item.displayOrder)) holders.set(item.displayOrder, [...(holders.get(item.displayOrder) ?? []), item]);
   });
   const taken = new Set(holders.keys());
+  // Each refused product gets its own suggested free slot, so following the
+  // message for several products at once cannot collide again.
+  const suggest = (requested: unknown) => {
+    const order = nearestFree(requested, taken);
+    if (order !== null) taken.add(order);
+    return order;
+  };
   const conflicts = next.items.flatMap((item, index): DisplayOrderConflict[] => {
     if (!requestsOrder[index]) return [];
     const requested = item.displayOrder;
     if (!isValidDisplayOrder(requested)) {
-      return [{ id: item.id, label: itemLabel(item), requested, heldBy: null, suggestion: nearestFree(requested, taken) }];
+      return [{ id: item.id, label: itemLabel(item), requested, heldBy: null, suggestion: suggest(requested) }];
     }
     const others = (holders.get(requested) ?? []).filter(other => other !== item);
-    return others.length ? [{ id: item.id, label: itemLabel(item), requested, heldBy: others.map(itemLabel).join(", "), suggestion: nearestFree(requested, taken) }] : [];
+    return others.length ? [{ id: item.id, label: itemLabel(item), requested, heldBy: others.map(itemLabel).join(", "), suggestion: suggest(requested) }] : [];
   });
   if (conflicts.length) throw new DisplayOrderConflictError(conflicts);
 
