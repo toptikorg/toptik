@@ -11,7 +11,9 @@ export type MediaTransportPhaseJob = {
   request: MediaTransportRequest; before: ShopifyMediaTransportRead; sourceEvidenceId?: string;
   enabled: boolean; scopes: string[];
 };
-export type MediaTransportResult = { status: "disabled" | "scope_missing" | "lease_busy" | "pending" | "conflict" | "verified"; executed: boolean };
+export type MediaTransportResult = { status: "disabled" | "scope_missing" | "lease_busy" | "pending" | "conflict" | "verified"; executed: boolean;
+  /** Allowlisted MEDIA_* code explaining a durable pending wait; never a provider message. */
+  diagnostic?: string };
 type Permit = { mayExecute: boolean; status?: string; phase?: string; attemptId?: string; requestHash?: string; request?: Record<string, unknown>; replayed?: boolean };
 type ObservationResult = { status: "pending" | "conflict" | "verified" };
 /** All ports are service-only, fixed-shop adapters. No browser JSON may supply jobs, guards or proofs. */

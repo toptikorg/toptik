@@ -14,7 +14,9 @@ export type MediaWorkEvidence = { gallery?: { actorType: "supabase_user" | "admi
   shopify?: { kind: "signed_shopify_event"; eventId: string; deliveryId: string } };
 export type MediaProductRun = { status: "disabled" | "done" | "pending" | "review" | "busy"; progressed: boolean; executed: boolean;
   /** Durable verified cursor only, never a capture, preparation or uncertain write. */
-  verifiedCheckpoint?: string };
+  verifiedCheckpoint?: string;
+  /** Allowlisted reason for a durable pending wait (transport phase), recorded as last_error. */
+  diagnostic?: string };
 type Dependencies = { planning?: typeof createMediaPlanningRpc; transport?: typeof createMediaTransportRpc; gallery?: typeof createGalleryMediaTransport;
   capture?: typeof captureMediaPlanningPair; discover?: typeof discoverMediaTransportOperation; observer?: typeof createMediaRuntimeObserver;
   phase?: typeof runPersistedMediaPhase; now?: () => number; environment?: { VERCEL_ENV?: string; SHOPIFY_MEDIA_SYNC?: string } };
@@ -147,7 +149,8 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
     verifiedCheckpoint: `${phaseRef!.operationId}:${phaseRef!.step}:phase:${phaseRef!.phaseIndex}` };
   if (phase.status === "conflict" || phase.status === "scope_missing") return result("review", false, phase.executed);
   if (phase.status === "lease_busy") return result("busy");
-  return result(phase.status === "disabled" ? "disabled" : "pending", false, phase.executed);
+  const waiting = result(phase.status === "disabled" ? "disabled" : "pending", false, phase.executed);
+  return phase.status === "pending" && typeof phase.diagnostic === "string" && /^MEDIA_[A-Z0-9_]{1,90}$/.test(phase.diagnostic) ? { ...waiting, diagnostic: phase.diagnostic } : waiting;
 }
 
 function transportPhases(pair: MediaPair, body: { target?: string; kind?: string; key?: string }, guard: MediaRpcGuard, proofs: Record<string, unknown>[]) {

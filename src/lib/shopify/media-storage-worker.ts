@@ -5,7 +5,7 @@ import { mediaSnapshotFingerprint } from "./media-sync-core";
 import { assertMediaTransportRead } from "./media-transport-read";
 import { stagedMediaUrl, type StagedMediaSource } from "./media-transport-requests";
 import { discoverMediaTransportOperation, createMediaTransportRpc, type MediaOperationDiscovery, type MediaRpcGuard } from "./media-transport-rpc";
-import { uploadImmutableMedia, readImmutableMedia, assertImmutableMediaUploadPreflight } from "./media-storage-transport";
+import { uploadImmutableMedia, readImmutableMedia, assertImmutableMediaUploadPreflight, assertImmutableMediaUploadReady } from "./media-storage-transport";
 import { mediaStorageDiagnostic, type MediaStorageDiagnostic } from "./media-storage-diagnostics";
 import { assertMediaSourceBytesProof, readVerifiedMediaSourceBytes, type MediaSourceBytesProof } from "./media-source-bytes";
 import type { MediaTransportReference, MediaTransportResult } from "./media-transport-worker";
@@ -17,7 +17,7 @@ export type MediaStorageObservation = (identity: MediaIdentity, target: "gallery
 type Dependencies = { now?: () => number; environment?: { VERCEL_ENV?: string; SHOPIFY_MEDIA_SYNC?: string };
   discover?: typeof discoverMediaTransportOperation; createRpc?: typeof createMediaTransportRpc;
   readSource?: typeof readVerifiedMediaSourceBytes; upload?: typeof uploadImmutableMedia; readUploaded?: typeof readImmutableMedia;
-  preflight?: typeof assertImmutableMediaUploadPreflight; reportDiagnostic?: (value: MediaStorageDiagnostic & MediaTransportReference) => void };
+  preflight?: typeof assertImmutableMediaUploadPreflight; ready?: typeof assertImmutableMediaUploadReady; reportDiagnostic?: (value: MediaStorageDiagnostic & MediaTransportReference) => void };
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const HASH = /^[a-f0-9]{64}$/;
 function fail(code: string): never { throw new Error(code); }
@@ -118,13 +118,24 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
       try { (dependencies.preflight ?? assertImmutableMediaUploadPreflight)(job.staged, work); }
       catch (error) { reportFailure(error, "preflight"); throw error; }
       bytes = await bounded(() => (dependencies.readSource ?? readVerifiedMediaSourceBytes)(job.source, work - 7000), work - 7000, now);
+      // Exact decoded bytes and storage DNS are deterministic too: fail before the permit.
+      try { const ready = bytes; await bounded(() => (dependencies.ready ?? assertImmutableMediaUploadReady)(job.staged, ready, work - 7000), work - 7000, now); }
+      catch (error) { reportFailure(error, "decode"); throw error; }
     }
     const fresh = await getObservation(), attemptId = randomUUID();
     const permit = await bounded(() => rpc.begin(ref, lease.owner, attemptId, job.intent, fresh, work), work, now);
     if (permit.mayExecute === true) {
       if (job.recovery || permit.replayed !== false || permit.attemptId !== attemptId || permit.phase !== job.phase ||
           !HASH.test(permit.requestHash ?? "") || !same(permit.request, job.intent)) fail("MEDIA_STORAGE_PERMIT_INVALID");
-      const last = await getObservation();
+      // From here the permit is consumed. Only a failure that provably happened
+      // before fetch may be recorded as not-sent; HTTP outcomes stay unknown.
+      const notSent = async (error: unknown, g: MediaRpcGuard) => {
+        const code = error instanceof Error && /TIME_BUDGET$/.test(error.message) ? "MEDIA_TRANSPORT_NOT_SENT_TIME_BUDGET" : "MEDIA_TRANSPORT_NOT_SENT_PRECONDITION";
+        try { await bounded(() => rpc.conflict(ref, lease.owner, code, g, stop), stop, now); return true; } catch { return false; }
+      };
+      let last: MediaRpcGuard;
+      try { last = await getObservation(); }
+      catch (error) { reportFailure(error, "preflight"); if (await notSent(error, fresh)) return { status: "conflict", executed }; throw error; }
       if (!sameGuard(fresh, job.guard) || !sameGuard(last, job.guard)) {
         await bounded(() => rpc.conflict(ref, lease.owner, "MEDIA_TRANSPORT_CHANGED_BEFORE_CALL", last, work), work, now);
         return { status: "conflict", executed };
@@ -136,6 +147,8 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
         if (response.outcome !== "accepted") fail("MEDIA_STORAGE_UPLOAD_UNCONFIRMED"); outcome = "accepted";
       } catch (error) {
         reportFailure(error, "upload");
+        // A typed transport failure from before fetch proves nothing was sent.
+        if (mediaStorageDiagnostic(error, "upload").stage !== "upload" && await notSent(error, last)) return { status: "conflict", executed: false };
         // A failed/lost upload consumes this attempt; never submit it again.
         // The SQL receipt schema stays unchanged; sanitized detail belongs in logs.
       }
@@ -156,9 +169,9 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
       // This separate immutable authorization can only be admitted by an operator.
       // The worker has read/claim/outcome ports, never an authorize port. The original
       // permit, request, phase and history remain untouched, even if repair fails.
-      if (!job.recovery) return { status: "pending", executed };
+      if (!job.recovery) return { status: "pending", executed, diagnostic: "MEDIA_STORAGE_OBJECT_NOT_READABLE_AFTER_UPLOAD" };
       const repair = await bounded(() => rpc.readStorageRepair(lease.owner, String(a.attempt_id), work), work, now);
-      if (!repair.approved) return { status: "pending", executed };
+      if (!repair.approved) return { status: "pending", executed, diagnostic: "MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED" };
       const approval = repair.approval;
       if (!same(approval.identity, job.identity) || approval.operation_id !== ref.operationId || approval.step_index !== ref.step ||
           approval.phase_index !== ref.phaseIndex || approval.original_attempt_id !== a.attempt_id ||
@@ -166,12 +179,14 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
           approval.source_sha256 !== job.source.sha256 || approval.source_evidence_id !== job.source.evidenceId) fail("MEDIA_STORAGE_REPAIR_SCOPE_INVALID");
       // A consumed repair never grants another write. Metadata presence merely
       // allows a future GET to recover; it does not prove the bytes are correct.
-      if (repair.objectPresent) return { status: "pending", executed };
+      if (repair.objectPresent) return { status: "pending", executed, diagnostic: "MEDIA_STORAGE_OBJECT_PRESENT_UNREADABLE" };
       if (repair.claim !== null || repair.expired) fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");
       if (work - now() < 12000) return { status: "pending", executed };
       try { (dependencies.preflight ?? assertImmutableMediaUploadPreflight)(job.staged, work); }
       catch (error) { reportFailure(error, "preflight"); throw error; }
       const repairBytes = await bounded(() => (dependencies.readSource ?? readVerifiedMediaSourceBytes)(job.source, work - 7000), work - 7000, now);
+      try { await bounded(() => (dependencies.ready ?? assertImmutableMediaUploadReady)(job.staged, repairBytes, work - 7000), work - 7000, now); }
+      catch (error) { reportFailure(error, "decode"); throw error; }
       const beforeRepair = await getObservation();
       if (!sameGuard(beforeRepair, job.guard)) fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");
       if (work - now() < 8000) return { status: "pending", executed };
@@ -198,7 +213,11 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
           const response = await bounded(() => (dependencies.upload ?? uploadImmutableMedia)(job.staged, repairBytes, uploadDeadline), uploadDeadline, now);
           if (response.outcome !== "accepted") fail("MEDIA_STORAGE_UPLOAD_UNCONFIRMED");
           outcome = "accepted";
-        } catch (error) { diagnostic = mediaStorageDiagnostic(error, "upload"); reportFailure(error, "upload"); }
+        } catch (error) {
+          diagnostic = mediaStorageDiagnostic(error, executed ? "upload" : "preflight"); reportFailure(error, diagnostic.stage);
+          // Provably before fetch: the consumed repair sent nothing; keep the review stop exact.
+          if (diagnostic.stage !== "upload") stoppedBeforePost = true;
+        }
         await bounded(() => rpc.recordStorageRepairOutcome(lease.owner, repairId, outcome, diagnostic.stage, diagnostic.httpStatus, work), work, now);
         if (stoppedBeforePost) fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");
       } else if (repairPermit.mayExecute !== false) fail("MEDIA_STORAGE_REPAIR_PERMIT_INVALID");
@@ -208,7 +227,7 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
       catch (error) {
         if (!(error instanceof Error) || error.message !== "MEDIA_STORAGE_READ_FAILED") throw error;
         const afterRepair = await bounded(() => rpc.readStorageRepair(lease.owner, String(a.attempt_id), work), work, now);
-        if (afterRepair.approved && afterRepair.objectPresent) return { status: "pending", executed };
+        if (afterRepair.approved && afterRepair.objectPresent) return { status: "pending", executed, diagnostic: "MEDIA_STORAGE_OBJECT_PRESENT_UNREADABLE" };
         fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");
       }
     }

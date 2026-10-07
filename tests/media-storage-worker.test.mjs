@@ -16,7 +16,7 @@ const diagnosticsUrl=mod(src('media-storage-diagnostics'));
 const body=src('media-storage-worker').replace('import "server-only";','').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`)
   .replaceAll('from "./media-transport-read";',`from "${rawUrl}";`).replaceAll('from "./media-transport-requests";',`from "${reqUrl}";`)
   .replace('import { discoverMediaTransportOperation, createMediaTransportRpc, type MediaOperationDiscovery, type MediaRpcGuard } from "./media-transport-rpc";',`import {nope as discoverMediaTransportOperation,nope as createMediaTransportRpc} from '${stubUrl}';`)
-  .replace('import { uploadImmutableMedia, readImmutableMedia, assertImmutableMediaUploadPreflight } from "./media-storage-transport";',`import {nope as uploadImmutableMedia,nope as readImmutableMedia,nope as assertImmutableMediaUploadPreflight} from '${stubUrl}';`)
+  .replace('import { uploadImmutableMedia, readImmutableMedia, assertImmutableMediaUploadPreflight, assertImmutableMediaUploadReady } from "./media-storage-transport";',`import {nope as uploadImmutableMedia,nope as readImmutableMedia,nope as assertImmutableMediaUploadPreflight,nope as assertImmutableMediaUploadReady} from '${stubUrl}';`)
   .replaceAll('from "./media-storage-diagnostics";',`from "${diagnosticsUrl}";`)
   .replaceAll('from "./media-source-bytes";',`from "${proofUrl}";`);
 const api=await import(mod(body));
@@ -46,7 +46,7 @@ function fixture(phase='stage_source'){
     readStorageRepair:async(...a)=>{calls.push(['repair-read',...a]);return {approved:false,mayExecute:false};},
     accept:async(...a)=>{calls.push(['accept',...a]);discovery.transport.attempts[0].status='verified';return {status:'verified',mayExecute:false};}};
   const deps={now:()=>clock,environment:{VERCEL_ENV:'production',SHOPIFY_MEDIA_SYNC:'enabled_v1'},discover:async(...a)=>{calls.push(['discover',...a]);return structuredClone(discovery);},
-    preflight:(...a)=>{calls.push(['preflight',...a]);},reportDiagnostic:value=>{calls.push(['diagnostic',value]);},
+    preflight:(...a)=>{calls.push(['preflight',...a]);},ready:async()=>{},reportDiagnostic:value=>{calls.push(['diagnostic',value]);},
     createRpc:p=>{calls.push(['factory',p]);return rpc;},readSource:async(...a)=>{calls.push(['source',...a]);return new Uint8Array(100);},upload:async(...a)=>{calls.push(['upload',...a]);return {outcome:'accepted'};},
     readUploaded:async(...a)=>{calls.push(['uploaded-read',...a]);return {sha256:hash,mime:'image/png',width:40,height:60,byteLength:100,url:staged.url,storagePath:`sync-media/${id.itemId}/${hash}.png`};}};
   const f={calls,discovery,staged,guard,rpc,deps,tick:n=>clock+=n,observe:async(...a)=>{calls.push(['observe',...a]);return structuredClone(guard);}};
@@ -75,11 +75,11 @@ test('configuration preflight fails before source read and durable permit, prese
 test('upload error is logged safely without changing receipt schema or authorizing retry',async()=>{
  const f=fixture();f.deps.upload=async()=>{throw Error('private key and provider body');};
  f.deps.readUploaded=async()=>{throw Error('MEDIA_STORAGE_READ_FAILED');};
- assert.deepEqual(await f.run(),{status:'pending',executed:true});
+ assert.deepEqual(await f.run(),{status:'pending',executed:true,diagnostic:'MEDIA_STORAGE_OBJECT_NOT_READABLE_AFTER_UPLOAD'});
  assert.deepEqual(f.calls.find(c=>c[0]==='uncertain')[3],{outcome:'unknown'});
  assert.deepEqual(f.calls.find(c=>c[0]==='diagnostic')[1],{...ref,code:'MEDIA_STORAGE_UPLOAD_UNCONFIRMED',stage:'upload',httpStatus:null});
  f.calls.length=0;f.deps.preflight=()=>{throw Error('preflight must not block GET recovery');};
- assert.deepEqual(await f.run(),{status:'pending',executed:false});
+ assert.deepEqual(await f.run(),{status:'pending',executed:false,diagnostic:'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED'});
  assert.ok(!f.calls.some(c=>['preflight','upload','uncertain','source'].includes(c[0])));
 });
 
@@ -91,8 +91,8 @@ test('broken diagnostic sink does not prevent uncertainty journaling and recover
 });
 test('lost upload response consumes permit; 404 remains pending and resume never uploads',async()=>{
   const f=fixture();f.deps.upload=async(...a)=>{f.calls.push(['upload',...a]);throw Error('lost');};f.deps.readUploaded=async(...a)=>{f.calls.push(['uploaded-read',...a]);throw Error('MEDIA_STORAGE_READ_FAILED');};
-  assert.deepEqual(await f.run(),{status:'pending',executed:true});f.calls.length=0;
-  assert.deepEqual(await f.run(),{status:'pending',executed:false});assert.ok(!f.calls.some(c=>['upload','source','uncertain'].includes(c[0])));assert.equal(f.calls.filter(c=>c[0]==='uploaded-read').length,1);
+  assert.deepEqual(await f.run(),{status:'pending',executed:true,diagnostic:'MEDIA_STORAGE_OBJECT_NOT_READABLE_AFTER_UPLOAD'});f.calls.length=0;
+  assert.deepEqual(await f.run(),{status:'pending',executed:false,diagnostic:'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED'});assert.ok(!f.calls.some(c=>['upload','source','uncertain'].includes(c[0])));assert.equal(f.calls.filter(c=>c[0]==='uploaded-read').length,1);
 });
 test('lost begin reply never uploads; persisted attempt subsequently recovers read-only',async()=>{
   const f=fixture(),begin=f.rpc.begin;f.rpc.begin=async(...a)=>{await begin(...a);throw Error('lost SQL response');};await assert.rejects(f.run(),/lost SQL/);assert.ok(!f.calls.some(c=>c[0]==='upload'));
@@ -169,7 +169,7 @@ for(const phase of ['gallery_upload','stage_source'])test(`separately approved $
 });
 test('repair authorization absence preserves GET-only recovery',async()=>{
  const f=await repairFixture();f.repair={approved:false,mayExecute:false};
- assert.deepEqual(await f.run(),{status:'pending',executed:false});
+ assert.deepEqual(await f.run(),{status:'pending',executed:false,diagnostic:'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED'});
  assert.ok(!f.calls.some(c=>['source','preflight','upload','repair-claim'].includes(c[0])));
 });
 for(const field of ['original_attempt_id','original_request_hash','storage_path','source_sha256','source_evidence_id','operation_id','step_index','phase_index']) {
@@ -188,7 +188,7 @@ test('consumed absent repair and expired repair require review without another P
 });
 test('metadata present with public GET unavailable stays pending even for consumed repair',async()=>{
  const f=await repairFixture();f.repair.objectPresent=true;f.repair.claim={};
- assert.deepEqual(await f.run(),{status:'pending',executed:false});assert.ok(!f.calls.some(c=>['source','upload','repair-claim'].includes(c[0])));
+ assert.deepEqual(await f.run(),{status:'pending',executed:false,diagnostic:'MEDIA_STORAGE_OBJECT_PRESENT_UNREADABLE'});assert.ok(!f.calls.some(c=>['source','upload','repair-claim'].includes(c[0])));
 });
 test('existing exact public object recovers without consulting repair authorization',async()=>{
  const f=await repairFixture();f.deps.readUploaded=f.normalRead;

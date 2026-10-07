@@ -115,3 +115,10 @@ test('failed exact finish stops batch before another pending predicate or claim'
  await assert.rejects(f.api.drainMediaWork(Date.now()+40000,f.db,undefined,undefined,[]),/MEDIA_QUEUE_CLAIM_CHANGED/);
  assert.equal(f.calls.some(c=>c.name==='toptik_media_work_pending_excluding'),false);
 });
+test('pending transport diagnostic is recorded as last_error while the row stays pending and claimable',async()=>{
+ const f=fixture();f.state.outcome={status:'pending',progressed:false,executed:false,diagnostic:'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED'};
+ const r=await f.api.drainMediaWork(Date.now()+30000,f.db),finish=f.calls.find(c=>c.name==='finish_toptik_media_work').args;
+ assert.equal(finish.p_status,'pending');assert.equal(finish.p_error,'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED');assert.equal(r.failed,0);assert.equal(r.reviewed,0);
+ for(const outcome of [{status:'pending',progressed:false,executed:false,diagnostic:'not a code'},{status:'done',progressed:false,executed:false,diagnostic:'MEDIA_STORAGE_X'},{status:'pending',progressed:false,executed:false}]){
+  const g=fixture();g.state.outcome=outcome;await g.api.drainMediaWork(Date.now()+30000,g.db);assert.equal(g.calls.find(c=>c.name==='finish_toptik_media_work').args.p_error,null);}
+});
