@@ -136,6 +136,7 @@
   .textLink span { transition: none; }
 }
 
+.archiveImageLink { align-self: stretch; width: 100%; }
 .archiveImage { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 5px; margin-bottom: 22px; }
 .heroFigure { margin: 0 0 38px; }
 .heroFigure img { display: block; width: 100%; height: auto; border-radius: 6px; }
