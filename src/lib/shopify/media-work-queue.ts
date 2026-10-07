@@ -23,6 +23,13 @@ async function call(db: Db, name: string, args: Row, deadline: number): Promise<
     throw new Error(/^MEDIA_[A-Z0-9_]{1,90}$/.test(message) ? message : "MEDIA_QUEUE_RPC_FAILED");
   } finally { if (timer) clearTimeout(timer); }
 }
+/** Kind and a scrubbed first line of an uncoded failure, for operators only. */
+export function describeUncodedFailure(error: unknown): { kind: string; message: string } {
+  const kind = error instanceof Error ? error.name.replace(/[^A-Za-z0-9_]/g, "").slice(0, 40) || "Error" : typeof error;
+  const raw = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  const message = raw.split(/\r?\n/, 1)[0].replace(/https?:\/\/\S+/g, "<url>").replace(/[A-Za-z0-9_\-.=+/]{24,}/g, "<redacted>").slice(0, 160);
+  return { kind, message };
+}
 function mediaView(item: Row) {
   if (!Array.isArray(item.angles)) fail("MEDIA_QUEUE_CATALOG_INVALID");
   return JSON.stringify([item.title, item.coverImagePath, item.coverImageAlt ?? null, item.isActive,
@@ -118,6 +125,9 @@ export async function drainMediaWork(deadline: number, client?: Db,
     inFlight = status === "pending" && error === null && newlyVerified;
   } catch (e) {
     const code = e instanceof Error && /^MEDIA_[A-Z0-9_]{1,90}$/.test(e.message) ? e.message : "MEDIA_WORK_FAILED";
+    // An uncoded failure is otherwise undiagnosable: log only its kind and a short, scrubbed first
+    // line (no URLs, no long tokens, no stack), never provider payloads or credentials.
+    if (code === "MEDIA_WORK_FAILED") console.error("toptik.media.work_failed", describeUncodedFailure(e));
     error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE/.test(code) ? "review" : "failed";
     if (status === "review") result.reviewed++; else result.failed++;
   }

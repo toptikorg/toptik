@@ -125,3 +125,17 @@ test('pending transport diagnostic is recorded as last_error while the row stays
  for(const outcome of [{status:'pending',progressed:false,executed:false,diagnostic:'not a code'},{status:'done',progressed:false,executed:false,diagnostic:'MEDIA_STORAGE_X'},{status:'pending',progressed:false,executed:false}]){
   const g=fixture();g.state.outcome=outcome;await g.api.drainMediaWork(Date.now()+30000,g.db);assert.equal(g.calls.find(c=>c.name==='finish_toptik_media_work').args.p_error,null);}
 });
+
+test('an uncoded failure is logged with kind and a scrubbed first line only',async()=>{
+ const f=fixture();const logs=[];const orig=console.error;console.error=(...a)=>logs.push(a);
+ try{await f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw new TypeError("Cannot read properties of undefined (reading 'x') at https://example.supabase.co/rest?apikey=abcdefghijklmnopqrstuvwxyz0123456789\nstack line");});}
+ finally{console.error=orig;}
+ assert.equal(f.calls.find(c=>c.name==='finish_toptik_media_work').args.p_error,'MEDIA_WORK_FAILED');
+ const entry=logs.find(l=>l[0]==='toptik.media.work_failed');assert.ok(entry);assert.equal(entry[1].kind,'TypeError');
+ assert.ok(!/https?:|apikey=abcdefghij|stack line/.test(entry[1].message),entry[1].message);assert.match(entry[1].message,/Cannot read properties of undefined/);
+});
+test('a coded MEDIA_ failure is not logged by the queue',async()=>{
+ const f=fixture();const logs=[];const orig=console.error;console.error=(...a)=>logs.push(a);
+ try{await f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw new Error('MEDIA_SOURCE_READ_FAILED');});}finally{console.error=orig;}
+ assert.ok(!logs.some(l=>l[0]==='toptik.media.work_failed'));
+});
