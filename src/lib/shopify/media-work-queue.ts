@@ -24,17 +24,18 @@ async function call(db: Db, name: string, args: Row, deadline: number): Promise<
   } finally { if (timer) clearTimeout(timer); }
 }
 /** Kind of an uncoded failure, for operators only. The message is logged only when it
- * matches an allowlist of known-safe shapes (an uppercase code, or a short Node runtime
- * message with no quotes, digits runs, URLs, @ or =); anything else is "<omitted>".
+ * exactly matches an allowlist of known-safe shapes (an UPPER_SNAKE code, or a fixed Node
+ * runtime message, fully anchored); anything else is "<omitted>".
  * Never throws: a diagnostic must not break the failure path. */
 export function describeUncodedFailure(error: unknown): { kind: string; message: string } {
   try {
     const kind = error instanceof Error ? String(error.name ?? "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 40) || "Error" : typeof error;
     const raw = error instanceof Error ? String(error.message ?? "") : typeof error === "string" ? error : "";
     const first = raw.split(/[\r\n\u2028\u2029]/, 1)[0].trim();
-    const safe = /^[A-Z][A-Z0-9_]{2,90}$/.test(first) ||
-      (/^(Cannot read properties of (undefined|null)|Cannot set properties of (undefined|null)|[A-Za-z_$][\w$.]{0,60} is not (a function|iterable|defined)|Maximum call stack size exceeded|The operation was aborted|This operation was aborted|fetch failed|Invalid array length|Unexpected end of JSON input|Unexpected token)/.test(first) &&
-        first.length <= 120 && !/["'`@=:/\\%]|\d{4,}/.test(first));
+    const safe = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/.test(first) && first.length <= 90 ||
+      /^(fetch failed|The operation was aborted|This operation was aborted|Unexpected end of JSON input|Maximum call stack size exceeded|Invalid array length)$/.test(first) ||
+      /^Cannot (read|set) properties of (undefined|null) \(reading '[A-Za-z_$][\w$]{0,40}'\)$/.test(first) ||
+      /^[A-Za-z_$][\w$.]{0,60} is not (a function|iterable|defined)$/.test(first);
     return { kind, message: safe ? first : "<omitted>" };
   } catch { return { kind: "unknown", message: "<omitted>" }; }
 }

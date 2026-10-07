@@ -130,7 +130,7 @@ const capture=async(fn)=>{const logs=[];const orig=console.error;console.error=(
 test('an uncoded failure logs only its kind and an allowlisted message; finish is unchanged',async()=>{
  const f=fixture();const logs=await capture(()=>f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw new TypeError("Cannot read properties of undefined (reading 'x')");}));
  const fin=f.calls.find(c=>c.name==='finish_toptik_media_work').args;assert.equal(fin.p_error,'MEDIA_WORK_FAILED');assert.equal(fin.p_status,'failed');
- const entry=logs.find(l=>l[0]==='toptik.media.work_failed');assert.equal(entry[1].kind,'TypeError');assert.equal(entry[1].message,'<omitted>','quotes are not allowlisted');
+ const entry=logs.find(l=>l[0]==='toptik.media.work_failed');assert.equal(entry[1].kind,'TypeError');assert.equal(entry[1].message,"Cannot read properties of undefined (reading 'x')");
 });
 test('a coded MEDIA_ failure is not logged by the queue',async()=>{
  const f=fixture();const logs=await capture(()=>f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw new Error('MEDIA_SOURCE_READ_FAILED');}));
@@ -144,7 +144,7 @@ test('a hostile error object can never break the failure path',async()=>{
 });
 test('describeUncodedFailure allowlists only safe messages',()=>{
  const d=fixture().api.describeUncodedFailure;
- const cases=[[new TypeError("Cannot read properties of undefined (reading x)"),"Cannot read properties of undefined (reading x)"],[new Error("fetch failed"),"fetch failed"],[new Error("SHOPIFY_API_HTTP_500"),"SHOPIFY_API_HTTP_500"],
+ const cases=[[new TypeError("Cannot read properties of undefined (reading 'x')"),"Cannot read properties of undefined (reading 'x')"],[new Error('fetch failed for customer Jane Doe phone 055'),'<omitted>'],[new Error('AKIAIOSFODNN7EXAMPLE'),'<omitted>'],[new Error("fetch failed"),"fetch failed"],[new Error("SHOPIFY_API_HTTP_500"),"SHOPIFY_API_HTTP_500"],
   [new Error("jane.doe@example.com rejected"),"<omitted>"],[new Error("key=sk_live_short123 token=abc123"),"<omitted>"],[new Error("Bearer shpat_short1234"),"<omitted>"],
   [new Error("connect postgres://postgres:hunter2pass@db.example"),"<omitted>"],[new Error("Unexpected token < in JSON at position 0 \"<!DOCTYPE\""),"<omitted>"],[new Error("abc%3Ddef%2Fghi"),"<omitted>"],
   [new Error("fetch failed\nhttps://x.example/?apikey=secret"),"fetch failed"]];
