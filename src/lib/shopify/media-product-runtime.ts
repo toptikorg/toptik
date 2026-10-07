@@ -21,6 +21,23 @@ function stable(v: unknown): string { return Array.isArray(v) ? `[${v.map(stable
   `{${Object.entries(v).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, x]) => `${JSON.stringify(k)}:${stable(x)}`).join(",")}}` : JSON.stringify(v); }
 function same(a: unknown, b: unknown) { return stable(a) === stable(b); }
 
+/** Existing transport may resume after an ordinary catalog edit introduced an
+ * angle UUID or changed its URL. It must first register a complete decoded
+ * observation through the usual identity/review gate, never guess a reference. */
+export function galleryObservationNeedsRefresh(context: MediaPlanningContext): boolean {
+  const { galleryRaw: raw, galleryRefs: refs, provenance, identity } = context;
+  if (refs.length !== raw.angles.length + 1) return true;
+  const expected = [{ role: "cover", angleId: null, url: raw.item.cover_image_path },
+    ...raw.angles.map(a => ({ role: "angle", angleId: a.id, url: a.image_path }))];
+  return expected.some(e => {
+    const matches = refs.filter(r => r && r.role === e.role && r.angleId === e.angleId);
+    if (matches.length !== 1) return true;
+    const ref = matches[0];
+    return !provenance.some(p => p.product_gid === identity.productId && p.side === "gallery" &&
+      p.evidence_id === ref.evidenceId && p.asset_key === ref.key && p.proof?.url === e.url);
+  });
+}
+
 /** Bounded planning + at most ONE real transport phase. The durable operation
  * and queue survive each invocation. Existing 78 baselines are never rebound;
  * new/unknown products cannot enter this enabled-identity lane. */
@@ -97,6 +114,12 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
       return result(accepted.status === "verified" ? "pending" : "review", accepted.status === "verified");
     }
     if (journal.chain?.status === "conflict" || step.status === "conflict") return result("review");
+    if (step.status !== "ready" && galleryObservationNeedsRefresh(context)) {
+      // The byte decoder and reviewed exact-product lineage checks in capture
+      // remain mandatory. This only appends observation/provenance records;
+      // the frozen transport guard still decides whether to hold a real drift.
+      await capture(context); progressed = true;
+    }
     if (step.status === "ready") {
       const current = await capture(context), begun = await planning.begin(lease.owner, opId, stepIndex, current, work);
       if (begun.status === "conflict") return result("review");
