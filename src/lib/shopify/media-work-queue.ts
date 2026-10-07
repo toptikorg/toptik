@@ -99,6 +99,8 @@ export async function drainMediaWork(deadline: number, client?: Db,
       productProgress ||= outcome.progressed;
     }
     status = outcome.status === "done" ? "done" : outcome.status === "review" ? "review" : "pending";
+    // A durable wait that needs diagnosis stays claimable but is never a silent pending.
+    if (status === "pending" && "diagnostic" in outcome && typeof outcome.diagnostic === "string" && /^MEDIA_[A-Z0-9_]{1,90}$/.test(outcome.diagnostic)) error = outcome.diagnostic;
     if (status === "review") result.reviewed++;
     if (productProgress) result.processed++;
     // Completing an already-equal product advances the durable queue even when

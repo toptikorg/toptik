@@ -83,3 +83,9 @@ test('only durable verified phase and accepted step expose a continuation checkp
  const prepared=f();active(prepared);prepared.transport.prepare=async()=>{prepared.state.chain={status:'ready',next_phase:0};prepared.state.time=now+30000;};
  const r=await prepared.run();assert.equal(r.progressed,true);assert.equal(r.verifiedCheckpoint,undefined);
 });
+test('durable pending transport diagnostic is preserved; only allowlisted MEDIA codes on pending',async()=>{
+ const z=f();active(z);z.state.phase={status:'pending',executed:true,diagnostic:'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED'};
+ const r=await z.run();assert.equal(r.status,'pending');assert.equal(r.diagnostic,'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED');
+ for(const phase of [{status:'pending',executed:true,diagnostic:'provider said: secret'},{status:'conflict',executed:false,diagnostic:'MEDIA_STORAGE_X'},{status:'pending',executed:false}]){
+  const y=f();active(y);y.state.phase=phase;assert.equal((await y.run()).diagnostic,undefined);}
+});

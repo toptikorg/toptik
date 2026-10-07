@@ -69,6 +69,21 @@ export function assertImmutableMediaUploadPreflight(source: StagedMediaSource, d
   if (source.mime === "image/avif") fail("MEDIA_STORAGE_MIME_NOT_ENABLED");
 }
 
+/** Every deterministic pre-POST check of uploadImmutableMedia (configuration,
+ * exact decoded bytes, public storage DNS), run BEFORE consuming a one-shot
+ * permit. It never writes. uploadImmutableMedia repeats the same checks. */
+export async function assertImmutableMediaUploadReady(source: StagedMediaSource, bytes: Uint8Array, deadline: number): Promise<void> {
+  let stage: MediaStorageStage = "preflight";
+  try {
+    source = structuredClone(source);
+    assertImmutableMediaUploadPreflight(source, deadline);
+    stage = "decode";
+    matches(source, await decode(new Uint8Array(bytes), deadline));
+    stage = "dns";
+    await publicDns(deadline);
+  } catch (error) { throw new MediaStorageFailure(error, stage, null); }
+}
+
 /** Call only after durable one-shot stage_source/gallery_upload permission. No retry or overwrite. */
 export async function uploadImmutableMedia(source: StagedMediaSource, bytes: Uint8Array, deadline: number): Promise<{ outcome: "accepted" }> {
   let stage: MediaStorageStage = "preflight";
@@ -83,11 +98,14 @@ export async function uploadImmutableMedia(source: StagedMediaSource, bytes: Uin
   stage = "dns";
   await publicDns(deadline);
   const key = supabaseEnv.serviceRoleKey!;
+  // Still before fetch: an exhausted budget here is provably unsent, so keep the
+  // pre-request stage. Only fetch itself may produce an unknown "upload" outcome.
+  const signal = AbortSignal.timeout(remaining(deadline));
   let response: Response;
   stage = "upload";
   try {
     response = await fetch(`${ORIGIN}/storage/v1/object/carousel-media/${path}`, {
-      method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(remaining(deadline)),
+      method: "POST", redirect: "error", cache: "no-store", signal,
       // Opaque secret keys authenticate through apikey, not a JWT Bearer token.
       // Keep the legacy service_role header while both key types are supported.
       headers: { apikey: key, ...(key.startsWith("sb_secret_") ? {} : { authorization: `Bearer ${key}` }),

@@ -212,7 +212,7 @@ export function createMediaTransportRpc(productId: string, options: Options = {}
     },
     async conflict(ref: MediaTransportReference, owner: string, code: string, fresh: MediaRpcGuard, deadline: number, requestId = randomUUID()) {
       uuid(requestId); guard(fresh, productId, rpc.now()); const attemptId = permits.get(key(ref));
-      if (!attemptId || !["MEDIA_TRANSPORT_CHANGED_BEFORE_CALL", "MEDIA_TRANSPORT_NOT_SENT_TIME_BUDGET"].includes(code)) fail("MEDIA_RPC_HOLD_WITHOUT_PERMIT");
+      if (!attemptId || !["MEDIA_TRANSPORT_CHANGED_BEFORE_CALL", "MEDIA_TRANSPORT_NOT_SENT_TIME_BUDGET", "MEDIA_TRANSPORT_NOT_SENT_PRECONDITION"].includes(code)) fail("MEDIA_RPC_HOLD_WITHOUT_PERMIT");
       permits.delete(key(ref));
       return status(await rpc.call("hold_toptik_media_transport", { ...args(ref, owner), p_phase_index: ref.phaseIndex, p_attempt_id: attemptId, p_request_id: requestId, p_code: code, p_guard: fresh }, deadline), ["conflict"]);
     },
