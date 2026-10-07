@@ -908,6 +908,7 @@ export default function AdminPage() {
           <h1>ניהול גלריית TopTik</h1>
           <p role="status" aria-live="polite">{status}</p>
           <div className="admin-header-actions">
+            <Link href="/dashboard/media-review" className="admin-back-link">אישור תמונות לסנכרון</Link>
             <button disabled={isCatalogBusy} onClick={() => { if (window.confirm("לטעון נתונים עדכניים? עריכות שטרם נשמרו יוחלפו.")) void loadData(token); }}>רענן נתונים</button>
             <button disabled={Boolean(creationSelection) || isBatchImporting || isUrlImporting} onClick={() => setCreationSelection({ key: crypto.randomUUID() })} className="admin-back-link">טיוטות מוצרים</button>
             {failedImports.length > 0 && (
