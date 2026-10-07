@@ -107,6 +107,8 @@ test('plain Hebrew explanations for the key codes; unknown codes are flagged, no
   assert.equal(lib.explainMediaCode('MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED').title, 'התאוששות נדרשת');
   assert.equal(lib.explainMediaCode('MEDIA_STORAGE_OBJECT_PRESENT_UNREADABLE').title, 'הקובץ קיים אך עדיין לא ניתן לקריאה');
   assert.equal(lib.explainMediaCode('MEDIA_PLANNING_TIME_BUDGET').title, 'זמן ההפעלה הסתיים');
+  assert.equal(lib.explainMediaCode('MEDIA_QUEUE_DEFERRED_TIME_BUDGET').title, 'זמן ההפעלה הסתיים');
+  assert.equal(lib.explainMediaCode('MEDIA_QUEUE_IN_FLIGHT_CONTINUES').title, 'העבודה מתקדמת');
   assert.equal(lib.explainMediaCode('MEDIA_SOMETHING_NEW').code, 'MEDIA_SOMETHING_NEW');
   assert.equal(lib.explainMediaCode(null).code, null);
 });

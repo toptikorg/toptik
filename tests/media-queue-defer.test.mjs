@@ -5,10 +5,11 @@ Error.stackTraceLimit=0;
 const {make}=await import(mod(`import{randomUUID}from'node:crypto';export function make(deps){const{process,createSupabaseServiceRoleClient,reconcilePersistedMediaProduct}=deps;const bootstrapProductionMedia=async(...a)=>deps.bootstrap(...a);${stripped('media-work-queue').replace(/^export /gm,'')}return{drainMediaWork};}`));
 const runtime=await import(mod(`import{randomUUID}from'node:crypto';import{reconcileMedia,mediaSnapshotFingerprint}from'${coreUrl}';${stripped('media-product-runtime')}`));
 const other='gid://shopify/Product/1234567';
-function queue(outcome,{deferFails=false,deferHangs=false}={}){
+function queue(outcome,{deferFails=false,deferHangs=false,keepResult=true,keepFails=false}={}){
  const calls=[],env={VERCEL_ENV:'production',SHOPIFY_MEDIA_SYNC:'enabled_v1'};
  const db={rpc(name,args){calls.push({name,args});return{abortSignal(){
   if(name==='defer_toptik_media_work'&&deferHangs)return new Promise(()=>{});
+  if(name==='keep_toptik_media_work_in_flight')return Promise.resolve(keepFails?{data:null,error:{message:'function public.keep_toptik_media_work_in_flight does not exist'}}:{data:keepResult,error:null});
   if(name==='defer_toptik_media_work'&&deferFails)return Promise.resolve({data:null,error:{message:'function public.defer_toptik_media_work does not exist'}});
   return Promise.resolve({data:name.startsWith('claim_toptik_media_work')?{productId:id.productId,claimId:args.p_claim_id,generation:3,initialized:true,evidence:{}}:
    name.startsWith('toptik_media_work_pending')?true:true,error:null});}};}};
@@ -57,4 +58,34 @@ test('runtime marks deferred only when planning left less than 12 s for the phas
  // 11 s left: no phase, deferred.
  calls.length=0;const late=await runtime.reconcilePersistedMediaProduct(id.productId,{},now+11500,deps());
  assert.equal(late.status,'pending');assert.equal(late.deferred,true);assert.deepEqual(calls,[]);
+});
+
+// In-flight operations: a claim that verified a NEW transport phase and now waits for its next
+// step keeps its position (even as the batch's first claim) instead of re-queuing per step.
+const inFlight = { status: 'pending', progressed: true, executed: true, verifiedCheckpoint: 'op:0:phase:1' };
+const release = q => names(q).filter(n => /^(defer|keep|finish)_toptik_media_work/.test(n));
+test('a newly verified phase keeps the queue position, including for the first claim of a batch', async () => {
+  for (const excluded of [[], [other], undefined]) {
+    const q = queue(inFlight); await q.run(excluded);
+    assert.deepEqual(release(q), ['keep_toptik_media_work_in_flight']);
+    assert.deepEqual(Object.keys(q.calls.find(c => c.name === 'keep_toptik_media_work_in_flight').args).sort(), ['p_claim_id', 'p_generation', 'p_product_gid']);
+  }
+});
+test('no newly verified phase, a diagnostic, review, done or failure still finishes normally (moves to the back)', async () => {
+  for (const outcome of [{ status: 'pending', progressed: true, executed: true },
+    { ...inFlight, diagnostic: 'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED' },
+    { ...inFlight, status: 'review' }, { ...inFlight, status: 'done' }]) {
+    const q = queue(outcome); await q.run([]);
+    assert.deepEqual(release(q), ['finish_toptik_media_work'], JSON.stringify(outcome));
+  }
+});
+test('the SQL cap (keep returns false) or an unavailable keep falls back to the ordinary finish', async () => {
+  for (const opts of [{ keepResult: false }, { keepFails: true }]) {
+    const q = queue(inFlight, opts); await q.run([]);
+    assert.deepEqual(release(q), ['keep_toptik_media_work_in_flight', 'finish_toptik_media_work']);
+    assert.equal(q.calls.find(c => c.name === 'finish_toptik_media_work').args.p_status, 'pending');
+  }
+});
+test('a budget deferral still uses defer, never keep', async () => {
+  const q = queue(deferred); await q.run([other]); assert.deepEqual(release(q), ['defer_toptik_media_work']);
 });
