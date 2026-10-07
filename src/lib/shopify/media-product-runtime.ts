@@ -16,7 +16,9 @@ export type MediaProductRun = { status: "disabled" | "done" | "pending" | "revie
   /** Durable verified cursor only, never a capture, preparation or uncertain write. */
   verifiedCheckpoint?: string;
   /** Allowlisted reason for a durable pending wait (transport phase), recorded as last_error. */
-  diagnostic?: string };
+  diagnostic?: string;
+  /** Planning finished but too little budget remained to run the prepared phase. */
+  deferred?: true };
 type Dependencies = { planning?: typeof createMediaPlanningRpc; transport?: typeof createMediaTransportRpc; gallery?: typeof createGalleryMediaTransport;
   capture?: typeof captureMediaPlanningPair; discover?: typeof discoverMediaTransportOperation; observer?: typeof createMediaRuntimeObserver;
   phase?: typeof runPersistedMediaPhase; now?: () => number; environment?: { VERCEL_ENV?: string; SHOPIFY_MEDIA_SYNC?: string } };
@@ -143,7 +145,7 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
   } finally { try { await rpc.release(lease.owner, Math.min(stop, now() + 1000)); } catch { /* bounded owned lease expiry */ } }
   // Never start another fixed-duration worker after a long planning request.
   // Prepared work is durable and continuation carries it into a fresh budget.
-  if (stop - now() < 12000) return result("pending", progressed);
+  if (stop - now() < 12000) return { ...result("pending", progressed), deferred: true };
   const phase = await (dependencies.phase ?? runPersistedMediaPhase)(phaseRef!, stop);
   if (phase.status === "verified") return { ...result("pending", true, phase.executed),
     verifiedCheckpoint: `${phaseRef!.operationId}:${phaseRef!.step}:phase:${phaseRef!.phaseIndex}` };

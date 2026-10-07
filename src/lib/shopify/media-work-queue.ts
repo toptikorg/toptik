@@ -79,7 +79,7 @@ export async function drainMediaWork(deadline: number, client?: Db,
       !Number.isSafeInteger(claim.generation) || Number(claim.generation) < 1 || typeof claim.initialized !== "boolean" || !claim.evidence || typeof claim.evidence !== "object") fail("MEDIA_QUEUE_RESPONSE_INVALID");
   if (excluded?.includes(String(claim.productId))) fail("MEDIA_QUEUE_BATCH_REPEATED");
   result.claimedProductId = String(claim.productId);
-  let status = "pending", error: string | null = null, progress = false;
+  let status = "pending", error: string | null = null, progress = false, deferred = false;
   try {
     const workDeadline = deadline - 5000;
     let outcome = claim.initialized ? await run(String(claim.productId), claim.evidence as MediaWorkEvidence, workDeadline) :
@@ -107,12 +107,22 @@ export async function drainMediaWork(deadline: number, client?: Db,
     // no media mutation is necessary. Busy/unchanged pending work still stops;
     // do not confuse a no-op completion with a stalled reconciliation.
     progress = status === "done" || productProgress || outcome.executed;
+    deferred = status === "pending" && "deferred" in outcome && outcome.deferred === true;
   } catch (e) {
     const code = e instanceof Error && /^MEDIA_[A-Z0-9_]{1,90}$/.test(e.message) ? e.message : "MEDIA_WORK_FAILED";
     error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE/.test(code) ? "review" : "failed";
     if (status === "review") result.reviewed++; else result.failed++;
   }
-  await call(db, "finish_toptik_media_work", { p_product_gid: claim.productId, p_claim_id: claimId, p_generation: claim.generation, p_status: status, p_error: error }, deadline - 1000);
+  // A product claimed late in a batch may not get the budget to run its prepared
+  // phase. Releasing it WITHOUT moving it to the back keeps it first for the next
+  // batch's full budget; the first claim of a batch always finishes normally, so
+  // a product whose planning alone exceeds the budget cannot monopolize the head.
+  let released = false;
+  if (deferred && excluded !== undefined && excluded.length > 0) {
+    try { released = await call(db, "defer_toptik_media_work", { p_product_gid: claim.productId, p_claim_id: claimId, p_generation: claim.generation }, deadline - 1000) === true; }
+    catch { /* migration absent or claim changed: fall back to the ordinary finish below */ }
+  }
+  if (!released) await call(db, "finish_toptik_media_work", { p_product_gid: claim.productId, p_claim_id: claimId, p_generation: claim.generation, p_status: status, p_error: error }, deadline - 1000);
   // A blocked product must not stop independent pending identities. The batch
   // cannot reclaim any visited product, including one with a newer generation.
   // Failed-only work still never drives a loop. The legacy caller retains its
