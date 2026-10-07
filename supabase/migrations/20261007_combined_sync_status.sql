@@ -32,14 +32,23 @@ begin
    group by o.status
  ) select coalesce(jsonb_agg(to_jsonb(q) order by lane,status),'[]'::jsonb) into queues from queue_rows q;
  select jsonb_build_object('approvedProducts',count(distinct e.product_gid),
-  'missingCopyBaseline',count(*) filter(where c.catalog_key is null or c.gallery_baseline_payload is null or c.shopify_baseline_payload is null),
+  'missingCopyBaseline',count(*) filter(where c.catalog_key is null or c.last_synced_payload is null or c.gallery_baseline_payload is null or c.shopify_baseline_payload is null),
   'missingMediaBaseline',count(*) filter(where m.product_gid is null or not m.enabled or s.product_gid is null),
-  'missingMediaQueue',count(*) filter(where q.product_gid is null))
+  'missingMediaQueue',count(*) filter(where q.product_gid is null),
+  'missingSpecQueue',count(*) filter(where sq.product_gid is null),
+  'missingSpecBaseline',count(*) filter(where sp.product_gid is null or not sp.enabled
+    or sp.carousel_item_id<>e.carousel_item_id or sp.variant_gid<>e.variant_gid
+    or sp.exact_gallery_sku<>e.exact_gallery_sku or sp.exact_shopify_sku<>e.exact_shopify_sku
+    or sp.approved_fields<>toptik_spec_private.keys()
+    or exists(select 1 from unnest(toptik_spec_private.keys()) k where not exists(
+       select 1 from toptik_spec_private.field_state fs where fs.product_gid=e.product_gid and fs.field_key=k))))
  into coverage from public.shopify_gallery_copy_eligibility e
  left join public.shopify_gallery_sync_state c using(catalog_key)
  left join toptik_media_private.products m using(product_gid)
  left join toptik_media_private.state s using(product_gid)
  left join toptik_media_private.work_queue q using(product_gid)
+ left join toptik_spec_private.eligibility sp using(product_gid)
+ left join toptik_spec_private.work_queue sq using(product_gid)
  where e.enabled and (p_product_gid is null or e.product_gid=p_product_gid);
  return jsonb_build_object('observedAt',statement_timestamp(),'queues',queues,'coverage',coverage);
 end $$;

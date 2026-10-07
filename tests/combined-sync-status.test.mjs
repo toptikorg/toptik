@@ -6,7 +6,7 @@ const text = path => readFileSync(new URL(path, import.meta.url), 'utf8');
 const code = stripTypeScriptTypes(text('../src/lib/shopify/combined-sync-status.ts'));
 const { evaluateCombinedSyncStatus: evaluate } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
 const runtime = { copy: true, media: true, specifications: true };
-const base = () => ({ observedAt: '2026-10-07T09:00:00Z', coverage: { approvedProducts: 400, missingCopyBaseline: 0, missingMediaBaseline: 0, missingMediaQueue: 0 },
+const base = () => ({ observedAt: '2026-10-07T09:00:00Z', coverage: { approvedProducts: 400, missingCopyBaseline: 0, missingMediaBaseline: 0, missingMediaQueue: 0, missingSpecBaseline: 0, missingSpecQueue: 0 },
   queues: [{ lane: 'copy_inbox', status: 'processed', count: 100 }, { lane: 'media', status: 'done', count: 400 }] });
 
 test('clear queues explicitly do not assert live catalog verification', () => {
@@ -31,7 +31,7 @@ for (const [lane, statuses] of Object.entries({ copy_inbox: ['review', 'failed']
 for (const key of ['copy', 'media', 'specifications']) test(`${key} runtime disabled cannot be healthy`, () => {
   const result = evaluate(base(), { ...runtime, [key]: false }); assert.equal(result.status, 'disabled'); assert.equal(result.queuesClear, false);
 });
-for (const key of ['missingCopyBaseline', 'missingMediaBaseline', 'missingMediaQueue']) test(`${key} is incomplete even when all present queue rows are done`, () => {
+for (const key of ['missingCopyBaseline', 'missingMediaBaseline', 'missingMediaQueue', 'missingSpecBaseline', 'missingSpecQueue']) test(`${key} is incomplete even when all present queue rows are done`, () => {
   const data = base(); data.coverage[key] = 1;
   assert.equal(evaluate(data, runtime).status, 'incomplete');
 });
@@ -54,6 +54,11 @@ test('SQL is private read-only and counts both directions plus media work and cu
   assert.doesNotMatch(sql, /\b(insert into|update\s+\w|delete from)\b/i);
   for (const table of ['shopify_webhook_events', 'shopify_gallery_content_outbox', 'work_queue', 'shopify_gallery_commerce_commands', 'operations']) assert.ok(sql.includes(table));
   assert.match(sql, /o\.state_version=s\.version/);
+  for (const field of ['last_synced_payload', 'gallery_baseline_payload', 'shopify_baseline_payload']) assert.ok(sql.includes(`c.${field} is null`));
+  assert.match(sql, /sp\.product_gid is null or not sp\.enabled/);
+  assert.match(sql, /unnest\(toptik_spec_private\.keys\(\)\)/);
+  assert.match(sql, /fs\.product_gid=e\.product_gid and fs\.field_key=k/);
+  assert.match(sql, /'missingSpecQueue',count\(\*\) filter\(where sq\.product_gid is null\)/);
   const route = text('../src/app/api/admin/shopify/sync/status/route.ts');
   assert.ok(route.indexOf('await requireGalleryAdmin(req)') < route.indexOf(".rpc('read_toptik_combined_sync_status'"));
   assert.match(route, /Cache-Control.*no-store/);

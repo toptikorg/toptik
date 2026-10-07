@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireGalleryAdmin } from '@/lib/admin/gallery-access';
-import { createSupabaseServiceRoleClient } from '@/lib/supabase/service-role';
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { isShopifySyncConfigured } from '@/lib/shopify/admin-api';
 import { configuredShopifySyncMode } from '@/lib/shopify/sync-rules';
 import { mediaSyncEnabled } from '@/lib/shopify/media-work-queue';

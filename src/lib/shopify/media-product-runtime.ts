@@ -86,7 +86,14 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
     const ref = { operationId: opId, step: stepIndex, phaseIndex: 0 };
     let journal = await rpc.read(ref, lease.owner, work);
     if (journal.chain?.status === "verified") {
-      const current = await capture(context), accepted = await planning.accept(lease.owner, opId, stepIndex, current, work);
+      const current = await capture(context);
+      const discovered = await (dependencies.discover ?? discoverMediaTransportOperation)(ref, work);
+      const target = (discovered.step.body as { target?: string })?.target;
+      if (target !== "gallery" && target !== "shopify") fail("MEDIA_PLANNING_BODY_INVALID");
+      // Re-pin a complete raw observation after byte decoding. The SQL gate
+      // distinguishes copy-only product timestamps from genuine media drift.
+      const guard = await (dependencies.observer ?? createMediaRuntimeObserver)(discovered)(context.identity, target, work); check();
+      const accepted = await planning.acceptFinal(lease.owner, opId, stepIndex, current, guard, work);
       return result(accepted.status === "verified" ? "pending" : "review", accepted.status === "verified");
     }
     if (journal.chain?.status === "conflict" || step.status === "conflict") return result("review");

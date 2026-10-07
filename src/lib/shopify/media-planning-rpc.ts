@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { mediaSnapshotFingerprint, type MediaIdentity, type MediaPair, type MediaPlan, type RemovalEvidence, type DetachReceipt } from "./media-sync-core";
 import { parseGalleryMediaRaw, type GalleryMediaRaw, type GalleryMediaRef } from "./media-gallery-transport";
+import type { MediaRpcGuard } from "./media-transport-rpc";
 
 export type MediaProofRow = { product_gid: string; evidence_id: string; asset_key: string; side: "gallery" | "shopify"; content_id: string; proof: Record<string, unknown> };
 export type MediaRegisteredProof = { evidenceId: string; key: string; side: "gallery" | "shopify"; contentId: string; proof: Record<string, unknown> };
@@ -65,6 +66,13 @@ export function createMediaPlanningRpc(productId: string, options: MediaPlanning
     async accept(owner: string, operationId: string, step: number, current: MediaPair, deadline: number) {
       uuid(operationId); pair(current, productId); if (!Number.isInteger(step) || step < 0 || step > 1000) fail("MEDIA_PLANNING_STEP_INVALID");
       return object(await call("accept_toptik_media_readback", { ...args(owner), p_operation_id: operationId, p_step_index: step, p_request_id: randomUUID(), p_observed: current }, deadline));
+    },
+    async acceptFinal(owner: string, operationId: string, step: number, current: MediaPair, guard: MediaRpcGuard, deadline: number) {
+      uuid(operationId); pair(current, productId); if (!Number.isInteger(step) || step < 0 || step > 1000) fail("MEDIA_PLANNING_STEP_INVALID");
+      if (!guard || guard.target?.identity?.productId !== productId || !["gallery", "shopify"].includes(guard.target.side) ||
+          typeof guard.observedAt !== "string" || !Number.isFinite(Date.parse(guard.observedAt))) fail("MEDIA_PLANNING_GUARD_INVALID");
+      return object(await call("accept_toptik_media_final_readback", { ...args(owner), p_operation_id: operationId, p_step_index: step,
+        p_request_id: randomUUID(), p_observed: current, p_guard: guard }, deadline));
     },
     async commit(owner: string, operationId: string, current: MediaPair, deadline: number) {
       uuid(operationId); pair(current, productId); return object(await call("commit_toptik_media_operation", { ...args(owner), p_operation_id: operationId, p_request_id: randomUUID(), p_fresh: current }, deadline));
