@@ -36,3 +36,38 @@ test('Gallery alt-only change uses only CAS, not new upload',async()=>{const x=f
 test('long planning persists its continuation but never starts another full-duration phase',async()=>{const x=f();active(x);x.transport.prepare=async()=>{x.state.chain={status:'ready',next_phase:0};x.state.time=now+30000;};const r=await x.run();assert.equal(r.status,'pending');assert.equal(r.progressed,true);assert.equal(x.calls.some(c=>c.name==='phase'),false);});
 test('product busy does not reserve, decode or execute',async()=>{const x=f();x.transport.acquire=async()=>null;assert.equal((await x.run()).status,'busy');assert.deepEqual(x.calls,[]);});
 test('source failure releases lease and cannot write or falsely succeed',async()=>{const x=f();x.deps.capture=async()=>{throw Error('MEDIA_SOURCE_CHANGED');};await assert.rejects(x.run(),/SOURCE_CHANGED/);assert.equal(x.calls.at(-1).name,'release');assert.equal(x.calls.some(c=>c.name==='phase'),false);});
+
+function newAngle(x){const a=structuredClone(x.state.context.galleryRaw.angles[0]);a.id='a0000000-0000-4000-8000-000000000099';a.image_path='https://cdn.shopify.com/s/files/1/new-reviewed.jpg';a.angle_order=2;x.state.context.galleryRaw.angles.push(a);}
+for(const chain of [null,{status:'ready',next_phase:0,phases:['stage_source']},{status:'uncertain',next_phase:1,phases:['stage_source','create_owned']}])test(`started transport refreshes newly added exact angle before resume (${chain?.status??'no chain'})`,async()=>{
+ const x=f();active(x);newAngle(x);x.state.chain=chain;await x.run();
+ assert.equal(x.calls.filter(c=>c.name==='capture').length,1);
+ assert.ok(x.calls.findIndex(c=>c.name==='capture')<x.calls.findIndex(c=>c.name==='phase'));
+ assert.ok(x.calls.findIndex(c=>c.name==='register')<x.calls.findIndex(c=>c.name==='observe'));
+ assert.ok(x.calls.findIndex(c=>c.name==='observe')<x.calls.findIndex(c=>c.name==='phase'));
+});
+test('ready step refreshes once through its existing begin gate, not twice',async()=>{
+ const x=f();active(x,'alt','shopify','ready');newAngle(x);await x.run();
+ assert.equal(x.calls.filter(c=>c.name==='capture').length,1);assert.ok(x.calls.some(c=>c.name==='begin'));
+});
+test('complete unchanged references resume with no redundant capture',async()=>{
+ const x=f();active(x);x.state.chain={status:'uncertain',next_phase:1};await x.run();
+ assert.equal(x.calls.some(c=>c.name==='capture'),false);assert.ok(x.calls.some(c=>c.name==='phase'));
+});
+test('same UUID with replaced URL requires reviewed decoded observation before resume',async()=>{
+ const x=f();active(x);x.state.chain={status:'uncertain',next_phase:1};x.state.context.galleryRaw.angles[0].image_path='https://cdn.shopify.com/s/files/1/reviewed-replacement.jpg';await x.run();
+ assert.equal(x.calls.filter(c=>c.name==='capture').length,1);
+});
+test('new unreviewed angle holds before observation registration or transport execution',async()=>{
+ const x=f();active(x);newAngle(x);x.state.chain={status:'uncertain',next_phase:1};x.deps.capture=async()=>{throw Error('MEDIA_REVIEW_REQUIRED');};
+ await assert.rejects(x.run(),/MEDIA_REVIEW_REQUIRED/);assert.equal(x.calls.some(c=>['phase','register','observe','prepare'].includes(c.name)),false);assert.equal(x.calls.at(-1).name,'release');
+});
+test('refresh predicate requires exact product, side, row UUID, source URL and complete cover mapping',()=>{
+ const c=fixture().context;assert.equal(api.galleryObservationNeedsRefresh(c),false);
+ for(const mutate of [x=>x.galleryRefs.pop(),x=>x.galleryRefs.push(x.galleryRefs[0]),x=>x.galleryRefs[1].angleId='other',x=>x.provenance[0].product_gid='gid://shopify/Product/999',x=>x.provenance[0].side='shopify',x=>x.provenance[0].proof.url+='x',x=>x.galleryRaw.item.cover_image_path+='x']){
+  const changed=structuredClone(c);mutate(changed);assert.equal(api.galleryObservationNeedsRefresh(changed),true);
+ }
+});
+test('observation refresh never authorizes changed-source transport; its guard conflict is retained',async()=>{
+ const x=f();active(x);newAngle(x);x.state.chain={status:'uncertain',next_phase:1};x.state.phase={status:'conflict',executed:false};
+ const r=await x.run();assert.equal(r.status,'review');assert.equal(r.executed,false);assert.equal(x.calls.filter(c=>c.name==='phase').length,1);
+});
