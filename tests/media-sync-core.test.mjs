@@ -342,3 +342,49 @@ test('reconcile is deterministic and does not mutate baseline/current/evidence',
   const base = pair(), now = clone(base); now.gallery.assets[0].alt = 'new'; const before = JSON.stringify([base,now]);
   const one = api.reconcileMedia(base, now); assert.deepEqual(api.reconcileMedia(base,now), one); assert.equal(JSON.stringify([base,now]), before);
 });
+
+// Adopted copy of a target-baseline image (BXL58145 class): the gallery gained byte-identical copies
+// of Shopify images carrying Shopify's PREVIOUS alt, while Shopify corrected the alt.
+const adoption = (mutate = () => {}) => {
+  const base = pair([asset('a')], [asset('a'), asset('b', { alt: 'מזוודה 70 ס"מ', evidenceId: 's-b' })]), now = clone(base);
+  now.gallery.assets.push(asset('b', { alt: 'מזוודה 70 ס"מ', evidenceId: 'g-b' }));
+  now.shopify.assets[1].alt = 'מזוודה 77 ס"מ';
+  mutate(base, now); return { base, now, plan: api.reconcileMedia(base, now) };
+};
+test('copy proven equal to the target baseline receives only the target ALT edit', () => {
+  const { base, now, plan } = adoption();
+  assert.deepEqual(plan.conflicts, []); assert.deepEqual(plan.orders, []);
+  assert.deepEqual(plan.patches, [{ source: 'shopify', target: 'gallery', key: 'b', kind: 'alt', value: 'מזוודה 77 ס"מ' }]);
+  assert.deepEqual(plan.projected.gallery.find(a => a.key === 'b'), { ...now.gallery.assets[1], alt: 'מזוודה 77 ס"מ' });
+  assert.deepEqual(plan.projected.shopify, now.shopify.assets);
+  // After the verified commit the projected pair is the baseline: nothing further happens.
+  const committed = { gallery: { ...now.gallery, assets: plan.projected.gallery }, shopify: now.shopify };
+  const again = api.reconcileMedia(committed, clone(committed)); noMutation(again); assert.deepEqual(again.conflicts, []);
+  assert.equal(base.gallery.assets.some(a => a.key === 'b'), false);
+});
+test('the mirror direction (Shopify gains a copy of a gallery baseline image) is symmetric', () => {
+  const base = pair([asset('a'), asset('b', { alt: 'old', evidenceId: 'g-b' })], [asset('a')]), now = clone(base);
+  now.shopify.assets.push(asset('b', { alt: 'old', evidenceId: 's-b' })); now.gallery.assets[1].alt = 'new';
+  const plan = api.reconcileMedia(base, now); assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.patches, [{ source: 'gallery', target: 'shopify', key: 'b', kind: 'alt', value: 'new' }]);
+});
+for (const [name, mutate] of [
+  ['copy ALT differs from the target baseline (concurrent edit on the copy)', (b, n) => { n.gallery.assets[1].alt = 'עריכה מקבילה'; }],
+  ['copy bytes differ from the target', (b, n) => { n.gallery.assets[1].contentId = 'e'.repeat(64); }],
+  ['target bytes changed since baseline', (b, n) => { n.shopify.assets[1].contentId = n.gallery.assets[1].contentId = 'd'.repeat(64); }],
+  ['target source evidence changed since baseline', (b, n) => { n.shopify.assets[1].evidenceId = 's-b-new'; }],
+  ['same bytes under another key (uncertain identity)', (b, n) => { n.shopify.assets.push(asset('c', { contentId: n.gallery.assets[1].contentId })); }],
+  ['same source proof under another key', (b, n) => { b.gallery.assets.push(asset('z', { evidenceId: 'g-b' })); n.gallery.assets.splice(1, 0, asset('z', { evidenceId: 'g-b' })); }],
+  ['target image repositioned', (b, n) => { n.shopify.assets.reverse(); }],
+  ['extra field on the copy', (b, n) => { n.gallery.assets[1].note = 'x'; }],
+]) test(`held: ${name}`, () => {
+  let plan;
+  try { plan = adoption(mutate).plan; } catch (e) { assert.match(String(e.message), /MEDIA_/); return; }
+  assert.equal(plan.patches.some(p => p.key === 'b' && p.target === 'gallery'), false);
+  assert.ok(plan.conflicts.some(c => c.key === 'b' || c.key === 'collection'), JSON.stringify(plan.conflicts));
+});
+test('held: target ALT unchanged but copy ALT differs stays the original pre-existing-target conflict', () => {
+  const base = pair([asset('a')], [asset('a'), asset('b', { alt: 'target' })]), now = clone(base);
+  now.gallery.assets.push(asset('b')); const plan = api.reconcileMedia(base, now); noMutation(plan);
+  assert.equal(plan.conflicts[0].code, 'MEDIA_EXISTING_TARGET_DIFFERENT');
+});

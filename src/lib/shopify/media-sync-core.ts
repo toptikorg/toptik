@@ -133,6 +133,29 @@ function independentLocalAlt(baseline: MediaPair, current: MediaPair, source: Me
   return !repositioned(baseline[source], current[source], key);
 }
 
+/** A newly referenced copy on `source` of an image the target already had in the
+ * baseline. It is adopted, and only the target's ALT edit is propagated to it, when
+ * the copy is PROVEN equal to the target's baseline state: same bytes and the same
+ * ALT as before the target edit. The target changed nothing but ALT (bytes and source
+ * evidence unchanged), the image kept its place, no removal history exists, and no
+ * other key on either side, before or now, has the same bytes or source proof.
+ * Concurrent edits or uncertain identity keep MEDIA_EXISTING_TARGET_DIFFERENT. */
+function adoptedCopyOfTargetBaseline(baseline: MediaPair, current: MediaPair, source: MediaSide, key: string, removalKeys: ReadonlySet<string>): boolean {
+  const target = other(source);
+  const copy = current[source].assets.find(a => a.key === key), before = baseline[target].assets.find(a => a.key === key),
+    now = current[target].assets.find(a => a.key === key);
+  if (!copy || !before || !now || baseline[source].assets.some(a => a.key === key)) return false;
+  const fields = (a: MediaAsset) => Object.keys(a).sort().join(",");
+  if ([copy, before, now].some(a => fields(a) !== "alt,contentId,evidenceId,key")) return false;
+  if (copy.contentId !== before.contentId || now.contentId !== before.contentId || now.evidenceId !== before.evidenceId) return false;
+  if (copy.alt !== before.alt || now.alt === before.alt) return false;
+  if (SIDES.some(side => removalKeys.has(`${side}:${key}`))) return false;
+  for (const snapshot of [baseline.gallery, baseline.shopify, current.gallery, current.shopify]) {
+    if (snapshot.assets.some(a => a.key !== key && (a.contentId === copy.contentId || a.evidenceId === copy.evidenceId || a.evidenceId === now.evidenceId))) return false;
+  }
+  return !repositioned(baseline[target], current[target], key);
+}
+
 /** Audit view of the local-only ALT acknowledgements a plan relies on. Reported
  * separately from cross-site synchronization; the reserved plan shape is fixed. */
 export function independentLocalAltChanges(baseline: MediaPair, current: MediaPair, removals: RemovalEvidence[] = [], detached: DetachReceipt[] = []):
@@ -243,7 +266,11 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
         plan.projected[target].splice(index, 0, clone(sourceAsset));
       } else if (!same(semantic(sourceAsset), semantic(targetAsset))) {
         // A pre-existing target reference cannot be replaced just because source membership changed.
-        conflict(key, "membership", "MEDIA_EXISTING_TARGET_DIFFERENT");
+        // Only a copy proven equal to the target's baseline receives the target's ALT edit.
+        if (adoptedCopyOfTargetBaseline(baseline, current, source, key, removalKeys)) {
+          plan.patches.push({ source: target, target: source, key, kind: "alt", value: targetAsset.alt });
+          replace(source, key, { alt: targetAsset.alt });
+        } else conflict(key, "membership", "MEDIA_EXISTING_TARGET_DIFFERENT");
       }
       continue;
     }
