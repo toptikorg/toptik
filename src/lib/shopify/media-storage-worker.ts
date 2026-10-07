@@ -148,7 +148,7 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
       } catch (error) {
         reportFailure(error, "upload");
         // A typed transport failure from before fetch proves nothing was sent.
-        if (mediaStorageDiagnostic(error, "upload").stage !== "upload" && await notSent(error, last)) return { status: "conflict", executed: false };
+        if (["preflight", "decode", "dns"].includes(mediaStorageDiagnostic(error, "upload").stage) && await notSent(error, last)) return { status: "conflict", executed: false };
         // A failed/lost upload consumes this attempt; never submit it again.
         // The SQL receipt schema stays unchanged; sanitized detail belongs in logs.
       }
@@ -216,7 +216,7 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
         } catch (error) {
           diagnostic = mediaStorageDiagnostic(error, executed ? "upload" : "preflight"); reportFailure(error, diagnostic.stage);
           // Provably before fetch: the consumed repair sent nothing; keep the review stop exact.
-          if (diagnostic.stage !== "upload") stoppedBeforePost = true;
+          if (["preflight", "decode", "dns"].includes(diagnostic.stage)) stoppedBeforePost = true;
         }
         await bounded(() => rpc.recordStorageRepairOutcome(lease.owner, repairId, outcome, diagnostic.stage, diagnostic.httpStatus, work), work, now);
         if (stoppedBeforePost) fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");

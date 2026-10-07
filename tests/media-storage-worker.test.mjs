@@ -13,6 +13,7 @@ const sourceBody=stripTypeScriptTypes(resolveImageLimits(src('media-source-bytes
 const proofUrl=mod(`import {mediaSnapshotFingerprint} from '${coreUrl}';${sourceBody}`);
 const stubUrl=mod('export function nope(){throw Error("default transport must not run in fixture");}');
 const diagnosticsUrl=mod(src('media-storage-diagnostics'));
+const {MediaStorageFailure}=await import(diagnosticsUrl);
 const body=src('media-storage-worker').replace('import "server-only";','').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`)
   .replaceAll('from "./media-transport-read";',`from "${rawUrl}";`).replaceAll('from "./media-transport-requests";',`from "${reqUrl}";`)
   .replace('import { discoverMediaTransportOperation, createMediaTransportRpc, type MediaOperationDiscovery, type MediaRpcGuard } from "./media-transport-rpc";',`import {nope as discoverMediaTransportOperation,nope as createMediaTransportRpc} from '${stubUrl}';`)
@@ -217,6 +218,20 @@ test('lost repair POST with absent object is review, never a loop',async()=>{
 test('non-success upload can recover exact object, but never overwrite',async()=>{
  const f=await repairFixture();f.deps.upload=async(...a)=>{f.calls.push(['upload',...a]);f.repair.objectPresent=true;f.deps.readUploaded=f.normalRead;throw Error('MEDIA_STORAGE_UPLOAD_UNCONFIRMED');};
  assert.deepEqual(await f.run(),{status:'verified',executed:true});assert.equal(f.repair.outcome.outcome,'unknown');assert.equal(f.calls.filter(c=>c[0]==='upload').length,1);
+});
+for(const phase of ['gallery_upload','stage_source'])test(`typed readback failure in ${phase} is never proof the original upload was not sent`,async()=>{
+ const f=fixture(phase);f.deps.upload=async()=>{f.calls.push(['upload']);throw new MediaStorageFailure(Error('MEDIA_STORAGE_READ_FAILED'),'readback');};
+ assert.deepEqual(await f.run(),{status:'verified',executed:true});
+ assert.ok(!f.calls.some(c=>c[0]==='conflict'));
+ assert.deepEqual(f.calls.find(c=>c[0]==='uncertain')[3],{outcome:'unknown'});
+ assert.equal(f.calls.filter(c=>c[0]==='upload').length,1);
+});
+for(const phase of ['gallery_upload','stage_source'])test(`typed readback failure in ${phase} repair still requires exact independent GET recovery`,async()=>{
+ const f=await repairFixture(phase);f.deps.upload=async()=>{f.calls.push(['upload']);f.deps.readUploaded=f.normalRead;throw new MediaStorageFailure(Error('MEDIA_STORAGE_READ_FAILED'),'readback');};
+ assert.deepEqual(await f.run(),{status:'verified',executed:true});
+ assert.deepEqual(f.calls.find(c=>c[0]==='repair-outcome').slice(3,6),['unknown','readback',null]);
+ assert.ok(!f.calls.some(c=>c[0]==='conflict'));
+ assert.equal(f.calls.filter(c=>c[0]==='upload').length,1);
 });
 test('repair successful response alone cannot accept wrong bytes',async()=>{
  const f=await repairFixture();f.deps.upload=async()=>{f.deps.readUploaded=async()=>({...await f.normalRead(),sha256:'e'.repeat(64)});return {outcome:'accepted'};};
