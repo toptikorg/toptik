@@ -11,7 +11,7 @@ const id={itemId:r.galleryId,productId:r.productId,variantId:r.variantId,exactGa
 const item=()=>({id:r.galleryId,catalogNumber:r.sku,shopifyLink:{variantId:r.variantId.split('/').at(-1)},coverImagePath:'https://cdn.shopify.com/legacy.jpg',angles:[],colors:null});
 const payload=i=>({items:[i],settings:{}});
 test('each reviewed tuple is exact and independent of filenames and alt',()=>{
- assert.equal(manifest.items.length,495);assert.equal(new Set(manifest.items.map(r=>r.sku+'\n'+r.imageUrl)).size,495);
+ assert.equal(manifest.items.length,575);assert.equal(new Set(manifest.items.map(r=>r.sku+'\n'+r.imageUrl)).size,575);
  assert.ok(api.isReviewedMedia(id,r.imageUrl,r.decodedSha256));
  for(const identity of [{...id,exactGallerySku:'P10FZT11001'},{...id,exactShopifySku:'P10FZT11001'},{...id,variantId:'gid://shopify/ProductVariant/999'},{...id,productId:'gid://shopify/Product/999'},{...id,itemId:'other'}])
   assert.throws(()=>api.requireReviewedMedia(identity,r.imageUrl),/MEDIA_REVIEW_REQUIRED/);
