@@ -4,10 +4,22 @@ type ProductImageOwner = {
   id: string;
   catalogNumber?: string | null;
   coverImagePath: string;
-  angles: ReadonlyArray<{ imagePath: string; angleOrder?: number }>;
+  angles: ReadonlyArray<{ imagePath: string; angleOrder?: number; imageAlt?: string | null }>;
 };
 
 export type ProductImageCandidate = { src: string; originalSrc: string };
+
+/** Describe the image that actually decoded, including an own-image fallback,
+ * rather than a requested angle that may not be on screen yet. */
+export function productImageAlt(
+  item: ProductImageOwner & { title: string; coverImageAlt?: string | null },
+  originalSrc: string,
+): string {
+  const coverAlt = originalSrc === item.coverImagePath ? item.coverImageAlt?.trim() : undefined;
+  if (coverAlt) return coverAlt;
+  const angleAlt = item.angles.find(angle => angle.imagePath === originalSrc && angle.imageAlt?.trim())?.imageAlt?.trim();
+  return angleAlt || item.title;
+}
 
 function isProductPhoto(path: string): boolean {
   if (!path.trim()) return false;

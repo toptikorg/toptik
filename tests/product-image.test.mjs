@@ -7,7 +7,7 @@ const asModule = (source) => `data:text/javascript;base64,${Buffer.from(stripTyp
 const trimSource = await readFile(new URL('../src/lib/carousel/trim-src.ts', import.meta.url), 'utf8');
 const helperSource = await readFile(new URL('../src/lib/carousel/product-image.ts', import.meta.url), 'utf8');
 const helpers = await import(asModule(helperSource.replace('"./trim-src"', JSON.stringify(asModule(trimSource)))));
-const { ownProductImagePaths, productImageIdentity, productImageCandidates, firstDecodedProductImage, decodeProductImage } = helpers;
+const { ownProductImagePaths, productImageIdentity, productImageCandidates, productImageAlt, firstDecodedProductImage, decodeProductImage } = helpers;
 const { trimmedProductSrc } = await import(asModule(trimSource));
 const cover = 'https://test.supabase.co/storage/v1/object/public/catalog/BXL58145.050/cover.jpg';
 const angle = 'https://test.supabase.co/storage/v1/object/public/catalog/BXL58145.050/angle.jpg';
@@ -17,6 +17,22 @@ const item = {
   angles: [{ imagePath: angle, angleOrder: 1 }, { imagePath: cover, angleOrder: 0 }],
   colors: [{ catalogNumber: 'BXL58145.078', imagePath: sibling, angles: [sibling] }],
 };
+
+test('accessible description follows the actual decoded cover or exact angle', () => {
+  const described = { ...item, title: 'Bric’s navy bag', coverImageAlt: 'Navy bag front view',
+    angles: [{ imagePath: angle, imageAlt: 'Open bag showing the inner pockets' }, { imagePath: cover, imageAlt: null }] };
+  assert.equal(productImageAlt(described, cover), 'Navy bag front view');
+  assert.equal(productImageAlt(described, angle), 'Open bag showing the inner pockets');
+  assert.equal(productImageAlt(described, sibling), described.title, 'another color cannot supply descriptive alt');
+  assert.equal(productImageAlt({ ...described, coverImageAlt: '  ', angles: [{ imagePath: angle, imageAlt: null }] }, cover), described.title);
+  assert.equal(productImageAlt({ ...described, coverImageAlt: null, angles: [{ imagePath: cover, imageAlt: 'Actual cover angle' }] }, cover), 'Actual cover angle');
+});
+
+test('renderer resolves alt from displayed frame rather than the requested or failed angle', async () => {
+  const source = await readFile(new URL('../src/components/carousel/ReliableProductImage.tsx', import.meta.url), 'utf8');
+  assert.match(source, /alt=\{visibleFrame \? productImageAlt\(item, visibleFrame\.originalSrc\) : ""\}/);
+  assert.match(source, /aria-hidden=\{!visibleFrame \|\| undefined\}/);
+});
 
 test('candidate order is exact trimmed source, exact raw source, then only own cover/angles', () => {
   const before = structuredClone(item);

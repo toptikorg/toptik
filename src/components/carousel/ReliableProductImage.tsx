@@ -7,6 +7,7 @@ import {
   firstDecodedProductImage,
   productImageCandidates,
   productImageIdentity,
+  productImageAlt,
   type ProductImageCandidate,
 } from "@/lib/carousel/product-image";
 
@@ -71,7 +72,7 @@ export function ReliableProductImage({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={src}
-      alt={visibleFrame ? item.title : ""}
+      alt={visibleFrame ? productImageAlt(item, visibleFrame.originalSrc) : ""}
       width={width}
       height={width}
       decoding="async"

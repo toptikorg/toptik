@@ -17,7 +17,9 @@ function registered(p: MediaProofRow): MediaRegisteredProof { return { evidenceI
 
 /** Refresh only real current row/platform references. New logical keys derive
  * from immutable angle UUIDs/MediaImage IDs within this exact approved product.
- * A new image is never assigned an old counterpart by filename/order/guessing. */
+ * An untracked Gallery reference to the exact current Shopify URL may reuse
+ * that uniquely identified media key after decoding. Never infer a counterpart
+ * from filename, order, dimensions, or visual similarity. */
 export async function captureMediaPlanningPair(context: MediaPlanningContext, owner: string, deadline: number,
   dependencies: Dependencies = {}): Promise<{ pair: MediaPair; proofs: MediaRegisteredProof[]; refs: GalleryMediaRef[] }> {
   const c = structuredClone(context), id = c.identity, now = dependencies.now ?? Date.now;
@@ -49,17 +51,48 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
     if (!proofs.some(p => p.evidenceId === result.evidenceId)) proofs.push(result);
     return result;
   };
+  const oldCover = c.galleryRefs.find(r => r.role === "cover" && r.angleId === null);
   const angleRefs: GalleryMediaRef[] = [];
   for (const angle of c.galleryRaw.angles) {
     const old = c.galleryRefs.filter(r => r.role === "angle" && r.angleId === angle.id);
     if (old.length > 1) fail("MEDIA_PLANNING_AMBIGUOUS_LINEAGE");
-    const key = old[0]?.key ?? `g-angle:${angle.id}`, bytes = await capture(angle.image_path);
+    const bytes = await capture(angle.image_path);
+    let key = old[0]?.key ?? `g-angle:${angle.id}`;
+    // Adding a modal angle for an existing independent cover must not detach
+    // the old cover's logical identity and manufacture a removal on both sides.
+    const independentCover = !old.length && oldCover &&
+      !c.galleryRefs.some(r => r.role === "angle" && r.key === oldCover.key) &&
+      !angleRefs.some(r => r.key === oldCover.key) &&
+      angle.image_path === c.galleryRaw.item.cover_image_path;
+    if (independentCover) {
+      key = oldCover.key;
+    } else if (!old.length && c.baselines.gallery.assets.length && c.baselines.shopify.assets.length) {
+      const exact = shop.images.filter(image => image.url === angle.image_path);
+      if (exact.length > 1) fail("MEDIA_PLANNING_EQUIVALENT_SOURCE_AMBIGUOUS");
+      if (exact.length === 1) {
+        const image = exact[0];
+        const known = [...new Set(c.provenance.filter(p => p.side === "shopify" && p.proof.platformRef === image.mediaId).map(p => p.asset_key))];
+        if (known.length > 1) fail("MEDIA_PLANNING_AMBIGUOUS_LINEAGE");
+        const sourceKey = known[0] ?? `s-media:${image.mediaId.split("/").at(-1)}`;
+        // Never rebind a known Gallery identity or collapse two Gallery angles.
+        if (c.baselines.gallery.assets.some(a => a.key === sourceKey) ||
+            c.galleryRefs.some(r => r.key === sourceKey) || angleRefs.some(r => r.key === sourceKey)) {
+          fail("MEDIA_PLANNING_EQUIVALENT_TARGET_EXISTS");
+        }
+        if (bytes.width !== image.width || bytes.height !== image.height) fail("MEDIA_PLANNING_IMAGE_DIMENSIONS_CHANGED");
+        const counterpart = choose("shopify", sourceKey, image.url, image.mediaId, bytes);
+        // A transformed clone's semantic ID can differ from its decoded bytes.
+        // New cross-side clone lineage requires the existing transport journal,
+        // never an invented operation receipt from this observation-only path.
+        if (counterpart.contentId !== bytes.sha256) fail("MEDIA_PLANNING_IMPORT_LINEAGE_REQUIRES_REVIEW");
+        key = sourceKey;
+      }
+    }
     const p = choose("gallery", key, angle.image_path, `angle:${angle.id}`, bytes);
     angleRefs.push({ role: "angle", angleId: angle.id, key, evidenceId: p.evidenceId });
   }
   const coverBytes = await capture(c.galleryRaw.item.cover_image_path);
   const matchingAngles = angleRefs.filter(r => c.galleryRaw.angles.find(a => a.id === r.angleId)?.image_path === c.galleryRaw.item.cover_image_path);
-  const oldCover = c.galleryRefs.find(r => r.role === "cover" && r.angleId === null);
   let cover: GalleryMediaRef;
   if (matchingAngles.length) {
     const selected = matchingAngles.find(r => r.key === oldCover?.key) ?? (matchingAngles.length === 1 ? matchingAngles[0] : null);
