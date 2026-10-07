@@ -1,0 +1,67 @@
+/* Uses the existing admin panel tokens (panel.css). Falls back to the same values. */
+.monitor {
+  max-width: 1100px;
+  margin-block: 8px 40px;
+  padding: 20px;
+  border: 1px solid var(--p-line, rgba(31, 39, 49, 0.1));
+  border-radius: var(--p-radius, 18px);
+  background: var(--p-surface, #fff);
+  box-shadow: var(--p-shadow-sm, none);
+  color: var(--p-ink, #1f2731);
+  /* Long technical codes and SKUs must wrap instead of widening the page on phones. */
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.head { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; justify-content: space-between; }
+.title { margin: 0; font-size: 1.35rem; }
+.note, .small { color: var(--p-ink-soft, #586372); font-size: 0.92rem; margin: 4px 0 0; }
+.refresh {
+  min-height: 44px; padding: 8px 18px; border-radius: var(--p-radius-sm, 12px);
+  border: 1px solid var(--p-sage-strong, #44614f); background: var(--p-surface, #fff);
+  color: var(--p-sage-strong, #44614f); font: inherit; font-weight: 600; cursor: pointer;
+}
+.refresh:disabled { opacity: 0.6; cursor: progress; }
+.refresh:focus-visible, .tableWrap:focus-visible { outline: 2px solid var(--p-sage-strong, #44614f); outline-offset: 2px; }
+
+.verdict, .live {
+  margin-block: 16px 0; padding: 14px 16px; border-radius: var(--p-radius-sm, 12px);
+  border-inline-start: 6px solid; background: var(--p-surface-2, #fbf8f1);
+}
+.verdict p, .live p { margin: 6px 0 0; }
+.unknown { border-color: var(--p-brass, #8a6a30); background: var(--p-brass-tint, #f3e9d6); }
+.danger { border-color: var(--p-danger, #b23b3b); background: var(--p-danger-tint, #f6e4e2); }
+.progress { border-color: var(--p-ink-soft, #586372); }
+.complete { border-color: var(--p-sage-strong, #44614f); background: var(--p-sage-tint, #e7efe9); }
+.live { border-color: var(--p-ink-faint, #8a92a0); }
+
+.lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; margin-block: 20px 0; }
+.card { padding: 14px 16px; border: 1px solid var(--p-line-strong, rgba(31, 39, 49, 0.16)); border-radius: var(--p-radius-sm, 12px); }
+.cardTitle { margin: 0 0 8px; font-size: 1.05rem; }
+.counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; margin: 0; }
+.count { padding: 8px; border-radius: 10px; background: var(--p-surface-2, #fbf8f1); }
+.count dt, .extra dt { font-size: 0.88rem; color: var(--p-ink-soft, #586372); }
+.count dd, .extra dd { margin: 2px 0 0; font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.extra { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 8px 16px; margin: 16px 0 0; }
+
+.sectionTitle { margin: 24px 0 8px; font-size: 1.1rem; }
+.unknownLine { padding: 10px 12px; border-radius: 10px; background: var(--p-brass-tint, #f3e9d6); }
+.reasons { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.reasons li { min-width: 0; padding: 10px 12px; border: 1px solid var(--p-line, rgba(31, 39, 49, 0.1)); border-radius: 10px; }
+.reasons p { margin: 4px 0 0; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--p-paper-2, #efe7d6); font-size: 0.85rem; }
+.code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.82rem; overflow-wrap: anywhere; }
+
+.tableWrap { overflow-x: auto; border: 1px solid var(--p-line, rgba(31, 39, 49, 0.1)); border-radius: 10px; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 10px 12px; text-align: start; vertical-align: top; border-bottom: 1px solid var(--p-line, rgba(31, 39, 49, 0.1)); }
+.table th { background: var(--p-surface-2, #fbf8f1); font-size: 0.9rem; }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .monitor { padding: 14px; }
+  .table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table tr { border-bottom: 2px solid var(--p-line-strong, rgba(31, 39, 49, 0.16)); padding-block: 6px; }
+  .table td { border: 0; padding: 4px 12px; }
+  .table td::before { content: attr(data-label) ": "; font-weight: 700; color: var(--p-ink-soft, #586372); }
+}
