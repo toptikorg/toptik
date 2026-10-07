@@ -2,7 +2,7 @@ import test from'node:test';import assert from'node:assert/strict';import{readFi
 Error.stackTraceLimit=0;const mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
 const source=readFileSync('src/lib/shopify/media-schedule.ts','utf8'),body=stripTypeScriptTypes(source).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
 const{make}=await import(mod(`export function make(deps){const{after,drainMediaWork,mediaSyncEnabled,fetch,process,console}=deps;${body}return{dispatchMediaSync,scheduleMediaSync,scheduleMediaSyncWakeup,validMediaHop};}`));
-function fixture(){const calls=[],jobs=[],errors=[],state={enabled:true,status:202,redirected:false,continuation:true},deps={after:fn=>jobs.push(fn),drainMediaWork:async d=>{calls.push(['drain',d]);return{continuationNeeded:state.continuation};},mediaSyncEnabled:()=>state.enabled,fetch:async(...a)=>{calls.push(['fetch',...a]);return{status:state.status,redirected:state.redirected,body:{cancel:async()=>calls.push(['cancel'])}};},process:{env:{ADMIN_PANEL_TOKEN:'private-test-token'}},console:{error:(...a)=>errors.push(a)}};return{calls,jobs,errors,state,deps,api:make(deps)};}
+function fixture(){const calls=[],jobs=[],errors=[],state={enabled:true,status:202,redirected:false,continuation:true},deps={after:fn=>jobs.push(fn),drainMediaWork:async(d,_db,_run,_initialize,excluded)=>{calls.push(['drain',d,excluded]);return{continuationNeeded:state.continuation,claimedProductId:'gid://shopify/Product/'+calls.length};},mediaSyncEnabled:()=>state.enabled,fetch:async(...a)=>{calls.push(['fetch',...a]);return{status:state.status,redirected:state.redirected,body:{cancel:async()=>calls.push(['cancel'])}};},process:{env:{ADMIN_PANEL_TOKEN:'private-test-token'}},console:{error:(...a)=>errors.push(a)}};return{calls,jobs,errors,state,deps,api:make(deps)};}
 test('disabled creates no background work or network',async()=>{const x=fixture();x.state.enabled=false;x.api.scheduleMediaSync();x.api.scheduleMediaSyncWakeup();await x.api.dispatchMediaSync();assert.deepEqual(x.calls,[]);assert.deepEqual(x.jobs,[]);});
 test('authenticated fixed URL, no redirects, 202 acknowledgment required',async()=>{const x=fixture();await x.api.dispatchMediaSync(2);const c=x.calls[0];assert.equal(c[1],'https://landing.toptik.co.il/api/admin/shopify/media/worker?hop=2');assert.equal(c[2].redirect,'error');assert.equal(c[2].headers['x-admin-token'],'private-test-token');assert.equal(c[2].method,'POST');});
 test('wake up dispatches only, never adds a long worker to shared request',async()=>{const x=fixture();x.api.scheduleMediaSyncWakeup();assert.equal(x.calls.length,0);await x.jobs[0]();assert.equal(x.calls.some(c=>c[0]==='drain'),false);assert.equal(x.calls[0][0],'fetch');});
@@ -13,9 +13,25 @@ test('private route validates authorization and hop before scheduling any work',
 
 test('durable failed/review row does not block independent pending products; no pending stops',async()=>{
  for(const outcome of [{failed:1},{reviewed:1}]){
-  const x=fixture();x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return {continuationNeeded:x.calls.length<3,...outcome};};
+  const x=fixture();x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return {continuationNeeded:x.calls.length<3,claimedProductId:'gid://shopify/Product/'+x.calls.length,...outcome};};
   const api=make(x.deps);api.scheduleMediaSync();await x.jobs[0]();assert.equal(x.calls.length,3);assert.equal(x.jobs.length,1);
  }
  const x=fixture();x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return {continuationNeeded:false,failed:1};};
  const api=make(x.deps);api.scheduleMediaSync();await x.jobs[0]();assert.equal(x.calls.length,1);
+});
+
+test('bounded batch passes growing independent exclusion snapshots without resetting its deadline',async()=>{
+ const x=fixture();x.api.scheduleMediaSync();await x.jobs[0]();assert.equal(x.calls.length,10);
+ for(let i=0;i<10;i++)assert.deepEqual(x.calls[i][2],Array.from({length:i},(_,j)=>'gid://shopify/Product/'+(j+1)));
+ assert.equal(new Set(x.calls.map(c=>c[1])).size,1);assert.equal(x.calls.some(c=>c[0]==='fetch'),false);assert.equal(x.jobs.length,1);
+});
+
+test('a repeated product from drain ends the invocation and does not recurse',async()=>{
+ const x=fixture();x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return{continuationNeeded:true,claimedProductId:'gid://shopify/Product/1'};};
+ make(x.deps).scheduleMediaSync();await x.jobs[0]();assert.equal(x.calls.length,2);assert.equal(x.errors.length,1);assert.equal(x.errors[0][1].code,'MEDIA_QUEUE_BATCH_REPEATED');assert.equal(x.jobs.length,1);
+});
+
+test('empty claim stops even if a malformed drain result asks to continue',async()=>{
+ const x=fixture();x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return{continuationNeeded:true};};
+ make(x.deps).scheduleMediaSync();await x.jobs[0]();assert.equal(x.calls.length,1);
 });
