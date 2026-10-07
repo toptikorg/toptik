@@ -466,3 +466,27 @@ test("a loaded product missing from the editor state is refused, never treated a
   await assert.rejects(f.persist(edited), new RegExp(PRODUCT_REMOVAL_UNSUPPORTED_MESSAGE.slice(0, 20)));
   assert.equal(f.calls.puts.length, 0);
 });
+
+test("(viii) several selected products in one save write exactly those rows; a following no-op save sends nothing", async () => {
+  const f = store();
+  const edited = structuredClone(f.savedSnapshotRef.current);
+  const picks = [3, 77, 150, 184];
+  edited.items[3].title = "T3 edited";
+  edited.items[77].isActive = false;
+  edited.items[150].angles = edited.items[150].angles.slice(1);
+  edited.items[184].coverImageAlt = "alt";
+  const ids = picks.map(i => edited.items[i].id);
+  const fresh = await f.persist(edited);
+  assert.equal(f.calls.puts.length, 1);
+  assert.deepEqual(f.calls.puts[0].items.map(i => i.id).sort(), [...ids].sort());
+  assert.deepEqual(f.calls.itemWrites.sort(), [...ids].sort());
+  assert.equal(assertUntouched(f, ids), UNTOUCHED + 1 - picks.length);
+  // No-op save after a successful save: snapshot refreshed, nothing sent.
+  const again = await f.persist(fresh);
+  assert.equal(again, fresh);
+  assert.equal(f.calls.puts.length, 1);
+  // Edit one more after the save: only it is sent with its NEW revision.
+  const next = structuredClone(fresh); next.items[3].title = "T3 edited twice";
+  await f.persist(next);
+  assert.deepEqual(f.calls.puts[1].items.map(i => i.id), [ids[0]]);
+});
