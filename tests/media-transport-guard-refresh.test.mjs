@@ -33,6 +33,7 @@ test('refresh changes only the chain guard; only updatedAt and revision may drif
   assert.match(sql, /p_fresh_guard->>'sourceFingerprint' is distinct from c\.current_guard->>'sourceFingerprint'/);
   assert.match(sql, /\(\(p_fresh_guard->'target'\)-'updatedAt'-'revision'\) is distinct from \(\(c\.current_guard->'target'\)-'updatedAt'-'revision'\)/);
   assert.match(sql, /transport_attempts a where a\.operation_id=o\.id and a\.step_index=p_step_index and a\.phase_index=p_phase_index/);
+  assert.match(sql, /\(p_fresh_guard#>>'\{target,updatedAt\}'\)::timestamptz<\(c\.current_guard#>>'\{target,updatedAt\}'\)::timestamptz/);
   assert.match(sql, /c\.status not in \('ready','running'\) or c\.next_phase<>p_phase_index/);
   // begin keeps the strict whole-guard comparison; this migration does not replace it.
   assert.doesNotMatch(sql, /function public\.begin_toptik_media_transport/);
@@ -172,6 +173,9 @@ test('any other target or source difference is refused without writing anything'
     await assert.rejects(x.refresh(x.guard(changed)), /MEDIA_TRANSPORT_GUARD_REFRESH_MISMATCH/, name);
   }
   await assert.rejects(x.refresh({ ...x.guard(x.bumped), sourceFingerprint: 'f'.repeat(64) }), /MEDIA_TRANSPORT_GUARD_REFRESH_MISMATCH/);
+  // The product timestamp may only move forward.
+  const older = structuredClone(x.withBoth); older.updatedAt = '2026-10-07T10:00:59Z'; await x.stamp(older);
+  await assert.rejects(x.refresh(x.guard(older)), /MEDIA_TRANSPORT_GUARD_REFRESH_MISMATCH/, 'older product timestamp');
   // A forged revision (not the digest of the stored raw facts) never passes.
   await assert.rejects(x.refresh({ ...x.guard(x.bumped), target: { ...x.bumped, revision: x.withBoth.revision } }), /MEDIA_TRANSPORT_RAW_REVISION_INVALID/);
   await assert.rejects(x.refresh(x.guard(x.bumped), 4), /MEDIA_TRANSPORT_OUT_OF_ORDER/);

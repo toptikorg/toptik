@@ -305,8 +305,8 @@ test('a stuck read port is bounded even if its adapter ignores deadline',async()
 // timestamp (and its derived revision) may be refreshed, and only before begin.
 function timestampDrift(f,edit=()=>{}){const r=response();r.data.product.updatedAt='2026-09-30T17:00:07Z';edit(r.data.product);
   return {sourceFingerprint:f.context.sourceFingerprint,target:parse(r),observedAt:time};}
-function refreshFixture(refreshed=true){const f=workerFixture();f.refreshCalls=[];
-  f.deps.refresh=async(...args)=>{f.log.push('refresh');f.refreshCalls.push(args);return {refreshed};};return f;}
+function refreshFixture(status='refreshed'){const f=workerFixture();f.refreshCalls=[];
+  f.deps.refresh=async(...args)=>{f.log.push('refresh');f.refreshCalls.push(args);return {status,refreshed:status==='refreshed'};};return f;}
 test('product updatedAt-only drift refreshes the chain guard before begin and waits',async()=>{
   const f=refreshFixture(),drifted=timestampDrift(f);assert.notEqual(drifted.target.revision,f.snapshot.revision);
   f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
@@ -316,10 +316,15 @@ test('product updatedAt-only drift refreshes the chain guard before begin and wa
   assert.deepEqual(guard,drifted);assert.equal(deadline,f.deadline-1000);
 });
 test('SQL refusal of a refresh (attempt exists) falls through to begin and private recovery',async()=>{
-  const f=refreshFixture(false),drifted=timestampDrift(f);f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
+  const f=refreshFixture('attempt_exists'),drifted=timestampDrift(f);f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
   f.deps.begin=async()=>{f.log.push('begin');return {mayExecute:false,status:'uncertain',replayed:true};};
   assert.deepEqual(await f.run(),{status:'verified',executed:false});
   assert.deepEqual(f.log,['load','acquire','observe','refresh','begin','recover','release']);
+});
+test('an already-refreshed chain (stale loaded job, SQL unchanged) waits instead of beginning',async()=>{
+  const f=refreshFixture('unchanged'),drifted=timestampDrift(f);f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
+  assert.deepEqual(await f.run(),{status:'pending',executed:false});
+  assert.deepEqual(f.log,['load','acquire','observe','refresh','release']);
 });
 test('identical guard never refreshes',async()=>{
   const f=refreshFixture();assert.deepEqual(await f.run(),{status:'verified',executed:true});assert.ok(!f.log.includes('refresh'));

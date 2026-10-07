@@ -6,7 +6,7 @@ import type { MediaIdentity, MediaPair, MediaSnapshot, MediaConflict } from "./m
 import { mediaSnapshotFingerprint } from "./media-sync-core";
 import type { ShopifyMediaTransportRead } from "./media-transport-read";
 import { assertMediaTransportRead } from "./media-transport-read";
-import type { MediaTransportReference } from "./media-transport-worker";
+import type { MediaGuardRefresh, MediaTransportReference } from "./media-transport-worker";
 
 export type MediaRpcGuard = { sourceFingerprint: string; target: ShopifyMediaTransportRead | MediaSnapshot; observedAt: string };
 type Db = Pick<SupabaseClient, "rpc">;
@@ -218,13 +218,13 @@ export function createMediaTransportRpc(productId: string, options: Options = {}
     },
     /** Pre-attempt Shopify guard refresh for product updatedAt/revision-only drift.
      * SQL re-verifies every other fact and never touches a phase with an attempt. */
-    async refreshGuard(ref: MediaTransportReference, owner: string, fresh: MediaRpcGuard, deadline: number, requestId = randomUUID()): Promise<{ status: string; refreshed: boolean }> {
+    async refreshGuard(ref: MediaTransportReference, owner: string, fresh: MediaRpcGuard, deadline: number, requestId = randomUUID()): Promise<MediaGuardRefresh> {
       uuid(requestId); guard(fresh, productId, rpc.now());
       if (fresh.target.side !== "shopify" || permits.has(key(ref))) fail("MEDIA_RPC_REFRESH_NOT_ALLOWED");
       const row = status(await rpc.call("refresh_toptik_media_transport_guard", { ...args(ref, owner), p_phase_index: ref.phaseIndex, p_request_id: requestId, p_fresh_guard: fresh }, deadline),
         ["refreshed", "unchanged", "attempt_exists"]);
       if (row.refreshed !== (row.status === "refreshed")) fail("MEDIA_RPC_RESPONSE_INVALID");
-      return { status: String(row.status), refreshed: row.refreshed === true };
+      return { status: row.status as MediaGuardRefresh["status"], refreshed: row.refreshed === true };
     },
     /** Only the worker that consumed this exact Gallery CAS permit, after the
      * database definitively rejected (rolled back) its apply, may record it. */

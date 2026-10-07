@@ -16,6 +16,7 @@ export type MediaTransportResult = { status: "disabled" | "scope_missing" | "lea
   diagnostic?: string };
 type Permit = { mayExecute: boolean; status?: string; phase?: string; attemptId?: string; requestHash?: string; request?: Record<string, unknown>; replayed?: boolean };
 type ObservationResult = { status: "pending" | "conflict" | "verified" };
+export type MediaGuardRefresh = { status: "refreshed" | "unchanged" | "attempt_exists"; refreshed: boolean };
 /** All ports are service-only, fixed-shop adapters. No browser JSON may supply jobs, guards or proofs. */
 export type MediaTransportDependencies = {
   now(): number;
@@ -28,7 +29,7 @@ export type MediaTransportDependencies = {
   uncertain(reference: MediaTransportReference, leaseOwner: string, receipt: { outcome: "unknown" | "accepted" | "processing"; mediaGid?: string; jobId?: string }, deadline: number): Promise<void>;
   conflict(reference: MediaTransportReference, leaseOwner: string, code: string, guard: MediaTransportGuard, deadline: number): Promise<void>;
   /** Pre-attempt only: SQL replaces the chain guard when ONLY product updatedAt/revision drifted. Never a permit. */
-  refresh(reference: MediaTransportReference, leaseOwner: string, guard: MediaTransportGuard, deadline: number): Promise<{ refreshed: boolean }>;
+  refresh(reference: MediaTransportReference, leaseOwner: string, guard: MediaTransportGuard, deadline: number): Promise<MediaGuardRefresh>;
   /** Read/decode/recover ONLY, then call SQL accept. Must not issue a second external mutation. */
   recover(reference: MediaTransportReference, leaseOwner: string, job: MediaTransportPhaseJob, deadline: number): Promise<ObservationResult>;
 };
@@ -107,9 +108,12 @@ export async function runMediaTransportPhase(reference: MediaTransportReference,
     if (!matchesBefore(guard, job) && onlyProductTimestampDrift(guard, job)) {
       // No attempt is created. SQL re-verifies the exact equality under the same lease and
       // refuses once an attempt exists; the next invocation reloads the refreshed guard.
+      // 'unchanged' means this loaded job is already stale (another worker refreshed):
+      // never begin from it, or the strict post-begin recheck would conflict mid-chain.
+      // Only an existing attempt continues, to replay/recover with its frozen before_guard.
       const refreshed = await bounded(() => deps.refresh(reference, lease, guard, workDeadline), workDeadline, deps.now);
       checkTime();
-      if (refreshed?.refreshed === true) return { status: "pending", executed };
+      if (refreshed?.status !== "attempt_exists") return { status: "pending", executed };
     }
     // The SQL function checks the live shared lease and returns false for any previous attempt.
     // A timeout here grants no execution authority; its outcome is resolved next invocation.

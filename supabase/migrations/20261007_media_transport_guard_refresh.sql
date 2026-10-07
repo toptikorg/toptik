@@ -15,7 +15,7 @@
 --    each media id/status/fileStatus/updatedAt/alt/image, order,
 --    variantMediaIds, variantImage) must be exactly equal, else it refuses
 --    with an exception and writes nothing; begin still records real drift as
---    a conflict exactly as before;
+--    a conflict exactly as before; the product timestamp may only move forward;
 --  * never runs once an attempt exists for the phase: recovery keeps using the
 --    immutable attempt before_guard. That case returns a non-mutating
 --    'attempt_exists' refusal (not an exception) so recovery still proceeds;
@@ -53,7 +53,8 @@ begin
   return jsonb_build_object('status','unchanged','refreshed',false,'mayExecute',false);
  end if;
  if p_fresh_guard->>'sourceFingerprint' is distinct from c.current_guard->>'sourceFingerprint'
- or ((p_fresh_guard->'target')-'updatedAt'-'revision') is distinct from ((c.current_guard->'target')-'updatedAt'-'revision') then
+ or ((p_fresh_guard->'target')-'updatedAt'-'revision') is distinct from ((c.current_guard->'target')-'updatedAt'-'revision')
+ or (p_fresh_guard#>>'{target,updatedAt}')::timestamptz<(c.current_guard#>>'{target,updatedAt}')::timestamptz then
   raise exception 'MEDIA_TRANSPORT_GUARD_REFRESH_MISMATCH';
  end if;
  update toptik_media_private.transport_chains set current_guard=p_fresh_guard where operation_id=o.id and step_index=p_step_index;
