@@ -10,10 +10,29 @@ export const MD20_LEGACY_UNASSIGNED_MEDIA = new Set([
   "28993608646906", "28993609924858", "28993610973434", "28993611596026",
 ].map(id => `gid://shopify/MediaImage/${id}`));
 export const MD20_VARIANTS = [
-  { sku: "P10QMMM1651", variantId: "42307603103994", itemId: "e78b4341-95ae-56e2-ba11-58c2d1e15f8e" },
-  { sku: "P10QMMM1465", variantId: "42307603136762", itemId: "973d074a-ace0-5225-90e6-8f348d9b3e1c" },
-  { sku: "P10QMMM109K", variantId: "42307603169530", itemId: "63110328-f35d-5247-8793-48abc8450124" },
+  { sku: "P10QMMM1651", variantId: "42307603103994", itemId: "e78b4341-95ae-56e2-ba11-58c2d1e15f8e", color: "שחור" },
+  { sku: "P10QMMM1465", variantId: "42307603136762", itemId: "973d074a-ace0-5225-90e6-8f348d9b3e1c", color: "פלדה" },
+  { sku: "P10QMMM109K", variantId: "42307603169530", itemId: "63110328-f35d-5247-8793-48abc8450124", color: "טאופה" },
 ] as const;
+
+/** Verified color belongs to this exact SKU/variant, never the parent's first color. */
+export function exactVariantSeo(copy: { title: string; seoTitle?: string | null; seoDescription?: string | null }, sku: string) {
+  const variant = MD20_VARIANTS.find(v => v.sku === sku);
+  if (!variant) throw new Error("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT");
+  const suffix = ` בצבע ${variant.color}`;
+  const seoTitle = (copy.seoTitle?.trim() || copy.title.trim()) + suffix;
+  if (seoTitle.length > 120) throw new Error("SYNC_ONBOARDING_COPY_LIMIT");
+  const sentences = (copy.seoDescription?.trim() || copy.title.trim()).split(/\.\s+/);
+  // Keep complete original sentences, add only the reviewed variant color.
+  let seoDescription = sentences[0].replace(/\.$/, "") + suffix + ".";
+  if (seoDescription.length > 160) throw new Error("SYNC_ONBOARDING_COPY_LIMIT");
+  for (const sentence of sentences.slice(1)) {
+    const complete = sentence.replace(/\.$/, "") + ".";
+    if (seoDescription.length + complete.length + 1 > 160) break;
+    seoDescription += " " + complete;
+  }
+  return { seoTitle, seoDescription };
+}
 export const SHOPIFY_OWNED_MESSAGE = "שלושת צבעי MD20 מתעדכנים אוטומטית מהחנות. יש לערוך את המוצר ב-Shopify ואז לרענן את הגלריה.";
 export function isShopifyOwnedVariant(itemId: string): boolean {
   return MD20_VARIANTS.some(variant => variant.itemId === itemId);
