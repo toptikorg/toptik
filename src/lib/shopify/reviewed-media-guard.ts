@@ -8,7 +8,7 @@ export type ReviewedMediaEntry = {
   evidence: string; decodedSha256?: string;
 };
 export type ReviewRegistry = { items: ReviewedMediaEntry[]; deniedUrls: string[]; deniedSha256: string[] };
-type Proof = { product_gid: string; evidence_id: string; asset_key: string; content_id: string; proof: Record<string, unknown> };
+type Proof = { product_gid: string; evidence_id: string; asset_key: string; content_id: string; side?: "gallery" | "shopify"; proof: Record<string, unknown> };
 const registry: ReviewRegistry = manifest;
 export function reviewedMediaRegistry(entries: ReviewedMediaEntry[] = []): ReviewRegistry {
   return { ...registry, items: [...registry.items, ...entries] };
@@ -56,6 +56,35 @@ export function requireReviewedMedia(identity: MediaIdentity, url: string, sha?:
   if (!isReviewedMedia(identity, url, sha, reviews)) hold(identity.exactGallerySku);
 }
 
+/** A verified Gallery CAS stores identical bytes without transformed lineage.
+ * Resolve that narrow server-owned copy to one genuine Shopify proof, never
+ * approve by a matching checksum alone or by an arbitrary owned-storage URL. */
+function exactGalleryCopySource(identity: MediaIdentity, copy: Proof, proofs: Proof[]): Proof | null {
+  const p = copy.proof, sha = p.decodedSha256;
+  if (copy.side !== "gallery" || p.ownership !== "owned_storage" || typeof sha !== "string" ||
+      !/^[a-f0-9]{64}$/.test(sha) || copy.content_id !== sha ||
+      !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(identity.itemId) ||
+      [p.width, p.height, p.byteLength].some(v => !Number.isSafeInteger(v) || Number(v) < 1)) return null;
+  const extensions: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/avif": "avif" };
+  const extension = typeof p.mime === "string" ? extensions[p.mime] : undefined;
+  if (!extension) return null;
+  const path = `sync-media/${identity.itemId}/${sha}.${extension}`;
+  if (p.platformRef !== path || p.url !== `https://ekgpaoavsavrtbhlbwdg.supabase.co/storage/v1/object/public/carousel-media/${path}`) return null;
+  const matches = proofs.filter(x => x.side === "shopify" && x.product_gid === identity.productId &&
+    x.asset_key === copy.asset_key && x.content_id === copy.content_id && x.proof.decodedSha256 === sha);
+  if (matches.length !== 1) return null;
+  const source = matches[0], s = source.proof;
+  if (s.ownership !== "reference_only" || typeof s.platformRef !== "string" || !/^gid:\/\/shopify\/MediaImage\/[1-9]\d*$/.test(s.platformRef) ||
+      s.mime !== p.mime || s.width !== p.width || s.height !== p.height || s.byteLength !== p.byteLength ||
+      typeof s.url !== "string" || /[\s\\#]/.test(s.url)) return null;
+  try {
+    const url = new URL(s.url);
+    if (url.href !== s.url || url.origin !== "https://cdn.shopify.com" || url.username || url.password || url.port ||
+        !url.pathname.startsWith("/s/files/") || /%(?:2e|2f|5c)/i.test(url.pathname)) return null;
+  } catch { return null; }
+  return source;
+}
+
 /** These rows come only from the service-owned provenance RPC. SQL already
  * validates transformed proof parent/operation/verified transport receipts.
  * Follow that lineage with exact product, key and semantic content checks;
@@ -68,6 +97,12 @@ export function isReviewedMediaProof(identity: MediaIdentity, initial: Proof, pr
     seen.add(p.evidence_id);
     const url = String(p.proof.url ?? ""), sha = String(p.proof.decodedSha256 ?? "");
     if (isReviewedMedia(identity, url, sha, reviews)) return true;
+    if (!("operationId" in p.proof) && !("sourceEvidenceId" in p.proof)) {
+      const source = exactGalleryCopySource(identity, p, proofs);
+      if (!source) return false;
+      p = source;
+      continue;
+    }
     if (typeof p.proof.operationId !== "string" || typeof p.proof.sourceEvidenceId !== "string") return false;
     const parents = proofs.filter(x => x.evidence_id === p.proof.sourceEvidenceId && x.product_gid === identity.productId &&
       x.asset_key === p.asset_key && x.content_id === p.content_id);
