@@ -4,26 +4,27 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { shopifyAdminGraphql, visibleCopyFromProduct, type ShopifyOnboardingSnapshot } from "./admin-api";
 import { assertSafeDescriptionHtml } from "./description-document";
 import { verifyOnboardingImage } from "./onboarding-worker";
-import { MD20_PRODUCT_GID, MD20_PRODUCT_HANDLE, MD20_VARIANTS, MD20_LEGACY_UNASSIGNED_MEDIA, exactVariantMedia } from "./variant-source-policy";
+import { MD20_PRODUCT_GID, MD20_PRODUCT_HANDLE, MD20_VARIANTS, MD20_LEGACY_UNASSIGNED_MEDIA, exactVariantMedia, exactVariantSeo } from "./variant-source-policy";
 
 async function snapshot(deadline: number): Promise<ShopifyOnboardingSnapshot> {
   const publicationId = process.env.SHOPIFY_ONLINE_STORE_PUBLICATION_ID?.trim();
   if (publicationId !== "gid://shopify/Publication/79538258170") throw new Error("SYNC_ONBOARDING_PUBLICATION_MISMATCH");
   type Product = Omit<ShopifyOnboardingSnapshot, "variants" | "media" | "seoTitle" | "seoDescription"> & {
-    variants: { nodes: ShopifyOnboardingSnapshot["variants"]; pageInfo: { hasNextPage: boolean } };
+    variants: { nodes: (ShopifyOnboardingSnapshot["variants"][number] & { selectedOptions: { name: string; value: string }[] })[]; pageInfo: { hasNextPage: boolean } };
     media: { nodes: ShopifyOnboardingSnapshot["media"]; pageInfo: { hasNextPage: boolean } };
     seo: { title: string | null; description: string | null };
   };
   const result = await shopifyAdminGraphql<{ product: Product | null }>(`query GalleryApprovedVariantSource($id: ID!, $publicationId: ID!) {
     product(id: $id) { id handle title descriptionHtml status updatedAt vendor productType seo { title description }
       publishedOnPublication(publicationId: $publicationId)
-      variants(first: 4) { nodes { id sku } pageInfo { hasNextPage } }
+      variants(first: 4) { nodes { id sku selectedOptions { name value } } pageInfo { hasNextPage } }
       media(first: 61) { nodes { id alt status mediaContentType ... on MediaImage { image { url altText width height } } } pageInfo { hasNextPage } }
     }
   }`, { id: MD20_PRODUCT_GID, publicationId }, 6000, deadline);
   const p = result.product;
   if (!p || p.id !== MD20_PRODUCT_GID || p.handle !== MD20_PRODUCT_HANDLE || p.variants.pageInfo.hasNextPage || p.variants.nodes.length !== 3 ||
-      MD20_VARIANTS.some(v => !p.variants.nodes.some(row => row.id === `gid://shopify/ProductVariant/${v.variantId}` && row.sku === v.sku))) {
+      MD20_VARIANTS.some(v => !p.variants.nodes.some(row => row.id === `gid://shopify/ProductVariant/${v.variantId}` && row.sku === v.sku &&
+        row.selectedOptions.some(option => option.name === "צבע" && option.value === v.color)))) {
     throw new Error("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT");
   }
   if (p.media.pageInfo.hasNextPage || p.media.nodes.length > 60) throw new Error("SYNC_ONBOARDING_MEDIA_LIMIT");
@@ -64,8 +65,9 @@ export async function reconcileApprovedVariants(db: SupabaseClient, deadline: nu
   const projected = MD20_VARIANTS.map(v => {
     const old = items.data.find(row => row.id === v.itemId)!;
     const media = mediaBySku.get(v.sku)!;
+    const seo = exactVariantSeo(copy, v.sku);
     return { id: v.itemId, title: copy.title, description: copy.description, description_html: copy.descriptionHtml,
-      seo_title: copy.seoTitle, seo_description: copy.seoDescription, is_active: published,
+      seo_title: seo.seoTitle, seo_description: seo.seoDescription, is_active: published,
       cover_image_path: published ? media[0].image!.url : old.cover_image_path,
       cover_image_alt: published ? media[0].alt : old.cover_image_alt };
   });

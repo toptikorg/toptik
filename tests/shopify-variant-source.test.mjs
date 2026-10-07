@@ -7,12 +7,12 @@ import { randomUUID } from 'node:crypto';
 const url = text => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(text)).toString('base64')}`;
 const policy = await import(url(readFileSync('src/lib/shopify/variant-source-policy.ts','utf8')));
 const source = stripTypeScriptTypes(readFileSync('src/lib/shopify/variant-source-worker.ts','utf8')).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
-const { make } = await import(url(`export function make(deps) { const {randomUUID,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,MD20_PRODUCT_GID,MD20_PRODUCT_HANDLE,MD20_VARIANTS,MD20_LEGACY_UNASSIGNED_MEDIA,exactVariantMedia,process}=deps; ${source}; return reconcileApprovedVariants; }`));
+const { make } = await import(url(`export function make(deps) { const {randomUUID,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,MD20_PRODUCT_GID,MD20_PRODUCT_HANDLE,MD20_VARIANTS,MD20_LEGACY_UNASSIGNED_MEDIA,exactVariantMedia,exactVariantSeo,process}=deps; ${source}; return reconcileApprovedVariants; }`));
 
 function fixture() {
   const p = { id: policy.MD20_PRODUCT_GID, handle: policy.MD20_PRODUCT_HANDLE, title: 'MD20', descriptionHtml: '<p>Source</p>',
     seo: {title:'MD20',description:'Source'},status:'ACTIVE',updatedAt:'2026-10-03T00:00:00Z',vendor:'Mandarina Duck',productType:'Bag',publishedOnPublication:true,
-    variants: { nodes: policy.MD20_VARIANTS.map(v=>({id:`gid://shopify/ProductVariant/${v.variantId}`,sku:v.sku})),pageInfo:{hasNextPage:false}},
+    variants: { nodes: policy.MD20_VARIANTS.map(v=>({id:`gid://shopify/ProductVariant/${v.variantId}`,sku:v.sku,selectedOptions:[{name:'צבע',value:v.color}]})),pageInfo:{hasNextPage:false}},
     media: {nodes:policy.MD20_VARIANTS.flatMap(v=>[1,2].map(i=>({id:`${v.sku}-${i}`,alt:`Bag | ${v.sku} | ${i}`,status:'READY',mediaContentType:'IMAGE',image:{url:`https://cdn.shopify.com/${v.sku}-${i}.jpg`,altText:null,width:100,height:100}}))),pageInfo:{hasNextPage:false}} };
   const tables = {
     carousel_items: policy.MD20_VARIANTS.map(v=>({id:v.itemId,catalog_number:v.sku,title:'Old',copy_updated_at:'old',editor_revision:1,cover_image_path:'old',cover_image_alt:null,is_active:true})),
@@ -72,4 +72,31 @@ test('unpublished product hides existing colors without deleting source images',
 test('readback mismatch never finalizes outbox',async()=>{
   const f=fixture();f.db.rpc=async()=>({data:[],error:null});await assert.rejects(f.run(),/READBACK_MISMATCH/);
   assert.ok(!f.calls.some(c=>c.table==='shopify_gallery_content_outbox'));
+});
+
+test('SEO preserves complete source facts with each exact reviewed color and remains idempotent',async()=>{
+  const f=fixture();
+  f.p.seo={title:'פאוץ׳ MD20 QMMM1 מבית Mandarina Duck',description:'פאוץ׳ Mandarina Duck MD20 QMMM1. פאוץ׳ עם רצועה מתכווננת, כיס קדמי ברוכסן וכיס פנימי ברוכסן לארגון החפצים הקטנים.'};
+  const original=structuredClone(f.p);
+  await f.run();
+  const first=structuredClone(f.tables.carousel_items);
+  assert.equal(new Set(first.map(r=>r.seo_title)).size,3);
+  assert.equal(new Set(first.map(r=>r.seo_description)).size,3);
+  for(const v of policy.MD20_VARIANTS){
+    const row=first.find(r=>r.id===v.itemId);
+    assert.equal(row.seo_title,f.p.seo.title+' בצבע '+v.color);
+    assert.equal(row.seo_description,'פאוץ׳ Mandarina Duck MD20 QMMM1 בצבע '+v.color+'. פאוץ׳ עם רצועה מתכווננת, כיס קדמי ברוכסן וכיס פנימי ברוכסן לארגון החפצים הקטנים.');
+    assert.equal(row.title,'MD20');assert.equal(row.description,'Source');
+  }
+  await f.run();assert.deepEqual(f.tables.carousel_items,first);assert.deepEqual(f.p,original);
+});
+
+test('changed variant color fails closed and SEO never invents unknown SKU or truncates a sentence',async()=>{
+  const f=fixture();f.p.variants.nodes[0].selectedOptions[0].value='צהוב';
+  await assert.rejects(f.run(),/IDENTITY_CONFLICT/);assert.equal(f.calls.length,0);
+  assert.throws(()=>policy.exactVariantSeo({title:'MD20'},'P10QMMM1000'),/IDENTITY_CONFLICT/);
+  const long='A'.repeat(160);
+  const seo=policy.exactVariantSeo({title:'MD20',seoDescription:'פאוץ׳. '+long+'.'},policy.MD20_VARIANTS[0].sku);
+  assert.equal(seo.seoDescription,'פאוץ׳ בצבע שחור.');
+  assert.throws(()=>policy.exactVariantSeo({title:long},policy.MD20_VARIANTS[0].sku),/COPY_LIMIT/);
 });
