@@ -5,7 +5,8 @@ import { mediaSnapshotFingerprint } from "./media-sync-core";
 import { assertMediaTransportRead } from "./media-transport-read";
 import { stagedMediaUrl, type StagedMediaSource } from "./media-transport-requests";
 import { discoverMediaTransportOperation, createMediaTransportRpc, type MediaOperationDiscovery, type MediaRpcGuard } from "./media-transport-rpc";
-import { uploadImmutableMedia, readImmutableMedia } from "./media-storage-transport";
+import { uploadImmutableMedia, readImmutableMedia, assertImmutableMediaUploadPreflight } from "./media-storage-transport";
+import { mediaStorageDiagnostic, type MediaStorageDiagnostic } from "./media-storage-diagnostics";
 import { assertMediaSourceBytesProof, readVerifiedMediaSourceBytes, type MediaSourceBytesProof } from "./media-source-bytes";
 import type { MediaTransportReference, MediaTransportResult } from "./media-transport-worker";
 
@@ -15,7 +16,8 @@ type StorageJob = { identity: MediaIdentity; phase: "stage_source" | "gallery_up
 export type MediaStorageObservation = (identity: MediaIdentity, target: "gallery" | "shopify", deadline: number) => Promise<MediaRpcGuard>;
 type Dependencies = { now?: () => number; environment?: { VERCEL_ENV?: string; SHOPIFY_MEDIA_SYNC?: string };
   discover?: typeof discoverMediaTransportOperation; createRpc?: typeof createMediaTransportRpc;
-  readSource?: typeof readVerifiedMediaSourceBytes; upload?: typeof uploadImmutableMedia; readUploaded?: typeof readImmutableMedia };
+  readSource?: typeof readVerifiedMediaSourceBytes; upload?: typeof uploadImmutableMedia; readUploaded?: typeof readImmutableMedia;
+  preflight?: typeof assertImmutableMediaUploadPreflight; reportDiagnostic?: (value: MediaStorageDiagnostic & MediaTransportReference) => void };
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const HASH = /^[a-f0-9]{64}$/;
 function fail(code: string): never { throw new Error(code); }
@@ -102,12 +104,21 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
   const rpc = (dependencies.createRpc ?? createMediaTransportRpc)(job.identity.productId);
   const lease = await bounded(() => rpc.acquire(work), work, now); if (!lease) return { status: "lease_busy", executed: false };
   let executed = false;
+  const reportFailure = (error: unknown, stage: MediaStorageDiagnostic["stage"]) => {
+    const diagnostic = { ...ref, ...mediaStorageDiagnostic(error, stage) };
+    try { (dependencies.reportDiagnostic ?? (value => console.warn("toptik.media.storage", value)))(diagnostic); }
+    catch { /* Observability cannot change durable transport semantics. */ }
+  };
   try {
     if (!UUID.test(lease.owner) || !Number.isFinite(lease.expiresAt) || lease.expiresAt < stop + 5000) fail("MEDIA_STORAGE_LEASE_TOO_SHORT");
     const getObservation = async () => { const value = await bounded(() => observe(job.identity, job.guard.target.side, work), work, now);
       checkGuard(value, job.identity, job.guard.target.side, now()); return value; };
     let bytes: Uint8Array | undefined;
-    if (!job.recovery) bytes = await bounded(() => (dependencies.readSource ?? readVerifiedMediaSourceBytes)(job.source, work - 7000), work - 7000, now);
+    if (!job.recovery) {
+      try { (dependencies.preflight ?? assertImmutableMediaUploadPreflight)(job.staged, work); }
+      catch (error) { reportFailure(error, "preflight"); throw error; }
+      bytes = await bounded(() => (dependencies.readSource ?? readVerifiedMediaSourceBytes)(job.source, work - 7000), work - 7000, now);
+    }
     const fresh = await getObservation(), attemptId = randomUUID();
     const permit = await bounded(() => rpc.begin(ref, lease.owner, attemptId, job.intent, fresh, work), work, now);
     if (permit.mayExecute === true) {
@@ -123,7 +134,11 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
       let outcome: "accepted" | "unknown" = "unknown";
       try { executed = true; const response = await bounded(() => (dependencies.upload ?? uploadImmutableMedia)(job.staged, bytes!, uploadDeadline), uploadDeadline, now);
         if (response.outcome !== "accepted") fail("MEDIA_STORAGE_UPLOAD_UNCONFIRMED"); outcome = "accepted";
-      } catch { /* A failed/lost upload consumes this attempt; never submit it again. */ }
+      } catch (error) {
+        reportFailure(error, "upload");
+        // A failed/lost upload consumes this attempt; never submit it again.
+        // The SQL receipt schema stays unchanged; sanitized detail belongs in logs.
+      }
       await bounded(() => rpc.uncertain(ref, lease.owner, { outcome }, work), work, now);
     } else if (permit.mayExecute !== false) fail("MEDIA_STORAGE_PERMIT_INVALID");
     else if (permit.status === "verified" || permit.status === "conflict") return { status: permit.status, executed };

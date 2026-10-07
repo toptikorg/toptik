@@ -12,10 +12,12 @@ const reqUrl=mod(src('media-transport-requests').replaceAll('from "./media-trans
 const sourceBody=stripTypeScriptTypes(resolveImageLimits(src('media-source-bytes'))).replace(/^import[\s\S]*?;\r?\n/gm,'');
 const proofUrl=mod(`import {mediaSnapshotFingerprint} from '${coreUrl}';${sourceBody}`);
 const stubUrl=mod('export function nope(){throw Error("default transport must not run in fixture");}');
+const diagnosticsUrl=mod(src('media-storage-diagnostics'));
 const body=src('media-storage-worker').replace('import "server-only";','').replaceAll('from "./media-sync-core";',`from "${coreUrl}";`)
   .replaceAll('from "./media-transport-read";',`from "${rawUrl}";`).replaceAll('from "./media-transport-requests";',`from "${reqUrl}";`)
   .replace('import { discoverMediaTransportOperation, createMediaTransportRpc, type MediaOperationDiscovery, type MediaRpcGuard } from "./media-transport-rpc";',`import {nope as discoverMediaTransportOperation,nope as createMediaTransportRpc} from '${stubUrl}';`)
-  .replace('import { uploadImmutableMedia, readImmutableMedia } from "./media-storage-transport";',`import {nope as uploadImmutableMedia,nope as readImmutableMedia} from '${stubUrl}';`)
+  .replace('import { uploadImmutableMedia, readImmutableMedia, assertImmutableMediaUploadPreflight } from "./media-storage-transport";',`import {nope as uploadImmutableMedia,nope as readImmutableMedia,nope as assertImmutableMediaUploadPreflight} from '${stubUrl}';`)
+  .replaceAll('from "./media-storage-diagnostics";',`from "${diagnosticsUrl}";`)
   .replaceAll('from "./media-source-bytes";',`from "${proofUrl}";`);
 const api=await import(mod(body));
 const id={productId:'gid://shopify/Product/123',variantId:'gid://shopify/ProductVariant/456',itemId:'a0000000-0000-4000-8000-000000000001',exactGallerySku:'ABC',exactShopifySku:'ABC',productHandle:'abc'};
@@ -43,6 +45,7 @@ function fixture(phase='stage_source'){
     conflict:async(...a)=>{calls.push(['conflict',...a]);},read:async(...a)=>{calls.push(['read',...a]);return structuredClone(discovery.transport);},
     accept:async(...a)=>{calls.push(['accept',...a]);discovery.transport.attempts[0].status='verified';return {status:'verified',mayExecute:false};}};
   const deps={now:()=>clock,environment:{VERCEL_ENV:'production',SHOPIFY_MEDIA_SYNC:'enabled_v1'},discover:async(...a)=>{calls.push(['discover',...a]);return structuredClone(discovery);},
+    preflight:(...a)=>{calls.push(['preflight',...a]);},reportDiagnostic:value=>{calls.push(['diagnostic',value]);},
     createRpc:p=>{calls.push(['factory',p]);return rpc;},readSource:async(...a)=>{calls.push(['source',...a]);return new Uint8Array(100);},upload:async(...a)=>{calls.push(['upload',...a]);return {outcome:'accepted'};},
     readUploaded:async(...a)=>{calls.push(['uploaded-read',...a]);return {sha256:hash,mime:'image/png',width:40,height:60,byteLength:100,url:staged.url,storagePath:`sync-media/${id.itemId}/${hash}.png`};}};
   const f={calls,discovery,staged,guard,rpc,deps,tick:n=>clock+=n,observe:async(...a)=>{calls.push(['observe',...a]);return structuredClone(guard);}};
@@ -59,6 +62,32 @@ test('feature disabled performs no reads, RPCs or uploads',async()=>{for(const e
 test('expired deadline performs no discovery',async()=>{const f=fixture();await assert.rejects(f.run(now),/TIME_BUDGET/);assert.deepEqual(f.calls,[]);});
 test('source decoding failure occurs before any durable mutation permit',async()=>{const f=fixture();f.deps.readSource=async()=>{throw Error('MEDIA_SOURCE_DECODE_FAILED');};await assert.rejects(f.run(),/DECODE_FAILED/);
   assert.ok(!f.calls.some(c=>['begin','upload','accept'].includes(c[0])));assert.equal(f.calls.at(-1)[0],'release');});
+
+test('configuration preflight fails before source read and durable permit, preserving safe diagnosis',async()=>{
+ const f=fixture();f.deps.preflight=()=>{throw Error('MEDIA_STORAGE_CONFIGURATION_INVALID');};
+ await assert.rejects(f.run(),/CONFIGURATION_INVALID/);
+ assert.ok(!f.calls.some(c=>['source','begin','upload','uncertain','accept'].includes(c[0])));
+ assert.deepEqual(f.calls.find(c=>c[0]==='diagnostic')[1],{...ref,code:'MEDIA_STORAGE_CONFIGURATION_INVALID',stage:'preflight',httpStatus:null});
+ assert.equal(f.discovery.transport.attempts.length,0);assert.equal(f.calls.at(-1)[0],'release');
+});
+
+test('upload error is logged safely without changing receipt schema or authorizing retry',async()=>{
+ const f=fixture();f.deps.upload=async()=>{throw Error('private key and provider body');};
+ f.deps.readUploaded=async()=>{throw Error('MEDIA_STORAGE_READ_FAILED');};
+ assert.deepEqual(await f.run(),{status:'pending',executed:true});
+ assert.deepEqual(f.calls.find(c=>c[0]==='uncertain')[3],{outcome:'unknown'});
+ assert.deepEqual(f.calls.find(c=>c[0]==='diagnostic')[1],{...ref,code:'MEDIA_STORAGE_UPLOAD_UNCONFIRMED',stage:'upload',httpStatus:null});
+ f.calls.length=0;f.deps.preflight=()=>{throw Error('preflight must not block GET recovery');};
+ assert.deepEqual(await f.run(),{status:'pending',executed:false});
+ assert.ok(!f.calls.some(c=>['preflight','upload','uncertain','source'].includes(c[0])));
+});
+
+test('broken diagnostic sink does not prevent uncertainty journaling and recovery',async()=>{
+ const f=fixture();f.deps.upload=async()=>{throw Error('MEDIA_STORAGE_UPLOAD_UNCONFIRMED');};
+ f.deps.reportDiagnostic=()=>{throw Error('sink down');};
+ assert.deepEqual(await f.run(),{status:'verified',executed:true});
+ assert.deepEqual(f.calls.find(c=>c[0]==='uncertain')[3],{outcome:'unknown'});
+});
 test('lost upload response consumes permit; 404 remains pending and resume never uploads',async()=>{
   const f=fixture();f.deps.upload=async(...a)=>{f.calls.push(['upload',...a]);throw Error('lost');};f.deps.readUploaded=async(...a)=>{f.calls.push(['uploaded-read',...a]);throw Error('MEDIA_STORAGE_READ_FAILED');};
   assert.deepEqual(await f.run(),{status:'pending',executed:true});f.calls.length=0;

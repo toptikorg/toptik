@@ -13,21 +13,54 @@ const allow=url(readFileSync('src/lib/catalog-source/source-allowlist.ts','utf8'
 const dns=url('export const lookup=async()=>{globalThis.__storage.dnsCalls++;return globalThis.__storage.addresses;}');
 const env=url('export const supabaseEnv={publicUrl:"https://ekgpaoavsavrtbhlbwdg.supabase.co",serviceRoleKey:"test-only-key"}; export const hasSupabaseAdminEnv=()=>true;');
 const {supabaseEnv:envFixture}=await import(env);
+const diagnostics=url(read('media-storage-diagnostics'));
 const code=read('media-storage-transport').replace('import "server-only";','').replace('"sharp"',JSON.stringify(import.meta.resolve('sharp')))
  .replace('"node:dns/promises"',JSON.stringify(dns)).replace('"@/lib/catalog-source/source-allowlist"',JSON.stringify(allow))
- .replace('"@/lib/supabase/env"',JSON.stringify(env)).replaceAll('"./media-transport-requests"',JSON.stringify(requests));
-const {uploadImmutableMedia,readImmutableMedia}=await import(url(code));
+ .replace('"@/lib/supabase/env"',JSON.stringify(env)).replaceAll('"./media-transport-requests"',JSON.stringify(requests))
+ .replace('"./media-storage-diagnostics"',JSON.stringify(diagnostics));
+const {uploadImmutableMedia,readImmutableMedia,assertImmutableMediaUploadPreflight}=await import(url(code));
+const {mediaStorageDiagnostic,MediaStorageFailure}=await import(diagnostics);
 const {stagedMediaUrl}=await import(requests);
 const identity={productId:'gid://shopify/Product/123',variantId:'gid://shopify/ProductVariant/456',itemId:'a0000000-0000-4000-8000-000000000001',
  exactGallerySku:'ABC',exactShopifySku:'ABC',productHandle:'product'};
 const bytes=await sharp({create:{width:16,height:24,channels:3,background:'#654321'}}).png().toBuffer();
 function source(){const sha=createHash('sha256').update(bytes).digest('hex');return {identity,contentSha256:sha,mime:'image/png',byteLength:bytes.length,width:16,height:24,
  url:stagedMediaUrl(identity,sha,'image/png'),receiptId:'private-proof'};}
-async function run(fn,key='test-only-key'){const fetchBefore=globalThis.fetch,vercel=process.env.VERCEL_ENV,flag=process.env.SHOPIFY_MEDIA_SYNC,previousKey=envFixture.serviceRoleKey;
+async function run(fn,key='test-only-key'){const fetchBefore=globalThis.fetch,vercel=process.env.VERCEL_ENV,flag=process.env.SHOPIFY_MEDIA_SYNC,previousKey=envFixture.serviceRoleKey,previousUrl=envFixture.publicUrl;
  const f=globalThis.__storage={dnsCalls:0,addresses:[{address:'8.8.8.8',family:4}],calls:[],handler:()=>new Response(bytes,{status:200})};
  globalThis.fetch=async(...args)=>{f.calls.push(args);return f.handler(...args);};process.env.VERCEL_ENV='production';process.env.SHOPIFY_MEDIA_SYNC='enabled_v1';envFixture.serviceRoleKey=key;
- try{await fn(f);}finally{globalThis.fetch=fetchBefore;envFixture.serviceRoleKey=previousKey;if(vercel===undefined)delete process.env.VERCEL_ENV;else process.env.VERCEL_ENV=vercel;
+ try{await fn(f);}finally{globalThis.fetch=fetchBefore;envFixture.serviceRoleKey=previousKey;envFixture.publicUrl=previousUrl;if(vercel===undefined)delete process.env.VERCEL_ENV;else process.env.VERCEL_ENV=vercel;
   if(flag===undefined)delete process.env.SHOPIFY_MEDIA_SYNC;else process.env.SHOPIFY_MEDIA_SYNC=flag;delete globalThis.__storage;}}
+
+test('CRLF and surrounding whitespace normalize like SDK while POST stays pinned and immutable',()=>run(async f=>{
+ for(const value of ['https://ekgpaoavsavrtbhlbwdg.supabase.co\r\n',' \thttps://ekgpaoavsavrtbhlbwdg.supabase.co/\n']){
+  envFixture.publicUrl=value;assertImmutableMediaUploadPreflight(source(),Date.now()+10000);
+  assert.deepEqual(await uploadImmutableMedia(source(),bytes,Date.now()+10000),{outcome:'accepted'});
+ }
+ assert.equal(f.calls.length,2);assert.ok(f.calls.every(([address,init])=>address===source().url.replace('/object/public/','/object/') && init.headers['x-upsert']==='false'));
+}));
+
+test('whitespace normalization never authorizes a different origin, path, credentials or protocol',()=>run(async f=>{
+ for(const value of ['https://other.supabase.co\r\n','https://ekgpaoavsavrtbhlbwdg.supabase.co.attacker.test',
+  'https://ekgpaoavsavrtbhlbwdg.supabase.co/a','https://user@ekgpaoavsavrtbhlbwdg.supabase.co','http://ekgpaoavsavrtbhlbwdg.supabase.co']){
+  envFixture.publicUrl=value;assert.throws(()=>assertImmutableMediaUploadPreflight(source(),Date.now()+10000),/CONFIGURATION_INVALID/);
+  await assert.rejects(uploadImmutableMedia(source(),bytes,Date.now()+10000),error=>{
+   assert.deepEqual(mediaStorageDiagnostic(error,'upload'),{code:'MEDIA_STORAGE_CONFIGURATION_INVALID',stage:'preflight',httpStatus:null});return true;
+  });
+ }
+ assert.equal(f.calls.length,0);assert.equal(f.dnsCalls,0);
+}));
+
+test('upload diagnostics retain only allowlisted code, stage and HTTP status',()=>run(async f=>{
+ f.handler=()=>new Response('secret body and private credentials',{status:403});
+ await assert.rejects(uploadImmutableMedia(source(),bytes,Date.now()+10000),error=>{
+  assert.deepEqual(mediaStorageDiagnostic(error,'upload'),{code:'MEDIA_STORAGE_UPLOAD_UNCONFIRMED',stage:'upload',httpStatus:403});
+  assert.ok(!JSON.stringify(error).includes('secret'));return true;
+ });
+ assert.deepEqual(mediaStorageDiagnostic(Error('private message'),'upload'),{code:'MEDIA_STORAGE_UPLOAD_UNCONFIRMED',stage:'upload',httpStatus:null});
+ assert.equal(new MediaStorageFailure(Error('MEDIA_STORAGE_READ_FAILED'),'readback',NaN).diagnostic.httpStatus,null);
+ assert.equal(f.calls.length,1);
+}));
 test('one immutable upload uses exact decoded bytes, pinned project and non-overwrite POST; no completion claim',()=>run(async f=>{
  const s=source();assert.deepEqual(await uploadImmutableMedia(s,bytes,Date.now()+10000),{outcome:'accepted'});
  assert.equal(f.calls.length,1);const [address,init]=f.calls[0];assert.equal(address,s.url.replace('/object/public/','/object/'));
