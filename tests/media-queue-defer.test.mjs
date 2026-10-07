@@ -58,3 +58,25 @@ test('runtime marks deferred only when planning left less than 12 s for the phas
  calls.length=0;const late=await runtime.reconcilePersistedMediaProduct(id.productId,{},now+11500,deps());
  assert.equal(late.status,'pending');assert.equal(late.deferred,true);assert.deepEqual(calls,[]);
 });
+
+// In-flight operations: a claim that verified a NEW transport phase and now waits for its next
+// step keeps its position (even as the batch's first claim) instead of re-queuing per step.
+const inFlight = { status: 'pending', progressed: true, executed: true, verifiedCheckpoint: 'op:0:phase:1' };
+test('a newly verified phase keeps the queue position, including for the first claim of a batch', () => {
+  return Promise.all([[], [other], undefined].map(async excluded => {
+    const q = queue(inFlight); await q.run(excluded);
+    assert.deepEqual(names(q).filter(n => n === 'defer_toptik_media_work' || n === 'finish_toptik_media_work'), ['defer_toptik_media_work']);
+  }));
+});
+test('no newly verified phase, a diagnostic, review or failure still finishes normally (moves to the back)', async () => {
+  for (const outcome of [{ status: 'pending', progressed: true, executed: true },
+    { ...inFlight, diagnostic: 'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED' },
+    { ...inFlight, status: 'review' }, { ...inFlight, status: 'done' }]) {
+    const q = queue(outcome); await q.run([]);
+    assert.ok(!names(q).includes('defer_toptik_media_work'), JSON.stringify(outcome)); assert.ok(names(q).includes('finish_toptik_media_work'));
+  }
+});
+test('in-flight keep-position falls back to finish when defer is unavailable', async () => {
+  const q = queue(inFlight, { deferFails: true }); await q.run([]);
+  assert.deepEqual(names(q).filter(n => n === 'defer_toptik_media_work' || n === 'finish_toptik_media_work'), ['defer_toptik_media_work', 'finish_toptik_media_work']);
+});

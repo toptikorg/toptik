@@ -79,7 +79,7 @@ export async function drainMediaWork(deadline: number, client?: Db,
       !Number.isSafeInteger(claim.generation) || Number(claim.generation) < 1 || typeof claim.initialized !== "boolean" || !claim.evidence || typeof claim.evidence !== "object") fail("MEDIA_QUEUE_RESPONSE_INVALID");
   if (excluded?.includes(String(claim.productId))) fail("MEDIA_QUEUE_BATCH_REPEATED");
   result.claimedProductId = String(claim.productId);
-  let status = "pending", error: string | null = null, progress = false, deferred = false;
+  let status = "pending", error: string | null = null, progress = false, deferred = false, inFlight = false;
   try {
     const workDeadline = deadline - 5000;
     let outcome = claim.initialized ? await run(String(claim.productId), claim.evidence as MediaWorkEvidence, workDeadline) :
@@ -108,6 +108,15 @@ export async function drainMediaWork(deadline: number, client?: Db,
     // do not confuse a no-op completion with a stalled reconciliation.
     progress = status === "done" || productProgress || outcome.executed;
     deferred = status === "pending" && "deferred" in outcome && outcome.deferred === true;
+    // An in-flight operation that verified a NEW transport phase in this claim and
+    // now waits only for its next step keeps its queue position, so it continues
+    // in the next batch instead of re-queuing behind every product per step. Bounded:
+    // it holds the position only while each claim verifies another phase of a
+    // finite plan; a diagnostic, review, failure or a claim without a newly
+    // verified phase finishes normally and moves to the back.
+    const newlyVerified = verified.size > 0 || ("verifiedCheckpoint" in outcome && typeof outcome.verifiedCheckpoint === "string" &&
+      outcome.verifiedCheckpoint.length > 0);
+    inFlight = status === "pending" && error === null && newlyVerified;
   } catch (e) {
     const code = e instanceof Error && /^MEDIA_[A-Z0-9_]{1,90}$/.test(e.message) ? e.message : "MEDIA_WORK_FAILED";
     error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE/.test(code) ? "review" : "failed";
@@ -119,7 +128,7 @@ export async function drainMediaWork(deadline: number, client?: Db,
   // a product whose planning alone exceeds the budget cannot monopolize the head.
   let released = false;
   // The defer call is bounded to 2 s so a hung RPC still leaves finish its own window.
-  if (deferred && excluded !== undefined && excluded.length > 0 && deadline - Date.now() > 5000) {
+  if (((deferred && excluded !== undefined && excluded.length > 0) || inFlight) && deadline - Date.now() > 5000) {
     try { released = await call(db, "defer_toptik_media_work", { p_product_gid: claim.productId, p_claim_id: claimId, p_generation: claim.generation }, Math.min(deadline - 1000, Date.now() + 2000)) === true; }
     catch { /* migration absent or claim changed: fall back to the ordinary finish below */ }
   }
