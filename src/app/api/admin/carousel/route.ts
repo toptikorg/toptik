@@ -46,7 +46,11 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("PUT /api/admin/carousel failed", error);
-    const message = error instanceof Error ? error.message : "Failed to save carousel data";
+    // Supabase RPC errors are plain objects. Surface this safe retry code so a
+    // rolled-back lock conflict remains a 409; do not expose SQL details.
+    const busyCopy = typeof error === "object" && error !== null &&
+      "message" in error && error.message === "SYNC_COPY_BUSY_RETRY";
+    const message = error instanceof Error ? error.message : busyCopy ? "SYNC_COPY_BUSY_RETRY" : "Failed to save carousel data";
     const status = message.includes("Missing Supabase admin env vars") ? 500 : /STALE|BUSY|REVISION_REQUIRED/.test(message) ? 409 : 400;
     return NextResponse.json({ error: message }, { status });
   }

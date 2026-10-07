@@ -38,6 +38,22 @@ test('American Tourister is public only with explicit brand identity and active 
 const storeSource=readFileSync('src/lib/carousel/store-classification.ts','utf8')
  .replace('import "server-only";','').replace('"./brands"',JSON.stringify(brands)).replace('"./series"',JSON.stringify(seriesModuleUrl));
 const {classificationIndex,applyStoreClassification}=await import(moduleUrl(storeSource));
+
+test('three verified MD20 color projections remain public and enter the exact MD20 series without a brand spec',()=>{
+ const skus=['P10QMMM1651','P10QMMM1465','P10QMMM109K'];
+ const projections=skus.map(sku=>({id:sku,catalogNumber:sku,isActive:true,techSpecs:{specs:[],colors:[]}}));
+ const before=structuredClone(projections);
+ const product={vendor:'Mandarina Duck',product_type:'פאוץ׳',tags:['tt-series:mandarina-duck-md20'],variants:skus.map(sku=>({sku}))};
+ const updated=applyStoreClassification(projections,classificationIndex([product]));
+ assert.equal(publicCollectionItems(updated).length,3);
+ assert.equal(filterBySeries(updated,'mandarina-duck-md20').length,3);
+ for(const projection of projections) assert.equal(seriesForItem(projection)?.key,'mandarina-duck-md20');
+ assert.deepEqual(projections,before,'classification must not modify persisted projection data');
+ assert.equal(publicCollectionItems([{...projections[0],catalogNumber:'P10QMMM1UNKNOWN'}]).length,0);
+ assert.equal(publicCollectionItems([{...projections[0],isActive:false}]).length,0);
+ const conflicting={...projections[0],techSpecs:{specs:[{items:[{label:'מותג',value:'Mandarina Duck'},{label:'Brand',value:"Bric's"}]}]}};
+ assert.equal(publicCollectionItems([conflicting]).length,0);
+});
 test('live store classification overrides a reviewed fallback and follows explicit tags',()=>{
  const [sku,s]=Object.entries(map).find(([,s])=>s.brand==='samsonite');
  const product={vendor:'Samsonite',product_type:'תיק גב למחשב',tags:[`tt-series:${s.key}`],variants:[{sku}]};

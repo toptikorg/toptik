@@ -23,6 +23,11 @@ const NAMED_BRANDS: Record<string, GalleryBrand> = {
 // Exact SKU identity from reviewed-copy.json. Do not infer a brand from a title,
 // SKU prefix, image filename or the previous Mandarina-only heading.
 const REVIEWED_BRAND_BY_SKU: Record<string, string> = {
+  // Exact Shopify-owned MD20 color projections. Their typed specs omit the
+  // brand label, so public filtering still needs verified identity evidence.
+  P10QMMM1651: "Mandarina Duck",
+  P10QMMM1465: "Mandarina Duck",
+  P10QMMM109K: "Mandarina Duck",
   P10JNV05465: "Mandarina Duck",
   P10GXV24A32: "Mandarina Duck",
   P10JNV0508Q: "Mandarina Duck",
