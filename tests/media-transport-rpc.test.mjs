@@ -112,3 +112,57 @@ test('hanging RPC is aborted and bounded once, no retry', async () => {
   const f = fixture(() => new Promise(() => {})); const rpc = api.createMediaTransportRpc(id.productId, { ...f.options, maxRpcMs: 15 });
   await assert.rejects(rpc.read(ref, owner, now + 1000), /TIME_BUDGET/); assert.equal(f.calls.length, 1); assert.equal(f.signals[0].aborted, true);
 });
+
+const repairId='50000000-0000-4000-8000-000000000001',approvalId='60000000-0000-4000-8000-000000000001';
+const storagePath=`sync-media/${id.itemId}/${hash}.png`;
+const approvedRepair=()=>({approved:true,mayExecute:false,expired:false,objectPresent:false,claim:null,outcome:null,
+ approval:{approval_id:approvalId,product_gid:id.productId,identity:id,original_attempt_id:attempt,original_request_hash:hash,
+ source_sha256:hash,expires_at:new Date(now+3600000).toISOString()}});
+const repairPermit=args=>({mayExecute:true,replayed:false,repairId:args.p_repair_id,approvalId:args.p_approval_id,
+ originalAttemptId:args.p_original_attempt_id,originalRequestHash:args.p_request_hash,storagePath:args.p_storage_path,
+ sourceSha256:args.p_source_sha256,upsert:false,mayExecuteUntil:new Date(now+30000).toISOString()});
+test('repair port exposes only read, claim and outcome, never operator authorization',async()=>{
+ const f=fixture(()=>ok({approved:false,mayExecute:false}));
+ assert.equal(typeof f.rpc.authorizeStorageRepair,'undefined');assert.doesNotMatch(source,/authorize_storage_repair/);
+ assert.deepEqual(await f.rpc.readStorageRepair(owner,attempt,now+1000),{approved:false,mayExecute:false});
+ assert.deepEqual(f.calls[0],{name:'read_toptik_storage_repair',args:{p_product_gid:id.productId,p_lease_owner:owner,p_original_attempt_id:attempt}});
+});
+test('repair read requires exact product identity, original attempt, hashes and absence signal',async()=>{
+ const value=approvedRepair(),f=fixture(()=>ok(value));assert.deepEqual(await f.rpc.readStorageRepair(owner,attempt,now+1000),value);
+ for(const mutate of [v=>v.approval.product_gid+='1',v=>v.approval.original_attempt_id=owner,v=>v.approval.source_sha256='bad',
+  v=>delete v.objectPresent,v=>v.approval.identity={...id,productId:id.productId+'1'},v=>v.mayExecute=true]){
+  const data=approvedRepair();mutate(data);const bad=fixture(()=>ok(data));await assert.rejects(bad.rpc.readStorageRepair(owner,attempt,now+1000),/RESPONSE_INVALID|IDENTITY_CHANGED/);
+ }
+});
+test('repair claim has fixed exact arguments and pinned content-addressed path',async()=>{
+ const f=fixture((_,args)=>ok(repairPermit(args)));assert.equal((await f.rpc.claimStorageRepair(owner,approvalId,repairId,attempt,hash,storagePath,hash,guard,now+1000)).mayExecute,true);
+ assert.deepEqual(f.calls[0],{name:'claim_toptik_storage_repair',args:{p_product_gid:id.productId,p_lease_owner:owner,p_approval_id:approvalId,
+  p_repair_id:repairId,p_original_attempt_id:attempt,p_request_hash:hash,p_storage_path:storagePath,p_source_sha256:hash,p_fresh_guard:guard}});
+ const count=f.calls.length;
+ for(const path of [storagePath.replace(id.itemId,owner),storagePath+'.jpg',storagePath.replace('.png','.avif'),'../'+storagePath])
+  await assert.rejects(f.rpc.claimStorageRepair(owner,approvalId,repairId,attempt,hash,path,hash,guard,now+1000),/SCOPE_INVALID/);
+ assert.equal(f.calls.length,count);
+});
+test('repair permit rejects foreign, replayed, expired or overwrite grants',async()=>{
+ for(const mutate of [v=>v.replayed=true,v=>v.repairId=owner,v=>v.approvalId=owner,v=>v.originalAttemptId=owner,
+  v=>v.originalRequestHash='b'.repeat(64),v=>v.storagePath+='x',v=>v.sourceSha256='b'.repeat(64),v=>v.upsert=true,
+  v=>v.mayExecuteUntil=new Date(now-1).toISOString()]){
+  const f=fixture((_,args)=>{const v=repairPermit(args);mutate(v);return ok(v);});
+  await assert.rejects(f.rpc.claimStorageRepair(owner,approvalId,repairId,attempt,hash,storagePath,hash,guard,now+1000),/PERMIT_INVALID/);
+ }
+});
+test('consumed repair or object race can only return no permission',async()=>{
+ for(const status of ['consumed','object_present_use_readback']){
+  const value={mayExecute:false,replayed:status==='consumed',status},f=fixture(()=>ok(value));
+  assert.deepEqual(await f.rpc.claimStorageRepair(owner,approvalId,repairId,attempt,hash,storagePath,hash,guard,now+1000),value);
+ }
+});
+test('repair outcome includes only safe finite metadata and no phase acceptance',async()=>{
+ const f=fixture(()=>ok({recorded:true,replayed:false,mayExecute:false}));
+ await f.rpc.recordStorageRepairOutcome(owner,repairId,'unknown','upload',400,now+1000,request);
+ assert.deepEqual(f.calls[0],{name:'record_toptik_storage_repair_outcome',args:{p_product_gid:id.productId,p_lease_owner:owner,
+  p_repair_id:repairId,p_request_id:request,p_outcome:'unknown',p_stage:'upload',p_http_status:400}});
+ for(const [outcome,stage,http] of [['verified','upload',200],['unknown','private body',null],['unknown','dns',999],['unknown','dns',200.5]])
+  await assert.rejects(f.rpc.recordStorageRepairOutcome(owner,repairId,outcome,stage,http,now+1000),/RECEIPT_INVALID/);
+ assert.equal(f.calls.length,1);
+});
