@@ -64,3 +64,10 @@ test('manufacturer imports require independently reviewed source URLs, never sim
  assert.throws(()=>api.assertReviewedManufacturerImport(r.galleryId,'P10FZT11001',[r.imageUrl]),/MEDIA_REVIEW_REQUIRED/);
  assert.throws(()=>api.assertReviewedManufacturerImport(r.galleryId,r.sku,['https://manufacturer.example/nearby.jpg']),/MEDIA_REVIEW_REQUIRED/);
 });
+
+test('a new manufacturer or product has no implicit image approval from a known category or filename',()=>{
+ const next={...id,itemId:'new-item',productId:'gid://shopify/Product/999',variantId:'gid://shopify/ProductVariant/888',exactGallerySku:'NEW-BRAND-001-YELLOW',exactShopifySku:'NEW-BRAND-001-YELLOW'};
+ for(const url of [r.imageUrl,'https://new-manufacturer.example/cabin-luggage/NEW-BRAND-001-YELLOW.jpg'])
+  assert.throws(()=>api.requireReviewedMedia(next,url),/MEDIA_REVIEW_REQUIRED/);
+ assert.throws(()=>api.assertReviewedManufacturerImport(next.itemId,next.exactGallerySku,[r.imageUrl]),/MEDIA_REVIEW_REQUIRED/);
+});
