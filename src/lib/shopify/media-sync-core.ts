@@ -144,7 +144,8 @@ function adoptedCopyOfTargetBaseline(baseline: MediaPair, current: MediaPair, so
   const target = other(source);
   const copy = current[source].assets.find(a => a.key === key), before = baseline[target].assets.find(a => a.key === key),
     now = current[target].assets.find(a => a.key === key);
-  if (!copy || !before || !now || baseline[source].assets.some(a => a.key === key)) return false;
+  // Narrow scope: only a gallery copy of a Shopify baseline image (the Shopify-side write path is heavier).
+  if (source !== "gallery" || !copy || !before || !now || baseline[source].assets.some(a => a.key === key)) return false;
   const fields = (a: MediaAsset) => Object.keys(a).sort().join(",");
   if ([copy, before, now].some(a => fields(a) !== "alt,contentId,evidenceId,key")) return false;
   if (copy.contentId !== before.contentId || now.contentId !== before.contentId || now.evidenceId !== before.evidenceId) return false;

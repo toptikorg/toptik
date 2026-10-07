@@ -362,11 +362,11 @@ test('copy proven equal to the target baseline receives only the target ALT edit
   const again = api.reconcileMedia(committed, clone(committed)); noMutation(again); assert.deepEqual(again.conflicts, []);
   assert.equal(base.gallery.assets.some(a => a.key === 'b'), false);
 });
-test('the mirror direction (Shopify gains a copy of a gallery baseline image) is symmetric', () => {
+test('held: the mirror direction (Shopify gains a copy of a gallery baseline image) stays a conflict', () => {
   const base = pair([asset('a'), asset('b', { alt: 'old', evidenceId: 'g-b' })], [asset('a')]), now = clone(base);
   now.shopify.assets.push(asset('b', { alt: 'old', evidenceId: 's-b' })); now.gallery.assets[1].alt = 'new';
-  const plan = api.reconcileMedia(base, now); assert.deepEqual(plan.conflicts, []);
-  assert.deepEqual(plan.patches, [{ source: 'gallery', target: 'shopify', key: 'b', kind: 'alt', value: 'new' }]);
+  const plan = api.reconcileMedia(base, now); noMutation(plan);
+  assert.deepEqual(plan.conflicts.map(c => c.code), ['MEDIA_EXISTING_TARGET_DIFFERENT']);
 });
 for (const [name, mutate] of [
   ['copy ALT differs from the target baseline (concurrent edit on the copy)', (b, n) => { n.gallery.assets[1].alt = 'עריכה מקבילה'; }],
@@ -377,11 +377,11 @@ for (const [name, mutate] of [
   ['same source proof under another key', (b, n) => { b.gallery.assets.push(asset('z', { evidenceId: 'g-b' })); n.gallery.assets.splice(1, 0, asset('z', { evidenceId: 'g-b' })); }],
   ['target image repositioned', (b, n) => { n.shopify.assets.reverse(); }],
   ['extra field on the copy', (b, n) => { n.gallery.assets[1].note = 'x'; }],
+  ['target source proof also appears under another key', (b, n) => { n.gallery.assets.push(asset('y', { evidenceId: 's-b' })); }],
 ]) test(`held: ${name}`, () => {
-  let plan;
-  try { plan = adoption(mutate).plan; } catch (e) { assert.match(String(e.message), /MEDIA_/); return; }
+  const { plan } = adoption(mutate);
   assert.equal(plan.patches.some(p => p.key === 'b' && p.target === 'gallery'), false);
-  assert.ok(plan.conflicts.some(c => c.key === 'b' || c.key === 'collection'), JSON.stringify(plan.conflicts));
+  assert.ok(plan.conflicts.some(c => c.key === 'b' && c.code === 'MEDIA_EXISTING_TARGET_DIFFERENT'), JSON.stringify(plan.conflicts));
 });
 test('held: target ALT unchanged but copy ALT differs stays the original pre-existing-target conflict', () => {
   const base = pair([asset('a')], [asset('a'), asset('b', { alt: 'target' })]), now = clone(base);
