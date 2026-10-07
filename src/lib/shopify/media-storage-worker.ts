@@ -88,7 +88,7 @@ async function bounded<T>(run: () => Promise<T>, deadline: number, now: () => nu
   } finally { if (timer) clearTimeout(timer); }
 }
 
-/** One immutable upload maximum. Previous/lost permits recover by GET; 404 never authorizes POST. */
+/** One original upload maximum. A failed GET alone can never authorize another POST. */
 export async function runPersistedStorageMediaPhase(reference: MediaTransportReference, deadline: number,
   observe: MediaStorageObservation, dependencies: Dependencies = {}): Promise<MediaTransportResult> {
   const now = dependencies.now ?? Date.now, env = dependencies.environment ?? process.env;
@@ -148,9 +148,70 @@ export async function runPersistedStorageMediaPhase(reference: MediaTransportRef
     if (a.phase !== job.phase || !HASH.test(String(a.request_hash)) || !same(a.request, job.intent) || !sameGuard(a.before_guard as MediaRpcGuard, job.guard)) fail("MEDIA_STORAGE_RECOVERY_INVALID");
     if (a.status === "verified" || a.status === "conflict") return { status: a.status, executed };
     if (!["started", "uncertain"].includes(String(a.status))) fail("MEDIA_STORAGE_RECOVERY_INVALID");
+    const readUploaded = () => bounded(() => (dependencies.readUploaded ?? readImmutableMedia)(job.staged, work), work, now);
     let uploaded: Awaited<ReturnType<typeof readImmutableMedia>>;
-    try { uploaded = await bounded(() => (dependencies.readUploaded ?? readImmutableMedia)(job.staged, work), work, now); }
-    catch (error) { if (error instanceof Error && error.message === "MEDIA_STORAGE_READ_FAILED") return { status: "pending", executed }; throw error; }
+    try { uploaded = await readUploaded(); }
+    catch (error) {
+      if (!(error instanceof Error) || error.message !== "MEDIA_STORAGE_READ_FAILED") throw error;
+      // This separate immutable authorization can only be admitted by an operator.
+      // The worker has read/claim/outcome ports, never an authorize port. The original
+      // permit, request, phase and history remain untouched, even if repair fails.
+      if (!job.recovery) return { status: "pending", executed };
+      const repair = await bounded(() => rpc.readStorageRepair(lease.owner, String(a.attempt_id), work), work, now);
+      if (!repair.approved) return { status: "pending", executed };
+      const approval = repair.approval;
+      if (!same(approval.identity, job.identity) || approval.operation_id !== ref.operationId || approval.step_index !== ref.step ||
+          approval.phase_index !== ref.phaseIndex || approval.original_attempt_id !== a.attempt_id ||
+          approval.original_request_hash !== a.request_hash || approval.storage_path !== job.intent.storagePath ||
+          approval.source_sha256 !== job.source.sha256 || approval.source_evidence_id !== job.source.evidenceId) fail("MEDIA_STORAGE_REPAIR_SCOPE_INVALID");
+      // A consumed repair never grants another write. Metadata presence merely
+      // allows a future GET to recover; it does not prove the bytes are correct.
+      if (repair.objectPresent) return { status: "pending", executed };
+      if (repair.claim !== null || repair.expired) fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");
+      if (work - now() < 12000) return { status: "pending", executed };
+      try { (dependencies.preflight ?? assertImmutableMediaUploadPreflight)(job.staged, work); }
+      catch (error) { reportFailure(error, "preflight"); throw error; }
+      const repairBytes = await bounded(() => (dependencies.readSource ?? readVerifiedMediaSourceBytes)(job.source, work - 7000), work - 7000, now);
+      const beforeRepair = await getObservation();
+      if (!sameGuard(beforeRepair, job.guard)) fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");
+      if (work - now() < 8000) return { status: "pending", executed };
+      const repairId = randomUUID();
+      const repairPermit = await bounded(() => rpc.claimStorageRepair(lease.owner, String(approval.approval_id), repairId,
+        String(a.attempt_id), String(a.request_hash), String(job.intent.storagePath), job.source.sha256, beforeRepair, work), work, now);
+      if (repairPermit.mayExecute === true) {
+        if (repairPermit.replayed !== false || repairPermit.repairId !== repairId || repairPermit.approvalId !== approval.approval_id ||
+            repairPermit.originalAttemptId !== a.attempt_id || repairPermit.originalRequestHash !== a.request_hash ||
+            repairPermit.sourceEvidenceId !== job.source.evidenceId || repairPermit.sourceSha256 !== job.source.sha256 ||
+            repairPermit.storagePath !== job.intent.storagePath || repairPermit.phase !== job.phase || repairPermit.upsert !== false ||
+            !same(repairPermit.request, job.intent)) fail("MEDIA_STORAGE_REPAIR_PERMIT_INVALID");
+        const until = Date.parse(String(repairPermit.mayExecuteUntil));
+        if (!Number.isFinite(until) || until > Math.min(lease.expiresAt - 5000, Date.parse(String(approval.expires_at)), now() + 30000)) fail("MEDIA_STORAGE_REPAIR_PERMIT_INVALID");
+        const uploadDeadline = Math.min(work - 5000, until);
+        let outcome: "accepted" | "unknown" = "unknown", diagnostic: MediaStorageDiagnostic = { code: "MEDIA_STORAGE_UPLOAD_UNCONFIRMED", stage: "upload", httpStatus: null };
+        let stoppedBeforePost = false;
+        try {
+          const last = await getObservation();
+          if (!sameGuard(last, job.guard) || uploadDeadline - now() < 1000) {
+            stoppedBeforePost = true; fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");
+          }
+          executed = true;
+          const response = await bounded(() => (dependencies.upload ?? uploadImmutableMedia)(job.staged, repairBytes, uploadDeadline), uploadDeadline, now);
+          if (response.outcome !== "accepted") fail("MEDIA_STORAGE_UPLOAD_UNCONFIRMED");
+          outcome = "accepted";
+        } catch (error) { diagnostic = mediaStorageDiagnostic(error, "upload"); reportFailure(error, "upload"); }
+        await bounded(() => rpc.recordStorageRepairOutcome(lease.owner, repairId, outcome, diagnostic.stage, diagnostic.httpStatus, work), work, now);
+        if (stoppedBeforePost) fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");
+      } else if (repairPermit.mayExecute !== false) fail("MEDIA_STORAGE_REPAIR_PERMIT_INVALID");
+      // Even a successful response, a race returning 400/409, or a lost response
+      // must pass independent byte readback and the unchanged original acceptance.
+      try { uploaded = await readUploaded(); }
+      catch (error) {
+        if (!(error instanceof Error) || error.message !== "MEDIA_STORAGE_READ_FAILED") throw error;
+        const afterRepair = await bounded(() => rpc.readStorageRepair(lease.owner, String(a.attempt_id), work), work, now);
+        if (afterRepair.approved && afterRepair.objectPresent) return { status: "pending", executed };
+        fail("MEDIA_STORAGE_REPAIR_REQUIRES_REVIEW");
+      }
+    }
     if (uploaded.sha256 !== job.staged.contentSha256 || uploaded.mime !== job.staged.mime || uploaded.width !== job.staged.width || uploaded.height !== job.staged.height ||
         uploaded.byteLength !== job.staged.byteLength || uploaded.url !== job.staged.url || uploaded.storagePath !== job.intent.storagePath) fail("MEDIA_STORAGE_READBACK_CHANGED");
     const after = await getObservation();

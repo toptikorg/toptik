@@ -43,6 +43,7 @@ function fixture(phase='stage_source'){
       return {mayExecute:true,replayed:false,phase,attemptId:a,requestHash:previous.request_hash,request:intent};},
     uncertain:async(...a)=>{calls.push(['uncertain',...a]);discovery.transport.attempts[0].status='uncertain';discovery.transport.chain.status='uncertain';},
     conflict:async(...a)=>{calls.push(['conflict',...a]);},read:async(...a)=>{calls.push(['read',...a]);return structuredClone(discovery.transport);},
+    readStorageRepair:async(...a)=>{calls.push(['repair-read',...a]);return {approved:false,mayExecute:false};},
     accept:async(...a)=>{calls.push(['accept',...a]);discovery.transport.attempts[0].status='verified';return {status:'verified',mayExecute:false};}};
   const deps={now:()=>clock,environment:{VERCEL_ENV:'production',SHOPIFY_MEDIA_SYNC:'enabled_v1'},discover:async(...a)=>{calls.push(['discover',...a]);return structuredClone(discovery);},
     preflight:(...a)=>{calls.push(['preflight',...a]);},reportDiagnostic:value=>{calls.push(['diagnostic',value]);},
@@ -135,4 +136,122 @@ test('source intent is deterministic and never depends on generated attempt UUID
   const f=fixture();assert.deepEqual(api.buildMediaStorageIntent(ref,'stage_source','proof-a',f.staged),api.buildMediaStorageIntent({...ref},'stage_source','proof-a',structuredClone(f.staged)));
   assert.notEqual(api.buildMediaStorageIntent({...ref,step:8},'stage_source','proof-a',f.staged).mutationSha256,api.buildMediaStorageIntent(ref,'stage_source','proof-a',f.staged).mutationSha256);
   assert.match(createHash('sha256').update('fixture').digest('hex'),/^[a-f0-9]{64}$/);
+});
+
+async function repairFixture(phase='gallery_upload') {
+ const f=fixture(phase),normalRead=f.deps.readUploaded;
+ f.deps.readUploaded=async(...a)=>{f.calls.push(['uploaded-read',...a]);throw Error('MEDIA_STORAGE_READ_FAILED');};
+ await f.run();f.calls.length=0;
+ const original=structuredClone(f.discovery.transport.attempts[0]);
+ f.repair={approved:true,mayExecute:false,expired:false,objectPresent:false,claim:null,outcome:null,approval:{
+  approval_id:'50000000-0000-4000-8000-000000000001',original_attempt_id:original.attempt_id,
+  original_request_hash:original.request_hash,identity:id,product_gid:id.productId,operation_id:ref.operationId,
+  step_index:ref.step,phase_index:0,storage_path:original.request.storagePath,source_sha256:hash,
+  source_evidence_id:'proof-a',expires_at:new Date(now+3600000).toISOString()}};
+ f.rpc.readStorageRepair=async(...a)=>{f.calls.push(['repair-read',...a]);return structuredClone(f.repair);};
+ f.rpc.claimStorageRepair=async(...a)=>{f.calls.push(['repair-claim',...a]);
+  if(f.repair.claim)return {mayExecute:false,replayed:true,status:'consumed'};
+  f.repair.claim={repair_id:a[2]};return {mayExecute:true,replayed:false,repairId:a[2],approvalId:a[1],originalAttemptId:a[3],
+   originalRequestHash:a[4],storagePath:a[5],sourceSha256:a[6],sourceEvidenceId:'proof-a',phase,upsert:false,
+   request:original.request,mayExecuteUntil:new Date(now+30000).toISOString()};};
+ f.rpc.recordStorageRepairOutcome=async(...a)=>{f.calls.push(['repair-outcome',...a]);f.repair.outcome={outcome:a[2]};return {recorded:true,replayed:false,mayExecute:false};};
+ f.deps.upload=async(...a)=>{f.calls.push(['upload',...a]);f.repair.objectPresent=true;f.deps.readUploaded=normalRead;return {outcome:'accepted'};};
+ f.original=original;f.normalRead=normalRead;return f;
+}
+for(const phase of ['gallery_upload','stage_source'])test(`separately approved ${phase} repair uses one create-only upload and original acceptance`,async()=>{
+ const f=await repairFixture(phase);assert.deepEqual(await f.run(),{status:'verified',executed:true});
+ assert.equal(f.calls.filter(c=>c[0]==='upload').length,1);assert.equal(f.calls.filter(c=>c[0]==='repair-claim').length,1);
+ assert.ok(f.calls.findIndex(c=>c[0]==='source')<f.calls.findIndex(c=>c[0]==='repair-claim'));
+ assert.deepEqual(f.calls.find(c=>c[0]==='repair-outcome').slice(3,6),['accepted','upload',null]);
+ assert.equal(f.calls.find(c=>c[0]==='accept')[4],f.original.request_hash);
+ assert.deepEqual(f.discovery.transport.attempts[0].request,f.original.request);
+ assert.equal(f.discovery.transport.attempts.length,1);assert.equal(f.calls.at(-1)[0],'release');
+});
+test('repair authorization absence preserves GET-only recovery',async()=>{
+ const f=await repairFixture();f.repair={approved:false,mayExecute:false};
+ assert.deepEqual(await f.run(),{status:'pending',executed:false});
+ assert.ok(!f.calls.some(c=>['source','preflight','upload','repair-claim'].includes(c[0])));
+});
+for(const field of ['original_attempt_id','original_request_hash','storage_path','source_sha256','source_evidence_id','operation_id','step_index','phase_index']) {
+ test(`repair cannot use mismatched ${field}`,async()=>{
+  const f=await repairFixture();f.repair.approval[field]='different';await assert.rejects(f.run(),/REPAIR_SCOPE_INVALID/);
+  assert.ok(!f.calls.some(c=>['source','upload','repair-claim'].includes(c[0])));
+ });
+}
+test('repair cannot use another color or variant identity',async()=>{
+ const f=await repairFixture();f.repair.approval.identity={...id,exactShopifySku:'OTHER',variantId:id.variantId+'1'};
+ await assert.rejects(f.run(),/REPAIR_SCOPE_INVALID/);assert.ok(!f.calls.some(c=>c[0]==='upload'));
+});
+test('consumed absent repair and expired repair require review without another POST',async()=>{
+ for(const mutate of [f=>f.repair.claim={},f=>f.repair.expired=true]){const f=await repairFixture();mutate(f);
+  await assert.rejects(f.run(),/REQUIRES_REVIEW/);assert.ok(!f.calls.some(c=>['source','upload','repair-claim'].includes(c[0])));}
+});
+test('metadata present with public GET unavailable stays pending even for consumed repair',async()=>{
+ const f=await repairFixture();f.repair.objectPresent=true;f.repair.claim={};
+ assert.deepEqual(await f.run(),{status:'pending',executed:false});assert.ok(!f.calls.some(c=>['source','upload','repair-claim'].includes(c[0])));
+});
+test('existing exact public object recovers without consulting repair authorization',async()=>{
+ const f=await repairFixture();f.deps.readUploaded=f.normalRead;
+ assert.deepEqual(await f.run(),{status:'verified',executed:false});assert.ok(!f.calls.some(c=>c[0].startsWith('repair-')));
+});
+test('preflight or source decoding failure cannot consume repair permit',async()=>{
+ for(const field of ['preflight','readSource']){const f=await repairFixture();f.deps[field]=()=>{throw Error('MEDIA_SOURCE_DECODE_FAILED');};
+  await assert.rejects(f.run(),/DECODE_FAILED/);assert.ok(!f.calls.some(c=>['repair-claim','upload'].includes(c[0])));assert.equal(f.repair.claim,null);}
+});
+test('drift before claim preserves repair; drift after claim consumes it with no POST',async()=>{
+ for(const changedRead of [2,3]){const f=await repairFixture();let reads=0;f.observe=async()=>{const g=structuredClone(f.guard);if(++reads===changedRead)g.sourceFingerprint='e'.repeat(64);return g;};
+  await assert.rejects(f.run(),/REQUIRES_REVIEW/);assert.ok(!f.calls.some(c=>c[0]==='upload'));
+  assert.equal(f.repair.claim!==null,changedRead===3);assert.equal(f.repair.outcome?.outcome,changedRead===3?'unknown':undefined);}
+});
+test('lost repair claim reply consumes permission and cannot be retried',async()=>{
+ const f=await repairFixture(),claim=f.rpc.claimStorageRepair;f.rpc.claimStorageRepair=async(...a)=>{await claim(...a);throw Error('lost claim reply');};
+ await assert.rejects(f.run(),/lost claim/);assert.ok(!f.calls.some(c=>c[0]==='upload'));
+ f.calls.length=0;f.rpc.claimStorageRepair=claim;await assert.rejects(f.run(),/REQUIRES_REVIEW/);
+ assert.ok(!f.calls.some(c=>['repair-claim','upload'].includes(c[0])));
+});
+test('lost repair POST with absent object is review, never a loop',async()=>{
+ const f=await repairFixture();f.deps.upload=async()=>{f.calls.push(['upload']);throw Error('lost response');};
+ await assert.rejects(f.run(),/REQUIRES_REVIEW/);assert.equal(f.repair.outcome.outcome,'unknown');assert.equal(f.calls.filter(c=>c[0]==='upload').length,1);
+ f.calls.length=0;await assert.rejects(f.run(),/REQUIRES_REVIEW/);assert.ok(!f.calls.some(c=>['upload','repair-claim'].includes(c[0])));
+});
+test('non-success upload can recover exact object, but never overwrite',async()=>{
+ const f=await repairFixture();f.deps.upload=async(...a)=>{f.calls.push(['upload',...a]);f.repair.objectPresent=true;f.deps.readUploaded=f.normalRead;throw Error('MEDIA_STORAGE_UPLOAD_UNCONFIRMED');};
+ assert.deepEqual(await f.run(),{status:'verified',executed:true});assert.equal(f.repair.outcome.outcome,'unknown');assert.equal(f.calls.filter(c=>c[0]==='upload').length,1);
+});
+test('repair successful response alone cannot accept wrong bytes',async()=>{
+ const f=await repairFixture();f.deps.upload=async()=>{f.deps.readUploaded=async()=>({...await f.normalRead(),sha256:'e'.repeat(64)});return {outcome:'accepted'};};
+ await assert.rejects(f.run(),/READBACK_CHANGED/);assert.ok(!f.calls.some(c=>c[0]==='accept'));
+});
+test('low remaining budget cannot consume a repair claim',async()=>{
+ const f=await repairFixture();f.tick(19000);assert.deepEqual(await f.run(now+30000),{status:'pending',executed:false});
+ assert.ok(!f.calls.some(c=>['source','upload','repair-claim'].includes(c[0])));
+});
+test('cold review: repair permit expiring during last observation consumes without POST',async()=>{
+ const f=await repairFixture(),claim=f.rpc.claimStorageRepair;
+ f.rpc.claimStorageRepair=async(...a)=>({...await claim(...a),mayExecuteUntil:new Date(now+1000).toISOString()});
+ let reads=0;const observe=f.observe;
+ f.observe=async(...a)=>{const g=await observe(...a);if(++reads===3)f.tick(1500);return g;};
+ await assert.rejects(f.run(),/REQUIRES_REVIEW/);
+ assert.ok(f.repair.claim);assert.equal(f.repair.outcome.outcome,'unknown');
+ assert.equal(f.calls.filter(c=>c[0]==='upload').length,0);assert.equal(f.calls.at(-1)[0],'release');
+});
+test('cold review: lost outcome after successful upload recovers only by GET next turn',async()=>{
+ const f=await repairFixture();f.rpc.recordStorageRepairOutcome=async()=>{throw Error('lost outcome reply');};
+ await assert.rejects(f.run(),/lost outcome/);assert.equal(f.calls.filter(c=>c[0]==='upload').length,1);
+ f.calls.length=0;assert.deepEqual(await f.run(),{status:'verified',executed:false});
+ assert.ok(!f.calls.some(c=>['upload','repair-claim'].includes(c[0])));
+ assert.equal(f.calls.find(c=>c[0]==='accept')[4],f.original.request_hash);
+});
+test('cold review: source download changes SHA before claim without consuming repair',async()=>{
+ const f=await repairFixture();f.deps.readSource=async()=>{throw Error('MEDIA_SOURCE_BYTES_CHANGED');};
+ await assert.rejects(f.run(),/MEDIA_SOURCE_BYTES_CHANGED/);assert.equal(f.repair.claim,null);
+ assert.ok(!f.calls.some(c=>['upload','repair-claim'].includes(c[0])));
+});
+test('cold review: consumed claim race can accept exact object but cannot POST',async()=>{
+ const f=await repairFixture();f.rpc.claimStorageRepair=async()=>{
+  f.repair.claim={repair_id:'50000000-0000-4000-8000-000000000002'};
+  f.deps.readUploaded=f.normalRead;return {mayExecute:false,replayed:true,status:'consumed'};
+ };
+ assert.deepEqual(await f.run(),{status:'verified',executed:false});
+ assert.ok(!f.calls.some(c=>['upload','repair-outcome'].includes(c[0])));
 });

@@ -17,6 +17,8 @@ export type MediaRpcPermit = { mayExecute: boolean; status?: string; phase?: str
 export type MediaTransportJournal = { chain: Row | null; attempts: Row[]; artifacts: Row[]; desiredSemanticSha256?: string | null };
 export type MediaOperationDiscovery = { identity: MediaIdentity; enabled: boolean; operation: Row; step: Row;
   transport: MediaTransportJournal; provenance: Row[]; desiredSemanticSha256: string | null };
+export type MediaStorageRepairRead = { approved: false; mayExecute: false } | {
+  approved: true; mayExecute: false; expired: boolean; objectPresent: boolean; approval: Row; claim: Row | null; outcome: Row | null };
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const HASH = /^[a-f0-9]{64}$/;
 const PRODUCT = /^gid:\/\/shopify\/Product\/[1-9]\d*$/;
@@ -152,6 +154,49 @@ export function createMediaTransportRpc(productId: string, options: Options = {}
     },
     async read(ref: MediaTransportReference, owner: string, deadline: number) {
       return journal(await rpc.call("read_toptik_media_transport", args(ref, owner), deadline), ref, productId);
+    },
+    // The worker can read/consume a separately approved exact repair scope.
+    // It deliberately has no method to authorize a repair for itself.
+    async readStorageRepair(owner: string, originalAttemptId: string, deadline: number): Promise<MediaStorageRepairRead> {
+      uuid(owner); uuid(originalAttemptId);
+      const value = object(await rpc.call("read_toptik_storage_repair", {
+        p_product_gid: productId, p_lease_owner: owner, p_original_attempt_id: originalAttemptId }, deadline));
+      if (value.mayExecute !== false || typeof value.approved !== "boolean") fail("MEDIA_STORAGE_REPAIR_RESPONSE_INVALID");
+      if (!value.approved) return { approved: false, mayExecute: false };
+      const a = object(value.approval);
+      if (a.product_gid !== productId || a.original_attempt_id !== originalAttemptId || !UUID.test(String(a.approval_id)) ||
+          !HASH.test(String(a.original_request_hash)) || !HASH.test(String(a.source_sha256)) ||
+          !Number.isFinite(Date.parse(String(a.expires_at))) || typeof value.expired !== "boolean" || typeof value.objectPresent !== "boolean") fail("MEDIA_STORAGE_REPAIR_RESPONSE_INVALID");
+      identity(a.identity, productId);
+      for (const entry of [value.claim, value.outcome]) if (entry !== null) object(entry);
+      return value as MediaStorageRepairRead;
+    },
+    async claimStorageRepair(owner: string, approvalId: string, repairId: string, originalAttemptId: string,
+      requestHash: string, storagePath: string, sourceSha256: string, fresh: MediaRpcGuard, deadline: number): Promise<Row> {
+      uuid(owner); uuid(approvalId); uuid(repairId); uuid(originalAttemptId); guard(fresh, productId, rpc.now());
+      if (!HASH.test(requestHash) || !HASH.test(sourceSha256) ||
+          storagePath !== `sync-media/${fresh.target.identity.itemId}/${sourceSha256}.${storagePath.split(".").at(-1)}` ||
+          !/\.(jpg|png|webp)$/.test(storagePath)) fail("MEDIA_STORAGE_REPAIR_SCOPE_INVALID");
+      const value = object(await rpc.call("claim_toptik_storage_repair", { p_product_gid: productId, p_lease_owner: owner,
+        p_approval_id: approvalId, p_repair_id: repairId, p_original_attempt_id: originalAttemptId,
+        p_request_hash: requestHash, p_storage_path: storagePath, p_source_sha256: sourceSha256, p_fresh_guard: fresh }, deadline));
+      if (typeof value.mayExecute !== "boolean" || typeof value.replayed !== "boolean") fail("MEDIA_STORAGE_REPAIR_PERMIT_INVALID");
+      if (value.mayExecute && (value.replayed !== false || value.repairId !== repairId || value.approvalId !== approvalId ||
+          value.originalAttemptId !== originalAttemptId || value.originalRequestHash !== requestHash ||
+          value.storagePath !== storagePath || value.sourceSha256 !== sourceSha256 || value.upsert !== false ||
+          !Number.isFinite(Date.parse(String(value.mayExecuteUntil))) || Date.parse(String(value.mayExecuteUntil)) <= rpc.now())) fail("MEDIA_STORAGE_REPAIR_PERMIT_INVALID");
+      if (!value.mayExecute && !["consumed", "object_present_use_readback"].includes(String(value.status))) fail("MEDIA_STORAGE_REPAIR_PERMIT_INVALID");
+      return value;
+    },
+    async recordStorageRepairOutcome(owner: string, repairId: string, outcome: "accepted" | "unknown",
+      stage: "preflight" | "decode" | "dns" | "upload" | "readback", httpStatus: number | null, deadline: number, requestId = randomUUID()) {
+      uuid(owner); uuid(repairId); uuid(requestId);
+      if (!["accepted", "unknown"].includes(outcome) || !["preflight", "decode", "dns", "upload", "readback"].includes(stage) ||
+          (httpStatus !== null && (!Number.isInteger(httpStatus) || httpStatus < 100 || httpStatus > 599))) fail("MEDIA_STORAGE_REPAIR_RECEIPT_INVALID");
+      const value = object(await rpc.call("record_toptik_storage_repair_outcome", { p_product_gid: productId, p_lease_owner: owner,
+        p_repair_id: repairId, p_request_id: requestId, p_outcome: outcome, p_stage: stage, p_http_status: httpStatus }, deadline));
+      if (value.recorded !== true || value.mayExecute !== false || typeof value.replayed !== "boolean") fail("MEDIA_STORAGE_REPAIR_RESPONSE_INVALID");
+      return value;
     },
     async uncertain(ref: MediaTransportReference, owner: string, receipt: { outcome: "unknown" | "accepted" | "processing"; mediaGid?: string; jobId?: string }, deadline: number, requestId = randomUUID()) {
       uuid(requestId); permits.delete(key(ref));
