@@ -22,9 +22,13 @@ test("public root metadata allows indexing and contains the GSC ownership token"
   ]);
 });
 
-test("robots permits public HTML crawl, blocks API crawl, and advertises the canonical sitemap", () => {
+test("robots permits public HTML and its two render resources, blocks other APIs, and advertises the canonical sitemap", () => {
   const result = robots();
-  assert.deepEqual(result.rules, { userAgent: "*", allow: "/", disallow: "/api/" });
+  assert.deepEqual(result.rules, {
+    userAgent: "*",
+    allow: ["/", "/api/carousel$", "/api/carousel?", "/api/img-trim?"],
+    disallow: "/api/",
+  });
   assert.equal(result.sitemap, "https://landing.toptik.co.il/sitemap.xml");
 });
 
@@ -32,7 +36,7 @@ test("noindex response headers are scoped to admin/account/API surfaces and admi
   const rules = await config.headers();
   assert.ok(!rules.some(rule => rule.source === "/:path*" && !rule.has && rule.headers.some(h => h.key.toLowerCase() === "x-robots-tag")), "no global public noindex header");
   assert.ok(rules.some(rule => rule.source === "/:path*" && rule.has?.some(match => match.type === "host" && match.value === "admin.toptik.co.il") && rule.headers.some(h => h.value === "noindex, nofollow")));
-  for (const route of ["/admin/:path*", "/dashboard/:path*", "/settings/:path*", "/setup/:path*", "/login/:path*", "/reset/:path*", "/auth/:path*", "/api/:path*"]) {
+  for (const route of ["/admin/:path*", "/dashboard/:path*", "/settings/:path*", "/setup/:path*", "/login/:path*", "/reset/:path*", "/auth/:path*", "/api", "/api/:path((?!img-trim$).*)"]) {
     assert.ok(rules.some(rule => rule.source === route && rule.headers.some(h => h.key === "X-Robots-Tag" && h.value === "noindex, nofollow")), `${route} remains excluded`);
   }
 });

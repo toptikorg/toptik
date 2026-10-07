@@ -13,10 +13,12 @@ const nextConfig: NextConfig = {
         source: `/${path}/:path*`,
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       })),
-      {
-        source: "/api/:path*",
+      // The image route sets its own result-specific directive after validating
+      // and decoding a catalog photo. A blanket API header overrides that value.
+      ...["/api", "/api/:path((?!img-trim$).*)"].map((source) => ({
+        source,
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
-      },
+      })),
     ];
   },
   async redirects() {
