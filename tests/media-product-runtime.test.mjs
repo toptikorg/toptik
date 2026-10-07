@@ -71,3 +71,15 @@ test('observation refresh never authorizes changed-source transport; its guard c
  const x=f();active(x);newAngle(x);x.state.chain={status:'uncertain',next_phase:1};x.state.phase={status:'conflict',executed:false};
  const r=await x.run();assert.equal(r.status,'review');assert.equal(r.executed,false);assert.equal(x.calls.filter(c=>c.name==='phase').length,1);
 });
+
+test('only durable verified phase and accepted step expose a continuation checkpoint',async()=>{
+ const x=f();active(x);x.state.chain={status:'ready',next_phase:2};
+ assert.equal((await x.run()).verifiedCheckpoint,`${opId}:0:phase:2`);
+ const y=f();active(y);y.state.chain={status:'verified',next_phase:3};
+ assert.equal((await y.run()).verifiedCheckpoint,`${opId}:0:accepted`);
+ for(const phase of [{status:'uncertain',executed:true},{status:'conflict',executed:true},{status:'lease_busy',executed:false}]){
+  const z=f();active(z);z.state.phase=phase;assert.equal((await z.run()).verifiedCheckpoint,undefined);
+ }
+ const prepared=f();active(prepared);prepared.transport.prepare=async()=>{prepared.state.chain={status:'ready',next_phase:0};prepared.state.time=now+30000;};
+ const r=await prepared.run();assert.equal(r.progressed,true);assert.equal(r.verifiedCheckpoint,undefined);
+});

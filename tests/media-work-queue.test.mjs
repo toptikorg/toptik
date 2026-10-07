@@ -29,3 +29,44 @@ test('explicit review outcome continues independent pending but never claims rev
  assert.equal(f.calls.find(c=>c.name==='finish_toptik_media_work').args.p_status,'review');
  f.state.pending=false;assert.equal((await f.api.drainMediaWork(Date.now()+30000,f.db)).continuationNeeded,false);
 });
+
+test('verified progress advances at most three phases in one claim with one deadline and finish',async()=>{
+ const f=fixture(),runs=[],deadline=Date.now()+40000;
+ const run=async(...a)=>{runs.push(a);return{status:'pending',progressed:true,executed:true,verifiedCheckpoint:'phase:'+runs.length};};
+ const r=await f.api.drainMediaWork(deadline,f.db,run);
+ assert.equal(runs.length,3);assert.equal(r.processed,1);
+ assert.ok(runs.every(a=>a[0]===id.productId&&a[2]===deadline-5000));
+ assert.deepEqual(f.calls.filter(c=>c.name).map(c=>c.name),['claim_toptik_media_work','finish_toptik_media_work','toptik_media_work_pending']);
+});
+
+test('repeated verified cursor stops instead of spinning, while finish retains original generation',async()=>{
+ const f=fixture();let n=0;const run=async()=>{n++;return{status:'pending',progressed:true,executed:false,verifiedCheckpoint:'same:cursor'};};
+ await f.api.drainMediaWork(Date.now()+40000,f.db,run);assert.equal(n,2);
+ const finish=f.calls.find(c=>c.name==='finish_toptik_media_work');assert.equal(finish.args.p_generation,1);assert.equal(finish.args.p_status,'pending');
+});
+
+test('preparation or uncertain execution alone cannot immediately repeat a product',async()=>{
+ for(const outcome of [{status:'pending',progressed:true,executed:false},{status:'pending',progressed:false,executed:true}]){
+  const f=fixture();let n=0;await f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{n++;return outcome;});assert.equal(n,1);
+ }
+});
+
+test('remaining deadline reserve prevents another call even after verified progress',async()=>{
+ const f=fixture();let n=0;await f.api.drainMediaWork(Date.now()+22000,f.db,async()=>{n++;return{status:'pending',progressed:true,executed:true,verifiedCheckpoint:'verified'};});
+ assert.equal(n,1);assert.equal(f.calls.find(c=>c.name==='finish_toptik_media_work').args.p_status,'pending');
+});
+
+test('done, busy, review and uncertain outcomes after progress stop immediately',async()=>{
+ for(const status of ['done','busy','review','pending']){
+  const f=fixture();let n=0;const run=async()=>++n===1?{status:'pending',progressed:true,executed:true,verifiedCheckpoint:'verified'}:{status,progressed:false,executed:status==='pending'};
+  await f.api.drainMediaWork(Date.now()+40000,f.db,run);assert.equal(n,2);
+  assert.equal(f.calls.filter(c=>c.name==='finish_toptik_media_work').length,1);
+  assert.equal(f.calls.find(c=>c.name==='finish_toptik_media_work').args.p_status,status==='done'||status==='review'?status:'pending');
+ }
+});
+
+test('failure after verified progress is durable and never repeated in the same claim',async()=>{
+ const f=fixture();let n=0;const run=async()=>{if(++n===2)throw Error('MEDIA_SOURCE_CHANGED');return{status:'pending',progressed:true,executed:true,verifiedCheckpoint:'verified'};};
+ const result=await f.api.drainMediaWork(Date.now()+40000,f.db,run);assert.equal(n,2);assert.equal(result.reviewed,1);
+ assert.equal(f.calls.find(c=>c.name==='finish_toptik_media_work').args.p_error,'MEDIA_SOURCE_CHANGED');
+});
