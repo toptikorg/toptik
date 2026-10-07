@@ -119,3 +119,22 @@ test("page wires the labeled brand control, URL restoration, combined filtering 
   const css = await read("src/app/globals.css");
   assert.match(css, /\.brand-wordmark\s*\{[^}]*letter-spacing: 5px[^}]*font-size: 13px[^}]*color: #caa46e[^}]*margin-bottom: 8px/s);
 });
+
+
+test("seven exact published products with legacy missing brand specs remain publicly discoverable", () => {
+  const verified = { BAH08450001: "brics", BAH08450006: "brics", BAH08451006: "brics",
+    BAH08454006: "brics", BAH08454078: "brics", BXL43756101: "brics", P10FZT8208Q: "mandarina-duck" };
+  const rows = Object.keys(verified).map(sku => ({ ...items[0], id: sku, catalogNumber: sku, techSpecs: null }));
+  const before = structuredClone(rows);
+  assert.equal(publicCollectionItems(rows).length, 7);
+  for (const row of rows) {
+    assert.equal(brandForItem(row).key, verified[row.catalogNumber]);
+    assert.deepEqual(filterByBrand(rows, verified[row.catalogNumber]).find(i => i.id === row.id), row);
+    assert.equal(publicCollectionItems([{ ...row, isActive: false }]).length, 0);
+    assert.equal(brandForItem({ ...row, catalogNumber: row.catalogNumber + "OTHER" }), null);
+  }
+  assert.deepEqual(rows, before, "brand fallback preserves all product fields and appearance");
+  assert.equal(publicCollectionItems([{ ...items[0], catalogNumber: "ORI05500.909", techSpecs: null }]).length, 0);
+  const conflict = { ...rows[0], techSpecs: { specs: [{ items: [{ label: "brand", value: "Bric's" }, { label: "brand", value: "Mandarina Duck" }] }] } };
+  assert.equal(publicCollectionItems([conflict]).length, 0);
+});

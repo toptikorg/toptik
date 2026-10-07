@@ -25,6 +25,15 @@ const NAMED_BRANDS: Record<string, GalleryBrand> = {
 const REVIEWED_BRAND_BY_SKU: Record<string, string> = {
   // Exact Shopify-owned MD20 color projections. Their typed specs omit the
   // brand label, so public filtering still needs verified identity evidence.
+  // Exact published Shopify variant/vendor and manufacturer source URLs
+  // rechecked 2026-10-07. These rows have no typed brand specification.
+  BAH08450001: "Bric's",
+  BAH08450006: "Bric's",
+  BAH08451006: "Bric's",
+  BAH08454006: "Bric's",
+  BAH08454078: "Bric's",
+  BXL43756101: "Bric's",
+  P10FZT8208Q: "Mandarina Duck",
   P10QMMM1651: "Mandarina Duck",
   P10QMMM1465: "Mandarina Duck",
   P10QMMM109K: "Mandarina Duck",
