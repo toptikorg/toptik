@@ -35,7 +35,7 @@ export default function JournalArchivePage() {
         <section className={styles.archiveGrid} aria-label="מאמרים במגזין">
           {publishableGalleryArticles.map((article) => (
             <article className={styles.archiveCard} key={article.slug}>
-              {article.hero && <Link href={`/journal/${article.slug}`} tabIndex={-1} aria-hidden="true">
+              {article.hero && <Link className={styles.archiveImageLink} href={`/journal/${article.slug}`} tabIndex={-1} aria-hidden="true">
                 <Image className={styles.archiveImage} src={article.hero.src} alt="" width={article.hero.width} height={article.hero.height} sizes="(max-width: 680px) 90vw, 480px" quality={75} />
               </Link>}
               <p className={styles.cardCategory}>{article.category}</p>
