@@ -28,6 +28,24 @@ function same(a: unknown, b: unknown): boolean {
     ? `{${Object.entries(x).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${JSON.stringify(k)}:${stable(v)}`).join(",")}}` : JSON.stringify(x);
   return stable(a) === stable(b);
 }
+/** PostgreSQL error classes that are only returned after the server rolled the
+ * statement's transaction back. Anything else (no SQLSTATE, gateway/PostgREST
+ * codes, timeouts, aborted or unparsable responses) is an UNKNOWN outcome. */
+const ROLLED_BACK: Record<string, string> = { "55P03": "MEDIA_GALLERY_CAS_LOCK_TIMEOUT", "57014": "MEDIA_GALLERY_CAS_STATEMENT_CANCELED",
+  "40001": "MEDIA_GALLERY_CAS_SERIALIZATION_FAILURE", "40P01": "MEDIA_GALLERY_CAS_DEADLOCK", "23505": "MEDIA_GALLERY_CAS_UNIQUE_VIOLATION" };
+const REJECTED = Symbol("galleryCasRejected");
+/** Exact reason when the database definitively rejected (and rolled back) the
+ * call; null when the outcome is unknown and only the commit receipt decides. */
+export function galleryCasRejection(error: unknown): string | null {
+  const value = error && typeof error === "object" ? (error as { [REJECTED]?: unknown })[REJECTED] : undefined;
+  return typeof value === "string" ? value : null;
+}
+function rejection(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const code = "code" in error ? String(error.code) : "", message = "message" in error ? String(error.message) : "";
+  if (code === "P0001") return /^(MEDIA_|SYNC_COPY_)[A-Z0-9_]{1,90}$/.test(message) ? message : "MEDIA_GALLERY_CAS_SQL_REJECTED";
+  return Object.hasOwn(ROLLED_BACK, code) ? ROLLED_BACK[code] : null;
+}
 function cloned<T>(x: T): T { const encoded = JSON.stringify(x); if (!encoded || Buffer.byteLength(encoded) > 2_000_000) fail("MEDIA_GALLERY_RESPONSE_TOO_LARGE"); return JSON.parse(encoded) as T; }
 function safeImageUrl(value: unknown): value is string {
   if (!text(value, 4096) || /[\s\\#]/.test(value)) return false;
@@ -99,15 +117,23 @@ export function createGalleryMediaTransport(expected: MediaIdentity, options: Op
   let client = options.client;
   async function call(name: string, args: Row, deadline: number) {
     const ms = Math.min(maxMs, deadline - now()); if (!Number.isFinite(deadline) || ms <= 0) fail("MEDIA_GALLERY_TIME_BUDGET");
-    const frozen = cloned(args), controller = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined;
+    const frozen = cloned(args), controller = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined, answered: unknown = null;
     try {
       client ??= createSupabaseServiceRoleClient();
       const q = client.rpc(name, frozen), response = await Promise.race([Promise.resolve(q.abortSignal(controller.signal)), new Promise<never>((_, reject) => {
         timer = setTimeout(() => { controller.abort(); reject(new Error("MEDIA_GALLERY_TIME_BUDGET")); }, ms);
       })]);
       if (now() >= deadline) fail("MEDIA_GALLERY_TIME_BUDGET");
-      if (!response || response.error) throw response?.error ?? new Error("MEDIA_GALLERY_RESPONSE_INVALID"); return cloned(response.data);
-    } catch (error) { const message = error && typeof error === "object" && "message" in error ? String(error.message) : ""; throw new Error(/^(MEDIA_|SYNC_COPY_)[A-Z0-9_]{1,90}$/.test(message) ? message : "MEDIA_GALLERY_RPC_FAILED"); }
+      if (response?.error) { answered = response.error; throw response.error; }
+      if (!response) fail("MEDIA_GALLERY_RESPONSE_INVALID"); return cloned(response.data);
+    } catch (error) {
+      const message = error && typeof error === "object" && "message" in error ? String(error.message) : "";
+      const masked = new Error(/^(MEDIA_|SYNC_COPY_)[A-Z0-9_]{1,90}$/.test(message) ? message : "MEDIA_GALLERY_RPC_FAILED");
+      // Only an error object the server actually returned can prove a rollback.
+      const reason = answered === error ? rejection(error) : null;
+      if (reason) Object.defineProperty(masked, REJECTED, { value: reason });
+      throw masked;
+    }
     finally { if (timer) clearTimeout(timer); }
   }
   const args = (owner: string) => { uuid(owner); return { p_product_gid: id.productId, p_lease_owner: owner }; };

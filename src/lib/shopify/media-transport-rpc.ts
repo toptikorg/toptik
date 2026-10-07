@@ -216,6 +216,17 @@ export function createMediaTransportRpc(productId: string, options: Options = {}
       permits.delete(key(ref));
       return status(await rpc.call("hold_toptik_media_transport", { ...args(ref, owner), p_phase_index: ref.phaseIndex, p_attempt_id: attemptId, p_request_id: requestId, p_code: code, p_guard: fresh }, deadline), ["conflict"]);
     },
+    /** Only the worker that consumed this exact Gallery CAS permit, after the
+     * database definitively rejected (rolled back) its apply, may record it. */
+    async rejectGalleryCas(ref: MediaTransportReference, owner: string, attemptId: string, rejection: string, fresh: MediaRpcGuard, deadline: number, requestId = randomUUID()) {
+      uuid(requestId); uuid(attemptId); guard(fresh, productId, rpc.now());
+      if (permits.get(key(ref)) !== attemptId || fresh.target.side !== "gallery" || !/^(MEDIA|SYNC_COPY)_[A-Z0-9_]{1,90}$/.test(rejection)) fail("MEDIA_RPC_REJECTION_WITHOUT_PERMIT");
+      permits.delete(key(ref));
+      const row = status(await rpc.call("reject_toptik_gallery_media_cas", { ...args(ref, owner), p_phase_index: ref.phaseIndex, p_attempt_id: attemptId,
+        p_request_id: requestId, p_rejection: rejection, p_guard: fresh }, deadline), ["conflict"]);
+      if (row.notApplied !== true || row.rejection !== rejection) fail("MEDIA_RPC_RESPONSE_INVALID");
+      return row;
+    },
     async recordPlannerConflict(owner: string, requestId: string, expectedVersion: number, current: MediaPair, conflicts: MediaConflict[], deadline: number) {
       uuid(owner); uuid(requestId); pair(current, productId);
       if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1 || !Array.isArray(conflicts) || !conflicts.length || conflicts.length > 1000) fail("MEDIA_RPC_CONFLICT_INVALID");

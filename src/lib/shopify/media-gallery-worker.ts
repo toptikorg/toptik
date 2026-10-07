@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { mediaSnapshotFingerprint, type MediaIdentity } from "./media-sync-core";
-import { buildGalleryMediaCasIntent, createGalleryMediaTransport } from "./media-gallery-transport";
+import { buildGalleryMediaCasIntent, createGalleryMediaTransport, galleryCasRejection } from "./media-gallery-transport";
 import { createMediaTransportRpc, discoverMediaTransportOperation, type MediaRpcGuard } from "./media-transport-rpc";
 import { createMediaRuntimeObserver } from "./media-runtime-observation";
 import type { MediaTransportReference, MediaTransportResult } from "./media-transport-worker";
@@ -31,7 +31,9 @@ async function bounded<T>(fn: () => Promise<T>, deadline: number, now: () => num
 
 /** One exact SQL media CAS at most. Once a durable attempt exists, only its
  * immutable commit receipt may acknowledge it; absent receipt never reauthorizes
- * apply. The SQL transaction preserves copy, specs, prices and every other SKU. */
+ * apply. A rejection returned by the database (rolled back) is recorded as an
+ * exact durable conflict for review instead of an indefinitely started attempt.
+ * The SQL transaction preserves copy, specs, prices and every other SKU. */
 export async function runPersistedGalleryMediaPhase(reference: MediaTransportReference, deadline: number,
   dependencies: Dependencies = {}): Promise<MediaTransportResult> {
   const now = dependencies.now ?? Date.now, env = dependencies.environment ?? process.env;
@@ -60,7 +62,7 @@ export async function runPersistedGalleryMediaPhase(reference: MediaTransportRef
   const observe = (dependencies.observer ?? createMediaRuntimeObserver)(d), rpc = (dependencies.rpc ?? createMediaTransportRpc)(id.productId);
   const gallery = (dependencies.gallery ?? createGalleryMediaTransport)(id);
   const lease = await bounded(() => rpc.acquire(work), work, now); if (!lease) return { status: "lease_busy", executed: false };
-  let executed = false;
+  let executed = false, unrecorded = false;
   try {
     if (!UUID.test(lease.owner) || !Number.isFinite(lease.expiresAt) || lease.expiresAt < stop + 5000) fail("MEDIA_GALLERY_LEASE_TOO_SHORT");
     const observation = async () => { const value = await bounded(() => observe(id, "gallery", work), work, now); checkGuard(value, id);
@@ -82,7 +84,17 @@ export async function runPersistedGalleryMediaPhase(reference: MediaTransportRef
       try {
         executed = true;
         await bounded(() => gallery.apply(ref, lease.owner, attemptId, randomUUID(), permit.requestHash!, last, work - 4000), work - 4000, now);
-      } catch { /* A missing acknowledgement never permits a second apply. Read the durable transaction receipt. */ }
+      } catch (error) {
+        // An unknown outcome (timeout, lost/unparsable response) never permits a
+        // second apply: fall through to the durable transaction receipt. Only a
+        // rejection the database returned proves the atomic CAS rolled back; record
+        // that exact reason instead of leaving the consumed permit 'started'.
+        const reason = galleryCasRejection(error);
+        if (reason) {
+          try { await bounded(() => rpc.rejectGalleryCas(ref, lease.owner, attemptId, reason, last, work), work, now); return { status: "conflict", executed }; }
+          catch { unrecorded = true; /* SQL refused or was unreachable: the receipt below still decides. */ }
+        }
+      }
     } else if (permit.mayExecute !== false) fail("MEDIA_GALLERY_PERMIT_INVALID");
     else if (permit.status === "verified" || permit.status === "conflict") return { status: permit.status, executed };
     const journal = await bounded(() => rpc.read(ref, lease.owner, work), work, now);
@@ -92,7 +104,7 @@ export async function runPersistedGalleryMediaPhase(reference: MediaTransportRef
     if (a.status === "verified" || a.status === "conflict") return { status: a.status, executed };
     if (!["started", "uncertain"].includes(String(a.status))) fail("MEDIA_GALLERY_RECOVERY_INVALID");
     const commit = await bounded(() => gallery.recover(ref, lease.owner, work), work, now);
-    if (!commit) return { status: "pending", executed };
+    if (!commit) { if (unrecorded) fail("MEDIA_GALLERY_CAS_REJECTION_UNRECORDED"); return { status: "pending", executed }; }
     if (commit.attemptId !== a.attempt_id || commit.requestHash !== a.request_hash) fail("MEDIA_GALLERY_RECOVERY_INVALID");
     if (!commit.readbackMatches) return { status: "conflict", executed };
     const after = await observation();
