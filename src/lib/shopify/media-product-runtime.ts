@@ -12,7 +12,9 @@ import type { ShopifyMediaTransportRead } from "./media-transport-read";
 
 export type MediaWorkEvidence = { gallery?: { actorType: "supabase_user" | "admin_panel_token"; actorId: string };
   shopify?: { kind: "signed_shopify_event"; eventId: string; deliveryId: string } };
-export type MediaProductRun = { status: "disabled" | "done" | "pending" | "review" | "busy"; progressed: boolean; executed: boolean };
+export type MediaProductRun = { status: "disabled" | "done" | "pending" | "review" | "busy"; progressed: boolean; executed: boolean;
+  /** Durable verified cursor only, never a capture, preparation or uncertain write. */
+  verifiedCheckpoint?: string };
 type Dependencies = { planning?: typeof createMediaPlanningRpc; transport?: typeof createMediaTransportRpc; gallery?: typeof createGalleryMediaTransport;
   capture?: typeof captureMediaPlanningPair; discover?: typeof discoverMediaTransportOperation; observer?: typeof createMediaRuntimeObserver;
   phase?: typeof runPersistedMediaPhase; now?: () => number; environment?: { VERCEL_ENV?: string; SHOPIFY_MEDIA_SYNC?: string } };
@@ -111,7 +113,7 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
       // distinguishes copy-only product timestamps from genuine media drift.
       const guard = await (dependencies.observer ?? createMediaRuntimeObserver)(discovered)(context.identity, target, work); check();
       const accepted = await planning.acceptFinal(lease.owner, opId, stepIndex, current, guard, work);
-      return result(accepted.status === "verified" ? "pending" : "review", accepted.status === "verified");
+      return accepted.status === "verified" ? { ...result("pending", true), verifiedCheckpoint: `${opId}:${stepIndex}:accepted` } : result("review");
     }
     if (journal.chain?.status === "conflict" || step.status === "conflict") return result("review");
     if (step.status !== "ready" && galleryObservationNeedsRefresh(context)) {
@@ -141,7 +143,8 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
   // Prepared work is durable and continuation carries it into a fresh budget.
   if (stop - now() < 12000) return result("pending", progressed);
   const phase = await (dependencies.phase ?? runPersistedMediaPhase)(phaseRef!, stop);
-  if (phase.status === "verified") return result("pending", true, phase.executed);
+  if (phase.status === "verified") return { ...result("pending", true, phase.executed),
+    verifiedCheckpoint: `${phaseRef!.operationId}:${phaseRef!.step}:phase:${phaseRef!.phaseIndex}` };
   if (phase.status === "conflict" || phase.status === "scope_missing") return result("review", false, phase.executed);
   if (phase.status === "lease_busy") return result("busy");
   return result(phase.status === "disabled" ? "disabled" : "pending", false, phase.executed);

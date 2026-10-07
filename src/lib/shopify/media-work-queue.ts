@@ -69,15 +69,30 @@ export async function drainMediaWork(deadline: number, client?: Db,
       !Number.isSafeInteger(claim.generation) || Number(claim.generation) < 1 || typeof claim.initialized !== "boolean" || !claim.evidence || typeof claim.evidence !== "object") fail("MEDIA_QUEUE_RESPONSE_INVALID");
   let status = "pending", error: string | null = null, progress = false;
   try {
-    const outcome = claim.initialized ? await run(String(claim.productId), claim.evidence as MediaWorkEvidence, deadline - 5000) :
-      (await initialize(String(claim.productId), true, deadline - 5000, { client: db }), { status: "done", progressed: true, executed: false });
+    const workDeadline = deadline - 5000;
+    let outcome = claim.initialized ? await run(String(claim.productId), claim.evidence as MediaWorkEvidence, workDeadline) :
+      (await initialize(String(claim.productId), true, workDeadline, { client: db }), { status: "done" as const, progressed: true, executed: false });
+    let productProgress = outcome.progressed;
+    const verified = new Set<string>();
+    // Stay inside this one durable claim and absolute deadline. Only a newly
+    // verified phase/step may advance immediately, at most three calls total.
+    // Every call reacquires its own lease and reads the persisted guards again.
+    // Preparation, attempted/uncertain writes and repeated cursors never loop.
+    for (let calls = 1; claim.initialized && calls < 3 && outcome.status === "pending" &&
+        "verifiedCheckpoint" in outcome && typeof outcome.verifiedCheckpoint === "string" &&
+        outcome.verifiedCheckpoint.length > 0 && !verified.has(outcome.verifiedCheckpoint) &&
+        Date.now() + 18000 < workDeadline; calls++) {
+      verified.add(outcome.verifiedCheckpoint);
+      outcome = await run(String(claim.productId), claim.evidence as MediaWorkEvidence, workDeadline);
+      productProgress ||= outcome.progressed;
+    }
     status = outcome.status === "done" ? "done" : outcome.status === "review" ? "review" : "pending";
     if (status === "review") result.reviewed++;
-    if (outcome.progressed) result.processed++;
+    if (productProgress) result.processed++;
     // Completing an already-equal product advances the durable queue even when
     // no media mutation is necessary. Busy/unchanged pending work still stops;
     // do not confuse a no-op completion with a stalled reconciliation.
-    progress = status === "done" || outcome.progressed || outcome.executed;
+    progress = status === "done" || productProgress || outcome.executed;
   } catch (e) {
     const code = e instanceof Error && /^MEDIA_[A-Z0-9_]{1,90}$/.test(e.message) ? e.message : "MEDIA_WORK_FAILED";
     error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE/.test(code) ? "review" : "failed";
