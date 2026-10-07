@@ -7,6 +7,7 @@ import { isPrivateAddress } from "@/lib/catalog-source/source-allowlist";
 import { hasSupabaseAdminEnv, supabaseEnv } from "@/lib/supabase/env";
 import type { StagedMediaSource } from "./media-transport-requests";
 import { stagedMediaUrl } from "./media-transport-requests";
+import { MediaStorageFailure, type MediaStorageStage } from "./media-storage-diagnostics";
 
 const ORIGIN = "https://ekgpaoavsavrtbhlbwdg.supabase.co";
 const PREFIX = `${ORIGIN}/storage/v1/object/public/carousel-media/`;
@@ -56,21 +57,34 @@ async function publicDns(deadline: number) {
   } finally { if (timer) clearTimeout(timer); }
 }
 
-/** Call only after durable one-shot stage_source/gallery_upload permission. No retry or overwrite. */
-export async function uploadImmutableMedia(source: StagedMediaSource, bytes: Uint8Array, deadline: number): Promise<{ outcome: "accepted" }> {
-  source = structuredClone(source);
+/** Cheap deterministic checks run before consuming a one-shot mutation permit. */
+export function assertImmutableMediaUploadPreflight(source: StagedMediaSource, deadline: number): void {
   remaining(deadline);
-  const path = expectedSource(source);
+  expectedSource(source);
   if (process.env.VERCEL_ENV !== "production" || process.env.SHOPIFY_MEDIA_SYNC !== "enabled_v1") fail("MEDIA_STORAGE_DISABLED");
-  if (!hasSupabaseAdminEnv() || supabaseEnv.publicUrl?.replace(/\/$/, "") !== ORIGIN) fail("MEDIA_STORAGE_CONFIGURATION_INVALID");
+  // Match the SDK's whitespace normalization, while retaining the exact pinned project.
+  if (!hasSupabaseAdminEnv() || supabaseEnv.publicUrl?.trim().replace(/\/$/, "") !== ORIGIN) fail("MEDIA_STORAGE_CONFIGURATION_INVALID");
   // The repository bucket permits JPEG/PNG/WebP. AVIF requires a separately
   // verified live bucket capability; don't silently transcode or change policy.
   if (source.mime === "image/avif") fail("MEDIA_STORAGE_MIME_NOT_ENABLED");
+}
+
+/** Call only after durable one-shot stage_source/gallery_upload permission. No retry or overwrite. */
+export async function uploadImmutableMedia(source: StagedMediaSource, bytes: Uint8Array, deadline: number): Promise<{ outcome: "accepted" }> {
+  let stage: MediaStorageStage = "preflight";
+  let httpStatus: number | null = null;
+  try {
+  source = structuredClone(source);
+  assertImmutableMediaUploadPreflight(source, deadline);
+  const path = expectedSource(source);
   const uploadBytes = new Uint8Array(bytes); // Caller mutation cannot change bytes after verification.
+  stage = "decode";
   matches(source, await decode(uploadBytes, deadline));
+  stage = "dns";
   await publicDns(deadline);
   const key = supabaseEnv.serviceRoleKey!;
   let response: Response;
+  stage = "upload";
   try {
     response = await fetch(`${ORIGIN}/storage/v1/object/carousel-media/${path}`, {
       method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(remaining(deadline)),
@@ -81,10 +95,12 @@ export async function uploadImmutableMedia(source: StagedMediaSource, bytes: Uin
       body: uploadBytes,
     });
   } catch { fail("MEDIA_STORAGE_UPLOAD_UNCONFIRMED"); }
+  httpStatus = response.status;
   await response.body?.cancel().catch(() => {});
   if (!response.ok) fail("MEDIA_STORAGE_UPLOAD_UNCONFIRMED");
   remaining(deadline);
   return { outcome: "accepted" }; // Only independent GET/decode can establish the artifact.
+  } catch (error) { throw new MediaStorageFailure(error, stage, httpStatus); }
 }
 
 /** Recovery is read-only, including an existing path after an accepted-but-lost upload response. */
