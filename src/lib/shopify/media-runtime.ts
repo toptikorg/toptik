@@ -55,6 +55,7 @@ export async function runPersistedShopifyMediaPhase(reference: MediaTransportRef
     execute: (request, until) => executeShopifyMediaTransport(request, evidence, until),
     uncertain: async (ref, owner, receipt, until) => { sameReference(ref); await rpc.uncertain(ref, owner, receipt, until); },
     conflict: async (ref, owner, code, guard, until) => { sameReference(ref); await rpc.conflict(ref, owner, code, guard, until); },
+    refresh: async (ref, owner, guard, until) => { sameReference(ref); return rpc.refreshGuard(ref, owner, guard, until); },
     recover: async (ref, owner, recoverJob, until) => {
       sameReference(ref);
       return recoverShopifyMediaPhase(ref, owner, recoverJob, evidence, expectedContentId, until, {

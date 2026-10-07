@@ -122,3 +122,14 @@ test('fresh observation overrunning deadline fails before mutation and releases 
   const f=fixture();f.deps.readShopifyMediaTransport=async()=>{f.tick(29001);return f.before;};await assert.rejects(f.run(),/TIME_BUDGET/);
   assert.ok(!f.calls.some(c=>['begin','execute'].includes(c[0])));assert.equal(f.calls.at(-1)[0],'release');
 });
+
+test('runtime wires product-timestamp-only drift to the fixed-product guard refresh, never begin',async()=>{
+  const f=fixture(),drifted=read.parseMediaTransportResponse({data:{product:{id:identity.productId,handle:identity.productHandle,status:'ACTIVE',publishedOnPublication:true,
+    updatedAt:'2026-09-30T17:00:09Z',mediaCount:{count:1,precision:'EXACT'},media:conn([image(1)]),variants:conn([{id:identity.variantId,sku:identity.exactShopifySku,image:null,media:conn([])}])}}},identity);
+  assert.notEqual(drifted.revision,f.before.revision);
+  f.deps.readShopifyMediaTransport=async(...args)=>{f.calls.push(['shopify-read',...args]);return structuredClone(drifted);};
+  f.rpc.refreshGuard=async(...args)=>{f.calls.push(['refresh',...args]);return {status:'refreshed',refreshed:true};};
+  assert.deepEqual(await f.run(),{status:'pending',executed:false});
+  const refresh=f.calls.find(c=>c[0]==='refresh');assert.deepEqual(refresh[1],ref);assert.equal(refresh[2],owner);assert.deepEqual(refresh[3].target,drifted);assert.equal(refresh[4],now+29000);
+  assert.ok(!f.calls.some(c=>['begin','execute'].includes(c[0])));
+});

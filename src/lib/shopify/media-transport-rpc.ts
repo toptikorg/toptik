@@ -216,6 +216,16 @@ export function createMediaTransportRpc(productId: string, options: Options = {}
       permits.delete(key(ref));
       return status(await rpc.call("hold_toptik_media_transport", { ...args(ref, owner), p_phase_index: ref.phaseIndex, p_attempt_id: attemptId, p_request_id: requestId, p_code: code, p_guard: fresh }, deadline), ["conflict"]);
     },
+    /** Pre-attempt Shopify guard refresh for product updatedAt/revision-only drift.
+     * SQL re-verifies every other fact and never touches a phase with an attempt. */
+    async refreshGuard(ref: MediaTransportReference, owner: string, fresh: MediaRpcGuard, deadline: number, requestId = randomUUID()): Promise<{ status: string; refreshed: boolean }> {
+      uuid(requestId); guard(fresh, productId, rpc.now());
+      if (fresh.target.side !== "shopify" || permits.has(key(ref))) fail("MEDIA_RPC_REFRESH_NOT_ALLOWED");
+      const row = status(await rpc.call("refresh_toptik_media_transport_guard", { ...args(ref, owner), p_phase_index: ref.phaseIndex, p_request_id: requestId, p_fresh_guard: fresh }, deadline),
+        ["refreshed", "unchanged", "attempt_exists"]);
+      if (row.refreshed !== (row.status === "refreshed")) fail("MEDIA_RPC_RESPONSE_INVALID");
+      return { status: String(row.status), refreshed: row.refreshed === true };
+    },
     /** Only the worker that consumed this exact Gallery CAS permit, after the
      * database definitively rejected (rolled back) its apply, may record it. */
     async rejectGalleryCas(ref: MediaTransportReference, owner: string, attemptId: string, rejection: string, fresh: MediaRpcGuard, deadline: number, requestId = randomUUID()) {

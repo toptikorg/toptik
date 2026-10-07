@@ -166,3 +166,21 @@ test('repair outcome includes only safe finite metadata and no phase acceptance'
   await assert.rejects(f.rpc.recordStorageRepairOutcome(owner,repairId,outcome,stage,http,now+1000),/RECEIPT_INVALID/);
  assert.equal(f.calls.length,1);
 });
+
+test('guard refresh is Shopify-only, pre-permit, exact-args and strictly parsed', async () => {
+  const f = fixture(() => ok({ status: 'refreshed', refreshed: true, mayExecute: false, nextPhase: 0 }));
+  assert.deepEqual(await f.rpc.refreshGuard(ref, owner, guard, now + 1000, request), { status: 'refreshed', refreshed: true });
+  assert.equal(f.calls[0].name, 'refresh_toptik_media_transport_guard');
+  assert.deepEqual(f.calls[0].args, { p_product_gid: id.productId, p_lease_owner: owner, p_operation_id: ref.operationId, p_step_index: 0, p_phase_index: 0, p_request_id: request, p_fresh_guard: guard });
+  await assert.rejects(f.rpc.refreshGuard(ref, owner, { ...guard, target: gallery }, now + 1000), /REFRESH_NOT_ALLOWED/);
+  for (const [data, expected] of [[{ status: 'attempt_exists', refreshed: false, mayExecute: false }, false], [{ status: 'unchanged', refreshed: false, mayExecute: false }, false]]) {
+    const g = fixture(() => ok(data)); assert.equal((await g.rpc.refreshGuard(ref, owner, guard, now + 1000)).refreshed, expected);
+  }
+  for (const data of [{ status: 'refreshed', refreshed: false, mayExecute: false }, { status: 'attempt_exists', refreshed: true, mayExecute: false },
+    { status: 'refreshed', refreshed: true, mayExecute: true }, { status: 'conflict', refreshed: false, mayExecute: false }]) {
+    const g = fixture(() => ok(data)); await assert.rejects(g.rpc.refreshGuard(ref, owner, guard, now + 1000), /MEDIA_RPC_RESPONSE_INVALID/);
+  }
+  const p = fixture((name, args) => name === 'begin_toptik_media_transport' ? permit(args) : ok({ status: 'refreshed', refreshed: true, mayExecute: false }));
+  await p.rpc.begin(ref, owner, attempt, intent, guard, now + 1000);
+  await assert.rejects(p.rpc.refreshGuard(ref, owner, guard, now + 1000), /REFRESH_NOT_ALLOWED/); assert.equal(p.calls.length, 1);
+});

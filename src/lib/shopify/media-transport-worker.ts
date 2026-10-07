@@ -27,6 +27,8 @@ export type MediaTransportDependencies = {
   execute(request: MediaTransportRequest, deadline: number): Promise<unknown>;
   uncertain(reference: MediaTransportReference, leaseOwner: string, receipt: { outcome: "unknown" | "accepted" | "processing"; mediaGid?: string; jobId?: string }, deadline: number): Promise<void>;
   conflict(reference: MediaTransportReference, leaseOwner: string, code: string, guard: MediaTransportGuard, deadline: number): Promise<void>;
+  /** Pre-attempt only: SQL replaces the chain guard when ONLY product updatedAt/revision drifted. Never a permit. */
+  refresh(reference: MediaTransportReference, leaseOwner: string, guard: MediaTransportGuard, deadline: number): Promise<{ refreshed: boolean }>;
   /** Read/decode/recover ONLY, then call SQL accept. Must not issue a second external mutation. */
   recover(reference: MediaTransportReference, leaseOwner: string, job: MediaTransportPhaseJob, deadline: number): Promise<ObservationResult>;
 };
@@ -41,6 +43,15 @@ function validateGuard(guard: MediaTransportGuard, job: MediaTransportPhaseJob, 
 }
 function matchesBefore(guard: MediaTransportGuard, job: MediaTransportPhaseJob) {
   return guard.sourceFingerprint === job.request.context.sourceFingerprint && guard.target.revision === job.request.context.targetRevision;
+}
+/** Shopify bumps product.updatedAt asynchronously after media association and for
+ * unrelated copy/SEO edits. That timestamp, and the revision digest covering it,
+ * is the only drift tolerated; every other raw fact and the source must match. */
+function onlyProductTimestampDrift(guard: MediaTransportGuard, job: MediaTransportPhaseJob) {
+  const strip = (read: ShopifyMediaTransportRead) => { const rest: Record<string, unknown> = { ...read }; delete rest.updatedAt; delete rest.revision; return rest; };
+  return guard.target.side === "shopify" && job.before.side === "shopify" && guard.sourceFingerprint === job.request.context.sourceFingerprint &&
+    job.before.revision === job.request.context.targetRevision && guard.target.revision !== job.before.revision &&
+    stable(strip(guard.target)) === stable(strip(job.before));
 }
 function stable(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
@@ -93,6 +104,13 @@ export async function runMediaTransportPhase(reference: MediaTransportReference,
     if (!Number.isFinite(leaseRecord.expiresAt) || leaseRecord.expiresAt < stopAt + 5000) fail("MEDIA_TRANSPORT_LEASE_TOO_SHORT");
     checkTime();
     const guard = await bounded(() => deps.observe(job, workDeadline), workDeadline, deps.now); validateGuard(guard, job, deps.now()); checkTime();
+    if (!matchesBefore(guard, job) && onlyProductTimestampDrift(guard, job)) {
+      // No attempt is created. SQL re-verifies the exact equality under the same lease and
+      // refuses once an attempt exists; the next invocation reloads the refreshed guard.
+      const refreshed = await bounded(() => deps.refresh(reference, lease, guard, workDeadline), workDeadline, deps.now);
+      checkTime();
+      if (refreshed?.refreshed === true) return { status: "pending", executed };
+    }
     // The SQL function checks the live shared lease and returns false for any previous attempt.
     // A timeout here grants no execution authority; its outcome is resolved next invocation.
     const attemptId = randomUUID();
