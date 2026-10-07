@@ -56,3 +56,36 @@ test('5 repeated runs after a recorded not-sent hold never upload',async()=>{
  const f=fixture({dnsFailsAfterBegin:true});
  try{await f.run();f.calls.length=0;assert.deepEqual(await f.run(),{status:'conflict',executed:false});assert.ok(!f.calls.includes('begin'));assert.equal(f.s.posts,0);}finally{f.restore();}
 });
+test('1e budget expiring exactly before fetch is provably unsent: recorded not-sent, never an unknown upload',async()=>{
+ const f=fixture({budgetEndsBeforeFetch:true});
+ try{assert.deepEqual(await f.run(),{status:'conflict',executed:false});assert.equal(f.s.posts,0);
+  assert.deepEqual(holds(f),['MEDIA_TRANSPORT_NOT_SENT_TIME_BUDGET']);assert.deepEqual(uncertain(f),[]);}finally{f.restore();}
+});
+test('4a source download failure happens before the permit and is visible',async()=>{
+ for(const [error,code] of [[Error('MEDIA_SOURCE_READ_FAILED'),/MEDIA_SOURCE_READ_FAILED/],[Error('MEDIA_SOURCE_BYTES_CHANGED'),/MEDIA_SOURCE_BYTES_CHANGED/]]){
+  const f=fixture({readSource:async()=>{throw error;}});
+  try{await assert.rejects(f.run(),code);assert.ok(!f.calls.includes('begin'));assert.equal(f.s.posts,0);assert.equal(f.calls.at(-1),'release');}finally{f.restore();}
+ }
+});
+test('4b readback of a corrupt object after upload is never accepted, never re-posted, and stays visible',async()=>{
+ const f=fixture({post:s=>{s.object=new Uint8Array([137,80,78,71,0,0,0,0]);return new Response('{}',{status:200});}});
+ try{await assert.rejects(f.run(),/MEDIA_STORAGE_(DECODE_FAILED|BYTES_CHANGED|FORMAT_INVALID)/);assert.ok(!f.calls.some(c=>c[0]==='accept'));assert.deepEqual(uncertain(f),['accepted']);
+  f.calls.length=0;await assert.rejects(f.run(),/MEDIA_STORAGE_(DECODE_FAILED|BYTES_CHANGED|FORMAT_INVALID)/);assert.equal(f.s.posts,1);assert.ok(!f.calls.includes('repair-read'));}finally{f.restore();}
+});
+test('4c readback network failure after an accepted upload waits with a reason, then recovers by GET only',async()=>{
+ const f=fixture();let fail=true;const real=globalThis.fetch;
+ globalThis.fetch=async(u,i={})=>i.method!=='POST'&&fail?Promise.reject(Error('ECONNRESET')):real(u,i);
+ try{const first=await f.run();assert.equal(first.status,'pending');assert.equal(first.diagnostic,'MEDIA_STORAGE_OBJECT_NOT_READABLE_AFTER_UPLOAD');
+  fail=false;f.calls.length=0;assert.deepEqual(await f.run(),{status:'verified',executed:false});assert.equal(f.s.posts,1);}finally{globalThis.fetch=real;f.restore();}
+});
+test('6 another variant/color identity is rejected before lease, source read or permit',async()=>{
+ const f=fixture({identityOverride:{...id,variantId:'gid://shopify/ProductVariant/999',exactShopifySku:'ABC-RED'}});
+ try{await assert.rejects(f.run(),/MEDIA_STORAGE_IDENTITY_CHANGED/);assert.deepEqual(f.calls,[]);assert.equal(f.s.posts,0);}finally{f.restore();}
+});
+test('every path keeps the lease contract and only touches transport journal ports',async()=>{
+ const allowed=new Set(['begin','release','uncertain','hold','accept','repair-read','diagnostic','POST']);
+ for(const options of [{},{dnsFailsAfterBegin:true},{post:()=>new Response('',{status:400})},{post:s=>{s.object=new Uint8Array(bytes);throw Error('lost');}}]){
+  const f=fixture(options);try{await f.run().catch(()=>{});assert.equal(f.calls.at(-1),'release');
+   assert.deepEqual(f.calls.map(c=>Array.isArray(c)?c[0]:c).filter(k=>!allowed.has(k)),[]);}finally{f.restore();}
+ }
+});

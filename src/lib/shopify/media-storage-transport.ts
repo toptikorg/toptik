@@ -98,11 +98,14 @@ export async function uploadImmutableMedia(source: StagedMediaSource, bytes: Uin
   stage = "dns";
   await publicDns(deadline);
   const key = supabaseEnv.serviceRoleKey!;
+  // Still before fetch: an exhausted budget here is provably unsent, so keep the
+  // pre-request stage. Only fetch itself may produce an unknown "upload" outcome.
+  const signal = AbortSignal.timeout(remaining(deadline));
   let response: Response;
   stage = "upload";
   try {
     response = await fetch(`${ORIGIN}/storage/v1/object/carousel-media/${path}`, {
-      method: "POST", redirect: "error", cache: "no-store", signal: AbortSignal.timeout(remaining(deadline)),
+      method: "POST", redirect: "error", cache: "no-store", signal,
       // Opaque secret keys authenticate through apikey, not a JWT Bearer token.
       // Keep the legacy service_role header while both key types are supported.
       headers: { apikey: key, ...(key.startsWith("sb_secret_") ? {} : { authorization: `Bearer ${key}` }),

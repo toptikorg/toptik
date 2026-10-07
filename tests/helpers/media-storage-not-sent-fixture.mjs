@@ -12,7 +12,7 @@ const core=url(read('media-sync-core')),coreApi=await import(core);
 const raw=url(read('media-transport-read').replaceAll('"./media-sync-core"',JSON.stringify(core)));
 const requests=url(read('media-transport-requests').replaceAll('"./media-transport-read"',JSON.stringify(raw))),req=await import(requests);
 const allow=url(readFileSync(new URL('src/lib/catalog-source/source-allowlist.ts',root),'utf8'));
-const dns=url('export const lookup=async()=>{const s=globalThis.__storage;s.dnsCalls++;if(s.dnsFails&&s.dnsFails())throw Error("getaddrinfo ENOTFOUND");return s.addresses;}');
+const dns=url('export const lookup=async()=>{const s=globalThis.__storage;s.dnsCalls++;if(s.dnsFails&&s.dnsFails())throw Error("getaddrinfo ENOTFOUND");if(s.afterLookup)s.afterLookup();return s.addresses;}');
 const env=url('export const supabaseEnv={publicUrl:"https://ekgpaoavsavrtbhlbwdg.supabase.co",serviceRoleKey:"test-only-key"}; export const hasSupabaseAdminEnv=()=>true;');
 const diagnostics=url(read('media-storage-diagnostics'));
 const transport=url(read('media-storage-transport').replace('import "server-only";','').replace('"sharp"',JSON.stringify(import.meta.resolve('sharp')))
@@ -36,15 +36,19 @@ const other=await sharp({create:{width:16,height:24,channels:3,background:'#1234
 const sha=createHash('sha256').update(bytes).digest('hex'),content='b'.repeat(64);
 const stagedUrl=req.stagedMediaUrl(id,sha,'image/png');
 
-function fixture({existing=null,post=null,observeFailsAfterBegin=false,dnsFailsAfterBegin=false,addresses=[{address:'8.8.8.8',family:4}],readSource=null,repairApproved=false}={}){
+function fixture({existing=null,post=null,observeFailsAfterBegin=false,dnsFailsAfterBegin=false,addresses=[{address:'8.8.8.8',family:4}],readSource=null,repairApproved=false,budgetEndsBeforeFetch=false,identityOverride=null}={}){
  const calls=[];
  const s=globalThis.__storage={dnsCalls:0,addresses,began:false,object:existing,posts:0,gets:0};
  s.dnsFails=()=>dnsFailsAfterBegin&&s.began;
+ // One-shot: the very next clock read (the fetch timeout computation) is past every deadline.
+ // publicDns's own timer calls remaining() right after lookup() starts (2 clock reads: check,
+ // value). The 3rd read is the fetch timeout's check. Expire the budget exactly there (one-shot).
+ s.afterLookup=()=>{if(budgetEndsBeforeFetch&&s.began&&!s.expired){s.expired=true;const real=Date.now;let reads=0;Date.now=()=>{if(++reads<3)return real();Date.now=real;s.expiredAt=new Error().stack;return real()+3600000;};}};
  const gallery={identity:id,side:'gallery',complete:true,revision:'g1',assets:[{key:'a',contentId:content,alt:'bag',evidenceId:'proof-a'}]};
  const pair={gallery,shopify:{...structuredClone(gallery),side:'shopify',revision:'s1'}};
  const guard=()=>({sourceFingerprint:coreApi.mediaSnapshotFingerprint(pair.shopify),target:gallery,observedAt:new Date().toISOString()});
  const g0=guard();
- const discovery={identity:id,enabled:true,operation:{id:ref.operationId,product_gid:id.productId,status:'running',observed_pair:pair},
+ const discovery={identity:identityOverride??id,enabled:true,operation:{id:ref.operationId,product_gid:id.productId,status:'running',observed_pair:pair},
   step:{operation_id:ref.operationId,step_index:7,status:'started',body:{kind:'replace_reference',target:'gallery',key:'a'},expected_pair:pair},
   transport:{chain:{operation_id:ref.operationId,step_index:7,status:'running',next_phase:0,phases:['gallery_upload','gallery_cas'],current_guard:g0},attempts:[],artifacts:[]},
   provenance:[{evidence_id:'proof-a',product_gid:id.productId,asset_key:'a',side:'shopify',content_id:content,
