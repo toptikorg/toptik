@@ -215,6 +215,10 @@ export function colorCodeFromCatalog(catalogNumber: string | null | undefined): 
 // Every colour of a product shares this code; the colour is the second segment.
 export function modelCodeFromCatalog(catalogNumber: string | null | undefined): string | null {
   if (!catalogNumber) return null;
+  // Compact Mandarina SKUs keep the 5-character model before the 3-character
+  // colour (P10FZT73A46). Match the whole SKU so separated formats stay intact.
+  const compactModel = catalogNumber.toUpperCase().match(/^P10([A-Z0-9]{5})[A-Z0-9]{3}(?:TU)?$/);
+  if (compactModel) return compactModel[1];
   // Split on Bric's dot too (BXL58145.101 → base "BXL58145"), so every colour of
   // a model shares one model code (Mandarina P10SZV24-05J-TU → "SZV24").
   const head = catalogNumber.toUpperCase().split(/[-_/.]/)[0] ?? "";
