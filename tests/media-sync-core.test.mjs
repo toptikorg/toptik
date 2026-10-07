@@ -413,7 +413,11 @@ for (const [name, mutate] of [
   ['a second twin without removal remains in the baseline of the other side', (b, n) => { b.shopify.assets.push(asset('u', { contentId: n.gallery.assets[1].contentId })); n.shopify.assets.push(asset('u', { contentId: n.gallery.assets[1].contentId })); }],
 ]) test(`removed-duplicate exception is narrow: ${name}`, () => {
   const { base, now } = withRemovedDuplicate(); mutate(base, now);
-  let rem; try { rem = [removal(base, 'gallery', 'w')]; } catch { rem = []; }
-  const plan = api.reconcileMedia(base, now, rem);
+  const plan = api.reconcileMedia(base, now, [removal(base, 'gallery', 'w')]);
   assert.ok(plan.conflicts.some(c => c.key === 'x' && c.code === 'MEDIA_TARGET_MAPPING_REQUIRED'), JSON.stringify(plan.conflicts));
+});
+test('removed-duplicate exception mirrors on the Shopify side with signed removal evidence', () => {
+  const base = independent(); base.shopify.assets.push(asset('w', { contentId: base.shopify.assets[1].contentId }));
+  const now = clone(base); now.shopify.assets.pop(); now.shopify.assets[1].alt = 'store local after duplicate removal';
+  const plan = api.reconcileMedia(base, now, [removal(base, 'shopify', 'w')]); noMutation(plan); assert.deepEqual(plan.conflicts, []);
 });
