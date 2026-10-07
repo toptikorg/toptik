@@ -186,7 +186,8 @@ export async function importSourceProduct(
           const supabase = createSupabaseServiceRoleClient();
           const update: Record<string, unknown> = {};
           if (techSpecs) update.tech_specs = techSpecs;
-          if (colors) update.colors = colors;
+          // Color media stays in the proposed item until the guarded catalog CAS.
+          // Scraper output alone is not a visual SKU/color attestation.
           await supabase.from("carousel_items").update(update).eq("id", targetItemId);
         } catch (persistError) {
           console.warn("Side-data persist failed", persistError);

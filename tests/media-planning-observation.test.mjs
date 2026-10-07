@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import{mod,stripped,galleryUrl,readyUrl,ready,core,fixture,id,owner,now,url}from'./helpers/media-planning-fixture.mjs';
 Error.stackTraceLimit=0;
-const api=await import(mod(`import{createHash}from'node:crypto';import{galleryRawToSnapshot}from'${galleryUrl}';import{mediaReadToSnapshot}from'${readyUrl}';${stripped('media-planning-observation')}`));
+const api=await import(mod(`import{createHash}from'node:crypto';import{galleryRawToSnapshot}from'${galleryUrl}';import{mediaReadToSnapshot}from'${readyUrl}';const assertNotDeniedMedia=()=>{};const requireReviewedMedia=()=>{};const isReviewedMediaProof=()=>false;const reviewedMediaRegistry=()=>({});const loadReviewedMedia=async()=>[];${stripped('media-planning-observation')}`));
 function f(){const v=fixture(),calls=[];const deps={now:()=>now,capture:async(i,u,d)=>{calls.push(['decode',i,u,d]);return v.bytes;},shopify:async()=>v.read,gallery:()=>({read:async()=>v.raw})};return {...v,calls,deps,run:()=>api.captureMediaPlanningPair(v.context,owner,now+30000,deps)};}
 test('actual mappers preserve both independent baselines and immutable provenance',async()=>{const x=f(),out=await x.run();assert.deepEqual(out.pair,x.pair);assert.deepEqual(out.refs,x.refs);assert.equal(out.proofs.length,2);assert.equal(x.calls.length,1,'same bytes at same URL decode once');assert.deepEqual(x.calls[0][1],id);});
 test('planning consumes metadata only and never retains or reads source byte buffers',async()=>{

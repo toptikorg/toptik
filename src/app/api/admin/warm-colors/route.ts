@@ -9,6 +9,8 @@ import type { CarouselColor } from "@/lib/carousel/types";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 
+import { assertReviewedColorAssignments } from "@/lib/shopify/reviewed-media-guard";
+
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
@@ -145,6 +147,7 @@ export async function POST(req: NextRequest) {
         coverImagePath: item.cover_image_path,
       });
       if (colors.length === 0) throw new Error("no colours resolved");
+      assertReviewedColorAssignments(item.catalog_number ?? "", colors, item.colors);
 
       const { error: updateError } = await supabase
         .from("carousel_items")

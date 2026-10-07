@@ -6,6 +6,8 @@ import { runPersistedGalleryMediaPhase } from "./media-gallery-worker";
 import { createMediaRuntimeObserver } from "./media-runtime-observation";
 import type { MediaTransportReference, MediaTransportResult } from "./media-transport-worker";
 
+import { assertReviewedPersistedMedia } from "./reviewed-media-policy";
+
 /** The private persisted reference selects an SQL-approved phase; HTTP callers
  * never provide snapshots, bytes, source URLs, GraphQL, bindings or permissions. */
 export async function runPersistedMediaPhase(reference: MediaTransportReference, deadline: number): Promise<MediaTransportResult> {
@@ -14,6 +16,7 @@ export async function runPersistedMediaPhase(reference: MediaTransportReference,
   const ref = structuredClone(reference), stop = Math.min(deadline, Date.now() + 40000);
   const d = await discoverMediaTransportOperation(ref, stop - 1000);
   if (!d.enabled) return { status: "disabled", executed: false };
+  await assertReviewedPersistedMedia(d, stop - 1000);
   const phases = d.transport.chain?.phases;
   if (!Array.isArray(phases)) throw new Error("MEDIA_RUNTIME_CHAIN_NOT_PREPARED");
   const phase = phases[ref.phaseIndex];

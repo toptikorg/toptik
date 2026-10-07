@@ -7,8 +7,12 @@ import { captureMediaSourceBytes, type CapturedMediaBytes } from "./media-source
 import { readReadyShopifyMedia } from "./media-shopify-transport";
 import type { MediaPlanningContext, MediaRegisteredProof, MediaProofRow } from "./media-planning-rpc";
 
+import { assertNotDeniedMedia, requireReviewedMedia, isReviewedMediaProof, reviewedMediaRegistry } from "./reviewed-media-guard";
+
+import { loadReviewedMedia } from "./reviewed-media-store";
+
 type CapturedMediaMetadata = Omit<CapturedMediaBytes, "bytes">;
-type Dependencies = { capture?: typeof captureMediaSourceBytes; shopify?: typeof readReadyShopifyMedia; gallery?: typeof createGalleryMediaTransport; now?: () => number };
+type Dependencies = { capture?: typeof captureMediaSourceBytes; shopify?: typeof readReadyShopifyMedia; gallery?: typeof createGalleryMediaTransport; now?: () => number; reviewLoader?: typeof loadReviewedMedia; observationOnlyBootstrap?: boolean };
 function fail(code: string): never { throw new Error(code); }
 function stable(v: unknown): string { return Array.isArray(v) ? `[${v.map(stable).join(",")}]` : v && typeof v === "object" ?
   `{${Object.entries(v).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, x]) => `${JSON.stringify(k)}:${stable(x)}`).join(",")}}` : JSON.stringify(v); }
@@ -27,16 +31,35 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
   check();
   const galleryPort = (dependencies.gallery ?? createGalleryMediaTransport)(id), shopRead = dependencies.shopify ?? readReadyShopifyMedia;
   const shop = await shopRead(id, deadline); check();
+  // The bootstrap caller may observe existing independent catalogs without
+  // approving propagation. Persisted attach/replace still requires review.
+  const bootstrapObservation = dependencies.observationOnlyBootstrap === true;
+  if (bootstrapObservation && (c.provenance.length || c.baselines.gallery.assets.length || c.baselines.shopify.assets.length))
+    fail("MEDIA_REVIEW_BOOTSTRAP_NOT_EMPTY");
+  let extraReviews: ReturnType<typeof reviewedMediaRegistry> | undefined;
+  const checkReview = async (url: string, bytes: CapturedMediaMetadata, matches: MediaProofRow[]) => {
+    const check = (reviews?: ReturnType<typeof reviewedMediaRegistry>) => {
+      if (!matches.some(p => isReviewedMediaProof(id, p, c.provenance, reviews))) requireReviewedMedia(id, url, bytes.sha256, reviews);
+    };
+    try { check(extraReviews); } catch (error) {
+      if (!(error instanceof Error) || error.message !== "MEDIA_REVIEW_REQUIRED" || extraReviews) throw error;
+      extraReviews = reviewedMediaRegistry(await (dependencies.reviewLoader ?? loadReviewedMedia)(id, deadline));
+      check(extraReviews);
+    }
+  };
   const proofs: MediaRegisteredProof[] = [], captured = new Map<string, CapturedMediaMetadata>();
   const capture = async (url: string) => { check(); let value = captured.get(url); if (!value) {
     const decoded = await (dependencies.capture ?? captureMediaSourceBytes)(id, url, deadline);
     // Planning needs hashes/metadata, never original buffers. Do not retain 8MiB per URL.
     value = { sha256: decoded.sha256, mime: decoded.mime, width: decoded.width, height: decoded.height, byteLength: decoded.byteLength };
     captured.set(url, value); } check(); return value; };
-  const choose = (side: MediaSide, key: string, url: string, platformRef: string, bytes: CapturedMediaMetadata): MediaRegisteredProof => {
+  const choose = async (side: MediaSide, key: string, url: string, platformRef: string, bytes: CapturedMediaMetadata): Promise<MediaRegisteredProof> => {
+    assertNotDeniedMedia(url, bytes.sha256);
     const matches = c.provenance.filter(p => p.side === side && p.asset_key === key && p.proof.url === url &&
       p.proof.decodedSha256 === bytes.sha256 && p.proof.width === bytes.width && p.proof.height === bytes.height &&
       p.proof.mime === bytes.mime && p.proof.byteLength === bytes.byteLength && (side === "gallery" || p.proof.platformRef === platformRef));
+    const unchanged = matches.some(p => c.baselines[side].assets.some(a => a.key === key && a.evidenceId === p.evidence_id && a.contentId === p.content_id));
+    if (!unchanged && !bootstrapObservation) await checkReview(url, bytes, matches);
     let result: MediaRegisteredProof;
     if (matches.length) {
       if (new Set(matches.map(p => p.content_id)).size !== 1) fail("MEDIA_PLANNING_AMBIGUOUS_LINEAGE");
@@ -80,7 +103,7 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
           fail("MEDIA_PLANNING_EQUIVALENT_TARGET_EXISTS");
         }
         if (bytes.width !== image.width || bytes.height !== image.height) fail("MEDIA_PLANNING_IMAGE_DIMENSIONS_CHANGED");
-        const counterpart = choose("shopify", sourceKey, image.url, image.mediaId, bytes);
+        const counterpart = await choose("shopify", sourceKey, image.url, image.mediaId, bytes);
         // A transformed clone's semantic ID can differ from its decoded bytes.
         // New cross-side clone lineage requires the existing transport journal,
         // never an invented operation receipt from this observation-only path.
@@ -88,7 +111,7 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
         key = sourceKey;
       }
     }
-    const p = choose("gallery", key, angle.image_path, `angle:${angle.id}`, bytes);
+    const p = await choose("gallery", key, angle.image_path, `angle:${angle.id}`, bytes);
     angleRefs.push({ role: "angle", angleId: angle.id, key, evidenceId: p.evidenceId });
   }
   const coverBytes = await capture(c.galleryRaw.item.cover_image_path);
@@ -100,7 +123,7 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
     cover = { ...selected, role: "cover", angleId: null };
   } else {
     const key = oldCover && !angleRefs.some(r => r.key === oldCover.key) ? oldCover.key : `g-cover:${id.itemId}`;
-    const p = choose("gallery", key, c.galleryRaw.item.cover_image_path, `cover:${id.itemId}`, coverBytes);
+    const p = await choose("gallery", key, c.galleryRaw.item.cover_image_path, `cover:${id.itemId}`, coverBytes);
     cover = { role: "cover", angleId: null, key, evidenceId: p.evidenceId };
   }
   const refs = [cover, ...angleRefs];
@@ -112,7 +135,7 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
     const key = keys[0] ?? `s-media:${image.mediaId.split("/").at(-1)}`;
     const bytes = await capture(image.url);
     if (bytes.width !== image.width || bytes.height !== image.height) fail("MEDIA_PLANNING_IMAGE_DIMENSIONS_CHANGED");
-    const p = choose("shopify", key, image.url, image.mediaId, bytes);
+    const p = await choose("shopify", key, image.url, image.mediaId, bytes);
     receipts.set(image.mediaId, { identity: id, side: "shopify", mediaId: image.mediaId, imageId: image.imageId, url: image.url,
       width: image.width, height: image.height, platformUpdatedAt: image.updatedAt, decodedSha256: bytes.sha256, byteLength: bytes.byteLength, mime: bytes.mime,
       key, contentId: p.contentId, evidenceId: p.evidenceId, ...(p.proof.operationId ? { importReceiptId: String(p.proof.operationId) } : {}) });
