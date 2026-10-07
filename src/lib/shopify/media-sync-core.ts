@@ -108,6 +108,46 @@ function repositioned(baseline: MediaSnapshot, current: MediaSnapshot, key: stri
     (index < oldIndex) !== (newKeys.indexOf(candidate) < newIndex));
 }
 
+/** A side-local ALT edit on an existing INDEPENDENT image (no counterpart on the
+ * other side, ever, under this key or by content). Everything except ALT must be
+ * byte-for-byte unchanged and the image must keep its place. This is a local
+ * acknowledgement only: it creates no patch, no counterpart and no mapping, and
+ * the baseline still advances only through the ordinary reserved operation and
+ * a fresh verified readback commit. Any doubt keeps MEDIA_TARGET_MAPPING_REQUIRED. */
+function independentLocalAlt(baseline: MediaPair, current: MediaPair, source: MediaSide, key: string, removalKeys: ReadonlySet<string>): boolean {
+  const target = other(source);
+  const before = baseline[source].assets.find(a => a.key === key), now = current[source].assets.find(a => a.key === key);
+  if (!before || !now || before.alt === now.alt) return false;
+  // Field-by-field: key, content and source evidence are unchanged, and no other field exists (order-independent).
+  const fields = (a: MediaAsset) => Object.keys(a).sort().join(",");
+  if (fields(before) !== "alt,contentId,evidenceId,key" || fields(now) !== fields(before) ||
+      before.key !== now.key || before.contentId !== now.contentId || before.evidenceId !== now.evidenceId) return false;
+  // Never on the other side, before or now; no removal/detach history for this key on either side.
+  if ([baseline[target], current[target]].some(s => s.assets.some(a => a.key === key)) ||
+      SIDES.some(side => removalKeys.has(`${side}:${key}`))) return false;
+  // No possible counterpart or alternate key: the same bytes or source proof under any other key, on either side.
+  for (const snapshot of [baseline.gallery, baseline.shopify, current.gallery, current.shopify]) {
+    if (snapshot.assets.some(a => a.key !== key && (a.contentId === now.contentId || a.evidenceId === now.evidenceId))) return false;
+  }
+  // Membership and relative order of this image are unchanged.
+  return !repositioned(baseline[source], current[source], key);
+}
+
+/** Audit view of the local-only ALT acknowledgements a plan relies on. Reported
+ * separately from cross-site synchronization; the reserved plan shape is fixed. */
+export function independentLocalAltChanges(baseline: MediaPair, current: MediaPair, removals: RemovalEvidence[] = [], detached: DetachReceipt[] = []):
+  Array<{ side: MediaSide; key: string; previousAlt: string; currentAlt: string }> {
+  const plan = reconcileMedia(baseline, current, removals, detached);
+  if (plan.conflicts.length) return [];
+  const removalKeys = new Set([...removals.map(r => `${r.side}:${r.key}`), ...detached.map(d => `${d.target}:${d.key}`)]);
+  const result: Array<{ side: MediaSide; key: string; previousAlt: string; currentAlt: string }> = [];
+  for (const side of SIDES) for (const asset of current[side].assets) {
+    if (!independentLocalAlt(baseline, current, side, asset.key, removalKeys)) continue;
+    result.push({ side, key: asset.key, previousAlt: baseline[side].assets.find(a => a.key === asset.key)!.alt, currentAlt: asset.alt });
+  }
+  return result;
+}
+
 /** An empty/error/incomplete read is not a deletion. Explicit removal evidence is mandatory. */
 export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals: RemovalEvidence[] = [], detached: DetachReceipt[] = []): MediaPlan {
   const identity = current.gallery.identity;
@@ -208,7 +248,8 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
       continue;
     }
     if (!c.gallery.has(key) || !c.shopify.has(key)) {
-      for (const source of SIDES) if (!same(semantic(c[source].get(key)), semantic(b[source].get(key)))) {
+      for (const source of SIDES) if (!same(semantic(c[source].get(key)), semantic(b[source].get(key))) &&
+          !independentLocalAlt(baseline, current, source, key, removalKeys)) {
         conflict(key, "membership", "MEDIA_TARGET_MAPPING_REQUIRED");
       }
       continue;
