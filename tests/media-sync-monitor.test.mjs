@@ -129,7 +129,7 @@ for (const [name, props] of [['connection failure', { failure: 'connection' }], 
   ['missing queues', { payload: payload({ override: { combined: null, combinedValid: false } }) }]]) test(`render: ${name} shows unknown everywhere, never zero errors`, () => {
   const html = render(props);
   assert.match(html, /מצב לא ידוע/);
-  assert.equal(counts(html).length, 13, 'all 10 lane counts and 3 extra figures are rendered');
+  assert.equal(counts(html).length, 14, 'all 10 lane counts and 4 separate extra figures are rendered');
   for (const [label, value] of counts(html)) assert.equal(value, 'לא ידוע', label);
   assert.doesNotMatch(html, /אין מוצרים פתוחים|תור התמונות הסתיים/);
   assert.match(html, /פירוט המוצרים אינו זמין/);
@@ -141,6 +141,32 @@ test('render: missing item details stay unknown while fresh queue counts still s
 test('render: a partial list says how many of the open products are shown', () => {
   const html = render({ payload: payload({ extra: [{ lane: 'media', status: 'pending', count: 120 }], items: [{ sku: 'ABC-1', status: 'pending', last_error: null, updated_at: AT, attempts: 0 }], openTotal: 120 }) });
   assert.match(html, /מוצגים 1 הוותיקים מתוך 120 פתוחים/); assert.match(html, /לא נרשמה סיבה/);
+});
+
+test('render: overlapping missing baseline and queue counts are shown separately, never summed as products', () => {
+  const p = payload(); p.queues.data.coverage.missingMediaBaseline = 3; p.queues.data.coverage.missingMediaQueue = 3;
+  const html = render({ payload: p }), displayed = new Map(counts(html));
+  assert.equal(displayed.get('מוצרים ללא בסיס השוואה'), '3');
+  assert.equal(displayed.get('מוצרים ללא שורת תור'), '3');
+  assert.match(html, /אותו מוצר יכול להיכלל בשתי ספירות החוסרים/);
+  assert.doesNotMatch(html, /ללא בסיס השוואה או ללא שורת תור/);
+});
+test('render: disabled copy runtime hides only copy counts and explicitly explains that lane', () => {
+  const p = payload(); p.queues.data.runtime.copy = false;
+  const html = render({ payload: p }), displayed = counts(html);
+  assert.equal(displayed[4][1], '300');
+  assert.deepEqual(displayed.slice(5, 10).map(([, v]) => v), Array(5).fill('לא ידוע'));
+  assert.match(html, /סנכרון הטקסט כבוי בסביבה זו/);
+  assert.equal(lib.mediaVerdict(p, null, NOW).kind, 'queue_complete');
+});
+test('not-sent budget and lease holds require review, not a promised automatic retry', () => {
+  for (const code of ['MEDIA_TRANSPORT_NOT_SENT_TIME_BUDGET', 'MEDIA_TRANSPORT_NOT_SENT_PRECONDITION', 'MEDIA_TRANSPORT_NOT_SENT_LEASE']) {
+    const explanation = lib.explainMediaCode(code);
+    assert.equal(explanation.title, 'ההעלאה לא נשלחה');
+    assert.match(explanation.detail, /נדרשת בדיקה/);
+    assert.doesNotMatch(explanation.detail, /בהפעלה הבאה|ייבדק שוב/);
+  }
+  assert.equal(lib.explainMediaCode('MEDIA_PLANNING_TIME_BUDGET').title, 'זמן ההפעלה הסתיים');
 });
 
 // ---------- route: real handler, stubbed auth/DB ----------

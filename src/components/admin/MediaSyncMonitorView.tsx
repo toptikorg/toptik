@@ -60,13 +60,16 @@ export default function MediaSyncMonitorView({ payload, failure, loading, now, o
 
     <div className={styles.lanes}>
       <Counts title="תור התמונות" counts={queues?.media ?? null} known={!!queues} />
-      <Counts title="תור הטקסט (נפרד)" counts={queues?.copy ?? null} known={!!queues} />
+      <Counts title="תור הטקסט (נפרד)" counts={queues?.copy ?? null} known={!!queues && queues.runtime.copy} />
     </div>
+    {queues && !queues.runtime.copy && <p className={styles.unknownLine}>סנכרון הטקסט כבוי בסביבה זו. מצב תור הטקסט אינו ידוע.</p>}
     <dl className={styles.extra}>
       <div><dt>פעולות תמונה פתוחות</dt><dd>{queues ? queues.mediaOperations.open.toLocaleString("he-IL") : UNKNOWN_VALUE}</dd></div>
       <div><dt>התנגשויות שמחכות לבדיקה</dt><dd>{queues ? queues.mediaOperations.conflict.toLocaleString("he-IL") : UNKNOWN_VALUE}</dd></div>
-      <div><dt>מוצרים ללא בסיס השוואה או ללא שורת תור</dt><dd>{queues ? (queues.coverage.missingMediaBaseline + queues.coverage.missingMediaQueue).toLocaleString("he-IL") : UNKNOWN_VALUE}</dd></div>
+      <div><dt>מוצרים ללא בסיס השוואה</dt><dd>{queues ? queues.coverage.missingMediaBaseline.toLocaleString("he-IL") : UNKNOWN_VALUE}</dd></div>
+      <div><dt>מוצרים ללא שורת תור</dt><dd>{queues ? queues.coverage.missingMediaQueue.toLocaleString("he-IL") : UNKNOWN_VALUE}</dd></div>
     </dl>
+    <p className={styles.small}>אותו מוצר יכול להיכלל בשתי ספירות החוסרים.</p>
 
     <h3 className={styles.sectionTitle}>סיבות עיכוב</h3>
     {!reasons ? <p className={styles.unknownLine}>סיכום הסיבות אינו זמין. {UNKNOWN_VALUE}.</p> :

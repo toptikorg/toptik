@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import MediaSyncMonitorView from "./MediaSyncMonitorView";
-import { applyMonitorResult, initialMonitorState, loadMediaSyncMonitor, startMonitorRequest, type MonitorState } from "@/lib/shopify/media-sync-monitor";
+import { applyMonitorResult, initialMonitorState, loadMediaSyncMonitor, startMonitorRequest, MEDIA_MONITOR_STALE_MS, type MonitorState } from "@/lib/shopify/media-sync-monitor";
 
 /** Loads once on open and on an explicit refresh only: no polling, no writes. */
 export default function MediaSyncMonitor() {
@@ -23,5 +23,29 @@ export default function MediaSyncMonitor() {
     if (started.seq === stateRef.current.latestSeq) { setLoading(false); setNow(Date.now()); }
   }, []);
   useEffect(() => { void load(); return () => controller.current?.abort(); }, [load]);
+  // Expire the displayed evidence locally, without polling the server. A hidden
+  // tab may suspend timers, so returning to it also updates the clock immediately.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = () => {
+      if (timer !== undefined) clearTimeout(timer);
+      const current = Date.now();
+      const deadlines = state.payload ? [state.payload.queues, state.payload.reasons, state.payload.items]
+        .filter(section => section.available)
+        .map(section => section.available ? Date.parse(section.observedAt) + MEDIA_MONITOR_STALE_MS + 1 : NaN)
+        .filter(deadline => Number.isFinite(deadline) && deadline > current) : [];
+      if (deadlines.length) timer = setTimeout(tick, Math.min(...deadlines) - current);
+    };
+    const tick = () => { setNow(Date.now()); schedule(); };
+    const visible = () => { if (document.visibilityState === "visible") tick(); };
+    schedule();
+    document.addEventListener("visibilitychange", visible);
+    window.addEventListener("pageshow", tick);
+    return () => {
+      if (timer !== undefined) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", visible);
+      window.removeEventListener("pageshow", tick);
+    };
+  }, [state.payload]);
   return <MediaSyncMonitorView payload={state.payload} failure={state.failure} loading={loading} now={now} onRefresh={() => { void load(); }} />;
 }

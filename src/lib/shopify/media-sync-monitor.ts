@@ -167,10 +167,10 @@ export function explainMediaCode(value: string | null): Explanation & { code: st
   if (value === null) return { code: null, title: "לא נרשמה סיבה", detail: "השורה לא כוללת קוד עיכוב. אם היא ממתינה זמן רב, יש לבדוק אותה." };
   const known = EXPLAIN[value];
   if (known) return { code: value, ...known };
+  if (/^MEDIA_TRANSPORT_NOT_SENT_/.test(value)) return { code: value, title: "ההעלאה לא נשלחה", detail: "תנאי מוקדם נכשל לפני השליחה. הדבר תועד ונדרשת בדיקה." };
   if (/TIME_BUDGET$/.test(value)) return { code: value, title: "זמן ההפעלה הסתיים", detail: "העבודה תיבדק שוב בהפעלה הבאה." };
   if (/LEASE/.test(value)) return { code: value, title: "עבודה מקבילה על אותו מוצר", detail: "מוצר זה טופל בו זמנית. הוא ייבדק שוב." };
   if (/RPC_FAILED|NETWORK|READ_FAILED/.test(value)) return { code: value, title: "כשל חיבור זמני", detail: "ייבדק שוב בהפעלה הבאה." };
-  if (/^MEDIA_TRANSPORT_NOT_SENT_/.test(value)) return { code: value, title: "ההעלאה לא נשלחה", detail: "תנאי מוקדם נכשל לפני השליחה. הדבר תועד ונדרשת בדיקה." };
   return { code: value, title: "קוד שאינו מתורגם", detail: "יש להעביר את הקוד לבדיקה טכנית." };
 }
 
