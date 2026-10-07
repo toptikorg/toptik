@@ -12,7 +12,7 @@ class TestResponse extends Response {
   static json(value, init) { return Response.json(value, init); }
 }
 const request = {nextUrl:new URL("https://gallery.example/api/img-trim?u=" +
-  encodeURIComponent("https://example.supabase.co/storage/v1/object/public/images/item.jpg") + "&w=720")};
+  encodeURIComponent("https://example.supabase.co/storage/v1/object/public/images/item.jpg") + "&w=720"),headers:new Headers({host:"gallery.example"})};
 
 test("a valid photo stays a decodable image even when crop has no visible subject", async () => {
   const photo = await sharp({create:{width:80,height:80,channels:3,background:"white"}}).png().toBuffer();
