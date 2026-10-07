@@ -47,5 +47,9 @@ export async function prepareExistingCatalogSave(input: unknown, current: Carous
   // Validation above establishes the shape; preserve the original editable
   // payload for the existing repository validator rather than pre-stripping it.
   const original = input as CarouselPayload;
+  // A changed-only save writes exactly the submitted rows and never deletes by
+  // omission, so untouched reservations must not be re-sent (that would write
+  // them and advance their revisions). A full save still has to carry them.
+  if (parsed.saveMode === "changed-only") return { ...original, items: [...original.items] };
   return { ...original, items: [...original.items, ...reserved] };
 }

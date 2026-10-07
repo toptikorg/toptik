@@ -19,6 +19,7 @@ import TypedSpecificationEditor from "@/components/admin/TypedSpecificationEdito
 import NewProductEditor from "@/components/admin/NewProductEditor";
 import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
 import { isShopifyOwnedVariant, SHOPIFY_OWNED_MESSAGE } from "@/lib/shopify/variant-source-policy";
+import { NO_CHANGES_MESSAGE, planChangedOnlySave } from "@/lib/carousel/editor-changes";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -74,6 +75,9 @@ export default function AdminPage() {
   const [pendingUploads, setPendingUploads] = useState(0);
   const pendingUploadsRef = useRef(0);
   const catalogGenerationRef = useRef(0);
+  // Deep copy of the catalog exactly as last loaded/saved; "save all" sends
+  // only what differs from it (see planChangedOnlySave).
+  const savedSnapshotRef = useRef<CarouselPayload | null>(null);
   const [creationSelection, setCreationSelection] = useState<{ id?: string; key: string; create?: boolean } | null>(null);
   const [isWarming, setIsWarming] = useState(false);
   const [batchCatalogInputs, setBatchCatalogInputs] = useState<Record<Vendor, string[]>>({
@@ -279,14 +283,17 @@ export default function AdminPage() {
     if (!authReady || isUnavailableCarouselPayload(nextPayload)) {
       throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
     }
-    // Renumber displayOrder to a clean 1..N by current sort order before saving.
-    // This keeps the saved order identical to what the editor shows AND makes
-    // sure every value satisfies the server's >=1 rule — so a product added "at
-    // the top" (or any stray 0/negative order) always saves.
-    const orderedItems = [...nextPayload.items]
-      .sort((a, b) => a.displayOrder - b.displayOrder)
-      .map((item, index) => ({ ...item, displayOrder: index + 1 }));
-    const payloadToSave: CarouselPayload = { ...nextPayload, items: orderedItems };
+    // Send ONLY products that differ from the catalog as loaded (plus settings).
+    // Never renumber globally: rewriting display_order on untouched products
+    // changes their gallery CAS revision and rejects in-flight media syncs.
+    // An occupied or invalid order is refused with a clear message; nothing is
+    // moved to a position the merchant did not choose.
+    const snapshot = savedSnapshotRef.current;
+    if (!snapshot) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
+    const plan = planChangedOnlySave(snapshot, nextPayload);
+    // Nothing to write: return the input itself (callers compare identity).
+    if (!plan.hasChanges) return nextPayload;
+    const payloadToSave = { settings: nextPayload.settings, items: plan.items, saveMode: "changed-only" as const };
     const res = await fetch("/api/admin/carousel", {
       method: "PUT",
       headers: {
@@ -304,6 +311,7 @@ export default function AdminPage() {
     const fresh: CarouselPayload = await freshResponse.json();
     if (isUnavailableCarouselPayload(fresh)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
     if (generation !== catalogGenerationRef.current) throw new Error("הנתונים נטענו מחדש במהלך השמירה. יש לרענן לפני עריכה נוספת.");
+    savedSnapshotRef.current = structuredClone(fresh);
     return fresh;
   }
 
@@ -323,6 +331,7 @@ export default function AdminPage() {
       const data = await res.json();
       if (isUnavailableCarouselPayload(data)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
       if (generation !== catalogGenerationRef.current) return;
+      savedSnapshotRef.current = structuredClone(data);
       setPayload(data);
       setStatus("מחובר");
       setAuthReady(true);
@@ -521,7 +530,15 @@ export default function AdminPage() {
     try {
       setIsSaving(true);
       setStatus("שומר...");
-      setPayload(await persistPayload(payload));
+      const saved = await persistPayload(payload);
+      if (saved === payload) {
+        // persistPayload returns its own input only when nothing differed from
+        // the loaded catalog — no request was sent.
+        setStatus(NO_CHANGES_MESSAGE);
+        setImportFeedback({ tone: "info", message: NO_CHANGES_MESSAGE });
+        return;
+      }
+      setPayload(saved);
       setStatus("נשמר בגלריה ונשלח לסנכרון.");
       // Any catalog number that now exists as a saved product (e.g. a product
       // entered manually after its auto-import failed) is resolved — drop it
