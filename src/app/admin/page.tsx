@@ -286,7 +286,8 @@ export default function AdminPage() {
     // Send ONLY products that differ from the catalog as loaded (plus settings).
     // Never renumber globally: rewriting display_order on untouched products
     // changes their gallery CAS revision and rejects in-flight media syncs.
-    // Only an edited product with an invalid/colliding order is moved.
+    // An occupied or invalid order is refused with a clear message; nothing is
+    // moved to a position the merchant did not choose.
     const snapshot = savedSnapshotRef.current;
     if (!snapshot) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
     const plan = planChangedOnlySave(snapshot, nextPayload);
@@ -529,7 +530,6 @@ export default function AdminPage() {
     try {
       setIsSaving(true);
       setStatus("שומר...");
-      const snapshotBefore = savedSnapshotRef.current;
       const saved = await persistPayload(payload);
       if (saved === payload) {
         // persistPayload returns its own input only when nothing differed from
@@ -539,19 +539,7 @@ export default function AdminPage() {
         return;
       }
       setPayload(saved);
-      // An edited product whose order was invalid or already taken was moved
-      // to the nearest free slot (no other product is renumbered); say so.
-      // Count only products whose order the merchant edited (or new products):
-      // an untouched product whose order changed elsewhere is not "moved" here.
-      const moved = payload.items.flatMap(item => {
-        const before = snapshotBefore?.items.find(row => row.id === item.id);
-        if (before && before.displayOrder === item.displayOrder) return [];
-        const stored = saved.items.find(row => row.id === item.id);
-        return stored && stored.displayOrder !== item.displayOrder ? [`${item.displayOrder}→${stored.displayOrder}`] : [];
-      });
-      setStatus(moved.length
-        ? `נשמר בגלריה ונשלח לסנכרון. המיקום שהוזן תפוס, ולכן ${moved.length} מוצרים הועברו למקום הפנוי הקרוב (מבוקש→בפועל: ${moved.join(", ")}). מוצרים אחרים לא שונו.`
-        : "נשמר בגלריה ונשלח לסנכרון.");
+      setStatus("נשמר בגלריה ונשלח לסנכרון.");
       // Any catalog number that now exists as a saved product (e.g. a product
       // entered manually after its auto-import failed) is resolved — drop it
       // from the "failed imports" list.

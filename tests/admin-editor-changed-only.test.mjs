@@ -17,7 +17,7 @@ const moduleFrom = source => import(`data:text/javascript;base64,${Buffer.from(s
 const withoutImports = source => source.replace(/^import[^\n]*;\r?\n/gm, "").replace(/^export /gm, "");
 
 const planner = await moduleFrom(read("src/lib/carousel/editor-changes.ts"));
-const { planChangedOnlySave, NO_CHANGES_MESSAGE, PRODUCT_REMOVAL_UNSUPPORTED_MESSAGE } = planner;
+const { planChangedOnlySave, NO_CHANGES_MESSAGE, PRODUCT_REMOVAL_UNSUPPORTED_MESSAGE, DisplayOrderConflictError } = planner;
 const { adminCarouselPayloadSchema } = await moduleFrom(read("src/lib/validation/carousel.ts")
   .replace('from "zod"', `from ${JSON.stringify(import.meta.resolve("zod"))}`));
 
@@ -269,28 +269,39 @@ test("(ii) a pre-existing display-order gap is preserved: nothing is renumbered"
   assert.doesNotMatch(persistSource, /index \+ 1/, "no 1..N renumbering in the editor save");
 });
 
-test("(iii) an invalid or colliding order moves only the edited product, to the nearest free slot", async () => {
+test("(iii) an occupied or invalid order is refused with a clear message; nothing is sent or moved", async () => {
   const f = store();
   const edited = structuredClone(f.savedSnapshotRef.current);
   const target = edited.items[120];
-  target.displayOrder = 5; // already held by an untouched product; 1..40 are all taken
-  await f.persist(edited);
-  assert.deepEqual(f.calls.puts[0].items.map(item => [item.id, item.displayOrder]), [[target.id, 41]]);
-  assert.deepEqual(f.calls.itemWrites, [target.id]);
-  assert.equal(f.rows.find(row => row.id === target.id).display_order, 41);
-  assert.equal(assertUntouched(f, [target.id]), UNTOUCHED);
+  const holder = edited.items.find(item => item.displayOrder === 5);
+  target.displayOrder = 5; // already held by an untouched product
+  target.title = "also renamed";
+  await assert.rejects(f.persist(edited), error => {
+    assert.ok(error instanceof DisplayOrderConflictError);
+    assert.match(error.message, /מיקום 5 של .* תפוס על ידי/);
+    assert.ok(error.message.includes(holder.catalogNumber || holder.title || holder.id), "names the product holding the slot");
+    assert.match(error.message, /לא נשמר דבר והמיקום השמור לא שונה/);
+    assert.match(error.message, /למשל 41/, "suggests the nearest free slot without choosing it");
+    return true;
+  });
+  assert.equal(f.calls.puts.length, 0, "no request");
+  assert.deepEqual(f.calls.itemWrites, []);
+  assert.equal(assertUntouched(f, []), UNTOUCHED + 1);
 
   const snapshot = store().savedSnapshotRef.current;
-  for (const [requested, expected] of [[0, 11], [-3, 11], [2.5, 11], [Number.NaN, 11], [41, 41], [500, 500], [10000, 9999]]) {
+  for (const requested of [0, -3, 2.5, Number.NaN, 10000, 11 - 1]) {
     const next = structuredClone(snapshot);
-    next.items[10].displayOrder = requested; // its own former slot 11 is the first free one at/after 1..10
-    const plan = planChangedOnlySave(snapshot, next);
-    assert.deepEqual(plan.items.map(item => [item.id, item.displayOrder]), [[next.items[10].id, expected]], `requested ${requested}`);
-    assert.deepEqual(plan.repairedOrderIds, requested === expected ? [] : [next.items[10].id]);
+    next.items[10].displayOrder = requested;
+    assert.throws(() => planChangedOnlySave(snapshot, next), DisplayOrderConflictError, `requested ${requested}`);
+  }
+  for (const requested of [41, 500]) {
+    const next = structuredClone(snapshot);
+    next.items[10].displayOrder = requested; // free: kept exactly as typed
+    assert.deepEqual(planChangedOnlySave(snapshot, next).items.map(item => [item.id, item.displayOrder]), [[next.items[10].id, requested]]);
   }
 });
 
-test("(iii) duplicate repair is minimal: unedited products never move, even if they already share an order", () => {
+test("(iii) order checks never involve unedited products, even if they already share an order", () => {
   const item = (id, displayOrder) => ({ id, title: id, displayOrder, isActive: true, coverImagePath: `/${id}.jpg`, angles: [] });
   const settings = { editorRevision: 1, autoplayMs: 3000, transitionMode: "curtain-fade" };
   const snapshot = { settings, items: [item("a", 1), item("b", 2), item("c", 2), item("d", 3), item("e", 7)] };
@@ -301,17 +312,21 @@ test("(iii) duplicate repair is minimal: unedited products never move, even if t
   titleOnly.items[2].title = "c renamed"; // keeps its unchanged (duplicate) order
   assert.deepEqual(planChangedOnlySave(snapshot, titleOnly).items.map(i => [i.id, i.displayOrder]), [["c", 2]]);
 
-  const moved = structuredClone(snapshot);
-  moved.items[4].displayOrder = 1; // collides with unedited "a"
-  moved.items.push(item("new-1", 3), item("new-2", 3)); // collide with "d" and with each other
-  const plan = planChangedOnlySave(snapshot, moved);
-  assert.deepEqual(plan.items.map(i => [i.id, i.displayOrder]), [["e", 4], ["new-1", 5], ["new-2", 6]]);
-  assert.deepEqual(plan.repairedOrderIds.sort(), ["e", "new-1", "new-2"]);
+  const collide = structuredClone(snapshot);
+  collide.items[4].displayOrder = 1; // collides with unedited "a"
+  collide.items.push(item("new-1", 3), item("new-2", 9), item("new-3", 9)); // "d"; and each other
+  assert.throws(() => planChangedOnlySave(snapshot, collide), error => {
+    assert.deepEqual(error.conflicts.map(c => [c.id, c.requested, c.heldBy]),
+      [["e", 1, "a"], ["new-1", 3, "d"], ["new-2", 9, "new-3"], ["new-3", 9, "new-2"]]);
+    assert.ok(error.conflicts.every(c => c.suggestion !== null && ![1, 2, 3, 7, 9].includes(c.suggestion)));
+    return true;
+  });
+  assert.equal(collide.items[4].displayOrder, 1, "the editor state is left as typed, not moved");
 
   const free = structuredClone(snapshot);
   free.items[4].displayOrder = 6; // valid and unique: kept exactly as typed
-  assert.deepEqual(planChangedOnlySave(snapshot, free).items.map(i => [i.id, i.displayOrder]), [["e", 6]]);
-  assert.deepEqual(planChangedOnlySave(snapshot, free).repairedOrderIds, []);
+  free.items.push(item("new-1", 8));
+  assert.deepEqual(planChangedOnlySave(snapshot, free).items.map(i => [i.id, i.displayOrder]), [["e", 6], ["new-1", 8]]);
 });
 
 test("(iv) removing one angle sends only that product and its remaining angles", async () => {
