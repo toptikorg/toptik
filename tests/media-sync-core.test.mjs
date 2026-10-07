@@ -229,9 +229,89 @@ test('ambiguous insertion against reversed target anchors holds the image', () =
   const base = pair([asset('a'),asset('b')], [asset('b'),asset('a')]), now = clone(base); now.gallery.assets.splice(1,0,asset('c'));
   const plan = api.reconcileMedia(base, now); noMutation(plan); assert.equal(plan.conflicts[0].code, 'MEDIA_AMBIGUOUS_INSERT_ORDER');
 });
-test('unmapped one-sided legacy-image edits require mapping, not guessed identity', () => {
-  const base = pair([asset('a'),asset('x')], [asset('a'),asset('y')]), now = clone(base); now.gallery.assets[1].alt = 'changed';
+// POLICY (2026-10-07, replaces the former blanket HOLD for every one-sided legacy edit): an ALT-only edit of an
+// existing INDEPENDENT image is acknowledged locally. No counterpart, no patch, no mapping; reported separately.
+const independent = () => pair([asset('a'), asset('x')], [asset('a'), asset('y')]);
+const commitPlan = plan => pair(clone(plan.projected.gallery), clone(plan.projected.shopify));
+for (const side of ['gallery', 'shopify']) test(`independent ${side} ALT is local: no counterpart, no patch, ordinary commit, idempotent repeat`, () => {
+  const base = independent(), now = clone(base), other = side === 'gallery' ? 'shopify' : 'gallery', key = side === 'gallery' ? 'x' : 'y';
+  now[side].assets[1].alt = 'תיאור נגיש מדויק של הזווית הקיימת';
+  const plan = api.reconcileMedia(base, now); noMutation(plan); assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.projected, { gallery: now.gallery.assets, shopify: now.shopify.assets });
+  assert.ok(!plan.projected[other].some(a => a.key === key));
+  assert.deepEqual(api.independentLocalAltChanges(base, now), [{ side, key, previousAlt: `תמונה ${key}`, currentAlt: 'תיאור נגיש מדויק של הזווית הקיימת' }]);
+  // Readback of exactly the projected pair verifies; a repeated reconciliation on the committed baseline is a no-op.
+  api.verifyMediaReadback(plan, now);
+  const committed = commitPlan(plan), repeat = api.reconcileMedia(committed, clone(committed));
+  noMutation(repeat); assert.deepEqual(repeat.conflicts, []); assert.deepEqual(api.independentLocalAltChanges(committed, clone(committed)), []);
+});
+test('both sides may each keep their own independent local ALT in one plan', () => {
+  const base = independent(), now = clone(base); now.gallery.assets[1].alt = 'g local'; now.shopify.assets[1].alt = 's local';
+  const plan = api.reconcileMedia(base, now); noMutation(plan); assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(api.independentLocalAltChanges(base, now).map(x => [x.side, x.key]), [['gallery', 'x'], ['shopify', 'y']]);
+});
+test('independent ALT comparison is independent of JSONB versus mapper property order', () => {
+  const x = asset('x'), base = pair([asset('a'), { alt: x.alt, key: x.key, contentId: x.contentId, evidenceId: x.evidenceId }], [asset('a'), asset('y')]);
+  const now = clone(base); now.gallery.assets[1] = { key: x.key, contentId: x.contentId, evidenceId: x.evidenceId, alt: 'changed' };
+  const plan = api.reconcileMedia(base, now); noMutation(plan); assert.deepEqual(plan.conflicts, []);
+});
+for (const side of ['gallery', 'shopify']) for (const changed of ['contentId', 'evidenceId']) test(`independent ${side} ALT with changed ${changed} (content/source/colour) still requires mapping`, () => {
+  const base = independent(), now = clone(base); now[side].assets[1].alt = 'changed';
+  now[side].assets[1][changed] = changed === 'contentId' ? 'f'.repeat(64) : 'another-source-proof';
   const plan = api.reconcileMedia(base, now); noMutation(plan); assert.equal(plan.conflicts[0].code, 'MEDIA_TARGET_MAPPING_REQUIRED');
+  assert.deepEqual(api.independentLocalAltChanges(base, now), []);
+});
+test('independent local ALT does not block an unrelated approved new image, which alone is patched', () => {
+  const base = independent(), now = clone(base); now.gallery.assets[1].alt = 'local'; now.shopify.assets.push(asset('z'));
+  const plan = api.reconcileMedia(base, now); assert.deepEqual(plan.conflicts, []);
+  assert.equal(plan.patches.length, 1); assert.equal(plan.patches[0].kind, 'attach'); assert.equal(plan.patches[0].key, 'z');
+  assert.equal(plan.projected.gallery.find(a => a.key === 'x').alt, 'local'); assert.ok(!plan.projected.shopify.some(a => a.key === 'x'));
+});
+test('historical removal evidence for the key keeps the mapping hold', () => {
+  const base = independent(), now = clone(base); now.gallery.assets[1].alt = 'local';
+  const plan = api.reconcileMedia(base, now, [removal(base, 'gallery', 'x')]); assert.equal(plan.conflicts[0].code, 'MEDIA_TARGET_MAPPING_REQUIRED'); noMutation(plan);
+});
+for (const [name, mutate] of [
+  ['same bytes under another key on the other side', (b, n) => { const y = n.shopify.assets[1]; y.contentId = n.gallery.assets[1].contentId; b.shopify.assets[1].contentId = y.contentId; }],
+  ['same source proof under another key on the other side', (b, n) => { n.shopify.assets[1].evidenceId = n.gallery.assets[1].evidenceId; b.shopify.assets[1].evidenceId = n.gallery.assets[1].evidenceId; }],
+  ['alternate key with the same URL/bytes on the same side (cover alias)', (b, n) => { const dup = asset('w', { contentId: n.gallery.assets[1].contentId }); b.gallery.assets.push(clone(dup)); n.gallery.assets.push(dup); }],
+  ['a counterpart under a new key appears now', (b, n) => { n.shopify.assets.push(asset('v', { contentId: n.gallery.assets[1].contentId })); }],
+]) test(`possible counterpart keeps the hold: ${name}`, () => {
+  const base = independent(), now = clone(base); now.gallery.assets[1].alt = 'local'; mutate(base, now);
+  const plan = api.reconcileMedia(base, now); assert.ok(plan.conflicts.some(c => c.key === 'x' && c.code === 'MEDIA_TARGET_MAPPING_REQUIRED'));
+  assert.deepEqual(api.independentLocalAltChanges(base, now), []);
+});
+test('a new counterpart under the SAME key is an existing-target conflict, never a silent local ALT', () => {
+  const base = independent(), now = clone(base); now.gallery.assets[1].alt = 'local'; now.shopify.assets.push(asset('x', { alt: 'store text' }));
+  const plan = api.reconcileMedia(base, now); assert.ok(plan.conflicts.length > 0); assert.deepEqual(api.independentLocalAltChanges(base, now), []);
+});
+test('ALT together with a change of position or membership keeps the hold', () => {
+  const moved = independent(); moved.gallery.assets.push(asset('b')); moved.shopify.assets.push(asset('b'));
+  const now = clone(moved); now.gallery.assets = [now.gallery.assets[1], now.gallery.assets[0], now.gallery.assets[2]]; now.gallery.assets[0].alt = 'local';
+  assert.ok(api.reconcileMedia(moved, now).conflicts.some(c => c.key === 'x' && c.code === 'MEDIA_TARGET_MAPPING_REQUIRED'));
+  const gone = independent(), later = clone(gone); later.gallery.assets[1].alt = 'local'; later.gallery.assets.splice(0, 1);
+  assert.ok(api.reconcileMedia(gone, later).conflicts.some(c => c.code === 'MEDIA_REMOVAL_INTENT_REQUIRED'));
+});
+test('a genuine unrelated conflict is never hidden by a local ALT acknowledgement', () => {
+  const base = independent(), now = clone(base); now.gallery.assets[1].alt = 'local';
+  now.gallery.assets[0].alt = 'gallery edit'; now.shopify.assets[0].alt = 'store edit';
+  const plan = api.reconcileMedia(base, now); assert.deepEqual(plan.conflicts.map(c => [c.key, c.code]), [['a', 'MEDIA_CONCURRENT_FIELD']]);
+  assert.deepEqual(api.independentLocalAltChanges(base, now), []);
+});
+test('stale observation and interrupted/altered commit readback still fail closed', () => {
+  const base = independent(), now = clone(base); now.gallery.assets[1].alt = 'local'; const plan = api.reconcileMedia(base, now);
+  const stale = clone(now); stale.gallery.revision = 'gallery-v2'; stale.gallery.assets[1].alt = 'edited again';
+  assert.throws(() => api.assertMediaPreconditions(plan, stale), /MEDIA_SOURCE_OR_TARGET_CHANGED/);
+  const reverted = clone(now); reverted.gallery.assets[1].alt = base.gallery.assets[1].alt;
+  assert.throws(() => api.verifyMediaReadback(plan, reverted), /MEDIA_READBACK_MISMATCH/);
+  api.assertMediaPreconditions(plan, clone(now));
+});
+test('shared images keep ordinary ALT propagation; identity/colour drift and invalid ALT still fail', () => {
+  const base = independent(), now = clone(base); now.gallery.assets[0].alt = 'shared edit';
+  assert.deepEqual(api.reconcileMedia(base, now).patches, [{ source: 'gallery', target: 'shopify', key: 'a', kind: 'alt', value: 'shared edit' }]);
+  const drift = clone(base); drift.gallery.assets[1].alt = 'local'; drift.gallery.identity.variantId = 'gid://shopify/ProductVariant/1';
+  assert.throws(() => api.reconcileMedia(base, drift), /MEDIA_IDENTITY_DRIFT/);
+  const bad = clone(base); bad.gallery.assets[1].alt = 'bad\u0001alt'; assert.throws(() => api.reconcileMedia(base, bad), /MEDIA_ASSET_INVALID/);
 });
 test('raw SKU, variant, item and handle drift cannot select a different product', () => {
   for (const field of ['variantId','itemId','exactGallerySku','exactShopifySku','productHandle']) {
