@@ -66,7 +66,7 @@ function exactGalleryCopySource(identity: MediaIdentity, copy: Proof, proofs: Pr
       !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(identity.itemId) ||
       [p.width, p.height, p.byteLength].some(v => !Number.isSafeInteger(v) || Number(v) < 1)) return null;
   const extensions: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/avif": "avif" };
-  const extension = typeof p.mime === "string" ? extensions[p.mime] : undefined;
+  const extension = typeof p.mime === "string" && Object.hasOwn(extensions, p.mime) ? extensions[p.mime] : undefined;
   if (!extension) return null;
   const path = `sync-media/${identity.itemId}/${sha}.${extension}`;
   if (p.platformRef !== path || p.url !== `https://ekgpaoavsavrtbhlbwdg.supabase.co/storage/v1/object/public/carousel-media/${path}`) return null;

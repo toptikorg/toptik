@@ -33,6 +33,15 @@ test('all supported same-byte MIME types require their exact storage extension',
  }
 });
 
+test('inherited object property names cannot act as allowed MIME extensions',()=>{
+ for(const mime of ['constructor','toString','__proto__']){
+  const {source,copy}=proofs(),extension=String({}[mime]);
+  source.proof.mime=mime;copy.proof.mime=mime;copy.proof.platformRef=`sync-media/${id.itemId}/${sha}.${extension}`;
+  copy.proof.url=`https://ekgpaoavsavrtbhlbwdg.supabase.co/storage/v1/object/public/carousel-media/${copy.proof.platformRef}`;
+  assert.equal(check(copy,source),false);
+ }
+});
+
 test('copy resolution requires explicit gallery to Shopify sides and matching product key content SHA',()=>{
  const {source,copy}=proofs();
  for(const field of ['side','product_gid','asset_key','content_id']){
