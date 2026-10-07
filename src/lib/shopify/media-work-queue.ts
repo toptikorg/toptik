@@ -57,16 +57,28 @@ export async function recoverMediaWork(deadline = Date.now() + 5000, db?: Db): P
 }
 export async function drainMediaWork(deadline: number, client?: Db,
   run: typeof reconcilePersistedMediaProduct = reconcilePersistedMediaProduct,
-  initialize: typeof bootstrapProductionMedia = bootstrapProductionMedia): Promise<{ processed: number; failed: number; reviewed: number; continuationNeeded: boolean }> {
-  const result = { processed: 0, failed: 0, reviewed: 0, continuationNeeded: false };
+  initialize: typeof bootstrapProductionMedia = bootstrapProductionMedia,
+  excludeProductIds?: readonly string[]): Promise<{ processed: number; failed: number; reviewed: number; continuationNeeded: boolean; claimedProductId?: string }> {
+  const result: { processed: number; failed: number; reviewed: number; continuationNeeded: boolean; claimedProductId?: string } =
+    { processed: 0, failed: 0, reviewed: 0, continuationNeeded: false };
   if (!mediaSyncEnabled()) return result;
+  // Only the server-owned scheduler supplies this invocation-local list. Keep
+  // the original four-argument drain contract for older independent callers.
+  if (excludeProductIds !== undefined && (!Array.isArray(excludeProductIds) || excludeProductIds.length > 10 ||
+      Array.from(excludeProductIds).some(id => typeof id !== "string" || !/^gid:\/\/shopify\/Product\/[1-9]\d*$/.test(id)) ||
+      new Set(excludeProductIds).size !== excludeProductIds.length)) fail("MEDIA_QUEUE_EXCLUSIONS_INVALID");
+  const excluded = excludeProductIds === undefined ? undefined : [...excludeProductIds];
+  if (excluded?.length === 10) return result;
   if (!Number.isFinite(deadline) || deadline - Date.now() < 12000) return result;
   const db = client ?? createSupabaseServiceRoleClient();
-  const claimId = randomUUID(), input = await call(db, "claim_toptik_media_work", { p_claim_id: claimId }, deadline - 5000);
+  const claimId = randomUUID(), input = await call(db, excluded === undefined ? "claim_toptik_media_work" : "claim_toptik_media_work_excluding",
+    { p_claim_id: claimId, ...(excluded === undefined ? {} : { p_exclude_product_gids: excluded }) }, deadline - 5000);
   if (input === null) return result;
   const claim = input as Row;
   if (!claim || claim.claimId !== claimId || !/^gid:\/\/shopify\/Product\/[1-9]\d*$/.test(String(claim.productId)) ||
       !Number.isSafeInteger(claim.generation) || Number(claim.generation) < 1 || typeof claim.initialized !== "boolean" || !claim.evidence || typeof claim.evidence !== "object") fail("MEDIA_QUEUE_RESPONSE_INVALID");
+  if (excluded?.includes(String(claim.productId))) fail("MEDIA_QUEUE_BATCH_REPEATED");
+  result.claimedProductId = String(claim.productId);
   let status = "pending", error: string | null = null, progress = false;
   try {
     const workDeadline = deadline - 5000;
@@ -99,9 +111,12 @@ export async function drainMediaWork(deadline: number, client?: Db,
     if (status === "review") result.reviewed++; else result.failed++;
   }
   await call(db, "finish_toptik_media_work", { p_product_gid: claim.productId, p_claim_id: claimId, p_generation: claim.generation, p_status: status, p_error: error }, deadline - 1000);
-  // Review rows are no longer claimable; failed rows move behind existing
-  // pending work. This RPC counts pending only, so terminal failures do not
-  // create a retry loop when no independent pending product remains.
-  if (progress || status === "review" || status === "failed") result.continuationNeeded = await call(db, "toptik_media_work_pending", {}, deadline) === true;
+  // A blocked product must not stop independent pending identities. The batch
+  // cannot reclaim any visited product, including one with a newer generation.
+  // Failed-only work still never drives a loop. The legacy caller retains its
+  // original conservative continuation behavior during a rolling deployment.
+  if (excluded !== undefined) result.continuationNeeded = await call(db, "toptik_media_work_pending_excluding",
+    { p_exclude_product_gids: [...excluded, String(claim.productId)] }, deadline) === true;
+  else if (progress || status === "review" || status === "failed") result.continuationNeeded = await call(db, "toptik_media_work_pending", {}, deadline) === true;
   return result;
 }
