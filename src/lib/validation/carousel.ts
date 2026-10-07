@@ -78,7 +78,17 @@ export const carouselItemInputSchema = z.object({
 // Keep aligned with save_gallery_items_with_copy_cas's bounded input limit.
 export const MAX_CAROUSEL_ITEMS = 5000;
 
+// "full" (the default when omitted) is the historical whole-catalog save: every
+// stored row must be present. "changed-only" is the merchant editor's save: it
+// carries only the rows the editor changed, never deletes by omission, and may
+// carry zero rows for a settings-only change (checked against the settings
+// revision). Other callers keep the full contract unchanged.
+export const CATALOG_SAVE_MODES = ["full", "changed-only"] as const;
+
 export const adminCarouselPayloadSchema = z.object({
   settings: carouselSettingsSchema,
-  items: z.array(carouselItemInputSchema).min(1).max(MAX_CAROUSEL_ITEMS),
+  items: z.array(carouselItemInputSchema).max(MAX_CAROUSEL_ITEMS),
+  saveMode: z.enum(CATALOG_SAVE_MODES).optional(),
+}).refine(payload => payload.items.length >= 1 || payload.saveMode === "changed-only", {
+  path: ["items"], message: "A full catalog save needs at least one item",
 });

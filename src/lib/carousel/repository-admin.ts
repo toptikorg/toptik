@@ -15,6 +15,10 @@ export async function saveCarouselPayload(input: unknown, mediaActor?: { actorTy
     throw new Error("Cannot save an unavailable catalog. Reload the catalog first.");
   }
   const parsed = adminCarouselPayloadSchema.parse(input);
+  // "changed-only": the merchant editor sends just the rows it changed. Every
+  // per-item check below still applies to each submitted row, but rows that
+  // were not submitted are neither required, versioned, written nor deleted.
+  const changedOnly = parsed.saveMode === "changed-only";
   const supabase = createSupabaseServiceRoleClient();
 
   const normalizedItems = parsed.items.map((item) => ({
@@ -92,7 +96,9 @@ export async function saveCarouselPayload(input: unknown, mediaActor?: { actorTy
     copy_updated_at: string;
   }>).map(row => [row.id, row]));
   const incomingIds = new Set(normalizedItems.map(item => item.id));
-  if (syncSchemaAvailable && [...priorContent.keys()].some(id => !incomingIds.has(id))) {
+  // A changed-only save never deletes by omission (see itemIdsToDelete below),
+  // so the completeness requirement only guards the full-catalog contract.
+  if (syncSchemaAvailable && !changedOnly && [...priorContent.keys()].some(id => !incomingIds.has(id))) {
     // This canary supports copy changes. Deleting a bound row would invalidate
     // its identity/audit history; deletion needs the later archive protocol.
     throw new Error("SYNC_GALLERY_DELETE_REQUIRES_ARCHIVE");
@@ -158,6 +164,24 @@ export async function saveCarouselPayload(input: unknown, mediaActor?: { actorTy
   if (settingsError) throw settingsError;
   }
 
+  if (changedOnly && itemsToSave.length === 0) {
+    // Settings-only change. save_gallery_catalog_atomic requires 1..5000 items,
+    // so apply the two settings columns with a single conditional UPDATE that
+    // is itself the settings CAS: it matches only while the stored revision is
+    // the one the editor loaded (a concurrent settings change bumps it through
+    // gallery_editor_revision_bump). No product row is touched.
+    if (editorSchemaAvailable) {
+      const { data, error } = await supabase.from("carousel_settings")
+        .update({ autoplay_ms: parsed.settings.autoplayMs, transition_mode: parsed.settings.transitionMode })
+        .eq("id", 1).eq("editor_revision", parsed.settings.editorRevision)
+        .select("id");
+      if (error) throw error;
+      if (!data?.length) throw new Error("GALLERY_EDITOR_SETTINGS_STALE_RELOAD");
+    }
+    // Pre-editor schemas already upserted the settings above.
+    return { ok: true };
+  }
+
   // Full row incl. scraped side-data (colours + tech specs) so a "save all"
   // from the admin persists everything an import produced — not just images.
   const fullRow = (item: (typeof itemsToSave)[number]) => ({
@@ -220,10 +244,15 @@ export async function saveCarouselPayload(input: unknown, mediaActor?: { actorTy
     // The database checks these versions under row locks and commits copy plus
     // its durable outbox together. Once the sync schema exists, a missing RPC
     // must fail closed; falling back to UPSERT would reintroduce lost updates.
-    const expectedVersions = Object.fromEntries([
-      ...[...priorContent.values()].map(item => [item.id, item.copy_updated_at]),
-      ...itemsToSave.filter(item => !priorContent.has(item.id)).map(item => [item.id, null]),
-    ]);
+    // Changed-only: version exactly the submitted rows. The copy CAS rejects an
+    // expected-version key for a row absent from p_items (it would read as a
+    // deletion), and an unsubmitted row has nothing to version.
+    const expectedVersions = Object.fromEntries(changedOnly
+      ? itemsToSave.map(item => [item.id, priorContent.get(item.id)?.copy_updated_at ?? null])
+      : [
+        ...[...priorContent.values()].map(item => [item.id, item.copy_updated_at]),
+        ...itemsToSave.filter(item => !priorContent.has(item.id)).map(item => [item.id, null]),
+      ]);
     const result = await supabase.rpc(editorSchemaAvailable ? "save_gallery_catalog_atomic" : "save_gallery_items_with_copy_cas", {
       p_items: itemsToSave.map(fullRow), p_expected_versions: expectedVersions,
       ...(editorSchemaAvailable ? {
@@ -255,7 +284,7 @@ export async function saveCarouselPayload(input: unknown, mediaActor?: { actorTy
   const validItemIds = new Set((upsertedItems ?? []).map((row: { id: string }) => row.id));
 
   const incomingItemIds = new Set(itemsToSave.map((item) => item.id));
-  const itemIdsToDelete = syncSchemaAvailable ? [] : [...priorContent.keys()]
+  const itemIdsToDelete = syncSchemaAvailable || changedOnly ? [] : [...priorContent.keys()]
     .filter(id => !incomingItemIds.has(id));
 
   if (itemIdsToDelete.length > 0) {

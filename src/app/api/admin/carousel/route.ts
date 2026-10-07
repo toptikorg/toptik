@@ -14,6 +14,11 @@ import { assertReviewedCatalogSave } from "@/lib/shopify/reviewed-media-policy";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+const SAFE_RPC_CONFLICT_CODES = new Set([
+  "SYNC_COPY_BUSY_RETRY", "SYNC_COPY_STALE_EDIT_RELOAD", "GALLERY_EDITOR_STALE_RELOAD",
+  "GALLERY_EDITOR_SETTINGS_STALE_RELOAD", "GALLERY_EDITOR_REVISION_REQUIRED",
+]);
+
 export async function GET(req: NextRequest) {
   const denied = await requireGalleryAdmin(req);
   if (denied) return denied;
@@ -51,11 +56,13 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("PUT /api/admin/carousel failed", error);
-    // Supabase RPC errors are plain objects. Surface this safe retry code so a
-    // rolled-back lock conflict remains a 409; do not expose SQL details.
-    const busyCopy = typeof error === "object" && error !== null &&
-      "message" in error && error.message === "SYNC_COPY_BUSY_RETRY";
-    const message = mediaReviewMessage(error) ?? (error instanceof Error ? error.message : busyCopy ? "SYNC_COPY_BUSY_RETRY" : "Failed to save carousel data");
+    // Supabase RPC errors are plain objects. Surface only these exact safe
+    // concurrency codes so a rolled-back lock or revision conflict raised under
+    // the row locks (after the JS pre-check passed) remains a 409; never expose
+    // other SQL details.
+    const rpcCode = typeof error === "object" && error !== null && "message" in error &&
+      typeof error.message === "string" && SAFE_RPC_CONFLICT_CODES.has(error.message) ? error.message : null;
+    const message = mediaReviewMessage(error) ?? (error instanceof Error ? error.message : rpcCode ?? "Failed to save carousel data");
     const status = message.includes("Missing Supabase admin env vars") ? 500 : /STALE|BUSY|REVISION_REQUIRED/.test(message) ? 409 : 400;
     return NextResponse.json({ error: message }, { status });
   }
