@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import{mod,stripped,id,owner}from'./helpers/media-planning-fixture.mjs';
 Error.stackTraceLimit=0;
-const {make}=await import(mod(`import{randomUUID}from'node:crypto';export function make(deps){const{process,createSupabaseServiceRoleClient,reconcilePersistedMediaProduct}=deps;const bootstrapProductionMedia=async(...a)=>deps.bootstrap(...a);${stripped('media-work-queue').replace(/^export /gm,'')}return{mediaSyncEnabled,enqueueGalleryMediaChanges,enqueueShopifyMediaChange,recoverMediaWork,drainMediaWork};}`));
+const {make}=await import(mod(`import{randomUUID}from'node:crypto';export function make(deps){const{process,createSupabaseServiceRoleClient,reconcilePersistedMediaProduct}=deps;const bootstrapProductionMedia=async(...a)=>deps.bootstrap(...a);${stripped('media-work-queue').replace(/^export /gm,'')}return{describeUncodedFailure,mediaSyncEnabled,enqueueGalleryMediaChanges,enqueueShopifyMediaChange,recoverMediaWork,drainMediaWork};}`));
 function fixture(){const calls=[],env={VERCEL_ENV:'production',SHOPIFY_MEDIA_SYNC:'enabled_v1'},state={outcome:{status:'pending',progressed:true,executed:false},pending:true},db={rpc(name,args){calls.push({name,args});return{abortSignal(){return Promise.resolve({data:name.startsWith('claim_toptik_media_work')?{productId:id.productId,claimId:args.p_claim_id,generation:1,initialized:true,evidence:{}}:name.startsWith('toptik_media_work_pending')?state.pending:name==='enqueue_toptik_gallery_media_work'||name==='recover_toptik_media_work'?1:true,error:null});}};}},api=make({process:{env},createSupabaseServiceRoleClient:()=>{calls.push('factory');return db;},reconcilePersistedMediaProduct:async(...a)=>{calls.push(['run',...a]);if(state.error)throw state.error;return state.outcome;}});return{calls,env,state,db,api};}
 const item={id:id.itemId,title:'bag',coverImagePath:'image',isActive:true,description:'text',angles:[{id:owner,angleKey:'front',imagePath:'image',angleOrder:1}]},actor={actorType:'admin_panel_token',actorId:'configured-admin-panel'};
 test('default-off does not initialize service client or call any port',async()=>{const f=fixture();delete f.env.SHOPIFY_MEDIA_SYNC;await f.api.drainMediaWork(Date.now()+30000);assert.equal(await f.api.enqueueGalleryMediaChanges([],[],actor),0);assert.equal(await f.api.enqueueShopifyMediaChange(id.productId,owner),false);assert.equal(await f.api.recoverMediaWork(),0);assert.deepEqual(f.calls,[]);});
@@ -126,16 +126,29 @@ test('pending transport diagnostic is recorded as last_error while the row stays
   const g=fixture();g.state.outcome=outcome;await g.api.drainMediaWork(Date.now()+30000,g.db);assert.equal(g.calls.find(c=>c.name==='finish_toptik_media_work').args.p_error,null);}
 });
 
-test('an uncoded failure is logged with kind and a scrubbed first line only',async()=>{
- const f=fixture();const logs=[];const orig=console.error;console.error=(...a)=>logs.push(a);
- try{await f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw new TypeError("Cannot read properties of undefined (reading 'x') at https://example.supabase.co/rest?apikey=abcdefghijklmnopqrstuvwxyz0123456789\nstack line");});}
- finally{console.error=orig;}
- assert.equal(f.calls.find(c=>c.name==='finish_toptik_media_work').args.p_error,'MEDIA_WORK_FAILED');
- const entry=logs.find(l=>l[0]==='toptik.media.work_failed');assert.ok(entry);assert.equal(entry[1].kind,'TypeError');
- assert.ok(!/https?:|apikey=abcdefghij|stack line/.test(entry[1].message),entry[1].message);assert.match(entry[1].message,/Cannot read properties of undefined/);
+const capture=async(fn)=>{const logs=[];const orig=console.error;console.error=(...a)=>logs.push(a);try{await fn();}finally{console.error=orig;}return logs;};
+test('an uncoded failure logs only its kind and an allowlisted message; finish is unchanged',async()=>{
+ const f=fixture();const logs=await capture(()=>f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw new TypeError("Cannot read properties of undefined (reading 'x')");}));
+ const fin=f.calls.find(c=>c.name==='finish_toptik_media_work').args;assert.equal(fin.p_error,'MEDIA_WORK_FAILED');assert.equal(fin.p_status,'failed');
+ const entry=logs.find(l=>l[0]==='toptik.media.work_failed');assert.equal(entry[1].kind,'TypeError');assert.equal(entry[1].message,'<omitted>','quotes are not allowlisted');
 });
 test('a coded MEDIA_ failure is not logged by the queue',async()=>{
- const f=fixture();const logs=[];const orig=console.error;console.error=(...a)=>logs.push(a);
- try{await f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw new Error('MEDIA_SOURCE_READ_FAILED');});}finally{console.error=orig;}
+ const f=fixture();const logs=await capture(()=>f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw new Error('MEDIA_SOURCE_READ_FAILED');}));
  assert.ok(!logs.some(l=>l[0]==='toptik.media.work_failed'));
+});
+test('a hostile error object can never break the failure path',async()=>{
+ for(const bad of [Object.assign(new Error('x'),{name:undefined}),Object.assign(new Error(),{message:{toString(){throw new Error('boom');}}}),{message:'not an Error'},null,42]){
+  const f=fixture();await capture(()=>f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw bad;}));
+  const fin=f.calls.find(c=>c.name==='finish_toptik_media_work');assert.ok(fin,'finish still runs');assert.equal(fin.args.p_error,'MEDIA_WORK_FAILED');
+ }
+});
+test('describeUncodedFailure allowlists only safe messages',()=>{
+ const d=fixture().api.describeUncodedFailure;
+ const cases=[[new TypeError("Cannot read properties of undefined (reading x)"),"Cannot read properties of undefined (reading x)"],[new Error("fetch failed"),"fetch failed"],[new Error("SHOPIFY_API_HTTP_500"),"SHOPIFY_API_HTTP_500"],
+  [new Error("jane.doe@example.com rejected"),"<omitted>"],[new Error("key=sk_live_short123 token=abc123"),"<omitted>"],[new Error("Bearer shpat_short1234"),"<omitted>"],
+  [new Error("connect postgres://postgres:hunter2pass@db.example"),"<omitted>"],[new Error("Unexpected token < in JSON at position 0 \"<!DOCTYPE\""),"<omitted>"],[new Error("abc%3Ddef%2Fghi"),"<omitted>"],
+  [new Error("fetch failed\nhttps://x.example/?apikey=secret"),"fetch failed"]];
+ for(const [e,want] of cases) assert.equal(d(e).message,want,String(e.message));
+ assert.deepEqual(d({message:'x'}),{kind:'object',message:'<omitted>'});
+ assert.equal(d(Object.assign(new Error('x'),{name:undefined})).kind,'Error');
 });
