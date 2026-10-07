@@ -848,7 +848,13 @@ body {
 }
 
 .catalog-carousel .swiper {
+  /* hidden still scrolls on focus, adding a native RTL offset to Swiper's transform. */
+  overflow: clip;
   padding-bottom: 32px;
+}
+
+.catalog-carousel .catalog-grid[inert] {
+  pointer-events: none;
 }
 
 .catalog-carousel {

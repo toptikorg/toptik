@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { A11y, Keyboard, Virtual } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
@@ -11,6 +11,7 @@ import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
 import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
 import { productImageIdentity } from "@/lib/carousel/product-image";
 import { statusLine } from "@/lib/carousel/selection-summary";
+import { syncSlideInteraction } from "@/lib/carousel/slide-interaction";
 import type { CategoryKey } from "@/lib/carousel/categories";
 import { ReliableProductImage, type ProductImageState } from "./ReliableProductImage";
 
@@ -25,9 +26,9 @@ type CarouselGridProps = {
   /** Deprecated and ignored: the gallery no longer moves by itself. Kept so callers still compile. */
   autoplayMs?: number;
   /** Preview-only choice of control placement: "side" (arrows on the card sides) or "bar" (bottom control bar). */
-  onOpenItem: (item: CarouselItem) => void;
-  onOpenTechSpecs: (item: CarouselItem) => void;
-  onNavigateToItem: (itemId: string) => void;
+  onOpenItem: (item: CarouselItem, opener?: HTMLElement) => void;
+  onOpenTechSpecs: (item: CarouselItem, opener?: HTMLElement) => void;
+  onNavigateToItem: (itemId: string, opener?: HTMLElement) => void;
 };
 
 // Warm a card's first few angle images when the user signals open-intent
@@ -95,9 +96,9 @@ export function CatalogCard({
 }: {
   item: CarouselItem;
   swatches: ResolvedSwatch[];
-  onOpenItem: (item: CarouselItem) => void;
-  onOpenTechSpecs: (item: CarouselItem) => void;
-  onNavigate: (itemId: string) => void;
+  onOpenItem: (item: CarouselItem, opener?: HTMLElement) => void;
+  onOpenTechSpecs: (item: CarouselItem, opener?: HTMLElement) => void;
+  onNavigate: (itemId: string, opener?: HTMLElement) => void;
   /** false = editorial embed: keep the image, details and store button, but no
    *  overlays or dialogs of any kind (nothing an extension could block). */
   interactive?: boolean;
@@ -141,7 +142,7 @@ export function CatalogCard({
               className="catalog-card-tech-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                onOpenTechSpecs(item);
+                onOpenTechSpecs(item, e.currentTarget);
               }}
               aria-label={`נתונים טכניים עבור ${item.title}`}
             >
@@ -156,12 +157,16 @@ export function CatalogCard({
           onMouseEnter={() => { preloadAngleImages(item); preloadCardSwatches(swatches); }}
           onFocus={() => { preloadAngleImages(item); preloadCardSwatches(swatches); }}
           onTouchStart={() => { preloadAngleImages(item); preloadCardSwatches(swatches); }}
-          onClick={interactive ? () => onOpenItem(item) : undefined}
+          onClick={interactive ? (event) => onOpenItem(item, event.currentTarget) : undefined}
           role={interactive ? "button" : undefined}
           tabIndex={interactive ? 0 : undefined}
           aria-label={interactive ? `פתח זוויות מוצר ${item.title}` : undefined}
           onKeyDown={interactive ? (event) => {
-            if (event.key === "Enter" || event.key === " ") onOpenItem(item);
+            if (event.target !== event.currentTarget) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onOpenItem(item, event.currentTarget);
+            }
           } : undefined}
         >
           <ReliableProductImage
@@ -187,7 +192,7 @@ export function CatalogCard({
             onTouchStart={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              onOpenItem(item);
+              onOpenItem(item, e.currentTarget);
             }}
             aria-label={`הגדלה וזוויות נוספות עבור ${item.title}`}
           >
@@ -218,7 +223,7 @@ export function CatalogCard({
                         e.stopPropagation();
                         // Each swatch IS its own product — navigate to it (unless
                         // it's the colour already shown on this card).
-                        if (!swatch.isCurrent && swatch.itemId) onNavigate(swatch.itemId);
+                        if (!swatch.isCurrent && swatch.itemId) onNavigate(swatch.itemId, e.currentTarget);
                       }}
                       onKeyDown={(e) => e.stopPropagation()}
                     />
@@ -257,6 +262,13 @@ export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTe
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const movingRef = useRef(false);
+  const syncInteraction = (swiper: SwiperType, moving: boolean) => {
+    movingRef.current = moving;
+    syncSlideInteraction(swiper.el, swiper.activeIndex, moving);
+    setIsTransitioning(moving);
+  };
   const total = visibleItems.length;
   const first = Math.min(total, activeIndex * perPage + 1);
   const last = Math.min(total, (activeIndex + 1) * perPage);
@@ -282,7 +294,7 @@ export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTe
           aria-label="מוצרים קודמים"
           aria-disabled={prevDisabled}
           disabled={prevDisabled}
-          onClick={() => swiperInstance?.slidePrev()}
+          onClick={() => { if (!movingRef.current) swiperInstance?.slidePrev(); }}
         >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
           <span className="carousel-navrow-label">מוצרים קודמים</span>
@@ -300,7 +312,7 @@ export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTe
           aria-label="מוצרים נוספים"
           aria-disabled={nextDisabled}
           disabled={nextDisabled}
-          onClick={() => swiperInstance?.slideNext()}
+          onClick={() => { if (!movingRef.current) swiperInstance?.slideNext(); }}
         >
           <span className="carousel-navrow-label">מוצרים נוספים</span>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
@@ -319,20 +331,40 @@ export function CarouselGrid({ items, brandLabel, category, onOpenItem, onOpenTe
         autoHeight={true}
         initialSlide={0}
         speed={450}
+        preventInteractionOnTransition={true}
         navigation={false}
         pagination={false}
         keyboard={{ enabled: true, onlyInViewport: true }}
         a11y={{
           enabled: true,
+          scrollOnFocus: false,
           prevSlideMessage: "מוצרים קודמים",
           nextSlideMessage: "מוצרים הבאים",
         }}
-        onSwiper={(s) => { setSwiperInstance(s); setIsBeginning(s.isBeginning); setIsEnd(s.isEnd); setActiveIndex(s.activeIndex); }}
-        onSlideChange={(s) => { setIsBeginning(s.isBeginning); setIsEnd(s.isEnd); setActiveIndex(s.activeIndex); }}
+        onSwiper={(s) => { setSwiperInstance(s); setIsBeginning(s.isBeginning); setIsEnd(s.isEnd); setActiveIndex(s.activeIndex); syncInteraction(s, false); }}
+        onSlideChange={(s) => { setIsBeginning(s.isBeginning); setIsEnd(s.isEnd); setActiveIndex(s.activeIndex); syncInteraction(s, true); }}
+        onBeforeTransitionStart={(s, speed) => syncInteraction(s, speed > 0)}
+        onTransitionEnd={(s) => syncInteraction(s, false)}
+        onSliderFirstMove={(s) => syncInteraction(s, true)}
+        onTouchEnd={(s) => requestAnimationFrame(() => {
+          // A short/reversed gesture may settle without a slide change.
+          if (!s.destroyed && !s.animating) syncInteraction(s, false);
+        })}
       >
         {pages.map((page, pageIndex) => (
           <SwiperSlide key={`page-${pageIndex}`} virtualIndex={pageIndex}>
-            <div className="catalog-grid">
+            <div
+              className="catalog-grid"
+              inert={pageIndex !== activeIndex || isTransitioning}
+              aria-hidden={pageIndex !== activeIndex || isTransitioning || undefined}
+              onClickCapture={(event) => {
+                // Also cover the interval before the inert render commits.
+                if (movingRef.current || swiperInstance?.animating || pageIndex !== swiperInstance?.activeIndex) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
+              }}
+            >
               {page.map((item) => (
                 <CatalogCard
                   key={productImageIdentity(item)}

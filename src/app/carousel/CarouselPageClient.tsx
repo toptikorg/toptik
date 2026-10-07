@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CarouselGrid } from "@/components/carousel/CarouselGrid";
 import BrandPicker from "@/components/carousel/BrandPicker";
@@ -35,6 +35,8 @@ export default function CarouselPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<CarouselItem | null>(null);
   const [techSpecsItem, setTechSpecsItem] = useState<CarouselItem | null>(null);
+  const productOpener = useRef<HTMLElement | null>(null);
+  const specsOpener = useRef<HTMLElement | null>(null);
   const [requestedSeries, setRequestedSeries] = useState(() =>
     typeof window === "undefined" ? "all" : new URL(window.location.href).searchParams.get("series") ?? "all");
   const [requestedBrand, setRequestedBrand] = useState<string | null>(() => {
@@ -184,7 +186,8 @@ export default function CarouselPageClient() {
   const activeBrand = parseBrandParam(requestedBrand, brands);
   const brandLabel = brands.find(brand => brand.key === activeBrand)?.label ?? "כל המותגים";
 
-  const onOpenItem = useCallback((item: CarouselItem) => {
+  const onOpenItem = useCallback((item: CarouselItem, opener?: HTMLElement) => {
+    productOpener.current = opener ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     const orderedAngles = [...item.angles].sort((a, b) => a.angleOrder - b.angleOrder);
     setSelectedItem({ ...item, angles: orderedAngles });
   }, []);
@@ -192,18 +195,36 @@ export default function CarouselPageClient() {
   // Clicking a colour swatch navigates to THAT colour's product (each colour is
   // its own catalog item). Opens/replaces the product modal with the target.
   const onNavigateToItem = useCallback(
-    (id: string) => {
+      (id: string, opener?: HTMLElement) => {
       const target = payload.items.find((i) => i.id === id);
       if (!target) return;
+        // Keep the original card when a modal swatch replaces the open product.
+        if (!selectedItem) productOpener.current = opener ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
       const orderedAngles = [...target.angles].sort((a, b) => a.angleOrder - b.angleOrder);
       setSelectedItem({ ...target, angles: orderedAngles });
     },
-    [payload.items],
+    [payload.items, selectedItem],
   );
 
-  const onCloseModal = useCallback(() => setSelectedItem(null), []);
-  const onOpenTechSpecs = useCallback((item: CarouselItem) => setTechSpecsItem(item), []);
-  const onCloseTechSpecs = useCallback(() => setTechSpecsItem(null), []);
+  const restoreOpener = useCallback((opener: HTMLElement | null) => {
+    requestAnimationFrame(() => {
+      if (opener?.isConnected && !opener.closest("[inert], [aria-hidden='true']")) {
+        opener.focus({ preventScroll: true });
+      }
+    });
+  }, []);
+  const onCloseModal = useCallback(() => {
+    setSelectedItem(null);
+    restoreOpener(productOpener.current);
+  }, [restoreOpener]);
+  const onOpenTechSpecs = useCallback((item: CarouselItem, opener?: HTMLElement) => {
+    specsOpener.current = opener ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setTechSpecsItem(item);
+  }, []);
+  const onCloseTechSpecs = useCallback(() => {
+    setTechSpecsItem(null);
+    restoreOpener(specsOpener.current);
+  }, [restoreOpener]);
 
   const brandItems = useMemo(() => filterByBrand(activeItems, activeBrand), [activeItems, activeBrand]);
   const series = useMemo(() => availableSeries(brandItems), [brandItems]);
