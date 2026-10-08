@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { MediaTransportRequest } from "./media-transport-requests";
 import { parseMediaTransportAcknowledgement } from "./media-transport-requests";
 import type { ShopifyMediaTransportRead } from "./media-transport-read";
-import { assertMediaTransportRead } from "./media-transport-read";
+import { assertMediaTransportRead, onlyForwardProductTimestampDrift, PRODUCT_TIMESTAMP_TOLERANT_PHASES } from "./media-transport-read";
 import { buildMediaJournalIntent, mediaJournalPhase } from "./media-transport-journal-intent";
 
 export type MediaTransportReference = { operationId: string; step: number; phaseIndex: number };
@@ -45,14 +45,12 @@ function validateGuard(guard: MediaTransportGuard, job: MediaTransportPhaseJob, 
 function matchesBefore(guard: MediaTransportGuard, job: MediaTransportPhaseJob) {
   return guard.sourceFingerprint === job.request.context.sourceFingerprint && guard.target.revision === job.request.context.targetRevision;
 }
-/** Shopify bumps product.updatedAt asynchronously after media association and for
- * unrelated copy/SEO edits. That timestamp, and the revision digest covering it,
- * is the only drift tolerated; every other raw fact and the source must match. */
+/** Same source, loaded job consistent, and the target differs from job.before ONLY by a
+ * forward product updatedAt (plus its revision digest). Backward or any other drift is
+ * left to begin/hold, which record a durable conflict for review exactly as before. */
 function onlyProductTimestampDrift(guard: MediaTransportGuard, job: MediaTransportPhaseJob) {
-  const strip = (read: ShopifyMediaTransportRead) => { const rest: Record<string, unknown> = { ...read }; delete rest.updatedAt; delete rest.revision; return rest; };
-  return guard.target.side === "shopify" && job.before.side === "shopify" && guard.sourceFingerprint === job.request.context.sourceFingerprint &&
-    job.before.revision === job.request.context.targetRevision && guard.target.revision !== job.before.revision &&
-    stable(strip(guard.target)) === stable(strip(job.before));
+  return guard.sourceFingerprint === job.request.context.sourceFingerprint && job.before.revision === job.request.context.targetRevision &&
+    onlyForwardProductTimestampDrift(guard.target, job.before);
 }
 function stable(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
@@ -113,7 +111,7 @@ export async function runMediaTransportPhase(reference: MediaTransportReference,
       // Only an existing attempt continues, to replay/recover with its frozen before_guard.
       const refreshed = await bounded(() => deps.refresh(reference, lease, guard, workDeadline), workDeadline, deps.now);
       checkTime();
-      if (refreshed?.status !== "attempt_exists") return { status: "pending", executed };
+      if (refreshed?.status !== "attempt_exists") return { status: "pending", executed, diagnostic: "MEDIA_TRANSPORT_GUARD_REFRESHED" };
     }
     // The SQL function checks the live shared lease and returns false for any previous attempt.
     // A timeout here grants no execution authority; its outcome is resolved next invocation.
@@ -132,7 +130,10 @@ export async function runMediaTransportPhase(reference: MediaTransportReference,
       fail("MEDIA_TRANSPORT_NOOP_EXECUTION_FORBIDDEN");
     }
     const lastGuard = await bounded(() => deps.observe(job, workDeadline), workDeadline, deps.now); validateGuard(lastGuard, job, deps.now()); checkTime();
-    if (!matchesBefore(guard, job) || !matchesBefore(lastGuard, job)) {
+    // An asynchronous product updatedAt bump can land after begin. For phases whose SQL
+    // readback ignores product updatedAt, that alone must not hold the chain mid-step.
+    const lastTolerated = PRODUCT_TIMESTAMP_TOLERANT_PHASES.includes(job.request.phase) && onlyProductTimestampDrift(lastGuard, job);
+    if (!matchesBefore(guard, job) || (!matchesBefore(lastGuard, job) && !lastTolerated)) {
       await bounded(() => deps.conflict(reference, lease, "MEDIA_TRANSPORT_CHANGED_BEFORE_CALL", lastGuard, workDeadline), workDeadline, deps.now);
       return { status: "conflict", executed };
     }

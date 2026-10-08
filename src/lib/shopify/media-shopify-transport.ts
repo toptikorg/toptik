@@ -4,7 +4,7 @@ import { verifyOnboardingImage } from "./onboarding-worker";
 import type { MediaIdentity } from "./media-sync-core";
 import type { DecodedMediaImage } from "./media-decode-reader";
 import { buildMediaReadRequest, parseMediaReadResponse, MEDIA_API_VERSION, MEDIA_PUBLICATION_ID, type ShopifyMediaRead } from "./media-read-adapter";
-import { assertMediaTransportRead, parseMediaTransportResponse, parseTransportMedia,
+import { assertMediaTransportRead, parseMediaTransportResponse, parseTransportMedia, onlyForwardProductTimestampDrift, PRODUCT_TIMESTAMP_TOLERANT_PHASES,
   type ShopifyMediaTransportRead, type TransportMedia } from "./media-transport-read";
 import { buildOwnedMediaCreate, buildOwnedMediaAssociate, buildMediaVariantReassign, buildMediaReferenceDetach,
   buildMediaReorder, buildOwnedMediaRecoveryRead, buildOwnedMediaNodeRead, ownedMediaFilename,
@@ -95,7 +95,10 @@ export async function executeShopifyMediaTransport(request: MediaTransportReques
   config(true); checkDeadline(deadline);
   const frozen = structuredClone(evidence), rebuilt = rebuildShopifyMediaMutation(structuredClone(request), frozen);
   const fresh = await readShopifyMediaTransport(rebuilt.context.identity, deadline);
-  if (fresh.revision !== frozen.before.revision) fail("MEDIA_TRANSPORT_CHANGED_BEFORE_CALL");
+  // Same single exception as the worker's post-begin recheck: a forward product updatedAt
+  // bump only, and only for phases whose SQL readback ignores product updatedAt.
+  if (fresh.revision !== frozen.before.revision && !(PRODUCT_TIMESTAMP_TOLERANT_PHASES.includes(rebuilt.phase) &&
+      onlyForwardProductTimestampDrift(fresh, frozen.before))) fail("MEDIA_TRANSPORT_CHANGED_BEFORE_CALL");
   config(true); checkDeadline(deadline);
   const envelope = await call(rebuilt.query, rebuilt.variables, deadline, true);
   parseMediaTransportAcknowledgement(envelope, rebuilt);
