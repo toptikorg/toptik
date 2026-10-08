@@ -292,6 +292,29 @@ test('ALT together with a change of position or membership keeps the hold', () =
   const gone = independent(), later = clone(gone); later.gallery.assets[1].alt = 'local'; later.gallery.assets.splice(0, 1);
   assert.ok(api.reconcileMedia(gone, later).conflicts.some(c => c.code === 'MEDIA_REMOVAL_INTENT_REQUIRED'));
 });
+// Live case P10SZV24466/651 (8.10): the shared images on the store were reordered to the gallery order,
+// while a store-only image kept its index and its order among store-only images and only gained an ALT.
+const sharedReorder = () => pair([asset('a'), asset('b')], [asset('s'), asset('a'), asset('y'), asset('b')]);
+test('a shared reorder around an independent image that kept its place does not hold its local ALT', () => {
+  const base = sharedReorder(), now = clone(base);
+  now.shopify.assets = [now.shopify.assets[0], now.shopify.assets[3], now.shopify.assets[2], now.shopify.assets[1]];
+  now.shopify.assets[2].alt = 'תיאור נגיש';
+  const plan = api.reconcileMedia(base, now);
+  assert.deepEqual(plan.conflicts, []); assert.deepEqual(plan.patches, []);
+  assert.deepEqual(plan.orders, [{ target: 'gallery', keys: ['b', 'a'] }]);
+  assert.deepEqual(api.independentLocalAltChanges(base, now).map(x => [x.side, x.key]), [['shopify', 'y']]);
+});
+test('with a shared reorder, an independent image that changed index keeps the hold', () => {
+  const base = sharedReorder(), now = clone(base);
+  now.shopify.assets = [now.shopify.assets[0], now.shopify.assets[3], now.shopify.assets[1], now.shopify.assets[2]];
+  now.shopify.assets[3].alt = 'תיאור נגיש';
+  assert.ok(api.reconcileMedia(base, now).conflicts.some(c => c.key === 'y' && c.code === 'MEDIA_TARGET_MAPPING_REQUIRED'));
+});
+test('with a shared reorder, an independent image reordered among independent images keeps the hold', () => {
+  const base = pair([asset('a'), asset('b')], [asset('s'), asset('a'), asset('y'), asset('b'), asset('t')]), now = clone(base);
+  const [s, a, y, b, t] = now.shopify.assets; now.shopify.assets = [t, b, y, a, s]; y.alt = 'תיאור נגיש';
+  assert.ok(api.reconcileMedia(base, now).conflicts.some(c => c.key === 'y' && c.code === 'MEDIA_TARGET_MAPPING_REQUIRED'));
+});
 test('a genuine unrelated conflict is never hidden by a local ALT acknowledgement', () => {
   const base = independent(), now = clone(base); now.gallery.assets[1].alt = 'local';
   now.gallery.assets[0].alt = 'gallery edit'; now.shopify.assets[0].alt = 'store edit';
