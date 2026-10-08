@@ -78,7 +78,7 @@ function decodeVisual(hex: string): DecodedFrame[] {
     }
     frames.push({ pixels, sum, sumSquares });
   }
-  if (decodedVisuals.size > 4096) decodedVisuals.clear();
+  if (decodedVisuals.size > 1024) decodedVisuals.clear();   // 3 framings + sums per entry: keep the warm-instance bound modest
   decodedVisuals.set(hex, frames); return frames;
 }
 const FRAME_N = FRAME_BYTES / 3, BLOCK = 8, SIDE = 32;

@@ -65,7 +65,7 @@ export async function captureMediaSourceBytes(identity: MediaIdentity, url: stri
 async function visualSignature(decoder: sharp.Sharp): Promise<string> {
   const flat = await decoder.clone().rotate().flatten({ background: "#ffffff" }).resize(512, 512, { fit: "inside", withoutEnlargement: true })
     .removeAlpha().toColourspace("srgb").raw().toBuffer({ resolveWithObject: true });
-  type Frame = { data: Buffer; info: { width: number; height: number; channels: number } };
+  type Frame = { data: Buffer; info: sharp.OutputInfo };
   const raw = (frame: Frame) => sharp(frame.data, { raw: { width: frame.info.width, height: frame.info.height, channels: frame.info.channels } });
   const trim = async (options: Parameters<sharp.Sharp["trim"]>[0]): Promise<Frame> => {
     try { return await raw(flat).trim(options).raw().toBuffer({ resolveWithObject: true }); }

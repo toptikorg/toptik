@@ -689,7 +689,7 @@ test('live BAH08451.001 shape: no shared keys, gallery adds photo 6 (another enc
   assert.equal(plan.patches.some(p => p.kind === 'attach'), false);
 });
 test('planning stays fast at large image counts (fingerprints decoded once, early exit)', () => {
-  const shared = Array.from({ length: 30 }, (_, i) => asset('sh' + i, { contentId: cid(String(i % 10)) + '' }));
+  const shared = Array.from({ length: 30 }, (_, i) => asset('sh' + i));
   shared.forEach((a, i) => { a.contentId = (i.toString(16).padStart(2, '0')).repeat(32); });
   const targetOnly = Array.from({ length: 120 }, (_, i) => asset('to' + i, { contentId: ('a' + i.toString(16).padStart(3, '0')).repeat(16) }));
   const base = pair(clone(shared), [...clone(shared), ...clone(targetOnly)]), now = clone(base);
