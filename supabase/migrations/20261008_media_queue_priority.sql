@@ -6,14 +6,15 @@
 -- Now:
 --  * work_queue.routine marks rows that only the sweep woke;
 --  * every real enqueue (webhook, editor, review, recovery) clears it, exactly as before;
---  * the sweep wakes only finished rows (done/failed/review) and never touches a pending
---    or processing row, so it cannot demote real work or reset a repair backoff;
+--  * the sweep wakes only finished rows (done/review) and never touches a pending, failed
+--    or processing row (all claimable already), so it cannot demote real work or reset a backoff;
 --  * a claim clears routine (the row has had its turn; later work competes normally);
---  * both claim functions share one order: repair backoff last (unchanged), routine rows
---    after real rows, but a routine row older than 3 hours competes equally (no starvation),
---    then updated_at, product_gid.
+--  * both claim functions share one order: repair backoff last (unchanged), then an effective
+--    time = updated_at, plus a fixed 6-hour handicap for routine rows (real work enqueued within
+--    6 hours of a sweep goes first; no cliff and no permanent starvation either way), product_gid.
 -- No row is deleted; leases, generations, CAS, in-flight keeps and exclusions are unchanged.
 begin;
+set local lock_timeout='3s';
 
 alter table toptik_media_private.work_queue add column if not exists routine boolean not null default false;
 
@@ -36,7 +37,7 @@ begin
  return true;
 end $$;
 
--- Safety sweep only: wakes finished rows as routine; pending/processing rows are left exactly as they are.
+-- Safety sweep only: wakes finished rows as routine; pending/failed/processing rows are left exactly as they are.
 create function toptik_media_private.enqueue_routine(p_product text) returns boolean
 language plpgsql set search_path=pg_catalog,pg_temp as $$
 declare e public.shopify_gallery_copy_eligibility%rowtype;
@@ -48,7 +49,7 @@ begin
  insert into toptik_media_private.work_queue(product_gid,evidence,routine) values(p_product,'{}'::jsonb,true)
  on conflict(product_gid) do update set generation=work_queue.generation+1,status='pending',last_error=null,
   updated_at=clock_timestamp(),routine=true
- where work_queue.status in ('done','failed','review');
+ where work_queue.status in ('done','review');
  return true;
 end $$;
 revoke all on function toptik_media_private.enqueue_routine(text) from public,anon,authenticated,service_role;
@@ -75,10 +76,9 @@ begin
  where (p.product_gid is null or p.enabled) and q.product_gid<>all(p_exclude_product_gids)
   and (q.status in('pending','failed') or (q.status='processing' and q.claimed_at<clock_timestamp()-interval '5 minutes'))
  -- 1. A row waiting for an operator storage-repair approval stays last for 6 hours (unchanged).
- -- 2. Routine sweep rows come after real work, unless they have waited 3 hours (no starvation).
+ -- 2. Routine sweep rows carry a fixed 6-hour handicap on their queue time (no cliff, no starvation).
  order by coalesce(q.status='pending' and q.last_error='MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED' and q.updated_at>clock_timestamp()-interval '6 hours',false),
-  coalesce(q.routine and q.updated_at>clock_timestamp()-interval '3 hours',false),
-  q.updated_at,q.product_gid limit 1 for update of q skip locked;
+  case when q.routine then q.updated_at+interval '6 hours' else q.updated_at end,q.product_gid limit 1 for update of q skip locked;
  if not found then return null;end if;
  -- Once claimed, a sweep row has had its turn: if it turns out to need real work, every later
  -- return to pending (in-flight keep, defer, finish) competes as normal work.
@@ -88,7 +88,7 @@ begin
   'initialized',exists(select 1 from toptik_media_private.products where product_gid=r.product_gid));
 end $$;
 
--- The first claim of every batch used the original FIFO order (no backoff, no priority).
+-- Kept for older callers: the original FIFO order ignored backoff and priority; now one shared order.
 create or replace function public.claim_toptik_media_work(p_claim_id uuid) returns jsonb
 language plpgsql security definer set search_path=pg_catalog,pg_temp as $$
 begin

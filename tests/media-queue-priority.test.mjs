@@ -17,7 +17,8 @@ test('priority migration keeps grants, adds no grant to the sweep helper, and ch
   assert.doesNotMatch(sql, /\bgrant\b/i);
   assert.match(sql, /revoke all on function toptik_media_private\.enqueue_routine\(text\) from public,anon,authenticated,service_role;/);
   assert.doesNotMatch(sql, /\bdelete from\b|\btruncate\b|\bdrop\b/i);
-  assert.match(sql, /where work_queue\.status in \('done','failed','review'\)/);
+  assert.match(sql, /where work_queue\.status in \('done','review'\);/);
+  assert.match(sql, /set local lock_timeout='3s';/);
 });
 
 const engine = process.env.TOPTIK_PGLITE_DIR ?? path.resolve(repo, '../sync-sql-validation-20260930/package');
@@ -87,16 +88,16 @@ test('a real enqueue promotes a routine row', async () => {
   await one(db, `select toptik_media_private.enqueue($1,'{"storageAttemptRetired":"x"}'::jsonb)`, [p]);
   assert.equal((await row(db, p)).routine, false);
 });
-test('routine rows older than 3 hours compete equally, so the sweep cannot starve', async () => {
+test('routine rows carry a fixed 6-hour handicap: older than that they go first, so the sweep cannot starve', async () => {
   const db = await database(); await reset(db);
   const old = await product(db), real = await product(db);
   await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [old]); await set(db, old, { status: 'done' });
   await one(db, 'select public.recover_toptik_media_work()');
-  await db.query("update toptik_media_private.work_queue set updated_at=clock_timestamp()-interval '4 hours' where product_gid=$1", [old]);
+  await db.query("update toptik_media_private.work_queue set updated_at=clock_timestamp()-interval '7 hours' where product_gid=$1", [old]);
   await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [real]);
   assert.equal(await claim(db), old);
 });
-test('the first claim of a batch now honours the storage-repair backoff too', async () => {
+test('the base claim shares the order and honours the storage-repair backoff', async () => {
   const db = await database(); await reset(db);
   const repair = await product(db), other = await product(db);
   for (const p of [repair, other]) await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [p]);
@@ -110,4 +111,20 @@ test('application roles keep exactly their previous queue grants', async () => {
   assert.equal(await can('service_role', 'public.claim_toptik_media_work_excluding(uuid,text[])'), true);
   assert.equal(await can('service_role', 'toptik_media_private.enqueue_routine(text)'), false);
   assert.equal(await can('authenticated', 'public.claim_toptik_media_work_excluding(uuid,text[])'), false);
+});
+test('the sweep leaves failed rows (already claimable, possibly real work) untouched', async () => {
+  const db = await database(); await reset(db);
+  const p = await product(db); await one(db, `select toptik_media_private.enqueue($1,'{"gallery":{"actorType":"supabase_user"}}'::jsonb)`, [p]);
+  await set(db, p, { status: 'failed', last_error: 'MEDIA_WORK_FAILED' });
+  const before = await row(db, p); await one(db, 'select public.recover_toptik_media_work()');
+  assert.deepEqual(await row(db, p), before);
+});
+test('a 3-hour-old routine row still waits behind real work enqueued after it (no cliff)', async () => {
+  const db = await database(); await reset(db);
+  const old = await product(db), real = await product(db);
+  await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [old]); await set(db, old, { status: 'done' });
+  await one(db, 'select public.recover_toptik_media_work()');
+  await db.query("update toptik_media_private.work_queue set updated_at=clock_timestamp()-interval '3 hours 30 minutes' where product_gid=$1", [old]);
+  await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [real]);
+  assert.equal(await claim(db), real);
 });
