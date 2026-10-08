@@ -239,6 +239,12 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
   const c = { gallery: assetMap(current.gallery), shopify: assetMap(current.shopify) };
   const keys = [...new Set([...baseline.gallery.assets, ...baseline.shopify.assets, ...current.gallery.assets, ...current.shopify.assets].map(a => a.key))];
   const conflict = (key: string, field: MediaConflict["field"], code: string) => plan.conflicts.push({ key, field, code });
+  // The target already shows this image (same bytes or lineage) under another key, now or earlier in this plan.
+  // Writing it under `key` too is a split identity: either a second copy, or (when the other key is being removed
+  // in this same plan) a remove-and-re-add of the same image that leaves the target without it between steps.
+  // Both are held for a reviewed mapping; the whole product waits, nothing is reserved.
+  const targetShowsElsewhere = (target: MediaSide, key: string, contentId: string) =>
+    [...current[target].assets, ...plan.projected[target]].some(a => a.key !== key && a.contentId === contentId);
   const replace = (target: MediaSide, key: string, update: Partial<MediaAsset>) => {
     const index = plan.projected[target].findIndex(a => a.key === key);
     if (index < 0) fail("MEDIA_INTERNAL_TARGET_MISSING");
@@ -285,12 +291,8 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
         plan.patches.push({ source, target, key, kind: "detach_reference" });
         plan.projected[target] = plan.projected[target].filter(a => a.key !== key);
       } else if (!targetAsset) {
-        // The target already shows this image (same bytes or lineage) under another key, now or earlier in
-        // this plan: a split identity, e.g. a replaced Gallery angle row that points at an existing Shopify
-        // file. Attaching would create a second copy, so the whole product is held for a reviewed mapping.
-        if ([...current[target].assets, ...plan.projected[target]].some(a => a.key !== key && a.contentId === sourceAsset.contentId)) {
-          conflict(key, "membership", "MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT"); continue;
-        }
+        // E.g. a replaced Gallery angle row that points at an existing Shopify file, or a store re-upload.
+        if (targetShowsElsewhere(target, key, sourceAsset.contentId)) { conflict(key, "membership", "MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT"); continue; }
         if (plan.projected[target].length >= MAX_ASSETS) { conflict(key, "membership", "MEDIA_TARGET_LIMIT"); continue; }
         const index = insertionIndex(plan.projected[target], current[source].assets, key);
         if (index === null) { conflict(key, "membership", "MEDIA_AMBIGUOUS_INSERT_ORDER"); continue; }
@@ -325,6 +327,8 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
         plan.patches.push({ source, target, key, kind: "alt", value: value.alt });
         replace(target, key, { alt: value.alt });
       } else {
+        // E.g. a cover that keeps its key while its URL moves to a file the target already shows.
+        if (targetShowsElsewhere(target, key, value.contentId)) { conflict(key, label, "MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT"); continue; }
         // Allocate/attach an owned replacement, not mutate shared file bytes globally.
         plan.patches.push({ source, target, key, kind: "replace_reference", value: { contentId: value.contentId, evidenceId: value.evidenceId } });
         replace(target, key, { contentId: value.contentId, evidenceId: value.evidenceId });
