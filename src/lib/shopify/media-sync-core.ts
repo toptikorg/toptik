@@ -48,7 +48,10 @@ export type MediaPlan = {
 
 /** Encoding-independent pixel fingerprints captured with this observation only (hex of 32x32 RGB, white border
  * trimmed). Used to HOLD a write that would show the same photo twice; never to infer an identity or a mapping. */
-export type MediaVisuals = Record<MediaSide, Record<string, string>>;
+export type MediaVisuals = Record<MediaSide, Record<string, string>> & {
+  /** The Gallery cover's key when it is a separate file, not an alias of an angle. */
+  galleryCover?: string;
+};
 /** Distance = mean absolute pixel difference divided by the pair's mean darkness (255 - value), so pale products and
  * small dark details are not compressed toward zero. Calibrated 8.10.2026 on live photos: the same photo re-encoded or
  * re-padded <= 0.0112; distinct photos, including the front and back of plain pouches and wallets, >= 0.0384. */
@@ -275,16 +278,18 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
   const targetShowsElsewhere = (target: MediaSide, key: string, contentId: string) =>
     [...current[target].assets, ...plan.projected[target]].some(a => a.key !== key && a.contentId === contentId);
   // Same photo in another encoding (different bytes, so the check above cannot see it) shown by the target under
-  // a key the source does not have: a split identity. Compared only against such target-only images, because a
-  // pixel fingerprint cannot tell a re-encode from the front and back of a plain product (measured on the live
-  // catalog), while the source showing both images under separate keys declares them distinct photos.
-  // Without fingerprints for every image compared the write is held as well.
+  // another key: a split identity. A target image the source shows with the same content under that same key is
+  // exempt, because the source showing both images under separate keys declares them distinct photos (a pixel
+  // fingerprint alone is weakest on the front and back of a plain product). The exemption never covers a shared key
+  // whose content differs between the sides (a concurrent replace there), nor the Gallery cover: the Gallery shows
+  // the cover only on its card, never beside the angles, so a cover that re-encodes an angle is still a second copy
+  // on Shopify. Without fingerprints for every image compared the write is held as well.
   const targetShowsVisually = (source: MediaSide, target: MediaSide, key: string): "missing" | boolean => {
     if (!visuals) return false;
-    const mine = visuals[source]?.[key];
+    const mine = visuals[source]?.[key], cover = visuals.galleryCover;
     if (typeof mine !== "string") return "missing";
     for (const a of current[target].assets) {
-      if (a.key === key || c[source].has(a.key)) continue;
+      if (a.key === key || (key !== cover && a.key !== cover && c[source].get(a.key)?.contentId === a.contentId)) continue;
       const theirs = visuals[target]?.[a.key];
       if (typeof theirs !== "string") return "missing";
       if (mediaVisualDistance(mine, theirs, MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) <= MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) return true;

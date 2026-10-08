@@ -622,6 +622,29 @@ test('content change to a photo the target shows in another encoding under anoth
   const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(3, 2), b: vis(2), 't-only': vis(3) }));
   assert.deepEqual(plan.conflicts, [{ key: 'a', field: 'content', code: 'MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE' }]);
 });
+test('a separately uploaded Gallery cover that re-encodes an angle is held: the Gallery never shows the cover beside its angles', () => {
+  const base = pair([asset('g-cover:item', { contentId: cid('1') }), asset('g-angle:1', { contentId: cid('2') }), asset('g-angle:2', { contentId: cid('3') })]);
+  const now = clone(base); now.gallery.assets[0] = asset('g-cover:item', { contentId: cid('6'), evidenceId: 'new-cover-upload' });
+  const sides = { gallery: { 'g-cover:item': vis(2, 1), 'g-angle:1': vis(2), 'g-angle:2': vis(3) }, shopify: { 'g-cover:item': vis(1), 'g-angle:1': vis(2), 'g-angle:2': vis(3) } };
+  assert.deepEqual(api.reconcileMedia(base, now, [], [], { ...sides, galleryCover: 'g-cover:item' }).conflicts,
+    [{ key: 'g-cover:item', field: 'content', code: 'MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE' }]);
+  // The same change on an angle row keeps the exemption: the Gallery shows both rows, so they are distinct photos.
+  assert.deepEqual(api.reconcileMedia(base, now, [], [], sides).patches.map(p => [p.kind, p.key]), [['replace_reference', 'g-cover:item']]);
+});
+test('a new angle that re-encodes the separate Gallery cover is held', () => {
+  const base = pair([asset('g-cover:item', { contentId: cid('1') }), asset('g-angle:1', { contentId: cid('2') })]);
+  const now = clone(base); now.gallery.assets.push(asset('g-angle:2', { contentId: cid('6') }));
+  const v = { gallery: { 'g-cover:item': vis(1), 'g-angle:1': vis(2), 'g-angle:2': vis(1, 1) }, shopify: { 'g-cover:item': vis(1), 'g-angle:1': vis(2) }, galleryCover: 'g-cover:item' };
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now, [], [], v)), [['g-angle:2', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+});
+test('concurrent cross replaces that would show one photo twice on both sides are held', () => {
+  const base = two(); const now = clone(base);
+  now.gallery.assets[0] = asset('a', { contentId: cid('6'), evidenceId: 'editor-upload' });     // the editor puts P into row a
+  now.shopify.assets[1] = asset('b', { contentId: cid('7'), evidenceId: 'merchant-upload' });   // the merchant puts P' into slot b
+  const plan = api.reconcileMedia(base, now, [], [], { gallery: { a: vis(5), b: vis(2) }, shopify: { a: vis(1), b: vis(5, 1) } });
+  assert.deepEqual(plan.patches, []);
+  assert.deepEqual(conflictCodes(plan).sort(), [['a', 'MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE'], ['b', 'MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE']]);
+});
 test('without fingerprints (pure callers) the planner behaves as before', () => {
   const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
   assert.deepEqual(api.reconcileMedia(base, now).patches.map(p => p.kind), ['attach']);

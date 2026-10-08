@@ -155,7 +155,7 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
   // Per logical key, the fingerprint of the exact bytes observed now (duplicate detection only, never persisted).
   const visuals: MediaVisuals = { gallery: {}, shopify: {} };
   for (const ref of angleRefs) visuals.gallery[ref.key] = (await capture(c.galleryRaw.angles.find(a => a.id === ref.angleId)!.image_path)).visual;
-  if (!(cover.key in visuals.gallery)) visuals.gallery[cover.key] = coverBytes.visual;
+  if (!(cover.key in visuals.gallery)) { visuals.gallery[cover.key] = coverBytes.visual; visuals.galleryCover = cover.key; }
   const gallery = galleryRawToSnapshot(c.galleryRaw, refs, proofs.filter(p => p.side === "gallery").map(p => ({ ...p, side: "gallery", proof: p.proof as { url: string } })));
   const receipts = new Map<string, MediaDecodeReceipt>();
   for (const image of shop.images) {
