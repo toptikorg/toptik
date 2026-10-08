@@ -467,3 +467,94 @@ test('removed-duplicate exception mirrors on the Shopify side with signed remova
   const now = clone(base); now.shopify.assets.pop(); now.shopify.assets[1].alt = 'store local after duplicate removal';
   const plan = api.reconcileMedia(base, now, [removal(base, 'shopify', 'w')]); noMutation(plan); assert.deepEqual(plan.conflicts, []);
 });
+
+// A target that already shows the same bytes (or lineage) under another key never receives a second copy.
+const cid = c => c.repeat(64);
+const conflictCodes = plan => plan.conflicts.map(c => [c.key, c.code]);
+for (const source of ['gallery', 'shopify']) test(`new ${source} key whose bytes the target already shows under another key is held, not attached`, () => {
+  const target = source === 'gallery' ? 'shopify' : 'gallery';
+  const base = pair([asset('a'), asset('b')]); base[target].assets.push(asset('t-only', { contentId: cid('c') }));
+  const now = clone(base); now[source].assets.push(asset('n-new', { contentId: cid('c') }));
+  const plan = api.reconcileMedia(base, now);
+  assert.deepEqual(conflictCodes(plan), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT']]);
+  assert.equal(plan.patches.some(p => p.kind === 'attach'), false);
+});
+test('a genuinely new image (bytes the target does not show) still attaches', () => {
+  const base = pair([asset('a'), asset('b')]); base.shopify.assets.push(asset('t-only', { contentId: cid('c') }));
+  const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('d') }));
+  const plan = api.reconcileMedia(base, now);
+  assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.patches.map(p => [p.kind, p.target, p.key]), [['attach', 'shopify', 'n-new']]);
+});
+test('two new keys with the same bytes on one side: the product is held (the second key is the one reported)', () => {
+  const base = pair([asset('a'), asset('b')]);
+  const now = clone(base); now.gallery.assets.push(asset('n1', { contentId: cid('e') }), asset('n2', { contentId: cid('e') }));
+  const plan = api.reconcileMedia(base, now);
+  assert.deepEqual(conflictCodes(plan), [['n2', 'MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT']]);
+});
+test('live P10OXT0529O shape: replaced Gallery rows pointing at existing store files are held on every attach', () => {
+  // Baseline: photos 1..5 shared, photo 7 shared under the old Gallery row key.
+  const shared = ['p1', 'p2', 'p3', 'p4', 'p5'].map((k, i) => asset(k, { contentId: cid(String(i + 1)) }));
+  const old7 = asset('g-angle:old7', { contentId: cid('7') }), s6 = asset('s-media:6', { contentId: cid('6') });
+  const base = pair([...clone(shared), clone(old7)], [...clone(shared), clone(old7)]);
+  // Now: the store shows a new photo 6, and the Gallery replaced its rows with new rows (new keys) that point
+  // at the same store files. Without the hold: detach 7, attach 6 and 7 to the store, attach 6 to the Gallery.
+  const now = clone(base);
+  now.gallery.assets = [...clone(shared), asset('g-angle:new6', { contentId: cid('6') }), asset('g-angle:new7', { contentId: cid('7') })];
+  now.shopify.assets = [...clone(shared), clone(s6), clone(old7)];
+  const plan = api.reconcileMedia(base, now, [removal(base, 'gallery', 'g-angle:old7')]);
+  assert.deepEqual(conflictCodes(plan).sort(), [
+    ['g-angle:new6', 'MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT'],
+    ['g-angle:new7', 'MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT'],
+    ['s-media:6', 'MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT']]);
+  // Any conflict holds the whole product before reservation, so the planned detach of the old row is never run.
+  assert.equal(plan.patches.some(p => p.kind === 'attach'), false);
+});
+// Stricter than "no second copy" by design: removing a key and re-adding the same image under another key in one
+// plan leaves the target without the image between steps (live P10OXT0529O lost photo 7 for hours that way).
+const two = () => pair([asset('a', { contentId: cid('1') }), asset('b', { contentId: cid('2') })]);
+test('held by design: a Gallery row replaced by a new row with the same bytes (old row removed with evidence)', () => {
+  const base = two(), now = clone(base); now.gallery.assets[1] = asset('n', { contentId: cid('2') });
+  const plan = api.reconcileMedia(base, now, [removal(base, 'gallery', 'b')]);
+  assert.deepEqual(conflictCodes(plan), [['n', 'MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT']]);
+});
+test('held by design: a store delete and re-upload of the same file (signed removal evidence)', () => {
+  const base = two(), now = clone(base); now.shopify.assets[1] = asset('s-media:y', { contentId: cid('2') });
+  const plan = api.reconcileMedia(base, now, [removal(base, 'shopify', 'b')]);
+  assert.deepEqual(conflictCodes(plan), [['s-media:y', 'MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT']]);
+});
+test('held by design: a swap (one row gets new bytes, a new row carries its old bytes)', () => {
+  const base = two(), now = clone(base);
+  now.gallery.assets[0] = asset('a', { contentId: cid('3'), evidenceId: 'receipt-a-new' }); now.gallery.assets.push(asset('n', { contentId: cid('1') }));
+  const plan = api.reconcileMedia(base, now);
+  assert.deepEqual(conflictCodes(plan), [['n', 'MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT']]);
+});
+for (const source of ['gallery', 'shopify']) test(`${source} content change to bytes the target already shows under another key is held, not replaced`, () => {
+  // e.g. a cover that keeps its key while its URL moves to a file the target already shows.
+  const base = two(), now = clone(base); now[source].assets[0] = asset('a', { contentId: cid('2'), evidenceId: 'moved-to-b-file' });
+  const plan = api.reconcileMedia(base, now);
+  assert.deepEqual(plan.conflicts, [{ key: 'a', field: 'content', code: 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT' }]);
+  assert.equal(plan.patches.some(p => p.kind === 'replace_reference'), false);
+});
+test('content change to bytes the target does not show still replaces the reference', () => {
+  const base = two(), now = clone(base); now.gallery.assets[0] = asset('a', { contentId: cid('4'), evidenceId: 'new-file' });
+  const plan = api.reconcileMedia(base, now);
+  assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.patches.map(p => [p.kind, p.target, p.key]), [['replace_reference', 'shopify', 'a']]);
+});
+test('replace held: a cover keeps its key while its URL moves to an image only the store shows', () => {
+  const base = pair([asset('a', { contentId: cid('1') })], [asset('a', { contentId: cid('1') }), asset('s-only', { contentId: cid('2') })]);
+  const now = clone(base); now.gallery.assets[0] = asset('a', { contentId: cid('2'), evidenceId: 'cover-moved' });
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now)), [['a', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT']]);
+});
+test('replace held by design: the other copy is being removed in the same plan', () => {
+  const base = two(), now = clone(base);
+  now.gallery.assets = [asset('a', { contentId: cid('2'), evidenceId: 'moved-to-b-file' })];
+  const plan = api.reconcileMedia(base, now, [removal(base, 'gallery', 'b')]);
+  assert.deepEqual(conflictCodes(plan), [['a', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT']]);
+});
+test('replace held: a content swap between two shared rows', () => {
+  const base = two(), now = clone(base);
+  now.gallery.assets = [asset('a', { contentId: cid('2'), evidenceId: 'swap-a' }), asset('b', { contentId: cid('1'), evidenceId: 'swap-b' })];
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now)).sort(), [['a', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT'], ['b', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT']]);
+});
