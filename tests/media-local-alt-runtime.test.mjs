@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import{mod,stripped,coreUrl,core,fixture,id,owner,opId,now}from'./helpers/media-planning-fixture.mjs';
+import{mod,stripped,coreUrl,core,fixture,id,owner,opId,now,visualsFor}from'./helpers/media-planning-fixture.mjs';
 Error.stackTraceLimit=0;
 // Consumer review: the REAL reconcilePersistedMediaProduct + REAL reconcileMedia (core) with the planning/transport
 // ports faked exactly as tests/media-product-runtime.test.mjs does. No change to runtime, transport or SQL.
@@ -20,7 +20,7 @@ function harness({mutate}={}){
  const transport={acquire:async(...a)=>record('acquire',a,{owner,expiresAt:now+120000}),release:async(...a)=>record('release',a,true),
   recordPlannerConflict:async(...a)=>record('conflict',a,true),read:async()=>{throw Error('no transport read');},prepare:async()=>{throw Error('no transport prepare');}};
  const deps={now:()=>now,environment:{VERCEL_ENV:'production',SHOPIFY_MEDIA_SYNC:'enabled_v1'},planning:()=>planning,transport:()=>transport,
-  capture:async(...a)=>record('capture',a,{pair:state.current,proofs:[],refs:v.refs}),gallery:()=>({observe:async(...a)=>record('observe',a,{snapshot:state.current.gallery})}),
+  capture:async(...a)=>record('capture',a,{pair:state.current,proofs:[],refs:v.refs,visuals:visualsFor(state.current)}),gallery:()=>({observe:async(...a)=>record('observe',a,{snapshot:state.current.gallery})}),
   phase:async()=>{throw Error('no transport phase may run');}};
  return{state,calls,run:()=>api.reconcilePersistedMediaProduct(id.productId,{},now+40000,deps)};
 }

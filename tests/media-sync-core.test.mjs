@@ -558,3 +558,147 @@ test('replace held: a content swap between two shared rows', () => {
   now.gallery.assets = [asset('a', { contentId: cid('2'), evidenceId: 'swap-a' }), asset('b', { contentId: cid('1'), evidenceId: 'swap-b' })];
   assert.deepEqual(conflictCodes(api.reconcileMedia(base, now)).sort(), [['a', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT'], ['b', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT']]);
 });
+
+// Same photo in another encoding: different bytes (so a different contentId), near-identical pixels.
+// A fingerprint is three 32x32 RGB framings (9216 bytes of hex); the smallest framing distance decides.
+const vis = (seed, shift = 0) => { let x = seed >>> 0, out = ''; for (let i = 0; i < 9216; i++) { x = (x * 1103515245 + 12345) >>> 0; const v = Math.min(255, Math.max(0, ((x >>> 16) & 255) + shift)); out += v.toString(16).padStart(2, '0'); } return out; };
+const visualsOf = (now, table) => ({ gallery: Object.fromEntries(now.gallery.assets.map(a => [a.key, table[a.key]])), shopify: Object.fromEntries(now.shopify.assets.map(a => [a.key, table[a.key]])) });
+const flatVis = d => d.toString(16).padStart(2, '0').repeat(9216);
+// A ramp pattern (so the tone fit has real variance) with one 8x8 block moved by delta IN EVERY framing.
+const blockVis = (delta = 0) => { const bytes = new Uint8Array(9216); for (let i = 0; i < 9216; i++) bytes[i] = (i * 37) % 229; for (let f = 0; f < 3; f++) for (let row = 8; row < 16; row++) for (let col = 8; col < 16; col++) for (let ch = 0; ch < 3; ch++) { const at = f * 3072 + (row * 32 + col) * 3 + ch; bytes[at] = Math.min(255, bytes[at] + delta); } return [...bytes].map(v => v.toString(16).padStart(2, '0')).join(''); };
+test('visual distance is the worst tone-matched block over the best framing; malformed fingerprints throw', () => {
+  assert.equal(api.mediaVisualDistance(vis(1), vis(1)), 0);
+  // Global tone shifts (brightness, re-encode gamma) cancel; a local block difference survives.
+  assert.ok(api.mediaVisualDistance(vis(1), vis(1, 3)) < 0.5, 'a uniform +3 shift is tone-matched away');
+  assert.ok(api.mediaVisualDistance(flatVis(100), flatVis(130)) === 0, 'two flat tones are the same picture');
+  assert.ok(api.mediaVisualDistance(vis(1), vis(2)) > api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, 'unrelated noise stays far');
+  const local = api.mediaVisualDistance(blockVis(0), blockVis(12));
+  assert.ok(local > api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, 'a moved 8x8 block alone crosses the limit: ' + local);
+  assert.ok(api.mediaVisualDistance(blockVis(0), blockVis(2)) <= api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, 'a 2-level block wobble stays a duplicate');
+  assert.ok(api.mediaVisualDistance(vis(1), vis(2), api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) > api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, 'an early exit never understates past the limit');
+  assert.throws(() => api.mediaVisualDistance('00', '00'), /VISUAL_IDENTITY_INVALID/);
+  assert.throws(() => api.mediaVisualDistance('zz'.repeat(9216), flatVis(0)), /VISUAL_IDENTITY_INVALID/);
+});
+test('one matching framing is enough to hold: a crop-unstable duplicate differs in two framings only', () => {
+  const a = blockVis(0), bytes = new Uint8Array(9216);
+  const src = blockVis(0); for (let i = 0; i < 9216; i++) bytes[i] = parseInt(src.slice(i * 2, i * 2 + 2), 16);
+  for (let i = 0; i < 3072; i++) { bytes[i] = (bytes[i] + 97) % 256; bytes[3072 + i] = (bytes[3072 + i] * 7 + 13) % 256; }   // framings 0+1 scrambled, framing 2 intact
+  const b = [...bytes].map(v => v.toString(16).padStart(2, '0')).join('');
+  assert.ok(api.mediaVisualDistance(a, b) <= api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE);
+});
+for (const source of ['gallery', 'shopify']) test(`${source} image that the target shows in another encoding under another key is held, not attached`, () => {
+  const target = source === 'gallery' ? 'shopify' : 'gallery';
+  const base = two(); base[target].assets.push(asset('t-only', { contentId: cid('5') }));
+  const now = clone(base); now[source].assets.push(asset('n-new', { contentId: cid('6') }));
+  const v = visualsOf(now, { a: vis(1), b: vis(2), 't-only': vis(3), 'n-new': vis(3, 1) });
+  const plan = api.reconcileMedia(base, now, [], [], v);
+  assert.deepEqual(conflictCodes(plan), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+  assert.equal(plan.patches.some(p => p.kind === 'attach'), false);
+});
+test('a visually different new image still attaches after its shared anchor', () => {
+  const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), 'n-new': vis(9) }));
+  assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.patches.map(p => [p.kind, p.target, p.key]), [['attach', 'shopify', 'n-new']]);
+  assert.deepEqual(plan.projected.shopify.map(a => a.key), ['a', 'b', 'n-new']);
+});
+test('threshold boundary: a 2-level block wobble is held, a moved block attaches', () => {
+  const base = two(); base.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
+  const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  const run = mine => api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), 't-only': blockVis(0), 'n-new': mine }));
+  assert.deepEqual(conflictCodes(run(blockVis(2))), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+  assert.deepEqual(run(blockVis(12)).conflicts, []);
+});
+test('a missing fingerprint for the new image or for any target image holds the write', () => {
+  const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2) }))), [['n-new', 'MEDIA_VISUAL_IDENTITY_MISSING']]);
+  const withTargetOnly = clone(base); withTargetOnly.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
+  const now2 = clone(withTargetOnly); now2.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  assert.deepEqual(conflictCodes(api.reconcileMedia(withTargetOnly, now2, [], [], visualsOf(now2, { a: vis(1), b: vis(2), 'n-new': vis(9) }))), [['n-new', 'MEDIA_VISUAL_IDENTITY_MISSING']]);
+});
+test('images the source itself shows under separate keys are distinct photos (front and back of a plain product)', () => {
+  // Live: wallet front and back measure 0.88, pouch front and back 1.41, below the re-encode maximum 1.31-3.
+  const base = two(); const now = clone(base); now.gallery.assets.push(asset('back', { contentId: cid('6') }));
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), back: vis(1, 1) }));   // back ~ shared front 'a'
+  assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.patches.map(p => [p.kind, p.target, p.key]), [['attach', 'shopify', 'back']]);
+  const pairNew = clone(base); pairNew.gallery.assets.push(asset('n1', { contentId: cid('6') }), asset('n2', { contentId: cid('7') }));
+  assert.deepEqual(api.reconcileMedia(base, pairNew, [], [], visualsOf(pairNew, { a: vis(1), b: vis(2), n1: vis(5), n2: vis(5, 1) })).conflicts, []);
+});
+test('a target-only image that matches visually is still held even when other target images match nothing', () => {
+  const base = two(); base.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
+  const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), 't-only': vis(4), 'n-new': vis(4, 2) }));
+  assert.deepEqual(conflictCodes(plan), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+});
+test('content change to a photo the target shows in another encoding under another key is held', () => {
+  const base = two(); base.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
+  const now = clone(base); now.gallery.assets[0] = asset('a', { contentId: cid('6'), evidenceId: 'new-file' });
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(3, 2), b: vis(2), 't-only': vis(3) }));
+  assert.deepEqual(plan.conflicts, [{ key: 'a', field: 'content', code: 'MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE' }]);
+});
+test('a separately uploaded Gallery cover that re-encodes an angle is held: the Gallery never shows the cover beside its angles', () => {
+  const base = pair([asset('g-cover:item', { contentId: cid('1') }), asset('g-angle:1', { contentId: cid('2') }), asset('g-angle:2', { contentId: cid('3') })]);
+  const now = clone(base); now.gallery.assets[0] = asset('g-cover:item', { contentId: cid('6'), evidenceId: 'new-cover-upload' });
+  const sides = { gallery: { 'g-cover:item': vis(2, 1), 'g-angle:1': vis(2), 'g-angle:2': vis(3) }, shopify: { 'g-cover:item': vis(1), 'g-angle:1': vis(2), 'g-angle:2': vis(3) } };
+  assert.deepEqual(api.reconcileMedia(base, now, [], [], { ...sides, galleryCover: 'g-cover:item' }).conflicts,
+    [{ key: 'g-cover:item', field: 'content', code: 'MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE' }]);
+  // The same change on an angle row keeps the exemption: the Gallery shows both rows, so they are distinct photos.
+  assert.deepEqual(api.reconcileMedia(base, now, [], [], sides).patches.map(p => [p.kind, p.key]), [['replace_reference', 'g-cover:item']]);
+});
+test('a new angle that re-encodes the separate Gallery cover is held', () => {
+  const base = pair([asset('g-cover:item', { contentId: cid('1') }), asset('g-angle:1', { contentId: cid('2') })]);
+  const now = clone(base); now.gallery.assets.push(asset('g-angle:2', { contentId: cid('6') }));
+  const v = { gallery: { 'g-cover:item': vis(1), 'g-angle:1': vis(2), 'g-angle:2': vis(1, 1) }, shopify: { 'g-cover:item': vis(1), 'g-angle:1': vis(2) }, galleryCover: 'g-cover:item' };
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now, [], [], v)), [['g-angle:2', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+});
+test('concurrent cross replaces that would show one photo twice on both sides are held', () => {
+  const base = two(); const now = clone(base);
+  now.gallery.assets[0] = asset('a', { contentId: cid('6'), evidenceId: 'editor-upload' });     // the editor puts P into row a
+  now.shopify.assets[1] = asset('b', { contentId: cid('7'), evidenceId: 'merchant-upload' });   // the merchant puts P' into slot b
+  const plan = api.reconcileMedia(base, now, [], [], { gallery: { a: vis(5), b: vis(2) }, shopify: { a: vis(1), b: vis(5, 1) } });
+  assert.deepEqual(plan.patches, []);
+  assert.deepEqual(conflictCodes(plan).sort(), [['a', 'MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE'], ['b', 'MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE']]);
+});
+test('without fingerprints (pure callers) the planner behaves as before', () => {
+  const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  assert.deepEqual(api.reconcileMedia(base, now).patches.map(p => p.kind), ['attach']);
+});
+test('no shared anchor in a non-empty target: the insert order is ambiguous and held (it used to go first)', () => {
+  const base = pair([asset('g1', { contentId: cid('1') })], [asset('s1', { contentId: cid('2') })]);
+  const now = clone(base); now.gallery.assets.push(asset('g2', { contentId: cid('3') }));
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now)), [['g2', 'MEDIA_AMBIGUOUS_INSERT_ORDER']]);
+});
+test('an empty target still receives new images in source order', () => {
+  const base = pair([asset('g1', { contentId: cid('1') })], []);
+  const now = clone(base); now.gallery.assets.push(asset('g2', { contentId: cid('3') }));
+  const plan = api.reconcileMedia(base, now);
+  assert.deepEqual(plan.conflicts, []); assert.deepEqual(plan.patches.map(p => p.key), ['g2']);
+});
+test('live BAH08451.001 shape: no shared keys, gallery adds photo 6 (another encoding of store 6) and photos 7-10', () => {
+  const g = ['G1', 'G2', 'G3', 'G4', 'G5'].map((k, i) => asset(k, { contentId: cid(String(i + 1)) }));
+  const s = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'].map((k, i) => asset(k, { contentId: cid(String.fromCharCode(97 + i)) }));
+  const base = pair(clone(g), clone(s)), now = clone(base);
+  now.gallery.assets.push(...['G6', 'G7', 'G8', 'G9', 'G10'].map((k, i) => asset(k, { contentId: cid(String(i + 6 > 9 ? 0 : i + 6)) })));
+  const table = { G1: vis(1), G2: vis(2), G3: vis(3), G4: vis(4), G5: vis(5), S1: vis(1, 1), S2: vis(2, 1), S3: vis(3, 1), S4: vis(4, 1), S5: vis(5, 2), S6: vis(6, 1),
+    G6: vis(6), G7: vis(7), G8: vis(8), G9: vis(9), G10: vis(10) };
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, table));
+  const codes = Object.fromEntries(conflictCodes(plan));
+  assert.equal(codes.G6, 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE');
+  for (const k of ['G7', 'G8', 'G9', 'G10']) assert.equal(codes[k], 'MEDIA_AMBIGUOUS_INSERT_ORDER');
+  assert.equal(plan.patches.some(p => p.kind === 'attach'), false);
+});
+test('planning stays fast at large image counts (fingerprints decoded once, early exit)', () => {
+  const shared = Array.from({ length: 30 }, (_, i) => asset('sh' + i));
+  shared.forEach((a, i) => { a.contentId = (i.toString(16).padStart(2, '0')).repeat(32); });
+  const targetOnly = Array.from({ length: 120 }, (_, i) => asset('to' + i, { contentId: ('a' + i.toString(16).padStart(3, '0')).repeat(16) }));
+  const base = pair(clone(shared), [...clone(shared), ...clone(targetOnly)]), now = clone(base);
+  const fresh = Array.from({ length: 90 }, (_, i) => asset('nw' + i, { contentId: ('b' + i.toString(16).padStart(3, '0')).repeat(16) }));
+  now.gallery.assets.push(...fresh);
+  const table = {}; [...shared, ...targetOnly, ...fresh].forEach((a, i) => { table[a.key] = vis(1000 + i); });
+  const started = performance.now();
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, table));
+  const ms = performance.now() - started;
+  assert.equal(plan.patches.filter(p => p.kind === 'attach').length, 90);
+  assert.ok(ms < 3000, `${ms.toFixed(0)} ms`);
+});

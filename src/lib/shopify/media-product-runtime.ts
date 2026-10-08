@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { reconcileMedia, mediaSnapshotFingerprint, type MediaPair, type RemovalEvidence } from "./media-sync-core";
+import { reconcileMedia, mediaSnapshotFingerprint, type MediaPair, type MediaVisuals, type RemovalEvidence } from "./media-sync-core";
 import { createMediaPlanningRpc, type MediaPlanningContext } from "./media-planning-rpc";
 import { createMediaTransportRpc, discoverMediaTransportOperation, type MediaRpcGuard } from "./media-transport-rpc";
 import { createGalleryMediaTransport } from "./media-gallery-transport";
@@ -60,8 +60,12 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
   try {
     if (lease.expiresAt < stop + 5000) fail("MEDIA_PLANNING_LEASE_TOO_SHORT");
     let context = await planning.context(lease.owner, work); check();
+    let visuals: MediaVisuals | null = null;
     const capture = async (c: MediaPlanningContext): Promise<MediaPair> => {
       const observed = await (dependencies.capture ?? captureMediaPlanningPair)(c, lease.owner, work); check();
+      // Planning without pixel fingerprints could write the same photo twice in another encoding.
+      if (!observed.visuals || typeof observed.visuals !== "object") fail("MEDIA_VISUAL_IDENTITY_MISSING");
+      visuals = observed.visuals;
       await planning.register(lease.owner, observed.proofs, work);
       const gallery = (dependencies.gallery ?? createGalleryMediaTransport)(c.identity);
       const registered = await gallery.observe(lease.owner, c.galleryRaw, observed.refs, work);
@@ -79,7 +83,7 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
         }
       }
       const journal = await planning.journal(lease.owner, current, work);
-      const plan = reconcileMedia(context.baselines, current, removals, journal.detached as typeof context.detached);
+      const plan = reconcileMedia(context.baselines, current, removals, journal.detached as typeof context.detached, visuals ?? fail("MEDIA_VISUAL_IDENTITY_MISSING"));
       if (plan.conflicts.length) {
         await rpc.recordPlannerConflict(lease.owner, randomUUID(), context.stateVersion, current, plan.conflicts, work);
         return result("review");

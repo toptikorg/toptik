@@ -11,7 +11,9 @@ import type { StagedMediaSource } from "./media-transport-requests";
 /** Server-loaded immutable provenance. A URL supplied by an editor is not this proof. */
 export type MediaSourceBytesProof = { identity: MediaIdentity; evidenceId: string; url: string; sha256: string;
   mime: StagedMediaSource["mime"]; width: number; height: number; byteLength: number };
-export type CapturedMediaBytes = { bytes: Uint8Array; sha256: string; mime: StagedMediaSource["mime"]; width: number; height: number; byteLength: number };
+export type CapturedMediaBytes = { bytes: Uint8Array; sha256: string; mime: StagedMediaSource["mime"]; width: number; height: number; byteLength: number;
+  /** Duplicate detection only (see MediaVisuals): 32x32 RGB hex of the decoded pixels, flattened on white, border trimmed. */
+  visual: string };
 const MAX_BYTES = 8 * 1024 * 1024;
 function fail(code: string): never { throw new Error(code); }
 function budget(deadline: number) {
@@ -55,6 +57,28 @@ export async function readVerifiedMediaSourceBytes(input: MediaSourceBytesProof,
 export async function captureMediaSourceBytes(identity: MediaIdentity, url: string, deadline: number): Promise<CapturedMediaBytes> {
   return capture(structuredClone(identity), url, deadline);
 }
+/** Full pixel decode (the decode check this replaces) reduced to an encoding-independent fingerprint:
+ * EXIF orientation applied, flatten on white, fit inside 512, then THREE 32x32 RGB framings so one
+ * unstable crop cannot hide a duplicate: the white-trimmed frame (contain), the own-background-trimmed
+ * frame (fill), and the untrimmed frame (contain). Concatenated as 9216 bytes of hex. Distances are
+ * taken per framing and the smallest decides (media-sync-core). Calibrated on live photos 8.10.2026. */
+async function visualSignature(decoder: sharp.Sharp): Promise<string> {
+  const flat = await decoder.clone().rotate().flatten({ background: "#ffffff" }).resize(512, 512, { fit: "inside", withoutEnlargement: true })
+    .removeAlpha().toColourspace("srgb").raw().toBuffer({ resolveWithObject: true });
+  type Frame = { data: Buffer; info: sharp.OutputInfo };
+  const raw = (frame: Frame) => sharp(frame.data, { raw: { width: frame.info.width, height: frame.info.height, channels: frame.info.channels } });
+  const trim = async (options: Parameters<sharp.Sharp["trim"]>[0]): Promise<Frame> => {
+    try { return await raw(flat).trim(options).raw().toBuffer({ resolveWithObject: true }); }
+    catch { return flat; /* a uniform image has no border to trim */ }
+  };
+  const parts: Buffer[] = [];
+  for (const [frame, fit] of [[await trim({ background: "#ffffff", threshold: 12 }), "contain"], [await trim({ threshold: 12 }), "fill"], [flat, "contain"]] as const) {
+    const small = await raw(frame).resize(32, 32, { fit, background: "#ffffff" }).removeAlpha().toColourspace("srgb").raw().toBuffer({ resolveWithObject: true });
+    if (small.info.channels !== 3 || small.data.length !== 3072) fail("MEDIA_SOURCE_DECODE_FAILED");
+    parts.push(small.data);
+  }
+  return Buffer.concat(parts).toString("hex");
+}
 async function capture(identity: MediaIdentity, address: string, deadline: number, proof?: MediaSourceBytesProof): Promise<CapturedMediaBytes> {
   const url = sourceUrl(identity, address), stop = Math.min(deadline, Date.now() + 8000);
   budget(stop);
@@ -83,7 +107,7 @@ async function capture(identity: MediaIdentity, address: string, deadline: numbe
     if (!mime || !metadata.width || !metadata.height || metadata.width > 16000 || metadata.height > 16000 ||
         metadata.width * metadata.height > MAX_EXISTING_MEDIA_PIXELS || (metadata.pages ?? 1) !== 1 ||
         (proof && (mime !== proof.mime || metadata.width !== proof.width || metadata.height !== proof.height))) fail("MEDIA_SOURCE_DECODE_CHANGED");
-    await bounded(() => decoder.resize({ width: 64, height: 64, fit: "inside", withoutEnlargement: true }).png().toBuffer(), stop);
-    budget(stop); return { bytes: new Uint8Array(bytes), sha256, mime, width: metadata.width, height: metadata.height, byteLength: bytes.length };
+    const visual = await bounded(() => visualSignature(decoder), stop);
+    budget(stop); return { bytes: new Uint8Array(bytes), sha256, mime, width: metadata.width, height: metadata.height, byteLength: bytes.length, visual };
   } catch { return fail("MEDIA_SOURCE_DECODE_FAILED"); }
 }

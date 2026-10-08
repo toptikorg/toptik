@@ -46,6 +46,78 @@ export type MediaPlan = {
   projected: Record<MediaSide, MediaAsset[]>;
 };
 
+/** Encoding-independent pixel fingerprints captured with this observation only (hex of 32x32 RGB, white border
+ * trimmed). Used to HOLD a write that would show the same photo twice; never to infer an identity or a mapping. */
+export type MediaVisuals = Record<MediaSide, Record<string, string>> & {
+  /** The Gallery cover's key when it is a separate file, not an alias of an angle. */
+  galleryCover?: string;
+};
+/** Distance per framing = the worst 8x8-pixel block of the residual AFTER a per-channel linear tone
+ * match (gain clamped to [0.6, 1.6]), so re-encoding, brightness, gamma and CMYK round-trips cancel
+ * while any real local difference (another angle, another object) survives; the smallest framing
+ * distance decides, so one unstable crop cannot hide a duplicate. Calibrated 8.10.2026 on live photos:
+ * 101 realistic re-encodes per store image measure <= 2.6 in 89% of cases (the misses are heavy crops
+ * and display-route trims), while 4687 distinct-photo pairs, including the front and back of plain
+ * pouches and wallets within one product, all measure >= 3.33. */
+export const MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE = 2.6;
+const VISUAL_FRAMES = 3, FRAME_BYTES = 3072;
+const VISUAL = /^(?:[a-f0-9]{2}){9216}$/;
+type DecodedFrame = { pixels: Uint8Array; sum: Float64Array; sumSquares: Float64Array };
+const decodedVisuals = new Map<string, DecodedFrame[]>();
+function decodeVisual(hex: string): DecodedFrame[] {
+  const known = decodedVisuals.get(hex); if (known) return known;
+  if (typeof hex !== "string" || !VISUAL.test(hex)) fail("MEDIA_VISUAL_IDENTITY_INVALID");
+  const frames: DecodedFrame[] = [];
+  const digit = (at: number) => { const code = hex.charCodeAt(at); return code <= 57 ? code - 48 : code - 87; };
+  for (let f = 0; f < VISUAL_FRAMES; f++) {
+    const pixels = new Uint8Array(FRAME_BYTES), base = f * FRAME_BYTES * 2;
+    const sum = new Float64Array(3), sumSquares = new Float64Array(3);
+    for (let i = 0; i < FRAME_BYTES; i++) {
+      const value = digit(base + i * 2) * 16 + digit(base + i * 2 + 1), c = i % 3;
+      pixels[i] = value; sum[c] += value; sumSquares[c] += value * value;
+    }
+    frames.push({ pixels, sum, sumSquares });
+  }
+  if (decodedVisuals.size > 1024) decodedVisuals.clear();   // 3 framings + sums per entry: keep the warm-instance bound modest
+  decodedVisuals.set(hex, frames); return frames;
+}
+const FRAME_N = FRAME_BYTES / 3, BLOCK = 8, SIDE = 32;
+function frameDistance(x: DecodedFrame, y: DecodedFrame): number {
+  // Per-channel least-squares tone match y ~ k*x + c, gain clamped so a flat impostor cannot collapse.
+  const k = new Float64Array(3), c = new Float64Array(3);
+  let dot0 = 0, dot1 = 0, dot2 = 0;
+  for (let i = 0; i < FRAME_BYTES; i += 3) { dot0 += x.pixels[i] * y.pixels[i]; dot1 += x.pixels[i + 1] * y.pixels[i + 1]; dot2 += x.pixels[i + 2] * y.pixels[i + 2]; }
+  const dots = [dot0, dot1, dot2];
+  for (let ch = 0; ch < 3; ch++) {
+    const meanX = x.sum[ch] / FRAME_N, meanY = y.sum[ch] / FRAME_N, varX = x.sumSquares[ch] / FRAME_N - meanX * meanX;
+    const gain = varX > 1e-6 ? (dots[ch] / FRAME_N - meanX * meanY) / varX : 1;
+    k[ch] = Math.min(1.6, Math.max(0.6, gain)); c[ch] = meanY - k[ch] * meanX;
+  }
+  let worst = 0;
+  const cells = BLOCK * BLOCK * 3;
+  for (let blockY = 0; blockY < SIDE; blockY += BLOCK) for (let blockX = 0; blockX < SIDE; blockX += BLOCK) {
+    let total = 0;
+    for (let row = blockY; row < blockY + BLOCK; row++) for (let col = blockX; col < blockX + BLOCK; col++) {
+      const at = (row * SIDE + col) * 3;
+      for (let ch = 0; ch < 3; ch++) total += Math.abs(k[ch] * x.pixels[at + ch] + c[ch] - y.pixels[at + ch]);
+    }
+    if (total > worst) worst = total;
+  }
+  return worst / cells;
+}
+/** The smallest per-framing distance; with a finite `limit` it stops at the first framing at or under
+ * it (that framing already decides a hold, and the true minimum can only be smaller). */
+export function mediaVisualDistance(a: string, b: string, limit = Number.POSITIVE_INFINITY): number {
+  const x = decodeVisual(a), y = decodeVisual(b);
+  let best = Number.POSITIVE_INFINITY;
+  for (let f = 0; f < VISUAL_FRAMES; f++) {
+    const d = frameDistance(x[f], y[f]);
+    if (d < best) best = d;
+    if (Number.isFinite(limit) && best <= limit) return best;
+  }
+  return best;
+}
+
 const SIDES: MediaSide[] = ["gallery", "shopify"];
 const HASH = /^[a-f0-9]{64}$/;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -94,6 +166,9 @@ function insertionIndex(target: MediaAsset[], source: MediaAsset[], key: string)
   const targetKeys = target.map(a => a.key);
   const before = source.slice(0, position).reverse().find(a => targetKeys.includes(a.key));
   const after = source.slice(position + 1).find(a => targetKeys.includes(a.key));
+  // No shared image on either side of it: any position in a non-empty target is a guess (the old default put it
+  // first and replaced the product's main image), so the caller holds it as an ambiguous order.
+  if (!before && !after && targetKeys.length) return null;
   const left = before ? targetKeys.indexOf(before.key) : -1;
   const right = after ? targetKeys.indexOf(after.key) : target.length;
   if (left >= right) return null;
@@ -197,7 +272,8 @@ export function independentLocalAltChanges(baseline: MediaPair, current: MediaPa
 }
 
 /** An empty/error/incomplete read is not a deletion. Explicit removal evidence is mandatory. */
-export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals: RemovalEvidence[] = [], detached: DetachReceipt[] = []): MediaPlan {
+export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals: RemovalEvidence[] = [], detached: DetachReceipt[] = [],
+  visuals?: MediaVisuals): MediaPlan {
   const identity = current.gallery.identity;
   assertIdentity(identity);
   for (const side of SIDES) { assertSnapshot(baseline[side], side, identity); assertSnapshot(current[side], side, identity); }
@@ -245,6 +321,25 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
   // Both are held for a reviewed mapping; the whole product waits, nothing is reserved.
   const targetShowsElsewhere = (target: MediaSide, key: string, contentId: string) =>
     [...current[target].assets, ...plan.projected[target]].some(a => a.key !== key && a.contentId === contentId);
+  // Same photo in another encoding (different bytes, so the check above cannot see it) shown by the target under
+  // another key: a split identity. A target image the source shows with the same content under that same key is
+  // exempt, because the source showing both images under separate keys declares them distinct photos (a pixel
+  // fingerprint alone is weakest on the front and back of a plain product). The exemption never covers a shared key
+  // whose content differs between the sides (a concurrent replace there), nor the Gallery cover: the Gallery shows
+  // the cover only on its card, never beside the angles, so a cover that re-encodes an angle is still a second copy
+  // on Shopify. Without fingerprints for every image compared the write is held as well.
+  const targetShowsVisually = (source: MediaSide, target: MediaSide, key: string): "missing" | boolean => {
+    if (!visuals) return false;
+    const mine = visuals[source]?.[key], cover = visuals.galleryCover;
+    if (typeof mine !== "string") return "missing";
+    for (const a of current[target].assets) {
+      if (a.key === key || (key !== cover && a.key !== cover && c[source].get(a.key)?.contentId === a.contentId)) continue;
+      const theirs = visuals[target]?.[a.key];
+      if (typeof theirs !== "string") return "missing";
+      if (mediaVisualDistance(mine, theirs, MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) <= MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) return true;
+    }
+    return false;
+  };
   const replace = (target: MediaSide, key: string, update: Partial<MediaAsset>) => {
     const index = plan.projected[target].findIndex(a => a.key === key);
     if (index < 0) fail("MEDIA_INTERNAL_TARGET_MISSING");
@@ -293,6 +388,8 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
       } else if (!targetAsset) {
         // E.g. a replaced Gallery angle row that points at an existing Shopify file, or a store re-upload.
         if (targetShowsElsewhere(target, key, sourceAsset.contentId)) { conflict(key, "membership", "MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT"); continue; }
+        const visual = targetShowsVisually(source, target, key);
+        if (visual) { conflict(key, "membership", visual === "missing" ? "MEDIA_VISUAL_IDENTITY_MISSING" : "MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE"); continue; }
         if (plan.projected[target].length >= MAX_ASSETS) { conflict(key, "membership", "MEDIA_TARGET_LIMIT"); continue; }
         const index = insertionIndex(plan.projected[target], current[source].assets, key);
         if (index === null) { conflict(key, "membership", "MEDIA_AMBIGUOUS_INSERT_ORDER"); continue; }
@@ -329,6 +426,8 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
       } else {
         // E.g. a cover that keeps its key while its URL moves to a file the target already shows.
         if (targetShowsElsewhere(target, key, value.contentId)) { conflict(key, label, "MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT"); continue; }
+        const visual = targetShowsVisually(source, target, key);
+        if (visual) { conflict(key, label, visual === "missing" ? "MEDIA_VISUAL_IDENTITY_MISSING" : "MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE"); continue; }
         // Allocate/attach an owned replacement, not mutate shared file bytes globally.
         plan.patches.push({ source, target, key, kind: "replace_reference", value: { contentId: value.contentId, evidenceId: value.evidenceId } });
         replace(target, key, { contentId: value.contentId, evidenceId: value.evidenceId });

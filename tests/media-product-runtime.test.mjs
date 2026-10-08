@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import{mod,stripped,coreUrl,core,fixture,id,owner,opId,now}from'./helpers/media-planning-fixture.mjs';
+import{mod,stripped,coreUrl,core,fixture,id,owner,opId,now,visualsFor}from'./helpers/media-planning-fixture.mjs';
 Error.stackTraceLimit=0;
 const api=await import(mod(`import{randomUUID}from'node:crypto';import{reconcileMedia,mediaSnapshotFingerprint}from'${coreUrl}';${stripped('media-product-runtime')}`));
 function f(){const v=fixture(),calls=[],state={context:v.context,current:structuredClone(v.pair),chain:null,time:now,phase:{status:'verified',executed:true}};
@@ -10,7 +10,7 @@ function f(){const v=fixture(),calls=[],state={context:v.context,current:structu
  removal:async(...a)=>record('removal',a,{side:a[1],key:a[2],requestId:opId,kind:a[1]==='gallery'?'authenticated_editor':'signed_shopify_event',expectedBaselineFingerprint:a[3]})};
  const transport={acquire:async(...a)=>record('acquire',a,{owner,expiresAt:now+120000}),release:async(...a)=>record('release',a,true),recordPlannerConflict:async(...a)=>record('conflict',a,true),read:async(...a)=>record('read',a,{chain:state.chain}),prepare:async(...a)=>{record('prepare',a);state.chain={status:'ready',next_phase:0,phases:a[3]};return{};}};
  const deps={now:()=>state.time,environment:{VERCEL_ENV:'production',SHOPIFY_MEDIA_SYNC:'enabled_v1'},planning:()=>planning,transport:()=>transport,
- capture:async(...a)=>record('capture',a,{pair:state.current,proofs:[],refs:v.refs}),gallery:()=>({observe:async(...a)=>record('observe',a,{snapshot:state.current.gallery})}),
+ capture:async(...a)=>record('capture',a,{pair:state.current,proofs:[],refs:v.refs,visuals:visualsFor(state.current)}),gallery:()=>({observe:async(...a)=>record('observe',a,{snapshot:state.current.gallery})}),
  discover:async(...a)=>record('discover',a,{identity:id,operation:state.context.operations[0],step:state.context.steps[0],provenance:state.context.provenance}),
  observer:()=>async(...a)=>record('guard',a,{sourceFingerprint:core.mediaSnapshotFingerprint(state.current.gallery),target:{...state.current.shopify,variantMediaIds:[]}}),phase:async(...a)=>record('phase',a,state.phase)};
  return{v,state,calls,deps,transport,planning,run:(e={})=>api.reconcilePersistedMediaProduct(id.productId,e,now+40000,deps)};}

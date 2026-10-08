@@ -80,3 +80,53 @@ test('expired or hanging DNS is bounded without a GET',()=>run(async f=>{
   await assert.rejects(readVerifiedMediaSourceBytes(proof(),Date.now()-1),/TIME_BUDGET/);assert.equal(f.dnsCalls.length,0);
   f.dns=()=>new Promise(()=>{});await assert.rejects(readVerifiedMediaSourceBytes(proof(),Date.now()+15),/TIME_BUDGET/);assert.equal(f.calls.length,0);
 }));
+
+const coreApi = await import(core);
+const photo = (dx = 0) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#ffffff"/>
+  <rect x="${150 + dx}" y="120" width="300" height="520" rx="40" fill="#20303f"/><rect x="${270 + dx}" y="60" width="60" height="80" fill="#5a4630"/>
+  <circle cx="${200 + dx}" cy="660" r="28" fill="#111"/><circle cx="${400 + dx}" cy="660" r="28" fill="#111"/><rect x="${280 + dx}" y="300" width="40" height="40" fill="#c08040"/></svg>`);
+const encode = async (svg, fmt, pad) => { let p = sharp(svg); if (pad) p = sharp(await p.png().toBuffer()).extend({ top: pad, bottom: pad, left: pad * 2, right: pad * 2, background: '#ffffff' }); return fmt === 'jpeg' ? p.jpeg({ quality: 80 }).toBuffer() : fmt === 'webp' ? p.webp({ quality: 75 }).toBuffer() : p.png().toBuffer(); };
+const captureVisual = async buf => { let out; await run(async f => { f.handler = async () => new Response(buf); out = await captureMediaSourceBytes(identity, proof().url, Date.now() + 10000); }); return out.visual; };
+test('capture returns a 32x32 RGB fingerprint; the same photo re-encoded and re-padded stays within the duplicate distance', async () => {
+  const png = await captureVisual(await encode(photo(), 'png', 0));
+  assert.match(png, /^(?:[a-f0-9]{2}){9216}$/);
+  // Pads beyond ~12% of razor-edge synthetic art drift just past the limit (2.72 at pad 120); the
+  // fingerprint finds CANDIDATES for review, so a heavy-crop/heavy-pad miss is accepted by design.
+  for (const [fmt, pad] of [['jpeg', 0], ['webp', 0], ['jpeg', 40], ['webp', 90]]) {
+    const other = await captureVisual(await encode(photo(), fmt, pad));
+    assert.ok(coreApi.mediaVisualDistance(png, other) <= coreApi.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, `${fmt} pad ${pad}: ${coreApi.mediaVisualDistance(png, other)}`);
+  }
+});
+test('tone and colourspace round-trips of the same photo stay within the duplicate distance', async () => {
+  const base = await encode(photo(), 'jpeg', 0), png = await captureVisual(base);
+  const variants = {
+    brighter: await sharp(base).linear(1, 2).jpeg({ quality: 90 }).toBuffer(),
+    gamma: await sharp(base).gamma(2.2, 2.0).jpeg({ quality: 90 }).toBuffer(),
+    cmyk: await sharp(base).toColourspace('cmyk').jpeg().toBuffer(),
+    squareCanvas: await sharp(base).flatten({ background: '#fff' }).resize(800, 800, { fit: 'contain', background: '#ffffff' }).jpeg().toBuffer(),
+    resized: await sharp(base).resize(300).webp({ quality: 80 }).toBuffer(),
+  };
+  for (const [name, buf] of Object.entries(variants)) {
+    const d = coreApi.mediaVisualDistance(png, await captureVisual(buf));
+    assert.ok(d <= coreApi.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, `${name}: ${d}`);
+  }
+});
+const sideView = () => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#ffffff"/>
+  <rect x="230" y="120" width="140" height="520" rx="30" fill="#20303f"/><rect x="285" y="40" width="30" height="100" fill="#5a4630"/>
+  <circle cx="300" cy="660" r="28" fill="#111"/></svg>`);
+test('a different photo of the same object (another angle) is beyond the duplicate distance', async () => {
+  const a = await captureVisual(await encode(photo(), 'png', 0)), b = await captureVisual(await encode(sideView(), 'png', 0));
+  assert.ok(coreApi.mediaVisualDistance(a, b) > coreApi.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, String(coreApi.mediaVisualDistance(a, b)));
+});
+test('greyscale, transparent and fully uniform images still give a 3-channel fingerprint', async () => {
+  const grey = await sharp(photo()).greyscale().png().toBuffer();
+  const transparent = await sharp({ create: { width: 40, height: 40, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).png().toBuffer();
+  const uniform = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#ffffff' } }).png().toBuffer();
+  for (const buf of [grey, transparent, uniform]) assert.match(await captureVisual(buf), /^(?:[a-f0-9]{2}){9216}$/);
+});
+test('EXIF orientation is applied before fingerprinting: a tagged photo matches the physically rotated one', async () => {
+  const upright = await sharp(photo()).rotate(90).jpeg({ quality: 85 }).toBuffer();
+  const tagged = await sharp(photo()).jpeg({ quality: 85 }).withMetadata({ orientation: 6 }).toBuffer();
+  const d = coreApi.mediaVisualDistance(await captureVisual(upright), await captureVisual(tagged));
+  assert.ok(d <= coreApi.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, String(d));
+});

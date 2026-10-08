@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import type { MediaPair, MediaSide } from "./media-sync-core";
+import type { MediaPair, MediaSide, MediaVisuals } from "./media-sync-core";
 import { mediaReadToSnapshot, type MediaDecodeReceipt } from "./media-read-adapter";
 import { galleryRawToSnapshot, createGalleryMediaTransport, type GalleryMediaRef } from "./media-gallery-transport";
 import { captureMediaSourceBytes, type CapturedMediaBytes } from "./media-source-bytes";
@@ -32,7 +32,7 @@ export async function captureMediaMetadataSources(urls: string[], capture: (url:
         check();
         const decoded = await capture(url);
         check();
-        result.set(url, { sha256: decoded.sha256, mime: decoded.mime, width: decoded.width, height: decoded.height, byteLength: decoded.byteLength });
+        result.set(url, { sha256: decoded.sha256, mime: decoded.mime, width: decoded.width, height: decoded.height, byteLength: decoded.byteLength, visual: decoded.visual });
       } catch (error) {
         if (!failed) { failed = true; firstError = error; }
       }
@@ -50,7 +50,7 @@ export async function captureMediaMetadataSources(urls: string[], capture: (url:
  * that uniquely identified media key after decoding. Never infer a counterpart
  * from filename, order, dimensions, or visual similarity. */
 export async function captureMediaPlanningPair(context: MediaPlanningContext, owner: string, deadline: number,
-  dependencies: Dependencies = {}): Promise<{ pair: MediaPair; proofs: MediaRegisteredProof[]; refs: GalleryMediaRef[] }> {
+  dependencies: Dependencies = {}): Promise<{ pair: MediaPair; proofs: MediaRegisteredProof[]; refs: GalleryMediaRef[]; visuals: MediaVisuals }> {
   const c = structuredClone(context), id = c.identity, now = dependencies.now ?? Date.now;
   const check = () => { if (!Number.isFinite(deadline) || now() >= deadline) fail("MEDIA_PLANNING_TIME_BUDGET"); };
   check();
@@ -152,6 +152,10 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
     cover = { role: "cover", angleId: null, key, evidenceId: p.evidenceId };
   }
   const refs = [cover, ...angleRefs];
+  // Per logical key, the fingerprint of the exact bytes observed now (duplicate detection only, never persisted).
+  const visuals: MediaVisuals = { gallery: {}, shopify: {} };
+  for (const ref of angleRefs) visuals.gallery[ref.key] = (await capture(c.galleryRaw.angles.find(a => a.id === ref.angleId)!.image_path)).visual;
+  if (!(cover.key in visuals.gallery)) { visuals.gallery[cover.key] = coverBytes.visual; visuals.galleryCover = cover.key; }
   const gallery = galleryRawToSnapshot(c.galleryRaw, refs, proofs.filter(p => p.side === "gallery").map(p => ({ ...p, side: "gallery", proof: p.proof as { url: string } })));
   const receipts = new Map<string, MediaDecodeReceipt>();
   for (const image of shop.images) {
@@ -161,6 +165,7 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
     const bytes = await capture(image.url);
     if (bytes.width !== image.width || bytes.height !== image.height) fail("MEDIA_PLANNING_IMAGE_DIMENSIONS_CHANGED");
     const p = await choose("shopify", key, image.url, image.mediaId, bytes);
+    visuals.shopify[key] = bytes.visual;
     receipts.set(image.mediaId, { identity: id, side: "shopify", mediaId: image.mediaId, imageId: image.imageId, url: image.url,
       width: image.width, height: image.height, platformUpdatedAt: image.updatedAt, decodedSha256: bytes.sha256, byteLength: bytes.byteLength, mime: bytes.mime,
       key, contentId: p.contentId, evidenceId: p.evidenceId, ...(p.proof.operationId ? { importReceiptId: String(p.proof.operationId) } : {}) });
@@ -168,5 +173,5 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
   const shopify = mediaReadToSnapshot(shop, image => receipts.get(image.mediaId) ?? null);
   const lastGallery = await galleryPort.read(owner, deadline), lastShop = await shopRead(id, deadline); check();
   if (!same(lastGallery, c.galleryRaw) || lastShop.fingerprint !== shop.fingerprint) fail("MEDIA_PLANNING_SOURCE_CHANGED_DURING_READ");
-  return { pair: { gallery, shopify }, proofs, refs };
+  return { pair: { gallery, shopify }, proofs, refs, visuals };
 }
