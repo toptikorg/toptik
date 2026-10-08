@@ -285,6 +285,12 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
         plan.patches.push({ source, target, key, kind: "detach_reference" });
         plan.projected[target] = plan.projected[target].filter(a => a.key !== key);
       } else if (!targetAsset) {
+        // The target already shows this image (same bytes or lineage) under another key, now or earlier in
+        // this plan: a split identity, e.g. a replaced Gallery angle row that points at an existing Shopify
+        // file. Attaching would create a second copy, so the whole product is held for a reviewed mapping.
+        if ([...current[target].assets, ...plan.projected[target]].some(a => a.key !== key && a.contentId === sourceAsset.contentId)) {
+          conflict(key, "membership", "MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT"); continue;
+        }
         if (plan.projected[target].length >= MAX_ASSETS) { conflict(key, "membership", "MEDIA_TARGET_LIMIT"); continue; }
         const index = insertionIndex(plan.projected[target], current[source].assets, key);
         if (index === null) { conflict(key, "membership", "MEDIA_AMBIGUOUS_INSERT_ORDER"); continue; }
