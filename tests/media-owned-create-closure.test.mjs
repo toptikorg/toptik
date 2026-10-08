@@ -18,7 +18,9 @@ const sql = migration('20261008_media_owned_create_closure.sql');
 test('closure is a private operator function: no grant, lease scoped, never a permit or a receipt', () => {
   assert.match(sql, /create function toptik_media_private\.close_uncertain_owned_create\(/);
   assert.match(sql, /security definer set search_path=pg_catalog,pg_temp/);
-  assert.match(sql, /i:=toptik_media_private\.assert_access\(p_product_gid,p_lease_owner\)/);
+  // Lease and identity required; enabled not required: the paused product is the case (as set_toptik_media_enabled).
+  assert.match(sql, /i:=toptik_media_private\.assert_access\(p_product_gid,p_lease_owner,false\)/);
+  assert.match(sql, /\\\.\(jpg\|png\|webp\|avif\)\$'\)/);
   assert.match(sql, /revoke all on function toptik_media_private\.close_uncertain_owned_create\(text,uuid,uuid,uuid,text,text,text,boolean,text,text\)\s+from public,anon,authenticated,service_role;/);
   assert.doesNotMatch(sql, /\bgrant\b/i);
   assert.doesNotMatch(sql, /'mayExecute',true/);
@@ -148,7 +150,10 @@ test('an uncertain create_owned is closed: history kept, no receipt invented, op
   const fresh = await rpc(f.db, 'reserve_toptik_media_operation', [f.p, owner, randomUUID(), 1, f.current, f.core.reconcileMedia(f.current, f.current)]);
   assert.equal(fresh.status, 'reserved');
   // Identical replay is a no-op; any other closure of the same attempt is refused; the record is immutable.
-  assert.deepEqual(await f.close(argv), { status: 'conflict', closed: true, replayed: true, mayExecute: false });
+  assert.deepEqual(await f.close(argv), { status: 'conflict', closed: true, replayed: true, mayExecute: false, ownedFileObserved: true });
+  // Nothing in the worker can advance the closed attempt.
+  await assert.rejects(rpc(f.db, 'mark_toptik_media_transport_uncertain', [f.p, owner, f.op, 0, 1, randomUUID(), { outcome: 'unknown' }]));
+  await assert.rejects(rpc(f.db, 'accept_toptik_media_transport', [f.p, owner, f.op, 0, 1, randomUUID(), f.guard(f.raw), { requestHash: f.create.requestHash, readbackSha256: f.raw.revision, artifact: null }]));
   await assert.rejects(f.close(f.args()), /MEDIA_OWNED_CREATE_CLOSE_REUSED/);
   await assert.rejects(f.db.query('update toptik_media_private.owned_create_closures set approval_reference=$1', ['x']), /MEDIA_IMMUTABLE_RECORD/);
 });
@@ -178,11 +183,24 @@ for (const [name, over, error] of [
   ['approval reference', { reference: '' }, /MEDIA_OWNED_CREATE_CLOSE_INVALID/],
   ['approval evidence', { evidence: 'not-a-hash' }, /MEDIA_OWNED_CREATE_CLOSE_INVALID/],
   ['missing attempt', { attempt: randomUUID() }, /MEDIA_OWNED_CREATE_CLOSE_ATTEMPT_MISSING/],
-  ['foreign lease', { owner: randomUUID() }, /MEDIA_/],
+  ['foreign lease', { owner: randomUUID() }, /MEDIA_LEASE_LOST/],
 ]) test(`closure refuses a wrong ${name} and writes nothing`, { skip }, async () => {
   const f = await pausedCreate();
   await assert.rejects(f.close(f.args(over)), error);
   const s = await f.state(); assert.equal(s.attempt.status, 'uncertain'); assert.equal(s.op.status, 'running'); assert.equal(s.closures, 0); assert.equal(s.queue, undefined);
+});
+test('the paused (disabled) product is exactly the case: it closes, and the wakeup is a no-op until re-enabled', { skip }, async () => {
+  const f = await pausedCreate();
+  const approval = (await one(f.db, 'select approval_id from toptik_media_private.products where product_gid=$1', [f.p])).approval_id;
+  await rpc(f.db, 'set_toptik_media_enabled', [f.p, owner, randomUUID(), false, approval]);
+  assert.equal((await one(f.db, 'select enabled from toptik_media_private.products where product_gid=$1', [f.p])).enabled, false);
+  assert.equal((await f.close(f.args())).closed, true);
+  const s = await f.state(); assert.equal(s.op.status, 'conflict'); assert.equal(s.queue, undefined, 'a disabled product is not enqueued');
+});
+test('an attempt of another product is refused', { skip }, async () => {
+  const a = await pausedCreate(), b = await pausedCreate();
+  await assert.rejects(a.close(a.args({ attempt: b.attempt.attempt_id })), /MEDIA_OWNED_CREATE_CLOSE_OUT_OF_ORDER/);
+  assert.equal((await b.state()).closures, 0);
 });
 test('a storage-phase attempt is not this function\'s case', { skip }, async () => {
   const f = await pausedCreate();

@@ -1,10 +1,12 @@
 -- Reviewed exact closure of an UNCERTAIN owned-file creation (create_owned) whose association never ran.
 -- Live case (8.10.2026, P10OXT0529O operation e48b9fc7): the worker sent Shopify fileCreate for the
 -- deterministic owned file name; the outcome was never recorded (uncertain, no receipt) and the product
--- was paused before readback. A readback would find the file and continue to 'associate', attaching a
--- second copy of an image the store already shows. No existing path can close it: retirement covers
+-- was paused before readback. The file exists but is not attached. Whether a later readback would refuse
+-- (the store has changed since the attempt's guard) or continue to 'associate' depends on the store state
+-- at that moment, so the frozen plan must not be left to decide it. No existing path can close it: retirement covers
 -- only phase-0 storage attempts, hold_toptik_media_transport refuses uncertain attempts, and repair
--- covers storage phases only, so the product would stay paused forever.
+-- covers storage phases only, so the product would stay paused forever. The product is expected to be
+-- DISABLED while this runs (the approved switch), so no worker can reach the frozen chain in between.
 -- A database operator may close EACH exact such attempt when the journal proves that no later phase
 -- (association, detach, reorder) was ever permitted for the step. The operation becomes 'conflict',
 -- the product is re-enqueued, and the ordinary planner re-plans from the current state with every
@@ -22,7 +24,7 @@ create table toptik_media_private.owned_create_closures (
  step_index int not null check(step_index>=0),
  phase_index int not null check(phase_index>=1),
  original_request_hash text not null check(original_request_hash ~ '^[a-f0-9]{64}$'),
- owned_filename text not null check(owned_filename ~ '^toptik-sync-[a-f0-9]{32}-[0-9]+-[a-f0-9]{16}\.(jpg|png|webp)$'),
+ owned_filename text not null check(owned_filename ~ '^toptik-sync-[a-f0-9]{32}-[0-9]+-[a-f0-9]{16}\.(jpg|png|webp|avif)$'),
  observed_file_id text check(observed_file_id ~ '^gid://shopify/MediaImage/[1-9][0-9]*$'),
  observed_attached boolean not null check(observed_attached=false),
  approval_reference text not null check(length(approval_reference) between 1 and 160),
@@ -35,7 +37,7 @@ create trigger immutable_record before update or delete on toptik_media_private.
  for each row execute function toptik_media_private.immutable();
 
 -- PRIVATE OPERATOR FUNCTION: intentionally NO EXECUTE for service_role or any user role.
--- One call closes one exact attempt. p_observed_file_id is the owned file found by its deterministic
+-- One call closes one exact attempt; the product may be disabled. p_observed_file_id is the owned file found by its deterministic
 -- name (null when none was found); p_observed_attached must be false: an attached file is not this
 -- case (the readback path owns it). p_approval_evidence_sha256 is the digest of the operator's live
 -- evidence file; it is recorded, never trusted as a permit.
@@ -48,13 +50,14 @@ declare i jsonb; a0 toptik_media_private.transport_attempts%rowtype; a toptik_me
  prior toptik_media_private.owned_create_closures%rowtype; r jsonb;
 begin
  if p_closure_id is null or p_original_attempt_id is null or coalesce(p_request_hash,'') !~ '^[a-f0-9]{64}$'
- or coalesce(p_owned_filename,'') !~ '^toptik-sync-[a-f0-9]{32}-[0-9]+-[a-f0-9]{16}\.(jpg|png|webp)$'
+ or coalesce(p_owned_filename,'') !~ '^toptik-sync-[a-f0-9]{32}-[0-9]+-[a-f0-9]{16}\.(jpg|png|webp|avif)$'
  or (p_observed_file_id is not null and p_observed_file_id !~ '^gid://shopify/MediaImage/[1-9][0-9]*$')
  or p_observed_attached is null
  or length(coalesce(p_approval_reference,'')) not between 1 and 160 or p_approval_reference ~ '[[:cntrl:]]'
  or coalesce(p_approval_evidence_sha256,'') !~ '^[a-f0-9]{64}$' then raise exception 'MEDIA_OWNED_CREATE_CLOSE_INVALID';end if;
  if p_observed_attached then raise exception 'MEDIA_OWNED_CREATE_CLOSE_ATTACHED_USE_READBACK';end if;
- i:=toptik_media_private.assert_access(p_product_gid,p_lease_owner);
+ -- Lease and identity are required; enabled is not (as set_toptik_media_enabled): the paused product is the case.
+ i:=toptik_media_private.assert_access(p_product_gid,p_lease_owner,false);
  -- Idempotent replay of the identical closure only.
  select * into prior from toptik_media_private.owned_create_closures
  where closure_id=p_closure_id or original_attempt_id=p_original_attempt_id;
@@ -64,7 +67,7 @@ begin
   or prior.owned_filename is distinct from p_owned_filename or prior.observed_file_id is distinct from p_observed_file_id
   or prior.approval_reference is distinct from p_approval_reference
   or prior.approval_evidence_sha256 is distinct from p_approval_evidence_sha256 then raise exception 'MEDIA_OWNED_CREATE_CLOSE_REUSED';end if;
-  return jsonb_build_object('status','conflict','closed',true,'replayed',true,'mayExecute',false);
+  return jsonb_build_object('status','conflict','closed',true,'replayed',true,'mayExecute',false,'ownedFileObserved',prior.observed_file_id is not null);
  end if;
  select * into a0 from toptik_media_private.transport_attempts where attempt_id=p_original_attempt_id;
  if not found then raise exception 'MEDIA_OWNED_CREATE_CLOSE_ATTEMPT_MISSING';end if;
