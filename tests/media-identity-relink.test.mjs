@@ -70,6 +70,8 @@ create function public.assert_shopify_verified_copy_identity(p_item uuid,p_key t
     // The FULL gallery CAS migration: immutable triggers on observations/commits, version triggers, real RPCs.
     await db.exec(migration('20260930_gallery_media_cas.sql'));
     await db.exec(migration('20261008_media_identity_relink.sql'));
+    // The behavioral suite must exercise the SHIPPED function: v2 replaces it in place.
+    await db.exec(migration('20261008_media_identity_relink_paired.sql'));
     return { db, core };
   })();
   return ready;
