@@ -263,15 +263,18 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
   // Both are held for a reviewed mapping; the whole product waits, nothing is reserved.
   const targetShowsElsewhere = (target: MediaSide, key: string, contentId: string) =>
     [...current[target].assets, ...plan.projected[target]].some(a => a.key !== key && a.contentId === contentId);
-  // Same photo in another encoding (different bytes, so the check above cannot see it) under another key on the
-  // target, now or earlier in this plan. Without fingerprints for every image involved the write is held as well.
+  // Same photo in another encoding (different bytes, so the check above cannot see it) shown by the target under
+  // a key the source does not have: a split identity. Compared only against such target-only images, because a
+  // pixel fingerprint cannot tell a re-encode from the front and back of a plain product (measured on the live
+  // catalog), while the source showing both images under separate keys declares them distinct photos.
+  // Without fingerprints for every image compared the write is held as well.
   const targetShowsVisually = (source: MediaSide, target: MediaSide, key: string): "missing" | boolean => {
     if (!visuals) return false;
     const mine = visuals[source]?.[key];
     if (typeof mine !== "string") return "missing";
-    for (const a of [...current[target].assets, ...plan.projected[target]]) {
-      if (a.key === key) continue;
-      const theirs = visuals[target]?.[a.key] ?? visuals[source]?.[a.key];
+    for (const a of current[target].assets) {
+      if (a.key === key || c[source].has(a.key)) continue;
+      const theirs = visuals[target]?.[a.key];
       if (typeof theirs !== "string") return "missing";
       if (mediaVisualDistance(mine, theirs) <= MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) return true;
     }

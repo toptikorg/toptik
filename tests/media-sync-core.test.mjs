@@ -595,12 +595,24 @@ test('threshold boundary: distance 3 is held, just above 3 attaches', () => {
 test('a missing fingerprint for the new image or for any target image holds the write', () => {
   const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
   assert.deepEqual(conflictCodes(api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2) }))), [['n-new', 'MEDIA_VISUAL_IDENTITY_MISSING']]);
-  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), 'n-new': vis(9) }))), [['n-new', 'MEDIA_VISUAL_IDENTITY_MISSING']]);
+  const withTargetOnly = clone(base); withTargetOnly.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
+  const now2 = clone(withTargetOnly); now2.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  assert.deepEqual(conflictCodes(api.reconcileMedia(withTargetOnly, now2, [], [], visualsOf(now2, { a: vis(1), b: vis(2), 'n-new': vis(9) }))), [['n-new', 'MEDIA_VISUAL_IDENTITY_MISSING']]);
 });
-test('two new keys with the same photo in different encodings: the second is held', () => {
-  const base = two(); const now = clone(base); now.gallery.assets.push(asset('n1', { contentId: cid('6') }), asset('n2', { contentId: cid('7') }));
-  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), n1: vis(5), n2: vis(5, 1) }));
-  assert.deepEqual(conflictCodes(plan), [['n2', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+test('images the source itself shows under separate keys are distinct photos (front and back of a plain product)', () => {
+  // Live: wallet front and back measure 0.88, pouch front and back 1.41, below the re-encode maximum 1.31-3.
+  const base = two(); const now = clone(base); now.gallery.assets.push(asset('back', { contentId: cid('6') }));
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), back: vis(1, 1) }));   // back ~ shared front 'a'
+  assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.patches.map(p => [p.kind, p.target, p.key]), [['attach', 'shopify', 'back']]);
+  const pairNew = clone(base); pairNew.gallery.assets.push(asset('n1', { contentId: cid('6') }), asset('n2', { contentId: cid('7') }));
+  assert.deepEqual(api.reconcileMedia(base, pairNew, [], [], visualsOf(pairNew, { a: vis(1), b: vis(2), n1: vis(5), n2: vis(5, 1) })).conflicts, []);
+});
+test('a target-only image that matches visually is still held even when other target images match nothing', () => {
+  const base = two(); base.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
+  const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), 't-only': vis(4), 'n-new': vis(4, 2) }));
+  assert.deepEqual(conflictCodes(plan), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
 });
 test('content change to a photo the target shows in another encoding under another key is held', () => {
   const base = two(); base.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
