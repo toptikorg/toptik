@@ -9,7 +9,7 @@
 -- DISABLED while this runs (the approved switch), so no worker can reach the frozen chain in between.
 -- A database operator may close EACH exact such attempt when the journal proves that no later phase
 -- (association, detach, reorder) was ever permitted for the step. The operation becomes 'conflict',
--- the product is re-enqueued, and the ordinary planner re-plans from the current state with every
+-- the product is re-enqueued if enabled (a disabled one re-plans once re-enabled and enqueued), and the ordinary planner re-plans from the current state with every
 -- gate (including the same-content and visual-duplicate holds). Nothing is created, attached,
 -- detached or deleted here, and no request, receipt, guard, artifact, provenance or baseline changes.
 -- The operator's platform observation (the owned file id if found, and that it is NOT attached to the

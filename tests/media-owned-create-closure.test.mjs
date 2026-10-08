@@ -152,8 +152,8 @@ test('an uncertain create_owned is closed: history kept, no receipt invented, op
   // Identical replay is a no-op; any other closure of the same attempt is refused; the record is immutable.
   assert.deepEqual(await f.close(argv), { status: 'conflict', closed: true, replayed: true, mayExecute: false, ownedFileObserved: true });
   // Nothing in the worker can advance the closed attempt.
-  await assert.rejects(rpc(f.db, 'mark_toptik_media_transport_uncertain', [f.p, owner, f.op, 0, 1, randomUUID(), { outcome: 'unknown' }]));
-  await assert.rejects(rpc(f.db, 'accept_toptik_media_transport', [f.p, owner, f.op, 0, 1, randomUUID(), f.guard(f.raw), { requestHash: f.create.requestHash, readbackSha256: f.raw.revision, artifact: null }]));
+  await assert.rejects(rpc(f.db, 'mark_toptik_media_transport_uncertain', [f.p, owner, f.op, 0, 1, randomUUID(), { outcome: 'unknown' }]), /MEDIA_TRANSPORT_NOT_STARTED/);
+  await assert.rejects(rpc(f.db, 'accept_toptik_media_transport', [f.p, owner, f.op, 0, 1, randomUUID(), f.guard(f.raw), { requestHash: f.create.requestHash, readbackSha256: f.raw.revision, artifact: null }]), /MEDIA_TRANSPORT_NOT_STARTED/);
   await assert.rejects(f.close(f.args()), /MEDIA_OWNED_CREATE_CLOSE_REUSED/);
   await assert.rejects(f.db.query('update toptik_media_private.owned_create_closures set approval_reference=$1', ['x']), /MEDIA_IMMUTABLE_RECORD/);
 });
