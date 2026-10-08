@@ -145,10 +145,14 @@ function independentLocalAlt(baseline: MediaPair, current: MediaPair, source: Me
   // the images that are not shared. Every apparent flip then comes from shared images moving around
   // it, not from this image moving. An image that moved itself, or any change while the shared order
   // is unchanged, keeps the hold.
+  // Shared = on both sides now (a copy the other side just started referencing is ordered by the shared logic
+  // too: the live case). Positions are compared only among keys present on this side both before and now, so
+  // an addition or removal cannot mask a move of this image.
   const shared = new Set(current.gallery.assets.map(a => a.key).filter(k => current.shopify.assets.some(a => a.key === k)));
+  const stable = new Set(baseline[source].assets.map(a => a.key).filter(k => current[source].assets.some(a => a.key === k)));
   const order = (snapshot: MediaSnapshot, keep: (k: string) => boolean) => snapshot.assets.map(a => a.key).filter(keep);
   const sharedChanged = !same(order(baseline[source], k => shared.has(k)), order(current[source], k => shared.has(k)));
-  const sameIndex = baseline[source].assets.findIndex(a => a.key === key) === current[source].assets.findIndex(a => a.key === key);
+  const sameIndex = order(baseline[source], k => stable.has(k)).indexOf(key) === order(current[source], k => stable.has(k)).indexOf(key);
   const local = (snapshot: MediaSnapshot): MediaSnapshot => ({ ...snapshot, assets: snapshot.assets.filter(a => !shared.has(a.key)) });
   return sharedChanged && sameIndex && !repositioned(local(baseline[source]), local(current[source]), key);
 }

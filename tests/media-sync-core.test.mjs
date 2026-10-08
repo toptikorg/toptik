@@ -310,6 +310,28 @@ test('with a shared reorder, an independent image that changed index keeps the h
   now.shopify.assets[3].alt = 'תיאור נגיש';
   assert.ok(api.reconcileMedia(base, now).conflicts.some(c => c.key === 'y' && c.code === 'MEDIA_TARGET_MAPPING_REQUIRED'));
 });
+test('the same exception holds on the gallery side (mirror)', () => {
+  const base = pair([asset('s'), asset('a'), asset('y'), asset('b')], [asset('a'), asset('b')]), now = clone(base);
+  now.gallery.assets = [now.gallery.assets[0], now.gallery.assets[3], now.gallery.assets[2], now.gallery.assets[1]];
+  now.gallery.assets[2].alt = 'תיאור נגיש';
+  const plan = api.reconcileMedia(base, now); assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.orders, [{ target: 'shopify', keys: ['b', 'a'] }]);
+});
+test('a newly shared copy moving around the image (live shape) is acknowledged', () => {
+  // Store-only n is copied to the gallery and the store order follows the gallery: n moves past y.
+  const base = pair([asset('a'), asset('b')], [asset('s'), asset('n'), asset('y'), asset('a'), asset('b')]), now = clone(base);
+  now.gallery.assets.push(clone(base.shopify.assets[1]));
+  const [s, n, y, a, b] = now.shopify.assets; now.shopify.assets = [s, a, y, b, n]; y.alt = 'תיאור נגיש';
+  assert.deepEqual(api.reconcileMedia(base, now).conflicts, []);
+});
+test('an addition or removal on the same side cannot mask a move of the image', () => {
+  const removed = pair([asset('a'), asset('b'), asset('h')], [asset('r'), asset('a'), asset('y'), asset('b')]), r1 = clone(removed);
+  r1.shopify.assets = [asset('a'), asset('b'), { ...asset('y'), alt: 'תיאור נגיש' }, asset('h')];
+  assert.ok(api.reconcileMedia(removed, r1, [removal(removed, 'shopify', 'r')]).conflicts.some(c => c.key === 'y' && c.code === 'MEDIA_TARGET_MAPPING_REQUIRED'));
+  const added = pair([asset('a'), asset('b'), asset('h')], [asset('a'), asset('y'), asset('b')]), r2 = clone(added);
+  r2.shopify.assets = [asset('h'), { ...asset('y'), alt: 'תיאור נגיש' }, asset('a'), asset('b')];
+  assert.ok(api.reconcileMedia(added, r2).conflicts.some(c => c.key === 'y' && c.code === 'MEDIA_TARGET_MAPPING_REQUIRED'));
+});
 test('with a shared reorder, an independent image reordered among independent images keeps the hold', () => {
   const base = pair([asset('a'), asset('b')], [asset('s'), asset('a'), asset('y'), asset('b'), asset('t')]), now = clone(base);
   const [s, a, y, b, t] = now.shopify.assets; now.shopify.assets = [t, b, y, a, s]; y.alt = 'תיאור נגיש';
