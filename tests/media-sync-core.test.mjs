@@ -322,7 +322,8 @@ test('a newly shared copy moving around the image (live shape) is acknowledged',
   const base = pair([asset('a'), asset('b')], [asset('s'), asset('n'), asset('y'), asset('a'), asset('b')]), now = clone(base);
   now.gallery.assets.push(clone(base.shopify.assets[1]));
   const [s, n, y, a, b] = now.shopify.assets; now.shopify.assets = [s, a, y, b, n]; y.alt = 'תיאור נגיש';
-  assert.deepEqual(api.reconcileMedia(base, now).conflicts, []);
+  const plan = api.reconcileMedia(base, now); assert.deepEqual(plan.conflicts, []); assert.deepEqual(plan.patches, []); assert.deepEqual(plan.orders, []);
+  assert.deepEqual(api.independentLocalAltChanges(base, now).map(x => [x.side, x.key]), [['shopify', 'y']]);
 });
 test('an addition or removal on the same side cannot mask a move of the image', () => {
   const removed = pair([asset('a'), asset('b'), asset('h')], [asset('r'), asset('a'), asset('y'), asset('b')]), r1 = clone(removed);
