@@ -49,15 +49,26 @@ export type MediaPlan = {
 /** Encoding-independent pixel fingerprints captured with this observation only (hex of 32x32 RGB, white border
  * trimmed). Used to HOLD a write that would show the same photo twice; never to infer an identity or a mapping. */
 export type MediaVisuals = Record<MediaSide, Record<string, string>>;
-/** Calibrated 8.10.2026 on live catalog photos: the same photo re-encoded or re-padded measured <= 1.31, distinct
- * photos of one product >= 6.39, different products >= 19. */
-export const MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE = 3;
+/** Distance = mean absolute pixel difference divided by the pair's mean darkness (255 - value), so pale products and
+ * small dark details are not compressed toward zero. Calibrated 8.10.2026 on live photos: the same photo re-encoded or
+ * re-padded <= 0.0112; distinct photos, including the front and back of plain pouches and wallets, >= 0.0384. */
+export const MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE = 0.02;
 const VISUAL = /^(?:[a-f0-9]{2}){3072}$/;
-export function mediaVisualDistance(a: string, b: string): number {
-  if (!VISUAL.test(a) || !VISUAL.test(b)) fail("MEDIA_VISUAL_IDENTITY_INVALID");
+const decodedVisuals = new Map<string, { pixels: Uint8Array; darkness: number }>();
+function decodeVisual(hex: string) {
+  const known = decodedVisuals.get(hex); if (known) return known;
+  if (typeof hex !== "string" || !VISUAL.test(hex)) fail("MEDIA_VISUAL_IDENTITY_INVALID");
+  const pixels = new Uint8Array(3072); let darkness = 0;
+  for (let i = 0; i < 3072; i++) { pixels[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16); darkness += 255 - pixels[i]; }
+  if (decodedVisuals.size > 4096) decodedVisuals.clear();
+  const value = { pixels, darkness: darkness / 3072 }; decodedVisuals.set(hex, value); return value;
+}
+/** Exact normalized distance, or any value above `limit` as soon as the limit is certainly exceeded. */
+export function mediaVisualDistance(a: string, b: string, limit = Number.POSITIVE_INFINITY): number {
+  const x = decodeVisual(a), y = decodeVisual(b), dark = Math.max(1, (x.darkness + y.darkness) / 2), stop = limit * dark * 3072;
   let sum = 0;
-  for (let i = 0; i < a.length; i += 2) sum += Math.abs(parseInt(a.slice(i, i + 2), 16) - parseInt(b.slice(i, i + 2), 16));
-  return sum / (a.length / 2);
+  for (let i = 0; i < 3072; i++) { sum += Math.abs(x.pixels[i] - y.pixels[i]); if (sum > stop) return sum / 3072 / dark; }
+  return sum / 3072 / dark;
 }
 
 const SIDES: MediaSide[] = ["gallery", "shopify"];
@@ -276,7 +287,7 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
       if (a.key === key || c[source].has(a.key)) continue;
       const theirs = visuals[target]?.[a.key];
       if (typeof theirs !== "string") return "missing";
-      if (mediaVisualDistance(mine, theirs) <= MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) return true;
+      if (mediaVisualDistance(mine, theirs, MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) <= MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) return true;
     }
     return false;
   };

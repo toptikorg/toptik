@@ -563,9 +563,11 @@ test('replace held: a content swap between two shared rows', () => {
 const vis = (seed, shift = 0) => { let x = seed >>> 0, out = ''; for (let i = 0; i < 3072; i++) { x = (x * 1103515245 + 12345) >>> 0; const v = Math.min(255, Math.max(0, ((x >>> 16) & 255) + shift)); out += v.toString(16).padStart(2, '0'); } return out; };
 const visualsOf = (now, table) => ({ gallery: Object.fromEntries(now.gallery.assets.map(a => [a.key, table[a.key]])), shopify: Object.fromEntries(now.shopify.assets.map(a => [a.key, table[a.key]])) });
 const flatVis = d => d.toString(16).padStart(2, '0').repeat(3072);
-test('visual distance is the mean absolute pixel difference; malformed fingerprints throw', () => {
+test('visual distance is the mean absolute pixel difference over the mean darkness; malformed fingerprints throw', () => {
   assert.equal(api.mediaVisualDistance(vis(1), vis(1)), 0);
-  assert.ok(Math.abs(api.mediaVisualDistance(flatVis(0), flatVis(3)) - 3) < 1e-9);
+  assert.ok(Math.abs(api.mediaVisualDistance(flatVis(100), flatVis(103)) - 3 / 153.5) < 1e-9);
+  assert.ok(Math.abs(api.mediaVisualDistance(flatVis(250), flatVis(253)) - 3 / 3.5) < 1e-9, 'pale images are not compressed toward zero');
+  assert.ok(api.mediaVisualDistance(flatVis(0), flatVis(200), 0.02) > 0.02, 'an early exit still reports a value above the limit');
   assert.throws(() => api.mediaVisualDistance('00', '00'), /VISUAL_IDENTITY_INVALID/);
   assert.throws(() => api.mediaVisualDistance('zz'.repeat(3072), flatVis(0)), /VISUAL_IDENTITY_INVALID/);
 });
@@ -585,12 +587,12 @@ test('a visually different new image still attaches after its shared anchor', ()
   assert.deepEqual(plan.patches.map(p => [p.kind, p.target, p.key]), [['attach', 'shopify', 'n-new']]);
   assert.deepEqual(plan.projected.shopify.map(a => a.key), ['a', 'b', 'n-new']);
 });
-test('threshold boundary: distance 3 is held, just above 3 attaches', () => {
+test('threshold boundary: 3/153.5 = 0.0195 is held, 4/153 = 0.026 attaches', () => {
   const base = two(); base.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
   const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
   const run = mine => api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), 't-only': flatVis(100), 'n-new': mine }));
   assert.deepEqual(conflictCodes(run(flatVis(103))), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
-  assert.deepEqual(run(flatVis(103).slice(0, -2) + flatVis(104).slice(-2)).conflicts, []);
+  assert.deepEqual(run(flatVis(104)).conflicts, []);
 });
 test('a missing fingerprint for the new image or for any target image holds the write', () => {
   const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
@@ -647,4 +649,18 @@ test('live BAH08451.001 shape: no shared keys, gallery adds photo 6 (another enc
   assert.equal(codes.G6, 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE');
   for (const k of ['G7', 'G8', 'G9', 'G10']) assert.equal(codes[k], 'MEDIA_AMBIGUOUS_INSERT_ORDER');
   assert.equal(plan.patches.some(p => p.kind === 'attach'), false);
+});
+test('planning stays fast at large image counts (fingerprints decoded once, early exit)', () => {
+  const shared = Array.from({ length: 30 }, (_, i) => asset('sh' + i, { contentId: cid(String(i % 10)) + '' }));
+  shared.forEach((a, i) => { a.contentId = (i.toString(16).padStart(2, '0')).repeat(32); });
+  const targetOnly = Array.from({ length: 120 }, (_, i) => asset('to' + i, { contentId: ('a' + i.toString(16).padStart(3, '0')).repeat(16) }));
+  const base = pair(clone(shared), [...clone(shared), ...clone(targetOnly)]), now = clone(base);
+  const fresh = Array.from({ length: 90 }, (_, i) => asset('nw' + i, { contentId: ('b' + i.toString(16).padStart(3, '0')).repeat(16) }));
+  now.gallery.assets.push(...fresh);
+  const table = {}; [...shared, ...targetOnly, ...fresh].forEach((a, i) => { table[a.key] = vis(1000 + i); });
+  const started = performance.now();
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, table));
+  const ms = performance.now() - started;
+  assert.equal(plan.patches.filter(p => p.kind === 'attach').length, 90);
+  assert.ok(ms < 3000, `${ms.toFixed(0)} ms`);
 });

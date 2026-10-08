@@ -108,3 +108,9 @@ test('greyscale, transparent and fully uniform images still give a 3-channel fin
   const uniform = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#ffffff' } }).png().toBuffer();
   for (const buf of [grey, transparent, uniform]) assert.match(await captureVisual(buf), /^(?:[a-f0-9]{2}){3072}$/);
 });
+test('EXIF orientation is applied before fingerprinting: a tagged photo matches the physically rotated one', async () => {
+  const upright = await sharp(photo()).rotate(90).jpeg({ quality: 85 }).toBuffer();
+  const tagged = await sharp(photo()).jpeg({ quality: 85 }).withMetadata({ orientation: 6 }).toBuffer();
+  const d = coreApi.mediaVisualDistance(await captureVisual(upright), await captureVisual(tagged));
+  assert.ok(d <= coreApi.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, String(d));
+});

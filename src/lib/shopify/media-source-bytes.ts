@@ -57,10 +57,11 @@ export async function readVerifiedMediaSourceBytes(input: MediaSourceBytesProof,
 export async function captureMediaSourceBytes(identity: MediaIdentity, url: string, deadline: number): Promise<CapturedMediaBytes> {
   return capture(structuredClone(identity), url, deadline);
 }
-/** Full pixel decode (the decode check this replaces) reduced to an encoding-independent fingerprint: flatten on
- * white, fit inside 512, trim the uniform white border, 32x32 RGB. Calibrated on live photos 8.10.2026. */
+/** Full pixel decode (the decode check this replaces) reduced to an encoding-independent fingerprint: EXIF
+ * orientation applied, flatten on white, fit inside 512, trim the uniform white border, 32x32 RGB.
+ * Calibrated on live photos 8.10.2026. */
 async function visualSignature(decoder: sharp.Sharp): Promise<string> {
-  const flat = await decoder.clone().flatten({ background: "#ffffff" }).resize(512, 512, { fit: "inside", withoutEnlargement: true })
+  const flat = await decoder.clone().rotate().flatten({ background: "#ffffff" }).resize(512, 512, { fit: "inside", withoutEnlargement: true })
     .removeAlpha().toColourspace("srgb").raw().toBuffer({ resolveWithObject: true });
   let trimmed = flat;
   try {
