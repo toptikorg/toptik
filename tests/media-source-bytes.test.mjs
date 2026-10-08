@@ -75,6 +75,10 @@ test('valid PNG header with truncated pixels is not decoded evidence',()=>run(as
 test('oversized sources get their own PERMANENT code; extra streamed bytes stay a read failure',()=>run(async f=>{
   f.handler=async()=>new Response(bytes,{headers:{'content-length':String(8388609)}});await assert.rejects(readVerifiedMediaSourceBytes(proof(),Date.now()+1000),/BYTE_LIMIT/);
   f.handler=async()=>new Response(Buffer.concat([bytes,Buffer.from('extra')]));await assert.rejects(readVerifiedMediaSourceBytes(proof(),Date.now()+1000),/READ_FAILED/);
+  f.handler=async()=>new Response(new ReadableStream({start(c){const big=new Uint8Array(1024*1024);for(let i=0;i<9;i++)c.enqueue(big);c.close();}}));
+  const giant=proof();giant.byteLength=8388608;await assert.rejects(readVerifiedMediaSourceBytes(giant,Date.now()+5000),/BYTE_LIMIT/);
+  f.handler=async()=>{const r=new Response(bytes);Object.defineProperty(r,'body',{value:{getReader:()=>({read:async()=>{throw new Error('socket reset');},cancel:async()=>{}}),cancel:async()=>{}}});return r;};
+  await assert.rejects(readVerifiedMediaSourceBytes(proof(),Date.now()+1000),/READ_FAILED/);
 }));
 test('expired or hanging DNS is bounded without a GET',()=>run(async f=>{
   await assert.rejects(readVerifiedMediaSourceBytes(proof(),Date.now()-1),/TIME_BUDGET/);assert.equal(f.dnsCalls.length,0);

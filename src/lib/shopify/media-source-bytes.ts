@@ -90,18 +90,26 @@ async function capture(identity: MediaIdentity, address: string, deadline: numbe
   // An oversize source is a PERMANENT state of the catalog, not a transient read error: it gets
   // its own code (declared size here, streamed size below) so the queue can park the product for
   // review instead of re-downloading the same unchanged files on every batch.
-  if (Number(response.headers.get("content-length") ?? 0) > MAX_BYTES) {
-    await response.body?.cancel().catch(() => {}); fail("MEDIA_SOURCE_BYTE_LIMIT");
-  }
   if (!response.ok || response.redirected || (response.url && response.url !== address)) {
     await response.body?.cancel().catch(() => {}); fail("MEDIA_SOURCE_READ_FAILED");
+  }
+  if (Number(response.headers.get("content-length") ?? 0) > MAX_BYTES) {
+    await response.body?.cancel().catch(() => {}); fail("MEDIA_SOURCE_BYTE_LIMIT");
   }
   const reader = response.body?.getReader(); if (!reader) fail("MEDIA_SOURCE_READ_FAILED");
   const chunks: Uint8Array[] = []; let size = 0;
   try {
     while (true) { const chunk = await bounded(() => reader.read(), stop); if (chunk.done) break;
-      size += chunk.value.byteLength; if (size > MAX_BYTES || (proof && size > proof.byteLength)) fail("MEDIA_SOURCE_BYTE_LIMIT"); chunks.push(chunk.value); }
-  } catch { await reader.cancel().catch(() => {}); return fail("MEDIA_SOURCE_READ_FAILED"); }
+      size += chunk.value.byteLength;
+      if (size > MAX_BYTES) fail("MEDIA_SOURCE_BYTE_LIMIT");                 // a permanently oversize source
+      if (proof && size > proof.byteLength) fail("MEDIA_SOURCE_READ_FAILED"); // more bytes than proven: a changed read
+      chunks.push(chunk.value); }
+  } catch (error) {
+    await reader.cancel().catch(() => {});
+    // The permanent oversize verdict must survive this cleanup; everything else stays a read failure.
+    if (error instanceof Error && error.message === "MEDIA_SOURCE_BYTE_LIMIT") throw error;
+    return fail("MEDIA_SOURCE_READ_FAILED");
+  }
   const bytes = Buffer.concat(chunks);
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   if (proof && (bytes.byteLength !== proof.byteLength || sha256 !== proof.sha256)) fail("MEDIA_SOURCE_BYTES_CHANGED");
