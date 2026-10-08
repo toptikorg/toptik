@@ -57,21 +57,27 @@ export async function readVerifiedMediaSourceBytes(input: MediaSourceBytesProof,
 export async function captureMediaSourceBytes(identity: MediaIdentity, url: string, deadline: number): Promise<CapturedMediaBytes> {
   return capture(structuredClone(identity), url, deadline);
 }
-/** Full pixel decode (the decode check this replaces) reduced to an encoding-independent fingerprint: EXIF
- * orientation applied, flatten on white, fit inside 512, trim the uniform white border, 32x32 RGB.
- * Calibrated on live photos 8.10.2026. */
+/** Full pixel decode (the decode check this replaces) reduced to an encoding-independent fingerprint:
+ * EXIF orientation applied, flatten on white, fit inside 512, then THREE 32x32 RGB framings so one
+ * unstable crop cannot hide a duplicate: the white-trimmed frame (contain), the own-background-trimmed
+ * frame (fill), and the untrimmed frame (contain). Concatenated as 9216 bytes of hex. Distances are
+ * taken per framing and the smallest decides (media-sync-core). Calibrated on live photos 8.10.2026. */
 async function visualSignature(decoder: sharp.Sharp): Promise<string> {
   const flat = await decoder.clone().rotate().flatten({ background: "#ffffff" }).resize(512, 512, { fit: "inside", withoutEnlargement: true })
     .removeAlpha().toColourspace("srgb").raw().toBuffer({ resolveWithObject: true });
-  let trimmed = flat;
-  try {
-    trimmed = await sharp(flat.data, { raw: { width: flat.info.width, height: flat.info.height, channels: flat.info.channels } })
-      .trim({ background: "#ffffff", threshold: 12 }).raw().toBuffer({ resolveWithObject: true });
-  } catch { /* a uniform image has no border to trim */ }
-  const small = await sharp(trimmed.data, { raw: { width: trimmed.info.width, height: trimmed.info.height, channels: trimmed.info.channels } })
-    .resize(32, 32, { fit: "contain", background: "#ffffff" }).removeAlpha().toColourspace("srgb").raw().toBuffer({ resolveWithObject: true });
-  if (small.info.channels !== 3 || small.data.length !== 3072) fail("MEDIA_SOURCE_DECODE_FAILED");
-  return small.data.toString("hex");
+  type Frame = { data: Buffer; info: { width: number; height: number; channels: number } };
+  const raw = (frame: Frame) => sharp(frame.data, { raw: { width: frame.info.width, height: frame.info.height, channels: frame.info.channels } });
+  const trim = async (options: Parameters<sharp.Sharp["trim"]>[0]): Promise<Frame> => {
+    try { return await raw(flat).trim(options).raw().toBuffer({ resolveWithObject: true }); }
+    catch { return flat; /* a uniform image has no border to trim */ }
+  };
+  const parts: Buffer[] = [];
+  for (const [frame, fit] of [[await trim({ background: "#ffffff", threshold: 12 }), "contain"], [await trim({ threshold: 12 }), "fill"], [flat, "contain"]] as const) {
+    const small = await raw(frame).resize(32, 32, { fit, background: "#ffffff" }).removeAlpha().toColourspace("srgb").raw().toBuffer({ resolveWithObject: true });
+    if (small.info.channels !== 3 || small.data.length !== 3072) fail("MEDIA_SOURCE_DECODE_FAILED");
+    parts.push(small.data);
+  }
+  return Buffer.concat(parts).toString("hex");
 }
 async function capture(identity: MediaIdentity, address: string, deadline: number, proof?: MediaSourceBytesProof): Promise<CapturedMediaBytes> {
   const url = sourceUrl(identity, address), stop = Math.min(deadline, Date.now() + 8000);

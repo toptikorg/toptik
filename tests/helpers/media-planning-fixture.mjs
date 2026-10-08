@@ -27,5 +27,5 @@ export function fixture(){
 }
 
 /** Distinct pixel fingerprint per logical key (32x32 RGB hex), as the observation returns for real photos. */
-export const visualOf=key=>{let x=0;for(const c of key)x=(x*31+c.charCodeAt(0))>>>0;let out='';for(let i=0;i<3072;i++){x=(x*1103515245+12345)>>>0;out+=((x>>>16)&255).toString(16).padStart(2,'0');}return out;};
+export const visualOf=key=>{let x=0;for(const c of key)x=(x*31+c.charCodeAt(0))>>>0;let out='';for(let i=0;i<9216;i++){x=(x*1103515245+12345)>>>0;out+=((x>>>16)&255).toString(16).padStart(2,'0');}return out;};
 export const visualsFor=pair=>({gallery:Object.fromEntries(pair.gallery.assets.map(a=>[a.key,visualOf(a.key)])),shopify:Object.fromEntries(pair.shopify.assets.map(a=>[a.key,visualOf(a.key)]))});

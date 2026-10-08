@@ -52,26 +52,70 @@ export type MediaVisuals = Record<MediaSide, Record<string, string>> & {
   /** The Gallery cover's key when it is a separate file, not an alias of an angle. */
   galleryCover?: string;
 };
-/** Distance = mean absolute pixel difference divided by the pair's mean darkness (255 - value), so pale products and
- * small dark details are not compressed toward zero. Calibrated 8.10.2026 on live photos: the same photo re-encoded or
- * re-padded <= 0.0112; distinct photos, including the front and back of plain pouches and wallets, >= 0.0384. */
-export const MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE = 0.02;
-const VISUAL = /^(?:[a-f0-9]{2}){3072}$/;
-const decodedVisuals = new Map<string, { pixels: Uint8Array; darkness: number }>();
-function decodeVisual(hex: string) {
+/** Distance per framing = the worst 8x8-pixel block of the residual AFTER a per-channel linear tone
+ * match (gain clamped to [0.6, 1.6]), so re-encoding, brightness, gamma and CMYK round-trips cancel
+ * while any real local difference (another angle, another object) survives; the smallest framing
+ * distance decides, so one unstable crop cannot hide a duplicate. Calibrated 8.10.2026 on live photos:
+ * 101 realistic re-encodes per store image measure <= 2.6 in 89% of cases (the misses are heavy crops
+ * and display-route trims), while 4687 distinct-photo pairs, including the front and back of plain
+ * pouches and wallets within one product, all measure >= 3.33. */
+export const MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE = 2.6;
+const VISUAL_FRAMES = 3, FRAME_BYTES = 3072;
+const VISUAL = /^(?:[a-f0-9]{2}){9216}$/;
+type DecodedFrame = { pixels: Uint8Array; sum: Float64Array; sumSquares: Float64Array };
+const decodedVisuals = new Map<string, DecodedFrame[]>();
+function decodeVisual(hex: string): DecodedFrame[] {
   const known = decodedVisuals.get(hex); if (known) return known;
   if (typeof hex !== "string" || !VISUAL.test(hex)) fail("MEDIA_VISUAL_IDENTITY_INVALID");
-  const pixels = new Uint8Array(3072); let darkness = 0;
-  for (let i = 0; i < 3072; i++) { pixels[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16); darkness += 255 - pixels[i]; }
+  const frames: DecodedFrame[] = [];
+  const digit = (at: number) => { const code = hex.charCodeAt(at); return code <= 57 ? code - 48 : code - 87; };
+  for (let f = 0; f < VISUAL_FRAMES; f++) {
+    const pixels = new Uint8Array(FRAME_BYTES), base = f * FRAME_BYTES * 2;
+    const sum = new Float64Array(3), sumSquares = new Float64Array(3);
+    for (let i = 0; i < FRAME_BYTES; i++) {
+      const value = digit(base + i * 2) * 16 + digit(base + i * 2 + 1), c = i % 3;
+      pixels[i] = value; sum[c] += value; sumSquares[c] += value * value;
+    }
+    frames.push({ pixels, sum, sumSquares });
+  }
   if (decodedVisuals.size > 4096) decodedVisuals.clear();
-  const value = { pixels, darkness: darkness / 3072 }; decodedVisuals.set(hex, value); return value;
+  decodedVisuals.set(hex, frames); return frames;
 }
-/** Exact normalized distance, or any value above `limit` as soon as the limit is certainly exceeded. */
+const FRAME_N = FRAME_BYTES / 3, BLOCK = 8, SIDE = 32;
+function frameDistance(x: DecodedFrame, y: DecodedFrame): number {
+  // Per-channel least-squares tone match y ~ k*x + c, gain clamped so a flat impostor cannot collapse.
+  const k = new Float64Array(3), c = new Float64Array(3);
+  let dot0 = 0, dot1 = 0, dot2 = 0;
+  for (let i = 0; i < FRAME_BYTES; i += 3) { dot0 += x.pixels[i] * y.pixels[i]; dot1 += x.pixels[i + 1] * y.pixels[i + 1]; dot2 += x.pixels[i + 2] * y.pixels[i + 2]; }
+  const dots = [dot0, dot1, dot2];
+  for (let ch = 0; ch < 3; ch++) {
+    const meanX = x.sum[ch] / FRAME_N, meanY = y.sum[ch] / FRAME_N, varX = x.sumSquares[ch] / FRAME_N - meanX * meanX;
+    const gain = varX > 1e-6 ? (dots[ch] / FRAME_N - meanX * meanY) / varX : 1;
+    k[ch] = Math.min(1.6, Math.max(0.6, gain)); c[ch] = meanY - k[ch] * meanX;
+  }
+  let worst = 0;
+  const cells = BLOCK * BLOCK * 3;
+  for (let blockY = 0; blockY < SIDE; blockY += BLOCK) for (let blockX = 0; blockX < SIDE; blockX += BLOCK) {
+    let total = 0;
+    for (let row = blockY; row < blockY + BLOCK; row++) for (let col = blockX; col < blockX + BLOCK; col++) {
+      const at = (row * SIDE + col) * 3;
+      for (let ch = 0; ch < 3; ch++) total += Math.abs(k[ch] * x.pixels[at + ch] + c[ch] - y.pixels[at + ch]);
+    }
+    if (total > worst) worst = total;
+  }
+  return worst / cells;
+}
+/** The smallest per-framing distance; with a finite `limit` it stops at the first framing at or under
+ * it (that framing already decides a hold, and the true minimum can only be smaller). */
 export function mediaVisualDistance(a: string, b: string, limit = Number.POSITIVE_INFINITY): number {
-  const x = decodeVisual(a), y = decodeVisual(b), dark = Math.max(1, (x.darkness + y.darkness) / 2), stop = limit * dark * 3072;
-  let sum = 0;
-  for (let i = 0; i < 3072; i++) { sum += Math.abs(x.pixels[i] - y.pixels[i]); if (sum > stop) return sum / 3072 / dark; }
-  return sum / 3072 / dark;
+  const x = decodeVisual(a), y = decodeVisual(b);
+  let best = Number.POSITIVE_INFINITY;
+  for (let f = 0; f < VISUAL_FRAMES; f++) {
+    const d = frameDistance(x[f], y[f]);
+    if (d < best) best = d;
+    if (Number.isFinite(limit) && best <= limit) return best;
+  }
+  return best;
 }
 
 const SIDES: MediaSide[] = ["gallery", "shopify"];

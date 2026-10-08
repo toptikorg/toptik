@@ -560,16 +560,31 @@ test('replace held: a content swap between two shared rows', () => {
 });
 
 // Same photo in another encoding: different bytes (so a different contentId), near-identical pixels.
-const vis = (seed, shift = 0) => { let x = seed >>> 0, out = ''; for (let i = 0; i < 3072; i++) { x = (x * 1103515245 + 12345) >>> 0; const v = Math.min(255, Math.max(0, ((x >>> 16) & 255) + shift)); out += v.toString(16).padStart(2, '0'); } return out; };
+// A fingerprint is three 32x32 RGB framings (9216 bytes of hex); the smallest framing distance decides.
+const vis = (seed, shift = 0) => { let x = seed >>> 0, out = ''; for (let i = 0; i < 9216; i++) { x = (x * 1103515245 + 12345) >>> 0; const v = Math.min(255, Math.max(0, ((x >>> 16) & 255) + shift)); out += v.toString(16).padStart(2, '0'); } return out; };
 const visualsOf = (now, table) => ({ gallery: Object.fromEntries(now.gallery.assets.map(a => [a.key, table[a.key]])), shopify: Object.fromEntries(now.shopify.assets.map(a => [a.key, table[a.key]])) });
-const flatVis = d => d.toString(16).padStart(2, '0').repeat(3072);
-test('visual distance is the mean absolute pixel difference over the mean darkness; malformed fingerprints throw', () => {
+const flatVis = d => d.toString(16).padStart(2, '0').repeat(9216);
+// A ramp pattern (so the tone fit has real variance) with one 8x8 block moved by delta IN EVERY framing.
+const blockVis = (delta = 0) => { const bytes = new Uint8Array(9216); for (let i = 0; i < 9216; i++) bytes[i] = (i * 37) % 229; for (let f = 0; f < 3; f++) for (let row = 8; row < 16; row++) for (let col = 8; col < 16; col++) for (let ch = 0; ch < 3; ch++) { const at = f * 3072 + (row * 32 + col) * 3 + ch; bytes[at] = Math.min(255, bytes[at] + delta); } return [...bytes].map(v => v.toString(16).padStart(2, '0')).join(''); };
+test('visual distance is the worst tone-matched block over the best framing; malformed fingerprints throw', () => {
   assert.equal(api.mediaVisualDistance(vis(1), vis(1)), 0);
-  assert.ok(Math.abs(api.mediaVisualDistance(flatVis(100), flatVis(103)) - 3 / 153.5) < 1e-9);
-  assert.ok(Math.abs(api.mediaVisualDistance(flatVis(250), flatVis(253)) - 3 / 3.5) < 1e-9, 'pale images are not compressed toward zero');
-  assert.ok(api.mediaVisualDistance(flatVis(0), flatVis(200), 0.02) > 0.02, 'an early exit still reports a value above the limit');
+  // Global tone shifts (brightness, re-encode gamma) cancel; a local block difference survives.
+  assert.ok(api.mediaVisualDistance(vis(1), vis(1, 3)) < 0.5, 'a uniform +3 shift is tone-matched away');
+  assert.ok(api.mediaVisualDistance(flatVis(100), flatVis(130)) === 0, 'two flat tones are the same picture');
+  assert.ok(api.mediaVisualDistance(vis(1), vis(2)) > api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, 'unrelated noise stays far');
+  const local = api.mediaVisualDistance(blockVis(0), blockVis(12));
+  assert.ok(local > api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, 'a moved 8x8 block alone crosses the limit: ' + local);
+  assert.ok(api.mediaVisualDistance(blockVis(0), blockVis(2)) <= api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, 'a 2-level block wobble stays a duplicate');
+  assert.ok(api.mediaVisualDistance(vis(1), vis(2), api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) > api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE, 'an early exit never understates past the limit');
   assert.throws(() => api.mediaVisualDistance('00', '00'), /VISUAL_IDENTITY_INVALID/);
-  assert.throws(() => api.mediaVisualDistance('zz'.repeat(3072), flatVis(0)), /VISUAL_IDENTITY_INVALID/);
+  assert.throws(() => api.mediaVisualDistance('zz'.repeat(9216), flatVis(0)), /VISUAL_IDENTITY_INVALID/);
+});
+test('one matching framing is enough to hold: a crop-unstable duplicate differs in two framings only', () => {
+  const a = blockVis(0), bytes = new Uint8Array(9216);
+  const src = blockVis(0); for (let i = 0; i < 9216; i++) bytes[i] = parseInt(src.slice(i * 2, i * 2 + 2), 16);
+  for (let i = 0; i < 3072; i++) { bytes[i] = (bytes[i] + 97) % 256; bytes[3072 + i] = (bytes[3072 + i] * 7 + 13) % 256; }   // framings 0+1 scrambled, framing 2 intact
+  const b = [...bytes].map(v => v.toString(16).padStart(2, '0')).join('');
+  assert.ok(api.mediaVisualDistance(a, b) <= api.MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE);
 });
 for (const source of ['gallery', 'shopify']) test(`${source} image that the target shows in another encoding under another key is held, not attached`, () => {
   const target = source === 'gallery' ? 'shopify' : 'gallery';
@@ -587,12 +602,12 @@ test('a visually different new image still attaches after its shared anchor', ()
   assert.deepEqual(plan.patches.map(p => [p.kind, p.target, p.key]), [['attach', 'shopify', 'n-new']]);
   assert.deepEqual(plan.projected.shopify.map(a => a.key), ['a', 'b', 'n-new']);
 });
-test('threshold boundary: 3/153.5 = 0.0195 is held, 4/153 = 0.026 attaches', () => {
+test('threshold boundary: a 2-level block wobble is held, a moved block attaches', () => {
   const base = two(); base.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
   const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
-  const run = mine => api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), 't-only': flatVis(100), 'n-new': mine }));
-  assert.deepEqual(conflictCodes(run(flatVis(103))), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
-  assert.deepEqual(run(flatVis(104)).conflicts, []);
+  const run = mine => api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), 't-only': blockVis(0), 'n-new': mine }));
+  assert.deepEqual(conflictCodes(run(blockVis(2))), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+  assert.deepEqual(run(blockVis(12)).conflicts, []);
 });
 test('a missing fingerprint for the new image or for any target image holds the write', () => {
   const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
