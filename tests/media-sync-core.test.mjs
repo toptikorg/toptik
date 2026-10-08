@@ -542,3 +542,19 @@ test('content change to bytes the target does not show still replaces the refere
   assert.deepEqual(plan.conflicts, []);
   assert.deepEqual(plan.patches.map(p => [p.kind, p.target, p.key]), [['replace_reference', 'shopify', 'a']]);
 });
+test('replace held: a cover keeps its key while its URL moves to an image only the store shows', () => {
+  const base = pair([asset('a', { contentId: cid('1') })], [asset('a', { contentId: cid('1') }), asset('s-only', { contentId: cid('2') })]);
+  const now = clone(base); now.gallery.assets[0] = asset('a', { contentId: cid('2'), evidenceId: 'cover-moved' });
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now)), [['a', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT']]);
+});
+test('replace held by design: the other copy is being removed in the same plan', () => {
+  const base = two(), now = clone(base);
+  now.gallery.assets = [asset('a', { contentId: cid('2'), evidenceId: 'moved-to-b-file' })];
+  const plan = api.reconcileMedia(base, now, [removal(base, 'gallery', 'b')]);
+  assert.deepEqual(conflictCodes(plan), [['a', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT']]);
+});
+test('replace held: a content swap between two shared rows', () => {
+  const base = two(), now = clone(base);
+  now.gallery.assets = [asset('a', { contentId: cid('2'), evidenceId: 'swap-a' }), asset('b', { contentId: cid('1'), evidenceId: 'swap-b' })];
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now)).sort(), [['a', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT'], ['b', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT']]);
+});
