@@ -558,3 +558,81 @@ test('replace held: a content swap between two shared rows', () => {
   now.gallery.assets = [asset('a', { contentId: cid('2'), evidenceId: 'swap-a' }), asset('b', { contentId: cid('1'), evidenceId: 'swap-b' })];
   assert.deepEqual(conflictCodes(api.reconcileMedia(base, now)).sort(), [['a', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT'], ['b', 'MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT']]);
 });
+
+// Same photo in another encoding: different bytes (so a different contentId), near-identical pixels.
+const vis = (seed, shift = 0) => { let x = seed >>> 0, out = ''; for (let i = 0; i < 3072; i++) { x = (x * 1103515245 + 12345) >>> 0; const v = Math.min(255, Math.max(0, ((x >>> 16) & 255) + shift)); out += v.toString(16).padStart(2, '0'); } return out; };
+const visualsOf = (now, table) => ({ gallery: Object.fromEntries(now.gallery.assets.map(a => [a.key, table[a.key]])), shopify: Object.fromEntries(now.shopify.assets.map(a => [a.key, table[a.key]])) });
+const flatVis = d => d.toString(16).padStart(2, '0').repeat(3072);
+test('visual distance is the mean absolute pixel difference; malformed fingerprints throw', () => {
+  assert.equal(api.mediaVisualDistance(vis(1), vis(1)), 0);
+  assert.ok(Math.abs(api.mediaVisualDistance(flatVis(0), flatVis(3)) - 3) < 1e-9);
+  assert.throws(() => api.mediaVisualDistance('00', '00'), /VISUAL_IDENTITY_INVALID/);
+  assert.throws(() => api.mediaVisualDistance('zz'.repeat(3072), flatVis(0)), /VISUAL_IDENTITY_INVALID/);
+});
+for (const source of ['gallery', 'shopify']) test(`${source} image that the target shows in another encoding under another key is held, not attached`, () => {
+  const target = source === 'gallery' ? 'shopify' : 'gallery';
+  const base = two(); base[target].assets.push(asset('t-only', { contentId: cid('5') }));
+  const now = clone(base); now[source].assets.push(asset('n-new', { contentId: cid('6') }));
+  const v = visualsOf(now, { a: vis(1), b: vis(2), 't-only': vis(3), 'n-new': vis(3, 1) });
+  const plan = api.reconcileMedia(base, now, [], [], v);
+  assert.deepEqual(conflictCodes(plan), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+  assert.equal(plan.patches.some(p => p.kind === 'attach'), false);
+});
+test('a visually different new image still attaches after its shared anchor', () => {
+  const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), 'n-new': vis(9) }));
+  assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.patches.map(p => [p.kind, p.target, p.key]), [['attach', 'shopify', 'n-new']]);
+  assert.deepEqual(plan.projected.shopify.map(a => a.key), ['a', 'b', 'n-new']);
+});
+test('threshold boundary: distance 3 is held, just above 3 attaches', () => {
+  const base = two(); base.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
+  const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  const run = mine => api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), 't-only': flatVis(100), 'n-new': mine }));
+  assert.deepEqual(conflictCodes(run(flatVis(103))), [['n-new', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+  assert.deepEqual(run(flatVis(103).slice(0, -2) + flatVis(104).slice(-2)).conflicts, []);
+});
+test('a missing fingerprint for the new image or for any target image holds the write', () => {
+  const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2) }))), [['n-new', 'MEDIA_VISUAL_IDENTITY_MISSING']]);
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), 'n-new': vis(9) }))), [['n-new', 'MEDIA_VISUAL_IDENTITY_MISSING']]);
+});
+test('two new keys with the same photo in different encodings: the second is held', () => {
+  const base = two(); const now = clone(base); now.gallery.assets.push(asset('n1', { contentId: cid('6') }), asset('n2', { contentId: cid('7') }));
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(1), b: vis(2), n1: vis(5), n2: vis(5, 1) }));
+  assert.deepEqual(conflictCodes(plan), [['n2', 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE']]);
+});
+test('content change to a photo the target shows in another encoding under another key is held', () => {
+  const base = two(); base.shopify.assets.push(asset('t-only', { contentId: cid('5') }));
+  const now = clone(base); now.gallery.assets[0] = asset('a', { contentId: cid('6'), evidenceId: 'new-file' });
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, { a: vis(3, 2), b: vis(2), 't-only': vis(3) }));
+  assert.deepEqual(plan.conflicts, [{ key: 'a', field: 'content', code: 'MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE' }]);
+});
+test('without fingerprints (pure callers) the planner behaves as before', () => {
+  const base = two(); const now = clone(base); now.gallery.assets.push(asset('n-new', { contentId: cid('6') }));
+  assert.deepEqual(api.reconcileMedia(base, now).patches.map(p => p.kind), ['attach']);
+});
+test('no shared anchor in a non-empty target: the insert order is ambiguous and held (it used to go first)', () => {
+  const base = pair([asset('g1', { contentId: cid('1') })], [asset('s1', { contentId: cid('2') })]);
+  const now = clone(base); now.gallery.assets.push(asset('g2', { contentId: cid('3') }));
+  assert.deepEqual(conflictCodes(api.reconcileMedia(base, now)), [['g2', 'MEDIA_AMBIGUOUS_INSERT_ORDER']]);
+});
+test('an empty target still receives new images in source order', () => {
+  const base = pair([asset('g1', { contentId: cid('1') })], []);
+  const now = clone(base); now.gallery.assets.push(asset('g2', { contentId: cid('3') }));
+  const plan = api.reconcileMedia(base, now);
+  assert.deepEqual(plan.conflicts, []); assert.deepEqual(plan.patches.map(p => p.key), ['g2']);
+});
+test('live BAH08451.001 shape: no shared keys, gallery adds photo 6 (another encoding of store 6) and photos 7-10', () => {
+  const g = ['G1', 'G2', 'G3', 'G4', 'G5'].map((k, i) => asset(k, { contentId: cid(String(i + 1)) }));
+  const s = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'].map((k, i) => asset(k, { contentId: cid(String.fromCharCode(97 + i)) }));
+  const base = pair(clone(g), clone(s)), now = clone(base);
+  now.gallery.assets.push(...['G6', 'G7', 'G8', 'G9', 'G10'].map((k, i) => asset(k, { contentId: cid(String(i + 6 > 9 ? 0 : i + 6)) })));
+  const table = { G1: vis(1), G2: vis(2), G3: vis(3), G4: vis(4), G5: vis(5), S1: vis(1, 1), S2: vis(2, 1), S3: vis(3, 1), S4: vis(4, 1), S5: vis(5, 2), S6: vis(6, 1),
+    G6: vis(6), G7: vis(7), G8: vis(8), G9: vis(9), G10: vis(10) };
+  const plan = api.reconcileMedia(base, now, [], [], visualsOf(now, table));
+  const codes = Object.fromEntries(conflictCodes(plan));
+  assert.equal(codes.G6, 'MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE');
+  for (const k of ['G7', 'G8', 'G9', 'G10']) assert.equal(codes[k], 'MEDIA_AMBIGUOUS_INSERT_ORDER');
+  assert.equal(plan.patches.some(p => p.kind === 'attach'), false);
+});

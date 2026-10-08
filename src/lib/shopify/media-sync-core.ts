@@ -46,6 +46,20 @@ export type MediaPlan = {
   projected: Record<MediaSide, MediaAsset[]>;
 };
 
+/** Encoding-independent pixel fingerprints captured with this observation only (hex of 32x32 RGB, white border
+ * trimmed). Used to HOLD a write that would show the same photo twice; never to infer an identity or a mapping. */
+export type MediaVisuals = Record<MediaSide, Record<string, string>>;
+/** Calibrated 8.10.2026 on live catalog photos: the same photo re-encoded or re-padded measured <= 1.31, distinct
+ * photos of one product >= 6.39, different products >= 19. */
+export const MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE = 3;
+const VISUAL = /^(?:[a-f0-9]{2}){3072}$/;
+export function mediaVisualDistance(a: string, b: string): number {
+  if (!VISUAL.test(a) || !VISUAL.test(b)) fail("MEDIA_VISUAL_IDENTITY_INVALID");
+  let sum = 0;
+  for (let i = 0; i < a.length; i += 2) sum += Math.abs(parseInt(a.slice(i, i + 2), 16) - parseInt(b.slice(i, i + 2), 16));
+  return sum / (a.length / 2);
+}
+
 const SIDES: MediaSide[] = ["gallery", "shopify"];
 const HASH = /^[a-f0-9]{64}$/;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -94,6 +108,9 @@ function insertionIndex(target: MediaAsset[], source: MediaAsset[], key: string)
   const targetKeys = target.map(a => a.key);
   const before = source.slice(0, position).reverse().find(a => targetKeys.includes(a.key));
   const after = source.slice(position + 1).find(a => targetKeys.includes(a.key));
+  // No shared image on either side of it: any position in a non-empty target is a guess (the old default put it
+  // first and replaced the product's main image), so the caller holds it as an ambiguous order.
+  if (!before && !after && targetKeys.length) return null;
   const left = before ? targetKeys.indexOf(before.key) : -1;
   const right = after ? targetKeys.indexOf(after.key) : target.length;
   if (left >= right) return null;
@@ -197,7 +214,8 @@ export function independentLocalAltChanges(baseline: MediaPair, current: MediaPa
 }
 
 /** An empty/error/incomplete read is not a deletion. Explicit removal evidence is mandatory. */
-export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals: RemovalEvidence[] = [], detached: DetachReceipt[] = []): MediaPlan {
+export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals: RemovalEvidence[] = [], detached: DetachReceipt[] = [],
+  visuals?: MediaVisuals): MediaPlan {
   const identity = current.gallery.identity;
   assertIdentity(identity);
   for (const side of SIDES) { assertSnapshot(baseline[side], side, identity); assertSnapshot(current[side], side, identity); }
@@ -245,6 +263,20 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
   // Both are held for a reviewed mapping; the whole product waits, nothing is reserved.
   const targetShowsElsewhere = (target: MediaSide, key: string, contentId: string) =>
     [...current[target].assets, ...plan.projected[target]].some(a => a.key !== key && a.contentId === contentId);
+  // Same photo in another encoding (different bytes, so the check above cannot see it) under another key on the
+  // target, now or earlier in this plan. Without fingerprints for every image involved the write is held as well.
+  const targetShowsVisually = (source: MediaSide, target: MediaSide, key: string): "missing" | boolean => {
+    if (!visuals) return false;
+    const mine = visuals[source]?.[key];
+    if (typeof mine !== "string") return "missing";
+    for (const a of [...current[target].assets, ...plan.projected[target]]) {
+      if (a.key === key) continue;
+      const theirs = visuals[target]?.[a.key] ?? visuals[source]?.[a.key];
+      if (typeof theirs !== "string") return "missing";
+      if (mediaVisualDistance(mine, theirs) <= MEDIA_VISUAL_DUPLICATE_MAX_DISTANCE) return true;
+    }
+    return false;
+  };
   const replace = (target: MediaSide, key: string, update: Partial<MediaAsset>) => {
     const index = plan.projected[target].findIndex(a => a.key === key);
     if (index < 0) fail("MEDIA_INTERNAL_TARGET_MISSING");
@@ -293,6 +325,8 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
       } else if (!targetAsset) {
         // E.g. a replaced Gallery angle row that points at an existing Shopify file, or a store re-upload.
         if (targetShowsElsewhere(target, key, sourceAsset.contentId)) { conflict(key, "membership", "MEDIA_ATTACH_TARGET_HAS_SAME_CONTENT"); continue; }
+        const visual = targetShowsVisually(source, target, key);
+        if (visual) { conflict(key, "membership", visual === "missing" ? "MEDIA_VISUAL_IDENTITY_MISSING" : "MEDIA_ATTACH_TARGET_HAS_VISUAL_DUPLICATE"); continue; }
         if (plan.projected[target].length >= MAX_ASSETS) { conflict(key, "membership", "MEDIA_TARGET_LIMIT"); continue; }
         const index = insertionIndex(plan.projected[target], current[source].assets, key);
         if (index === null) { conflict(key, "membership", "MEDIA_AMBIGUOUS_INSERT_ORDER"); continue; }
@@ -329,6 +363,8 @@ export function reconcileMedia(baseline: MediaPair, current: MediaPair, removals
       } else {
         // E.g. a cover that keeps its key while its URL moves to a file the target already shows.
         if (targetShowsElsewhere(target, key, value.contentId)) { conflict(key, label, "MEDIA_REPLACE_TARGET_HAS_SAME_CONTENT"); continue; }
+        const visual = targetShowsVisually(source, target, key);
+        if (visual) { conflict(key, label, visual === "missing" ? "MEDIA_VISUAL_IDENTITY_MISSING" : "MEDIA_REPLACE_TARGET_HAS_VISUAL_DUPLICATE"); continue; }
         // Allocate/attach an owned replacement, not mutate shared file bytes globally.
         plan.patches.push({ source, target, key, kind: "replace_reference", value: { contentId: value.contentId, evidenceId: value.evidenceId } });
         replace(target, key, { contentId: value.contentId, evidenceId: value.evidenceId });
