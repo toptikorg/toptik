@@ -22,7 +22,9 @@ test('priority migration keeps grants, adds no grant to the sweep helper, and ch
 });
 
 const engine = process.env.TOPTIK_PGLITE_DIR ?? path.resolve(repo, '../sync-sql-validation-20260930/package');
-assert.ok(existsSync(path.join(engine, 'dist/index.js')), `PGlite engine not found at ${engine}`);
+// Same convention as the other real-SQL suites: database tests skip (with a reason) where the
+// offline engine is not installed, e.g. CI; the static checks above always run.
+const skip = existsSync(path.join(engine, 'dist/index.js')) ? false : `PGlite engine not found at ${engine}`;
 let ready;
 function database() {
   ready ??= (async () => {
@@ -56,7 +58,7 @@ const set = (db, p, cols) => db.query(`update toptik_media_private.work_queue se
 const claim = async db => (await one(db, 'select public.claim_toptik_media_work($1) r', [randomUUID()])).r?.productId ?? null;
 async function reset(db) { await db.query("update toptik_media_private.work_queue set status='done',routine=false,last_error=null"); await db.query('update public.shopify_gallery_copy_eligibility set enabled=false'); }
 
-test('the sweep wakes finished rows as routine and never touches waiting or processing rows', async () => {
+test('the sweep wakes finished rows as routine and never touches waiting or processing rows', { skip }, async () => {
   const db = await database(); await reset(db);
   const [done, review, waiting, repair, busy] = [await product(db), await product(db), await product(db), await product(db), await product(db)];
   for (const p of [done, review, waiting, repair, busy]) await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [p]);
@@ -69,7 +71,7 @@ test('the sweep wakes finished rows as routine and never touches waiting or proc
   assert.deepEqual(await row(db, repair), before.repair, 'a storage-repair backoff is not reset by the sweep');
   assert.deepEqual(await row(db, busy), before.busy, 'a processing claim is untouched');
 });
-test('real work and recovery are claimed before newer and older routine sweep rows', async () => {
+test('real work and recovery are claimed before newer and older routine sweep rows', { skip }, async () => {
   const db = await database(); await reset(db);
   const sweepA = await product(db), sweepB = await product(db), real = await product(db);
   for (const p of [sweepA, sweepB]) { await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [p]); await set(db, p, { status: 'done' }); }
@@ -81,14 +83,14 @@ test('real work and recovery are claimed before newer and older routine sweep ro
   const claimedSweep = await claim(db); assert.ok([sweepA, sweepB].includes(claimedSweep));
   assert.equal((await row(db, claimedSweep)).routine, false, 'a claim clears routine');
 });
-test('a real enqueue promotes a routine row', async () => {
+test('a real enqueue promotes a routine row', { skip }, async () => {
   const db = await database(); await reset(db);
   const p = await product(db); await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [p]); await set(db, p, { status: 'done' });
   await one(db, 'select public.recover_toptik_media_work()'); assert.equal((await row(db, p)).routine, true);
   await one(db, `select toptik_media_private.enqueue($1,'{"storageAttemptRetired":"x"}'::jsonb)`, [p]);
   assert.equal((await row(db, p)).routine, false);
 });
-test('routine rows carry a fixed 6-hour handicap: older than that they go first, so the sweep cannot starve', async () => {
+test('routine rows carry a fixed 6-hour handicap: older than that they go first, so the sweep cannot starve', { skip }, async () => {
   const db = await database(); await reset(db);
   const old = await product(db), real = await product(db);
   await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [old]); await set(db, old, { status: 'done' });
@@ -97,7 +99,7 @@ test('routine rows carry a fixed 6-hour handicap: older than that they go first,
   await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [real]);
   assert.equal(await claim(db), old);
 });
-test('the base claim shares the order and honours the storage-repair backoff', async () => {
+test('the base claim shares the order and honours the storage-repair backoff', { skip }, async () => {
   const db = await database(); await reset(db);
   const repair = await product(db), other = await product(db);
   for (const p of [repair, other]) await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [p]);
@@ -105,21 +107,21 @@ test('the base claim shares the order and honours the storage-repair backoff', a
   assert.equal(await claim(db), other);
   assert.equal(await claim(db), repair, 'still claimed when nothing else is claimable');
 });
-test('application roles keep exactly their previous queue grants', async () => {
+test('application roles keep exactly their previous queue grants', { skip }, async () => {
   const db = await database();
   const can = async (role, fn) => (await one(db, 'select has_function_privilege($1,$2,$3) v', [role, fn, 'execute'])).v;
   assert.equal(await can('service_role', 'public.claim_toptik_media_work_excluding(uuid,text[])'), true);
   assert.equal(await can('service_role', 'toptik_media_private.enqueue_routine(text)'), false);
   assert.equal(await can('authenticated', 'public.claim_toptik_media_work_excluding(uuid,text[])'), false);
 });
-test('the sweep leaves failed rows (already claimable, possibly real work) untouched', async () => {
+test('the sweep leaves failed rows (already claimable, possibly real work) untouched', { skip }, async () => {
   const db = await database(); await reset(db);
   const p = await product(db); await one(db, `select toptik_media_private.enqueue($1,'{"gallery":{"actorType":"supabase_user"}}'::jsonb)`, [p]);
   await set(db, p, { status: 'failed', last_error: 'MEDIA_WORK_FAILED' });
   const before = await row(db, p); await one(db, 'select public.recover_toptik_media_work()');
   assert.deepEqual(await row(db, p), before);
 });
-test('a 3-hour-old routine row still waits behind real work enqueued after it (no cliff)', async () => {
+test('a 3-hour-old routine row still waits behind real work enqueued after it (no cliff)', { skip }, async () => {
   const db = await database(); await reset(db);
   const old = await product(db), real = await product(db);
   await one(db, "select toptik_media_private.enqueue($1,'{}'::jsonb)", [old]); await set(db, old, { status: 'done' });
