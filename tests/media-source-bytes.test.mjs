@@ -72,8 +72,8 @@ test('valid PNG header with truncated pixels is not decoded evidence',()=>run(as
   const broken=bytes.subarray(0,48);f.handler=async()=>new Response(broken);const p=proof();p.byteLength=broken.length;p.sha256=createHash('sha256').update(broken).digest('hex');
   await assert.rejects(readVerifiedMediaSourceBytes(p,Date.now()+1000),/DECODE_FAILED/);
 }));
-test('oversized and extra streamed bytes are rejected',()=>run(async f=>{
-  f.handler=async()=>new Response(bytes,{headers:{'content-length':String(8388609)}});await assert.rejects(readVerifiedMediaSourceBytes(proof(),Date.now()+1000),/READ_FAILED/);
+test('oversized sources get their own PERMANENT code; extra streamed bytes stay a read failure',()=>run(async f=>{
+  f.handler=async()=>new Response(bytes,{headers:{'content-length':String(8388609)}});await assert.rejects(readVerifiedMediaSourceBytes(proof(),Date.now()+1000),/BYTE_LIMIT/);
   f.handler=async()=>new Response(Buffer.concat([bytes,Buffer.from('extra')]));await assert.rejects(readVerifiedMediaSourceBytes(proof(),Date.now()+1000),/READ_FAILED/);
 }));
 test('expired or hanging DNS is bounded without a GET',()=>run(async f=>{

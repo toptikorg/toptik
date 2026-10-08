@@ -87,7 +87,13 @@ async function capture(identity: MediaIdentity, address: string, deadline: numbe
   let response: Response;
   try { response = await bounded(() => fetch(address, { redirect: "error", cache: "no-store", signal: AbortSignal.timeout(budget(stop)) }), stop); }
   catch { return fail("MEDIA_SOURCE_READ_FAILED"); }
-  if (!response.ok || response.redirected || (response.url && response.url !== address) || Number(response.headers.get("content-length") ?? 0) > MAX_BYTES) {
+  // An oversize source is a PERMANENT state of the catalog, not a transient read error: it gets
+  // its own code (declared size here, streamed size below) so the queue can park the product for
+  // review instead of re-downloading the same unchanged files on every batch.
+  if (Number(response.headers.get("content-length") ?? 0) > MAX_BYTES) {
+    await response.body?.cancel().catch(() => {}); fail("MEDIA_SOURCE_BYTE_LIMIT");
+  }
+  if (!response.ok || response.redirected || (response.url && response.url !== address)) {
     await response.body?.cancel().catch(() => {}); fail("MEDIA_SOURCE_READ_FAILED");
   }
   const reader = response.body?.getReader(); if (!reader) fail("MEDIA_SOURCE_READ_FAILED");

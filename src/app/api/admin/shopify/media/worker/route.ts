@@ -4,7 +4,7 @@ import { mediaSyncEnabled } from "@/lib/shopify/media-work-queue";
 import { scheduleMediaSync, validMediaHop } from "@/lib/shopify/media-schedule";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   const denied = requireAdminToken(request); if (denied) return denied;

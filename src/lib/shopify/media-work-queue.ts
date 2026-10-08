@@ -136,7 +136,7 @@ export async function drainMediaWork(deadline: number, client?: Db,
     const code = e instanceof Error && typeof e.message === "string" && /^MEDIA_[A-Z0-9_]{1,90}$/.test(e.message) ? e.message : "MEDIA_WORK_FAILED";
     // An uncoded failure is otherwise undiagnosable: log its kind and an allowlisted message only.
     if (code === "MEDIA_WORK_FAILED") { try { console.error("toptik.media.work_failed", describeUncodedFailure(e)); } catch { /* never affects finish */ } }
-    error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE/.test(code) ? "review" : "failed";
+    error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE|MEDIA_SOURCE_BYTE_LIMIT/.test(code) ? "review" : "failed";
     if (status === "review") result.reviewed++; else result.failed++;
   }
   // A product claimed late in a batch may not get the budget to run its prepared

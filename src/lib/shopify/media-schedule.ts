@@ -23,15 +23,26 @@ export function scheduleMediaSync(hop = 0): void {
     // Reuse one fixed deadline across the batch, never reset the time budget.
     // Each identity is claimed at most once in this invocation. A busy or
     // blocked identity cannot stop other pending work or cause a retry loop.
-    const deadline = Date.now() + 40000;
+    // The budget sits inside the route's maxDuration with headroom for the
+    // final finish/continuation calls.
+    const deadline = Date.now() + 240000;
     const visited = new Set<string>();
+    let processed = 0, morePending = false;
     for (let round = 0; round < 10 && Date.now() + 12000 < deadline; round++) {
       const result = await drainMediaWork(deadline, undefined, undefined, undefined, [...visited]);
-      if (!result.claimedProductId) break;
+      if (!result.claimedProductId) { morePending = false; break; }
       if (visited.has(result.claimedProductId)) throw new Error("MEDIA_QUEUE_BATCH_REPEATED");
       visited.add(result.claimedProductId);
+      processed += result.processed;
+      morePending = result.continuationNeeded;
       if (!result.continuationNeeded) break;
     }
-    // Durable pending work resumes on the next independent cron tick.
+    // A deep backlog continues in a FRESH invocation (its own budget) instead of
+    // waiting for the next cron tick. Strictly bounded: it chains only while this
+    // invocation finished real work (a batch of holds, failures or in-flight waits
+    // stops and falls back to the cron cadence), only while durable unvisited work
+    // remains, and never past MAX_MEDIA_HOPS. Claims, leases, exclusions and every
+    // safety gate are exactly the per-invocation ones.
+    if (processed > 0 && morePending && hop < MAX_MEDIA_HOPS) await dispatchMediaSync(hop + 1);
   } catch (error) { report(error); } });
 }
