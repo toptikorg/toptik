@@ -117,6 +117,7 @@ begin
  if obs.revision is distinct from raw0->>'revision' or obs.raw is distinct from raw0
  then raise exception 'MEDIA_RELINK_GALLERY_MOVED';end if;
  if (select count(*) from jsonb_array_elements(obs.refs) e where e->>'key'=p_angle_key and e->>'role'='angle')<>1
+ or exists(select 1 from jsonb_array_elements(obs.refs) e where e->>'key'=p_angle_key and e->>'role' is distinct from 'angle')
  or exists(select 1 from jsonb_array_elements(obs.refs) e where e->>'key'=p_media_key)
  then raise exception 'MEDIA_RELINK_GALLERY_REFS_MISMATCH';end if;
  select e into ref0 from jsonb_array_elements(obs.refs) e where e->>'key'=p_angle_key and e->>'role'='angle';
@@ -127,6 +128,12 @@ begin
  where evidence_id=ref0->>'evidenceId' and product_gid=p_product_gid and side='gallery' and asset_key=p_angle_key;
  if not found or oldp.content_id is distinct from p_content_id or oldp.proof->>'url' is distinct from angle->>'image_path'
  then raise exception 'MEDIA_RELINK_GALLERY_REFS_MISMATCH';end if;
+ -- The planner digest below concatenates a JSON array by hand; any character JSON.stringify would
+ -- escape (quote, backslash, control) in the donor platformRef/url would break byte equality, so refuse.
+ if oldp.proof->>'platformRef' !~ ('^angle:'||(ref0->>'angleId')||'$')
+ or position('"' in oldp.proof->>'url')>0 or position(chr(92) in oldp.proof->>'url')>0
+ or oldp.proof->>'url' ~ '[[:cntrl:]]'
+ then raise exception 'MEDIA_RELINK_DIGEST_UNSAFE';end if;
  -- The stored baseline must show exactly the un-merged shape, with the SAME alt the angle carries, so
  -- the merged pair plans nothing at all.
  select * into st from toptik_media_private.state where product_gid=p_product_gid;

@@ -86,7 +86,7 @@ const sha = value => createHash('sha256').update(value).digest('hex');
 /** Live P10OXT0129O shape over REAL carousel rows: baseline shares a,b; the store also shows x
  * (s-media). Later the Gallery gained an angle row for the same bytes under its own new key (recorded
  * through the real observe RPC); its stuck operation is already closed. */
-async function rekeyedPair({ angleContent, angleAlt, openOperation = false, withRef = true, skipObservation = false } = {}) {
+async function rekeyedPair({ angleContent, angleAlt, openOperation = false, withRef = true, skipObservation = false, urlTail = '' } = {}) {
   const { db, core } = await database();
   const n = serial++, mediaId = 100000 + n, angleId = randomUUID();
   const identity = { productId: `gid://shopify/Product/${n}`, variantId: `gid://shopify/ProductVariant/${n}`, itemId: randomUUID(),
@@ -94,7 +94,7 @@ async function rekeyedPair({ angleContent, angleAlt, openOperation = false, with
   const urls = {
     a: `https://ekgpaoavsavrtbhlbwdg.supabase.co/storage/v1/object/public/carousel-media/pics/${n}/a.jpg`,
     b: `https://ekgpaoavsavrtbhlbwdg.supabase.co/storage/v1/object/public/carousel-media/pics/${n}/b.jpg`,
-    x: `https://cdn.shopify.com/s/files/1/0001/${n}-photo6.jpg`,
+    x: `https://cdn.shopify.com/s/files/1/0001/${n}-photo6.jpg` + urlTail,
   };
   await db.query('insert into shopify_gallery_copy_eligibility values($1,$2,$3,$4,$5,$6,$7,true)', [identity.productId, 'SKU' + n, identity.itemId, identity.variantId, identity.exactGallerySku, identity.exactShopifySku, identity.productHandle]);
   await db.query("insert into shopify_gallery_reconciliation_leases values($1,$2,clock_timestamp()+interval '5 minutes')", [identity.productId, owner]);
@@ -260,6 +260,19 @@ test('a moved catalog, a missing ref and an alt mismatch are all refused before 
     assert.equal(Number((await one(g.db, 'select count(*) c from toptik_media_private.media_identity_relinks where product_gid=$1', [g.identity.productId])).c), 0);
     assert.equal(Number((await one(g.db, "select count(*) c from toptik_media_private.provenance where product_gid=$1 and asset_key=$2 and side='gallery'", [g.identity.productId, g.mediaKey])).c), 0);
   }
+});
+test('a missing observation, a taken evidence digest and a digest-unsafe donor url are all refused', { skip }, async () => {
+  const noObs = await rekeyedPair({ skipObservation: true });
+  await assert.rejects(noObs.relink(), /MEDIA_RELINK_OBSERVATION_MISSING/);
+  const taken = await rekeyedPair();
+  const digest = 'g:' + sha(JSON.stringify([taken.identity.productId, taken.mediaKey, `angle:${taken.angleId}`, taken.urls.x, taken.content]));
+  await taken.db.query('insert into toptik_media_private.asset_identities(product_gid,asset_key,origin_evidence_id) values($1,$2,$3) on conflict do nothing', [taken.identity.productId, taken.mediaKey, 'seed2']);
+  await taken.db.query('insert into toptik_media_private.provenance(evidence_id,product_gid,asset_key,side,content_id,proof) values($1,$2,$3,$4,$5,$6)',
+    [digest, taken.identity.productId, taken.mediaKey, 'shopify', taken.content, JSON.stringify({ platformRef: `gid://shopify/MediaImage/${taken.mediaId}`, url: `https://cdn.shopify.com/s/files/1/0001/${taken.n}-s-media-${taken.mediaId}.jpg` })]);
+  await assert.rejects(taken.relink(), /MEDIA_RELINK_EVIDENCE_EXISTS/);
+  // A donor url with a character JSON.stringify would escape breaks digest byte-equality: refused.
+  const unsafe = await rekeyedPair({ urlTail: '%22"' });
+  await assert.rejects(unsafe.relink(), /MEDIA_RELINK_DIGEST_UNSAFE/);
 });
 test('a second gallery lineage for the store key is refused; the derived key must spell the media id; a foreign lease is refused', { skip }, async () => {
   const f = await rekeyedPair();
