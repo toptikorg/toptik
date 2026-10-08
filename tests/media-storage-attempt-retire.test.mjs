@@ -14,23 +14,25 @@ import path from 'node:path';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const migration = name => readFileSync(path.join(repo, 'supabase/migrations', name), 'utf8');
 const sql = migration('20261008_media_storage_attempt_retire.sql');
-const signature = 'toptik_media_private.retire_stale_storage_attempt(text,uuid,uuid,uuid,text,text,text,text,jsonb)';
+const signature = 'toptik_media_private.retire_stale_storage_attempt(text,uuid,uuid,uuid,text,text,text,text)';
 
-test('retirement is a private operator function: no grant, lease scoped, never a permit', () => {
+test('retirement is a private operator function: no grant, lease scoped, fail-closed absence, never a permit', () => {
   assert.match(sql, /create function toptik_media_private\.retire_stale_storage_attempt\(/);
   assert.match(sql, /security definer set search_path=pg_catalog,pg_temp/);
   assert.match(sql, /i:=toptik_media_private\.assert_access\(p_product_gid,p_lease_owner\)/);
-  assert.match(sql, /revoke all on function toptik_media_private\.retire_stale_storage_attempt\(text,uuid,uuid,uuid,text,text,text,text,jsonb\)\s+from public,anon,authenticated,service_role;/);
+  assert.match(sql, /revoke all on function toptik_media_private\.retire_stale_storage_attempt\(text,uuid,uuid,uuid,text,text,text,text\)\s+from public,anon,authenticated,service_role;/);
   assert.doesNotMatch(sql, /\bgrant\b/i);
   assert.doesNotMatch(sql, /'mayExecute',true/);
+  assert.match(sql, /if row_security_active\('storage\.objects'::regclass\) then raise exception 'MEDIA_STORAGE_RETIRE_ABSENCE_UNVERIFIABLE'/);
   assert.match(sql, /exists\(select 1 from storage\.objects where bucket_id='carousel-media' and name=p_storage_path\)/);
+  assert.match(sql, /perform toptik_media_private\.enqueue\(p_product_gid,/);
 });
-test('retirement writes only the journal conflict shape, its own record and one event', () => {
+test('retirement writes only status transitions, its own record, one event and the wakeup', () => {
   const writes = [...sql.matchAll(/\b(update|insert into|delete from)\s+([a-z_]+\.[a-z_]+)/gi)].map(m => `${m[1].toLowerCase()} ${m[2]}`);
   assert.deepEqual(writes, ['insert into toptik_media_private.storage_attempt_retirements', 'update toptik_media_private.transport_attempts',
     'update toptik_media_private.transport_chains', 'update toptik_media_private.steps', 'update toptik_media_private.operations',
     'insert into toptik_media_private.events']);
-  assert.doesNotMatch(sql, /set[^;]*\b(receipt|before_guard|request|request_hash)\s*=/i);
+  assert.doesNotMatch(sql, /set[^;]*\b(receipt|before_guard|after_guard|current_guard|request|request_hash)\s*=/i);
 });
 
 const engine = process.env.TOPTIK_PGLITE_DIR ?? path.resolve(repo, '../sync-sql-validation-20260930/package');
@@ -47,11 +49,19 @@ create schema storage;create table storage.objects(id uuid primary key default g
 create table public.shopify_gallery_copy_eligibility(product_gid text primary key,catalog_key text,carousel_item_id uuid,variant_gid text,exact_gallery_sku text,exact_shopify_sku text,approved_product_handle text,enabled boolean);
 create table public.shopify_gallery_reconciliation_leases(product_gid text primary key,owner uuid,expires_at timestamptz);
 create table public.shopify_webhook_events(id uuid,topic text,shop_domain text,payload jsonb,delivery_id text);
+create table public.test_gallery_snapshots(product_gid text primary key,snapshot jsonb);
+-- Test double for the Gallery read only (20260930_gallery_media_cas.sql needs the full catalog schema).
+create function public.read_toptik_gallery_media_snapshot(p_product_gid text) returns jsonb language sql as $$select snapshot from public.test_gallery_snapshots where product_gid=p_product_gid$$;
 create function public.assert_shopify_verified_copy_identity(p_item uuid,p_key text,p_gsku text,p_product text,p_variant text,p_ssku text) returns void language plpgsql as $$begin
  if not exists(select 1 from public.shopify_gallery_copy_eligibility where product_gid=p_product and catalog_key=p_key and carousel_item_id=p_item and exact_gallery_sku=p_gsku and variant_gid=p_variant and exact_shopify_sku=p_ssku and enabled) then raise exception 'COPY_IDENTITY_CHANGED';end if;end$$;`);
+    // The whole planning migration needs the full catalog schema; take its exact queue table
+    // and the latest production enqueue (20261007_media_queue_inflight.sql) verbatim.
+    const queueTable = migration('20261001_media_planning_runtime.sql').match(/create table toptik_media_private\.work_queue\([\s\S]*?\);/)[0];
+    const enqueue = migration('20261007_media_queue_inflight.sql').match(/create or replace function toptik_media_private\.enqueue\([\s\S]*?end \$\$;/)[0];
     for (const name of ['20260930_media_sync_journal.sql', '20260930_media_transport_substeps.sql', '20260930_media_transport_runtime.sql',
-      '20261001_existing_media_25mp.sql', '20261007_media_final_readback.sql', '20261007_media_transport_not_sent_precondition.sql',
-      '20261007_media_storage_repair.sql', '20261008_media_storage_attempt_retire.sql']) await db.exec(migration(name));
+      '20261001_existing_media_25mp.sql', '20261007_media_final_readback.sql', '20261007_media_transport_not_sent_precondition.sql']) await db.exec(migration(name));
+    await db.exec(queueTable); await db.exec(enqueue);
+    for (const name of ['20261007_media_storage_repair.sql', '20261008_media_storage_attempt_retire.sql']) await db.exec(migration(name));
     return { db, core };
   })();
   return ready;
@@ -65,8 +75,8 @@ async function rpc(db, name, args) {
 const one = async (db, text, args = []) => (await db.query(text, args)).rows[0];
 const sha = value => createHash('sha256').update(value).digest('hex');
 
-/** Real chain up to an uncertain stage_source attempt (the 20 production cases' shape). */
-async function staleStage() {
+/** Real chain up to a phase-0 stage_source attempt (the 20 production cases' shape). */
+async function staleStage({ uncertain = true } = {}) {
   const { db, core } = await database();
   const n = serial++, identity = { productId: `gid://shopify/Product/${n}`, variantId: `gid://shopify/ProductVariant/${n}`, itemId: randomUUID(),
     exactGallerySku: 'SKU-' + n, exactShopifySku: 'SKU' + n, productHandle: 'מוצר-' + n };
@@ -88,48 +98,73 @@ async function staleStage() {
   const current = structuredClone(base);
   current.shopify.revision = (await one(db, 'select toptik_media_private.ready_transport_fingerprint($1::jsonb) v', [JSON.stringify(raw)])).v;
   current.gallery.assets[0].alt = 'טקסט חלופי מעודכן'; current.gallery.revision = 'gallery-edit';
-  const op = randomUUID(), p = identity.productId;
-  await rpc(db, 'reserve_toptik_media_operation', [p, owner, op, 1, current, core.reconcileMedia(base, current)]);
-  await rpc(db, 'begin_toptik_media_step', [p, owner, op, 0, randomUUID(), current]);
+  const p = identity.productId, plan = core.reconcileMedia(base, current);
   const guard = target => ({ sourceFingerprint: core.mediaSnapshotFingerprint(current.gallery), target: structuredClone(target), observedAt: new Date().toISOString() });
-  assert.equal((await rpc(db, 'prepare_toptik_media_transport', [p, owner, op, 0, randomUUID(), ['stage_source', 'create_owned', 'associate', 'detach_old', 'reorder'], guard(raw)])).status, 'ready');
   const contentId = current.shopify.assets[0].contentId, sourceEvidenceId = current.shopify.assets[0].evidenceId, storagePath = `sync-media/${identity.itemId}/${contentId}.png`;
-  const stage = await rpc(db, 'begin_toptik_media_transport', [p, owner, op, 0, 0, randomUUID(), { mutationSha256: '9'.repeat(64), sourceEvidenceId, storagePath, upsert: false }, guard(raw)]);
+  /** reserve -> begin step -> prepare -> begin stage_source; returns the begin result. */
+  const startStage = async op => {
+    await rpc(db, 'reserve_toptik_media_operation', [p, owner, op, 1, current, plan]);
+    await rpc(db, 'begin_toptik_media_step', [p, owner, op, 0, randomUUID(), current]);
+    assert.equal((await rpc(db, 'prepare_toptik_media_transport', [p, owner, op, 0, randomUUID(), ['stage_source', 'create_owned', 'associate', 'detach_old', 'reorder'], guard(raw)])).status, 'ready');
+    return rpc(db, 'begin_toptik_media_transport', [p, owner, op, 0, 0, randomUUID(), { mutationSha256: '9'.repeat(64), sourceEvidenceId, storagePath, upsert: false }, guard(raw)]);
+  };
+  const op = randomUUID(), stage = await startStage(op);
   assert.equal(stage.mayExecute, true);
-  assert.equal((await rpc(db, 'mark_toptik_media_transport_uncertain', [p, owner, op, 0, 0, randomUUID(), { outcome: 'unknown' }])).status, 'uncertain');
+  if (uncertain) assert.equal((await rpc(db, 'mark_toptik_media_transport_uncertain', [p, owner, op, 0, 0, randomUUID(), { outcome: 'unknown' }])).status, 'uncertain');
   const attempt = await one(db, 'select * from toptik_media_private.transport_attempts where operation_id=$1 and step_index=0 and phase_index=0', [op]);
-  const later = structuredClone(raw); later.updatedAt = '2026-10-07T05:56:57Z'; await stamp(later);
+  await db.query('insert into public.test_gallery_snapshots values($1,$2)', [p, JSON.stringify(current.gallery)]);
   const args = (over = {}) => { const v = { p, owner, retirement: randomUUID(), attempt: attempt.attempt_id, hash: stage.requestHash, path: storagePath,
-    reference: 'TopTik operator retirement ' + n, evidence: sha('evidence-' + n), fresh: guard(later), ...over };
-    return [v.p, v.owner, v.retirement, v.attempt, v.hash, v.path, v.reference, v.evidence, v.fresh]; };
+    reference: 'TopTik operator retirement ' + n, evidence: sha('evidence-' + n), ...over };
+    return [v.p, v.owner, v.retirement, v.attempt, v.hash, v.path, v.reference, v.evidence]; };
   const retire = argv => rpc(db, 'toptik_media_private.retire_stale_storage_attempt', argv);
   const state = async () => ({ op: (await one(db, 'select status,version from toptik_media_private.operations where id=$1', [op])),
     step: (await one(db, 'select status from toptik_media_private.steps where operation_id=$1 and step_index=0', [op])).status,
     chain: (await one(db, 'select status,current_guard from toptik_media_private.transport_chains where operation_id=$1 and step_index=0', [op])),
-    attempt: (await one(db, 'select status,receipt,before_guard,request,request_hash,after_guard from toptik_media_private.transport_attempts where attempt_id=$1', [attempt.attempt_id])),
+    attempt: (await one(db, 'select status,receipt,before_guard,after_guard,request,request_hash from toptik_media_private.transport_attempts where attempt_id=$1', [attempt.attempt_id])),
+    queue: await one(db, 'select status,last_error,evidence from toptik_media_private.work_queue where product_gid=$1', [p]),
     retirements: Number((await one(db, 'select count(*) n from toptik_media_private.storage_attempt_retirements where original_attempt_id=$1', [attempt.attempt_id])).n) });
-  return { db, p, op, attempt, stage, storagePath, raw, later, guard, args, retire, state, identity };
+  return { db, core, p, op, attempt, stage, storagePath, raw, args, retire, state, startStage, current, sourceEvidenceId, contentId, identity };
 }
 
-test('an absent object with a moved-on store is retired; the operation conflicts and only then may be re-planned', async () => {
-  const f = await staleStage(), before = await f.state();
+test('an absent object is retired: history kept, operation conflicts, product woken, re-plan admitted', async () => {
+  const f = await staleStage();
+  await f.db.query("insert into toptik_media_private.work_queue(product_gid,status,last_error) values($1,'pending','MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED')", [f.p]);
+  const before = await f.state();
   assert.equal(before.attempt.status, 'uncertain'); assert.equal(before.op.status, 'running');
   const argv = f.args(), out = await f.retire(argv);
-  assert.deepEqual(out, { status: 'conflict', retired: true, replayed: false, mayExecute: false });
+  assert.deepEqual(out, { status: 'conflict', retired: true, replayed: false, mayExecute: false, galleryChanged: false });
   const after = await f.state();
   assert.equal(after.op.status, 'conflict'); assert.equal(after.op.version, before.op.version + 1);
   assert.equal(after.step, 'conflict'); assert.equal(after.chain.status, 'conflict'); assert.equal(after.attempt.status, 'conflict');
-  assert.deepEqual(after.attempt.receipt, before.attempt.receipt); assert.deepEqual(after.attempt.before_guard, before.attempt.before_guard);
-  assert.deepEqual(after.attempt.request, before.attempt.request); assert.equal(after.attempt.request_hash, before.attempt.request_hash);
-  assert.equal(after.chain.current_guard.target.updatedAt, '2026-10-07T05:56:57Z'); assert.equal(after.retirements, 1);
-  const ev = await one(f.db, "select event_kind,evidence from toptik_media_private.events where request_id=$1", [argv[2]]);
-  assert.equal(ev.event_kind, 'storage_attempt_retired'); assert.equal(ev.evidence.previousUpdatedAt, '2026-10-02T00:00:00Z');
-  // No operation remains pending recovery, so reserve_toptik_media_operation's gate is open again.
-  assert.equal(Number((await one(f.db, "select count(*) n from toptik_media_private.operations where product_gid=$1 and status in ('reserved','running','uncertain')", [f.p])).n), 0);
+  for (const k of ['receipt', 'before_guard', 'after_guard', 'request', 'request_hash']) assert.deepEqual(after.attempt[k], before.attempt[k], k);
+  assert.deepEqual(after.chain.current_guard, before.chain.current_guard);
+  assert.equal(after.retirements, 1);
+  assert.equal(after.queue.status, 'pending'); assert.equal(after.queue.last_error, null); assert.equal(after.queue.evidence.storageAttemptRetired, argv[2]);
+  const ev = await one(f.db, 'select event_kind,evidence,result from toptik_media_private.events where request_id=$1', [argv[2]]);
+  assert.equal(ev.event_kind, 'storage_attempt_retired'); assert.equal(ev.evidence.frozenStoreUpdatedAt, '2026-10-02T00:00:00Z');
+  assert.equal(ev.evidence.galleryFingerprintNow, f.core.mediaSnapshotFingerprint(f.current.gallery), 'SQL and TS gallery fingerprints agree');
+  // The retired attempt can never be revived or repaired.
+  await assert.rejects(rpc(f.db, 'mark_toptik_media_transport_uncertain', [f.p, owner, f.op, 0, 0, randomUUID(), { outcome: 'unknown' }]));
+  await assert.rejects(rpc(f.db, 'toptik_media_private.authorize_storage_repair', [f.p, owner, randomUUID(), f.attempt.attempt_id, f.stage.requestHash, f.storagePath,
+    f.contentId, 'ref', 'a'.repeat(64), new Date(Date.now() + 3600_000).toISOString(), after.chain.current_guard]), /MEDIA_STORAGE_REPAIR_OUT_OF_ORDER/);
+  // The planner gate is open: a fresh operation reserves and gets a new one-shot upload permit.
+  const replanned = await f.startStage(randomUUID());
+  assert.equal(replanned.mayExecute, true);
   // Identical replay is a no-op; any other retirement of the same attempt is refused.
   assert.deepEqual(await f.retire(argv), { status: 'conflict', retired: true, replayed: true, mayExecute: false });
   await assert.rejects(f.retire(f.args()), /MEDIA_STORAGE_RETIRE_REUSED/);
   await assert.rejects(f.db.query('update toptik_media_private.storage_attempt_retirements set approval_reference=$1', ['x']), /MEDIA_IMMUTABLE_RECORD/);
+});
+test('a started (never answered) attempt is retired the same way', async () => {
+  const f = await staleStage({ uncertain: false });
+  assert.equal((await f.state()).attempt.status, 'started');
+  assert.equal((await f.retire(f.args())).retired, true);
+  assert.equal((await f.state()).op.status, 'conflict');
+});
+test('a changed gallery is recorded as server-side drift evidence', async () => {
+  const f = await staleStage(), changed = structuredClone(f.current.gallery); changed.revision = 'gallery-later';
+  await f.db.query('update public.test_gallery_snapshots set snapshot=$2 where product_gid=$1', [f.p, JSON.stringify(changed)]);
+  assert.equal((await f.retire(f.args())).galleryChanged, true);
 });
 test('an existing object is never retired: verified readback is the path', async () => {
   const f = await staleStage();
@@ -137,10 +172,10 @@ test('an existing object is never retired: verified readback is the path', async
   await assert.rejects(f.retire(f.args()), /MEDIA_STORAGE_RETIRE_OBJECT_EXISTS_USE_READBACK/);
   const s = await f.state(); assert.equal(s.op.status, 'running'); assert.equal(s.attempt.status, 'uncertain'); assert.equal(s.retirements, 0);
 });
-test('an unchanged observation must use the exact repair instead', async () => {
+test('a same-named object in another bucket does not count as the upload', async () => {
   const f = await staleStage();
-  await assert.rejects(f.retire(f.args({ fresh: f.guard(f.raw) })), /MEDIA_STORAGE_RETIRE_GUARD_UNCHANGED_USE_REPAIR/);
-  assert.equal((await f.state()).attempt.status, 'uncertain');
+  await f.db.query("insert into storage.objects(bucket_id,name) values('other-bucket',$1)", [f.storagePath]);
+  assert.equal((await f.retire(f.args())).retired, true);
 });
 test('an existing repair approval blocks retirement', async () => {
   const f = await staleStage(), a = f.attempt;
@@ -159,16 +194,11 @@ for (const [name, over, error] of [
 ]) test(`retirement refuses a wrong ${name} and writes nothing`, async () => {
   const f = await staleStage();
   await assert.rejects(f.retire(f.args(over)), error);
-  const s = await f.state(); assert.equal(s.attempt.status, 'uncertain'); assert.equal(s.retirements, 0);
-});
-test('a fresh guard for the wrong target side is refused', async () => {
-  const f = await staleStage(), g = f.guard(f.later); g.target = { ...g.target, side: 'gallery' };
-  await assert.rejects(f.retire(f.args({ fresh: g })));
-  assert.equal((await f.state()).attempt.status, 'uncertain');
+  const s = await f.state(); assert.equal(s.attempt.status, 'uncertain'); assert.equal(s.retirements, 0); assert.equal(s.queue, undefined);
 });
 test('a verified storage phase can never be retired', async () => {
-  const f = await staleStage(), a = f.attempt;
-  await f.db.query("update toptik_media_private.transport_attempts set status='verified' where attempt_id=$1", [a.attempt_id]);
+  const f = await staleStage();
+  await f.db.query("update toptik_media_private.transport_attempts set status='verified' where attempt_id=$1", [f.attempt.attempt_id]);
   await assert.rejects(f.retire(f.args()), /MEDIA_STORAGE_RETIRE_OUT_OF_ORDER/);
 });
 test('no application role may execute the operator function', async () => {

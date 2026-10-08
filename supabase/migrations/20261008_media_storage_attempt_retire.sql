@@ -1,13 +1,14 @@
 -- Reviewed exact-attempt retirement of a STALE storage attempt that provably wrote nothing.
--- Storage phases (gallery_upload, stage_source) are create-only uploads to one exact
--- immutable path (upsert false). When that object is absent, the original upload did not
--- land. The repair path (20261007_media_storage_repair.sql) may then re-upload only while
--- the fresh observation still equals the attempt's frozen guard. When the store or gallery
--- has since moved on, that repair is refused forever and the operation stays pending.
--- This lets a database operator retire EACH exact such attempt instead: the operation
--- becomes 'conflict', and the ordinary planner re-plans from the current state, with every
--- review gate, on the next run. Nothing is uploaded, approved, deleted or re-timestamped.
--- No original request, receipt, before_guard, artifact, provenance or baseline changes.
+-- Storage phases (gallery_upload, stage_source) are create-only uploads to one exact,
+-- content-addressed path (upsert false). When that object is absent, the original upload
+-- did not land. The exact repair (20261007_media_storage_repair.sql) may re-upload only
+-- while a fresh observation equals the attempt's frozen guard; once the store or gallery
+-- has moved on, that repair is refused forever and the operation stays pending.
+-- A database operator may instead retire EACH exact such attempt: the operation becomes
+-- 'conflict', the product is re-enqueued, and the ordinary planner re-plans from the
+-- current state with every review gate. The worst outcome is a re-plan, never a write:
+-- nothing is uploaded, approved, deleted or re-timestamped here, and no original request,
+-- receipt, before_guard, current_guard, artifact, provenance or baseline changes.
 begin;
 
 create table toptik_media_private.storage_attempt_retirements (
@@ -19,7 +20,7 @@ create table toptik_media_private.storage_attempt_retirements (
  phase text not null check(phase in ('gallery_upload','stage_source')),
  original_request_hash text not null check(original_request_hash ~ '^[a-f0-9]{64}$'),
  storage_path text not null,
- fresh_guard jsonb not null,
+ gallery_fingerprint_now text not null check(gallery_fingerprint_now ~ '^[a-f0-9]{64}$'),
  approval_reference text not null check(length(approval_reference) between 1 and 160),
  approval_evidence_sha256 text not null check(approval_evidence_sha256 ~ '^[a-f0-9]{64}$'),
  created_at timestamptz not null default clock_timestamp()
@@ -31,13 +32,15 @@ create trigger immutable_record before update or delete on toptik_media_private.
 
 -- PRIVATE OPERATOR FUNCTION: intentionally NO EXECUTE for service_role or any user role.
 -- One call retires one exact attempt. No SELECT-over-failures, seed or bulk form exists.
+-- p_approval_evidence_sha256 is the digest of the operator's live evidence (e.g. the store
+-- product timestamp read after the attempt); it is recorded, never trusted as a permit.
 create function toptik_media_private.retire_stale_storage_attempt(
  p_product_gid text,p_lease_owner uuid,p_retirement_id uuid,p_original_attempt_id uuid,
- p_request_hash text,p_storage_path text,p_approval_reference text,p_approval_evidence_sha256 text,p_fresh_guard jsonb
+ p_request_hash text,p_storage_path text,p_approval_reference text,p_approval_evidence_sha256 text
 ) returns jsonb language plpgsql security definer set search_path=pg_catalog,pg_temp as $$
 declare i jsonb; a0 toptik_media_private.transport_attempts%rowtype; a toptik_media_private.transport_attempts%rowtype;
  o toptik_media_private.operations%rowtype; s toptik_media_private.steps%rowtype; c toptik_media_private.transport_chains%rowtype;
- prior toptik_media_private.storage_attempt_retirements%rowtype; r jsonb;
+ prior toptik_media_private.storage_attempt_retirements%rowtype; r jsonb; gallery_now text; gallery_frozen text;
 begin
  if p_retirement_id is null or p_original_attempt_id is null or coalesce(p_request_hash,'') !~ '^[a-f0-9]{64}$' or p_storage_path is null
  or length(coalesce(p_approval_reference,'')) not between 1 and 160 or p_approval_reference ~ '[[:cntrl:]]'
@@ -83,34 +86,39 @@ begin
  -- A storage repair approval may have authorized a re-upload: inspect it, never retire over it.
  if exists(select 1 from toptik_media_private.storage_repair_approvals x where x.original_attempt_id=a.attempt_id)
  then raise exception 'MEDIA_STORAGE_RETIRE_REPAIR_APPROVAL_EXISTS';end if;
- perform toptik_media_private.assert_transport_guard(p_fresh_guard,i,s.body->>'target');
- -- Only for attempts the exact repair can never admit. An unchanged observation uses repair.
- if (p_fresh_guard-'observedAt') is not distinct from (a.before_guard-'observedAt')
- and (p_fresh_guard-'observedAt') is not distinct from (c.current_guard-'observedAt')
- then raise exception 'MEDIA_STORAGE_RETIRE_GUARD_UNCHANGED_USE_REPAIR';end if;
- -- Authoritative absence check; fails closed if storage.objects is unavailable.
+ -- Authoritative absence check. If row security could hide rows from this definer, absence
+ -- is unprovable: fail closed. Also fails closed if storage.objects is unavailable.
+ if row_security_active('storage.objects'::regclass) then raise exception 'MEDIA_STORAGE_RETIRE_ABSENCE_UNVERIFIABLE';end if;
  if exists(select 1 from storage.objects where bucket_id='carousel-media' and name=p_storage_path)
  then raise exception 'MEDIA_STORAGE_RETIRE_OBJECT_EXISTS_USE_READBACK';end if;
+ -- Server-side drift evidence (recorded, not a gate): the current Gallery snapshot fingerprint
+ -- versus the one frozen in the attempt (target for gallery_upload, source for stage_source).
+ gallery_now:=toptik_media_private.fingerprint(public.read_toptik_gallery_media_snapshot(p_product_gid));
+ gallery_frozen:=case a.phase when 'gallery_upload' then toptik_media_private.fingerprint(a.before_guard->'target')
+  else a.before_guard->>'sourceFingerprint' end;
  insert into toptik_media_private.storage_attempt_retirements(retirement_id,original_attempt_id,product_gid,operation_id,step_index,phase,
-  original_request_hash,storage_path,fresh_guard,approval_reference,approval_evidence_sha256)
- values(p_retirement_id,a.attempt_id,p_product_gid,o.id,a.step_index,a.phase,p_request_hash,p_storage_path,p_fresh_guard,
+  original_request_hash,storage_path,gallery_fingerprint_now,approval_reference,approval_evidence_sha256)
+ values(p_retirement_id,a.attempt_id,p_product_gid,o.id,a.step_index,a.phase,p_request_hash,p_storage_path,gallery_now,
   p_approval_reference,p_approval_evidence_sha256);
- -- Same durable conflict shape as hold_toptik_media_transport. The original receipt is kept.
- update toptik_media_private.transport_attempts set status='conflict',after_guard=coalesce(after_guard,p_fresh_guard)
-  where attempt_id=a.attempt_id;
- update toptik_media_private.transport_chains set status='conflict',current_guard=p_fresh_guard where operation_id=o.id and step_index=a.step_index;
+ -- Same durable conflict states as hold_toptik_media_transport. Request, receipt and guards are kept.
+ update toptik_media_private.transport_attempts set status='conflict' where attempt_id=a.attempt_id;
+ update toptik_media_private.transport_chains set status='conflict' where operation_id=o.id and step_index=a.step_index;
  update toptik_media_private.steps set status='conflict' where operation_id=o.id and step_index=a.step_index;
  update toptik_media_private.operations set status='conflict',version=version+1,updated_at=clock_timestamp() where id=o.id;
- r:=jsonb_build_object('status','conflict','retired',true,'replayed',false,'mayExecute',false);
- insert into toptik_media_private.events values(p_retirement_id,p_product_gid,o.id,'storage_attempt_retired',
+ r:=jsonb_build_object('status','conflict','retired',true,'replayed',false,'mayExecute',false,'galleryChanged',gallery_now is distinct from gallery_frozen);
+ insert into toptik_media_private.events(request_id,product_gid,operation_id,event_kind,request_hash,evidence,result)
+ values(p_retirement_id,p_product_gid,o.id,'storage_attempt_retired',
   toptik_media_private.digest(jsonb_build_object('attempt',a.attempt_id,'requestHash',p_request_hash,'storagePath',p_storage_path,
    'approvalReference',p_approval_reference,'approvalEvidenceSha256',p_approval_evidence_sha256)),
   jsonb_build_object('attemptId',a.attempt_id,'phase',a.phase,'stepIndex',a.step_index,'storagePath',p_storage_path,
-   'previousUpdatedAt',a.before_guard#>>'{target,updatedAt}','freshUpdatedAt',p_fresh_guard#>>'{target,updatedAt}',
-   'approvalReference',p_approval_reference),r,clock_timestamp());
+   'galleryFingerprintFrozen',gallery_frozen,'galleryFingerprintNow',gallery_now,
+   'frozenStoreUpdatedAt',case a.phase when 'stage_source' then a.before_guard#>>'{target,updatedAt}' end,
+   'approvalReference',p_approval_reference,'approvalEvidenceSha256',p_approval_evidence_sha256),r);
+ -- Wake the product now (clears a REPAIR_NEEDED backoff); a 'processing' claim is left alone.
+ perform toptik_media_private.enqueue(p_product_gid,jsonb_build_object('storageAttemptRetired',p_retirement_id));
  return r;
 end $$;
 
-revoke all on function toptik_media_private.retire_stale_storage_attempt(text,uuid,uuid,uuid,text,text,text,text,jsonb)
+revoke all on function toptik_media_private.retire_stale_storage_attempt(text,uuid,uuid,uuid,text,text,text,text)
  from public,anon,authenticated,service_role;
 commit;
