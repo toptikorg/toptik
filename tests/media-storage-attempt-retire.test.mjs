@@ -36,7 +36,9 @@ test('retirement writes only status transitions, its own record, one event and t
 });
 
 const engine = process.env.TOPTIK_PGLITE_DIR ?? path.resolve(repo, '../sync-sql-validation-20260930/package');
-assert.ok(existsSync(path.join(engine, 'dist/index.js')), `PGlite engine not found at ${engine}`);
+// Same convention as the other real-SQL suites: database tests skip (with a reason) where the
+// offline engine is not installed, e.g. CI; the static checks above always run.
+const skip = existsSync(path.join(engine, 'dist/index.js')) ? false : `PGlite engine not found at ${engine}`;
 const coreUrl = 'data:text/javascript;base64,' + Buffer.from(stripTypeScriptTypes(resolveImageLimits(readFileSync(path.join(repo, 'src/lib/shopify/media-sync-core.ts'), 'utf8')))).toString('base64');
 
 let ready;
@@ -126,7 +128,7 @@ async function staleStage({ uncertain = true } = {}) {
   return { db, core, p, op, attempt, stage, storagePath, raw, args, retire, state, startStage, current, sourceEvidenceId, contentId, identity };
 }
 
-test('an absent object is retired: history kept, operation conflicts, product woken, re-plan admitted', async () => {
+test('an absent object is retired: history kept, operation conflicts, product woken, re-plan admitted', { skip }, async () => {
   const f = await staleStage();
   await f.db.query("insert into toptik_media_private.work_queue(product_gid,status,last_error) values($1,'pending','MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED')", [f.p]);
   const before = await f.state();
@@ -155,29 +157,29 @@ test('an absent object is retired: history kept, operation conflicts, product wo
   await assert.rejects(f.retire(f.args()), /MEDIA_STORAGE_RETIRE_REUSED/);
   await assert.rejects(f.db.query('update toptik_media_private.storage_attempt_retirements set approval_reference=$1', ['x']), /MEDIA_IMMUTABLE_RECORD/);
 });
-test('a started (never answered) attempt is retired the same way', async () => {
+test('a started (never answered) attempt is retired the same way', { skip }, async () => {
   const f = await staleStage({ uncertain: false });
   assert.equal((await f.state()).attempt.status, 'started');
   assert.equal((await f.retire(f.args())).retired, true);
   assert.equal((await f.state()).op.status, 'conflict');
 });
-test('a changed gallery is recorded as server-side drift evidence', async () => {
+test('a changed gallery is recorded as server-side drift evidence', { skip }, async () => {
   const f = await staleStage(), changed = structuredClone(f.current.gallery); changed.revision = 'gallery-later';
   await f.db.query('update public.test_gallery_snapshots set snapshot=$2 where product_gid=$1', [f.p, JSON.stringify(changed)]);
   assert.equal((await f.retire(f.args())).galleryChanged, true);
 });
-test('an existing object is never retired: verified readback is the path', async () => {
+test('an existing object is never retired: verified readback is the path', { skip }, async () => {
   const f = await staleStage();
   await f.db.query("insert into storage.objects(bucket_id,name) values('carousel-media',$1)", [f.storagePath]);
   await assert.rejects(f.retire(f.args()), /MEDIA_STORAGE_RETIRE_OBJECT_EXISTS_USE_READBACK/);
   const s = await f.state(); assert.equal(s.op.status, 'running'); assert.equal(s.attempt.status, 'uncertain'); assert.equal(s.retirements, 0);
 });
-test('a same-named object in another bucket does not count as the upload', async () => {
+test('a same-named object in another bucket does not count as the upload', { skip }, async () => {
   const f = await staleStage();
   await f.db.query("insert into storage.objects(bucket_id,name) values('other-bucket',$1)", [f.storagePath]);
   assert.equal((await f.retire(f.args())).retired, true);
 });
-test('an existing repair approval blocks retirement', async () => {
+test('an existing repair approval blocks retirement', { skip }, async () => {
   const f = await staleStage(), a = f.attempt;
   await f.db.query(`insert into toptik_media_private.storage_repair_approvals(approval_id,original_attempt_id,product_gid,operation_id,step_index,phase_index,
     original_request_hash,storage_path,source_sha256,source_evidence_id,identity,scope_hash,approval_reference,approval_evidence_sha256,expires_at)
@@ -191,17 +193,17 @@ for (const [name, over, error] of [
   ['approval evidence', { evidence: 'not-a-hash' }, /MEDIA_STORAGE_RETIRE_INVALID/],
   ['missing attempt', { attempt: randomUUID() }, /MEDIA_STORAGE_RETIRE_ATTEMPT_MISSING/],
   ['foreign lease', { owner: randomUUID() }, /MEDIA_/],
-]) test(`retirement refuses a wrong ${name} and writes nothing`, async () => {
+]) test(`retirement refuses a wrong ${name} and writes nothing`, { skip }, async () => {
   const f = await staleStage();
   await assert.rejects(f.retire(f.args(over)), error);
   const s = await f.state(); assert.equal(s.attempt.status, 'uncertain'); assert.equal(s.retirements, 0); assert.equal(s.queue, undefined);
 });
-test('a verified storage phase can never be retired', async () => {
+test('a verified storage phase can never be retired', { skip }, async () => {
   const f = await staleStage();
   await f.db.query("update toptik_media_private.transport_attempts set status='verified' where attempt_id=$1", [f.attempt.attempt_id]);
   await assert.rejects(f.retire(f.args()), /MEDIA_STORAGE_RETIRE_OUT_OF_ORDER/);
 });
-test('no application role may execute the operator function', async () => {
+test('no application role may execute the operator function', { skip }, async () => {
   const { db } = await database();
   for (const role of ['service_role', 'authenticated', 'anon'])
     assert.equal((await one(db, 'select has_function_privilege($1,$2,$3) v', [role, signature, 'execute'])).v, false, role);
