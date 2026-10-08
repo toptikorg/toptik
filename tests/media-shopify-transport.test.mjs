@@ -224,7 +224,7 @@ test('real unchanged sharp verifier decodes image bytes in recovery, with only D
 });
 // Shopify bumps product.updatedAt asynchronously after an association. Mid-chain phases whose
 // SQL readback ignores product updatedAt tolerate ONLY that forward bump at call time.
-for(const phase of ['associate','variant_reassign','detach_old','reorder']) test(`${phase} sends despite a forward product updatedAt-only bump`,async()=>{
+for(const phase of ['associate','variant_reassign','detach_old','detach_reference','reorder']) test(`${phase} sends despite a forward product updatedAt-only bump`,async()=>{
   const f=fixture(phase);f.raw.updatedAt='2026-09-30T17:00:09Z';
   await f.run();assert.equal(f.calls.filter(c=>!c.query.startsWith('query ')).length,1);
 });

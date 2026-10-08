@@ -98,10 +98,11 @@ export function parseMediaTransportResponse(input: unknown, identity: MediaIdent
   return { ...result, revision: fingerprint(result) };
 }
 
-/** Phases whose SQL readback (accept_toptik_media_transport) proves only media, variant
- * media and variant image against the attempt's before_guard, never product updatedAt.
+/** Request phases whose SQL readback (accept_toptik_media_transport) proves only media,
+ * variant media and variant image against the attempt's before_guard, never product
+ * updatedAt. detach_reference is journaled as SQL phase detach_old (same readback).
  * create_owned is deliberately absent: its readback requires exact raw equality. */
-export const PRODUCT_TIMESTAMP_TOLERANT_PHASES: readonly string[] = ["associate", "variant_reassign", "detach_old", "reorder"];
+export const PRODUCT_TIMESTAMP_TOLERANT_PHASES: readonly string[] = Object.freeze(["associate", "variant_reassign", "detach_old", "detach_reference", "reorder"]);
 /** Shopify bumps product.updatedAt asynchronously after a media association and for
  * unrelated copy/SEO edits. True ONLY when `fresh` differs from `before` by a forward
  * product updatedAt and the revision digest covering it; every other raw fact is equal. */

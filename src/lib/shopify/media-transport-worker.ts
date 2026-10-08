@@ -111,7 +111,9 @@ export async function runMediaTransportPhase(reference: MediaTransportReference,
       // Only an existing attempt continues, to replay/recover with its frozen before_guard.
       const refreshed = await bounded(() => deps.refresh(reference, lease, guard, workDeadline), workDeadline, deps.now);
       checkTime();
-      if (refreshed?.status !== "attempt_exists") return { status: "pending", executed, diagnostic: "MEDIA_TRANSPORT_GUARD_REFRESHED" };
+      // A plain pending (no diagnostic) keeps an in-flight product's queue position after a
+      // verified phase in this claim; a diagnostic would send it to the back of the queue.
+      if (refreshed?.status !== "attempt_exists") return { status: "pending", executed };
     }
     // The SQL function checks the live shared lease and returns false for any previous attempt.
     // A timeout here grants no execution authority; its outcome is resolved next invocation.

@@ -310,7 +310,7 @@ function refreshFixture(status='refreshed'){const f=workerFixture();f.refreshCal
 test('product updatedAt-only drift refreshes the chain guard before begin and waits',async()=>{
   const f=refreshFixture(),drifted=timestampDrift(f);assert.notEqual(drifted.target.revision,f.snapshot.revision);
   f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
-  assert.deepEqual(await f.run(),{status:'pending',executed:false,diagnostic:'MEDIA_TRANSPORT_GUARD_REFRESHED'});
+  assert.deepEqual(await f.run(),{status:'pending',executed:false});
   assert.deepEqual(f.log,['load','acquire','observe','refresh','release']);
   const [ref,lease,guard,deadline]=f.refreshCalls[0];assert.deepEqual(ref,f.reference);assert.equal(lease,'20000000-0000-4000-8000-000000000001');
   assert.deepEqual(guard,drifted);assert.equal(deadline,f.deadline-1000);
@@ -323,7 +323,7 @@ test('SQL refusal of a refresh (attempt exists) falls through to begin and priva
 });
 test('an already-refreshed chain (stale loaded job, SQL unchanged) waits instead of beginning',async()=>{
   const f=refreshFixture('unchanged'),drifted=timestampDrift(f);f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
-  assert.deepEqual(await f.run(),{status:'pending',executed:false,diagnostic:'MEDIA_TRANSPORT_GUARD_REFRESHED'});
+  assert.deepEqual(await f.run(),{status:'pending',executed:false});
   assert.deepEqual(f.log,['load','acquire','observe','refresh','release']);
 });
 test('identical guard never refreshes',async()=>{
@@ -345,6 +345,18 @@ for(const [name,make] of [
 });
 test('a forward product updatedAt bump between begin and the call does not hold an associate',async()=>{
   const f=refreshFixture();let observations=0;const drifted=timestampDrift(f);
+  f.deps.observe=async()=>{f.log.push('observe');return ++observations===1?f.guard():structuredClone(drifted);};
+  assert.deepEqual(await f.run(),{status:'verified',executed:true});
+  assert.deepEqual(f.log,['load','acquire','observe','begin','observe','execute','uncertain:accepted','recover','release']);
+});
+for(const [phase,build,ack] of [
+  ['detach_old',f=>api.buildMediaReferenceDetach(f.context,f.snapshot,image(2).id,'detach_old'),()=>({fileUpdate:{files:[image(2)],userErrors:[]}})],
+  ['detach_reference',f=>api.buildMediaReferenceDetach(f.context,f.snapshot,image(2).id,'detach_reference'),()=>({fileUpdate:{files:[image(2)],userErrors:[]}})],
+  ['reorder',f=>api.buildMediaReorder(f.context,f.snapshot,[image(2).id,image(1).id]),()=>({productReorderMedia:{job:{id:'gid://shopify/Job/123'},mediaUserErrors:[]}})],
+]) test(`a forward product updatedAt bump between begin and the call does not hold ${phase}`,async()=>{
+  const f=refreshFixture();let observations=0;const drifted=timestampDrift(f);f.job.request=build(f);
+  f.deps.begin=async(_ref,_lease,attemptId,intent)=>{f.log.push('begin');return {mayExecute:true,phase:journal.mediaJournalPhase(f.job.request),attemptId,requestHash:'d'.repeat(64),request:intent,replayed:false};};
+  f.deps.execute=async()=>{f.log.push('execute');return {data:ack()};};
   f.deps.observe=async()=>{f.log.push('observe');return ++observations===1?f.guard():structuredClone(drifted);};
   assert.deepEqual(await f.run(),{status:'verified',executed:true});
   assert.deepEqual(f.log,['load','acquire','observe','begin','observe','execute','uncertain:accepted','recover','release']);
@@ -382,5 +394,6 @@ test('onlyForwardProductTimestampDrift accepts only a forward product timestamp'
   assert.equal(read.onlyForwardProductTimestampDrift(before,structuredClone(before)),false);
   assert.equal(read.onlyForwardProductTimestampDrift(before,fwd),false);
   assert.equal(read.onlyForwardProductTimestampDrift(timestampDrift(f,p=>p.media.nodes[0].alt='x').target,before),false);
-  assert.deepEqual([...read.PRODUCT_TIMESTAMP_TOLERANT_PHASES].sort(),['associate','detach_old','reorder','variant_reassign']);
+  assert.deepEqual([...read.PRODUCT_TIMESTAMP_TOLERANT_PHASES].sort(),['associate','detach_old','detach_reference','reorder','variant_reassign']);
+  assert.ok(Object.isFrozen(read.PRODUCT_TIMESTAMP_TOLERANT_PHASES));
 });
