@@ -72,6 +72,7 @@ create function public.assert_shopify_verified_copy_identity(p_item uuid,p_key t
     await db.exec(migration('20261008_media_identity_relink.sql'));
     // The behavioral suite must exercise the SHIPPED function: v2 replaces it in place.
     await db.exec(migration('20261008_media_identity_relink_paired.sql'));
+    await db.exec(migration('20261008_media_identity_relink_paired_fix.sql'));
     return { db, core };
   })();
   return ready;

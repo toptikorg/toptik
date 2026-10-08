@@ -71,6 +71,7 @@ create function public.assert_shopify_verified_copy_identity(p_item uuid,p_key t
     await db.exec(migration('20260930_gallery_media_cas.sql'));
     await db.exec(migration('20261008_media_identity_relink.sql'));
     await db.exec(migration('20261008_media_identity_relink_paired.sql'));
+    await db.exec(migration('20261008_media_identity_relink_paired_fix.sql'));
     return { db, core };
   })();
   return ready;
@@ -87,7 +88,7 @@ const sha = value => createHash('sha256').update(value).digest('hex');
 /** Live P10OXT0529O photo-7 shape: the baseline pairs the bytes under the RETIRED angle key R on BOTH
  * sides; the live store media still carries R in its own shopify provenance; the catalog's replaced
  * row N carries the same bytes and the same alt, registered through the real observe RPC. */
-async function pairedShapes({ photo6 = false, angleContent, angleAlt, intents = true, openOperation = false, extraBaselineCopy = false, oldUrlDiffers = false } = {}) {
+async function pairedShapes({ photo6 = false, angleContent, angleAlt, intents = true, openOperation = false, extraBaselineCopy = false, oldUrlDiffers = false, oldGalleryAltShort = false } = {}) {
   const { db, core } = await database();
   const n = serial++, mediaId = 200000 + n, oldAngleId = randomUUID(), newAngleId = randomUUID();
   const identity = { productId: `gid://shopify/Product/${n}`, variantId: `gid://shopify/ProductVariant/${n}`, itemId: randomUUID(),
@@ -108,7 +109,7 @@ async function pairedShapes({ photo6 = false, angleContent, angleAlt, intents = 
   // The baseline pairs a plus the retired key on both sides (photo-7), or the same with the store
   // media later re-uploaded under a fresh s-media identity (photo-6).
   const base = {
-    gallery: { identity: structuredClone(identity), side: 'gallery', revision: 'gallery-v1', complete: true, assets: [asset('a', 'gallery'), asset(oldKey, 'gallery', content, pairedAlt)] },
+    gallery: { identity: structuredClone(identity), side: 'gallery', revision: 'gallery-v1', complete: true, assets: [asset('a', 'gallery'), asset(oldKey, 'gallery', content, oldGalleryAltShort ? 'גרסה קצרה היסטורית' : pairedAlt)] },
     shopify: { identity: structuredClone(identity), side: 'shopify', revision: 'shopify-v1', complete: true, assets: [asset('a', 'shopify'), asset(oldKey, 'shopify', content, pairedAlt)] },
   };
   if (extraBaselineCopy) base.gallery.assets.push(asset(`g-angle:${randomUUID()}`, 'gallery', content, pairedAlt));
@@ -204,15 +205,13 @@ test('photo-7 with a moved URL: the merge registers the adopted copy under the p
   assert.equal(newProv.asset_key, f.oldKey); assert.equal(newProv.proof.url, f.urls.x);
   assert.equal(Number((await one(f.db, "select count(*) c from toptik_media_private.provenance where product_gid=$1 and asset_key=$2 and side='gallery'", [f.identity.productId, f.oldKey])).c), 2);
 });
-test('photo-7 refusals: content mismatch, foreign shopify lineage, alt drift, open operation, replay rules', { skip }, async () => {
+test('photo-7 refusals: content mismatch, foreign shopify lineage, open operation, replay rules', { skip }, async () => {
   const wrongContent = await pairedShapes({ angleContent: sha('other-bytes') });
   await assert.rejects(wrongContent.rekey(), /MEDIA_REKEY_NEW_GALLERY_CONTENT_MISMATCH/);
   const lineage = await pairedShapes();
   await lineage.db.query('insert into toptik_media_private.provenance(evidence_id,product_gid,asset_key,side,content_id,proof) values($1,$2,$3,$4,$5,$6)',
     ['s:' + sha('rogue-' + lineage.n), lineage.identity.productId, lineage.newKey, 'shopify', lineage.content, JSON.stringify({ platformRef: 'gid://shopify/MediaImage/9', url: 'https://cdn.shopify.com/s/files/1/0001/rogue.jpg' })]);
   await assert.rejects(lineage.rekey(), /MEDIA_REKEY_NEW_KEY_HAS_SHOPIFY_LINEAGE/);
-  const badAlt = await pairedShapes({ angleAlt: 'אחר לגמרי' });
-  await assert.rejects(badAlt.rekey(), /MEDIA_REKEY_ALT_MISMATCH/);
   const open = await pairedShapes({ openOperation: true });
   await assert.rejects(open.rekey(), /MEDIA_REKEY_OPERATION_OPEN/);
   const f = await pairedShapes();
@@ -223,9 +222,21 @@ test('photo-7 refusals: content mismatch, foreign shopify lineage, alt drift, op
   await assert.rejects(f.rekey({ rekeyId, approval: 'another' }), /MEDIA_REKEY_REUSED/);
   await assert.rejects(f.rekey(), /MEDIA_REKEY_REUSED/);
   // Refused attempts write nothing.
-  for (const g of [wrongContent, lineage, badAlt, open]) {
+  for (const g of [wrongContent, lineage, open]) {
     assert.equal(Number((await one(g.db, 'select count(*) c from toptik_media_private.media_identity_rekeys where product_gid=$1', [g.identity.productId])).c), 0);
   }
+});
+test('an angle alt that drifted from the historical baselines merges; the plan is the ordinary alt copy at most', { skip }, async () => {
+  const f = await pairedShapes({ angleAlt: 'כיתוב חדש ומדויק יותר' });
+  const r = await f.rekey();
+  assert.equal(r.status, 'rekeyed');
+  const fresh = await one(f.db, 'select snapshot from toptik_media_private.gallery_observations where product_gid=$1 order by created_at desc limit 1', [f.identity.productId]);
+  const st = await one(f.db, 'select baselines from toptik_media_private.state where product_gid=$1', [f.identity.productId]);
+  const current = structuredClone(st.baselines);
+  current.gallery.assets = structuredClone(fresh.snapshot.assets);
+  const plan = f.core.reconcileMedia(st.baselines, current);
+  assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.patches.map(p => p.kind), ['alt']);   // the ordinary catalog alt propagation, nothing else
 });
 test('photo-7: a baseline that does not pair the retired key on both sides is refused', { skip }, async () => {
   const f = await pairedShapes();
@@ -266,6 +277,13 @@ test('a duplicate removal intent is refused before it can wedge planning forever
 test('the rekey refuses the photo-6 shape outright', { skip }, async () => {
   const fresh = await pairedShapes({ photo6: true });
   await assert.rejects(fresh.rekey(), /MEDIA_REKEY_FRESH_REUPLOAD_PRESENT/);
+});
+test('photo-6 with the live historical short gallery alt merges cleanly (the 0529O refusal case)', { skip }, async () => {
+  const f = await pairedShapes({ photo6: true, oldGalleryAltShort: true });
+  const r = await f.relink();
+  assert.equal(r.status, 'relinked');
+  const fresh = await one(f.db, 'select snapshot from toptik_media_private.gallery_observations where product_gid=$1 order by created_at desc limit 1', [f.identity.productId]);
+  assert.deepEqual(fresh.snapshot.assets.map(a => a.key), ['a', `s-media:${f.freshMediaId}`]);
 });
 test('photo-6 refusals: an ambiguous retired pair and the original strict shape both stay closed', { skip }, async () => {
   const twoCopies = await pairedShapes({ photo6: true, extraBaselineCopy: true });
