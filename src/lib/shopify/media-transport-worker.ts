@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { MediaTransportRequest } from "./media-transport-requests";
 import { parseMediaTransportAcknowledgement } from "./media-transport-requests";
 import type { ShopifyMediaTransportRead } from "./media-transport-read";
-import { assertMediaTransportRead } from "./media-transport-read";
+import { assertMediaTransportRead, onlyForwardProductTimestampDrift, PRODUCT_TIMESTAMP_TOLERANT_PHASES } from "./media-transport-read";
 import { buildMediaJournalIntent, mediaJournalPhase } from "./media-transport-journal-intent";
 
 export type MediaTransportReference = { operationId: string; step: number; phaseIndex: number };
@@ -16,6 +16,7 @@ export type MediaTransportResult = { status: "disabled" | "scope_missing" | "lea
   diagnostic?: string };
 type Permit = { mayExecute: boolean; status?: string; phase?: string; attemptId?: string; requestHash?: string; request?: Record<string, unknown>; replayed?: boolean };
 type ObservationResult = { status: "pending" | "conflict" | "verified" };
+export type MediaGuardRefresh = { status: "refreshed" | "unchanged" | "attempt_exists"; refreshed: boolean };
 /** All ports are service-only, fixed-shop adapters. No browser JSON may supply jobs, guards or proofs. */
 export type MediaTransportDependencies = {
   now(): number;
@@ -27,6 +28,8 @@ export type MediaTransportDependencies = {
   execute(request: MediaTransportRequest, deadline: number): Promise<unknown>;
   uncertain(reference: MediaTransportReference, leaseOwner: string, receipt: { outcome: "unknown" | "accepted" | "processing"; mediaGid?: string; jobId?: string }, deadline: number): Promise<void>;
   conflict(reference: MediaTransportReference, leaseOwner: string, code: string, guard: MediaTransportGuard, deadline: number): Promise<void>;
+  /** Pre-attempt only: SQL replaces the chain guard when ONLY product updatedAt/revision drifted. Never a permit. */
+  refresh(reference: MediaTransportReference, leaseOwner: string, guard: MediaTransportGuard, deadline: number): Promise<MediaGuardRefresh>;
   /** Read/decode/recover ONLY, then call SQL accept. Must not issue a second external mutation. */
   recover(reference: MediaTransportReference, leaseOwner: string, job: MediaTransportPhaseJob, deadline: number): Promise<ObservationResult>;
 };
@@ -41,6 +44,13 @@ function validateGuard(guard: MediaTransportGuard, job: MediaTransportPhaseJob, 
 }
 function matchesBefore(guard: MediaTransportGuard, job: MediaTransportPhaseJob) {
   return guard.sourceFingerprint === job.request.context.sourceFingerprint && guard.target.revision === job.request.context.targetRevision;
+}
+/** Same source, loaded job consistent, and the target differs from job.before ONLY by a
+ * forward product updatedAt (plus its revision digest). Backward or any other drift is
+ * left to begin/hold, which record a durable conflict for review exactly as before. */
+function onlyProductTimestampDrift(guard: MediaTransportGuard, job: MediaTransportPhaseJob) {
+  return guard.sourceFingerprint === job.request.context.sourceFingerprint && job.before.revision === job.request.context.targetRevision &&
+    onlyForwardProductTimestampDrift(guard.target, job.before);
 }
 function stable(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
@@ -93,6 +103,18 @@ export async function runMediaTransportPhase(reference: MediaTransportReference,
     if (!Number.isFinite(leaseRecord.expiresAt) || leaseRecord.expiresAt < stopAt + 5000) fail("MEDIA_TRANSPORT_LEASE_TOO_SHORT");
     checkTime();
     const guard = await bounded(() => deps.observe(job, workDeadline), workDeadline, deps.now); validateGuard(guard, job, deps.now()); checkTime();
+    if (!matchesBefore(guard, job) && onlyProductTimestampDrift(guard, job)) {
+      // No attempt is created. SQL re-verifies the exact equality under the same lease and
+      // refuses once an attempt exists; the next invocation reloads the refreshed guard.
+      // 'unchanged' means this loaded job is already stale (another worker refreshed):
+      // never begin from it, or the strict post-begin recheck would conflict mid-chain.
+      // Only an existing attempt continues, to replay/recover with its frozen before_guard.
+      const refreshed = await bounded(() => deps.refresh(reference, lease, guard, workDeadline), workDeadline, deps.now);
+      checkTime();
+      // A plain pending (no diagnostic) keeps an in-flight product's queue position after a
+      // verified phase in this claim; a diagnostic would send it to the back of the queue.
+      if (refreshed?.status !== "attempt_exists") return { status: "pending", executed };
+    }
     // The SQL function checks the live shared lease and returns false for any previous attempt.
     // A timeout here grants no execution authority; its outcome is resolved next invocation.
     const attemptId = randomUUID();
@@ -110,7 +132,10 @@ export async function runMediaTransportPhase(reference: MediaTransportReference,
       fail("MEDIA_TRANSPORT_NOOP_EXECUTION_FORBIDDEN");
     }
     const lastGuard = await bounded(() => deps.observe(job, workDeadline), workDeadline, deps.now); validateGuard(lastGuard, job, deps.now()); checkTime();
-    if (!matchesBefore(guard, job) || !matchesBefore(lastGuard, job)) {
+    // An asynchronous product updatedAt bump can land after begin. For phases whose SQL
+    // readback ignores product updatedAt, that alone must not hold the chain mid-step.
+    const lastTolerated = PRODUCT_TIMESTAMP_TOLERANT_PHASES.includes(job.request.phase) && onlyProductTimestampDrift(lastGuard, job);
+    if (!matchesBefore(guard, job) || (!matchesBefore(lastGuard, job) && !lastTolerated)) {
       await bounded(() => deps.conflict(reference, lease, "MEDIA_TRANSPORT_CHANGED_BEFORE_CALL", lastGuard, workDeadline), workDeadline, deps.now);
       return { status: "conflict", executed };
     }

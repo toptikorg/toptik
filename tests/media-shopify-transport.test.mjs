@@ -17,7 +17,7 @@ const read = await import(readUrl), requests = await import(requestsUrl);
 const body = stripTypeScriptTypes(resolveImageLimits(source('media-shopify-transport'))).replace(/^import[\s\S]*?;\r?\n/gm, '').replace(/^export /gm, '');
 const { makeAdapter } = await import(moduleUrl(`
   import {buildMediaReadRequest,parseMediaReadResponse,MEDIA_API_VERSION,MEDIA_PUBLICATION_ID} from '${readyUrl}';
-  import {assertMediaTransportRead,parseMediaTransportResponse,parseTransportMedia} from '${readUrl}';
+  import {assertMediaTransportRead,parseMediaTransportResponse,parseTransportMedia,onlyForwardProductTimestampDrift,PRODUCT_TIMESTAMP_TOLERANT_PHASES} from '${readUrl}';
   import {buildOwnedMediaCreate,buildOwnedMediaAssociate,buildMediaVariantReassign,buildMediaReferenceDetach,
     buildMediaReorder,buildOwnedMediaRecoveryRead,buildOwnedMediaNodeRead,ownedMediaFilename,
     parseOwnedMediaRecovery,parseMediaTransportAcknowledgement} from '${requestsUrl}';
@@ -221,4 +221,22 @@ test('real unchanged sharp verifier decodes image bytes in recovery, with only D
   const api=makeAdapter({...f.deps,Date,verifyOnboardingImage:verifier});
   const result=await api.readDecodedOwnedShopifyMedia(f.context,f.staged.contentSha256,f.staged.mime,f.created.id,Date.now()+20000);
   assert.equal(result.decoded.mime,'image/png');assert.equal(result.decoded.sha256,createHash('sha256').update(bytes).digest('hex'));assert.equal(downloads,1);
+});
+// Shopify bumps product.updatedAt asynchronously after an association. Mid-chain phases whose
+// SQL readback ignores product updatedAt tolerate ONLY that forward bump at call time.
+for(const phase of ['associate','variant_reassign','detach_old','detach_reference','reorder']) test(`${phase} sends despite a forward product updatedAt-only bump`,async()=>{
+  const f=fixture(phase);f.raw.updatedAt='2026-09-30T17:00:09Z';
+  await f.run();assert.equal(f.calls.filter(c=>!c.query.startsWith('query ')).length,1);
+});
+test('create_owned stays strict on a product updatedAt bump at call time',async()=>{
+  const f=fixture('create_owned');f.raw.updatedAt='2026-09-30T17:00:09Z';
+  await assert.rejects(f.run(),/MEDIA_TRANSPORT_CHANGED_BEFORE_CALL/);assert.equal(f.calls.filter(c=>!c.query.startsWith('query ')).length,0);
+});
+for(const [name,edit] of [
+  ['backward product timestamp',raw=>{raw.updatedAt='2026-09-29T00:00:00Z';}],
+  ['media alt with timestamp',raw=>{raw.updatedAt='2026-09-30T17:00:09Z';raw.media.nodes[1].alt='merchant edit';}],
+  ['media updatedAt with timestamp',raw=>{raw.updatedAt='2026-09-30T17:00:09Z';raw.media.nodes[1].updatedAt='2026-09-30T17:00:08Z';}],
+]) test(`associate never sends on ${name}`,async()=>{
+  const f=fixture('associate');edit(f.raw);
+  await assert.rejects(f.run(),/MEDIA_TRANSPORT_CHANGED_BEFORE_CALL/);assert.equal(f.calls.filter(c=>!c.query.startsWith('query ')).length,0);
 });

@@ -98,6 +98,23 @@ export function parseMediaTransportResponse(input: unknown, identity: MediaIdent
   return { ...result, revision: fingerprint(result) };
 }
 
+/** Request phases whose SQL readback (accept_toptik_media_transport) proves only media,
+ * variant media and variant image against the attempt's before_guard, never product
+ * updatedAt. detach_reference is journaled as SQL phase detach_old (same readback).
+ * create_owned is deliberately absent: its readback requires exact raw equality. */
+export const PRODUCT_TIMESTAMP_TOLERANT_PHASES: readonly string[] = Object.freeze(["associate", "variant_reassign", "detach_old", "detach_reference", "reorder"]);
+/** Shopify bumps product.updatedAt asynchronously after a media association and for
+ * unrelated copy/SEO edits. True ONLY when `fresh` differs from `before` by a forward
+ * product updatedAt and the revision digest covering it; every other raw fact is equal. */
+export function onlyForwardProductTimestampDrift(fresh: ShopifyMediaTransportRead, before: ShopifyMediaTransportRead): boolean {
+  if (fresh?.side !== "shopify" || before?.side !== "shopify" || fresh.revision === before.revision ||
+      !iso(fresh.updatedAt) || !iso(before.updatedAt) || Date.parse(fresh.updatedAt) < Date.parse(before.updatedAt)) return false;
+  const stable = (x: unknown): string => Array.isArray(x) ? `[${x.map(stable).join(",")}]` : x && typeof x === "object"
+    ? `{${Object.keys(x).sort().map(k => `${JSON.stringify(k)}:${stable((x as Record<string, unknown>)[k])}`).join(",")}}` : JSON.stringify(x);
+  const strip = (read: ShopifyMediaTransportRead) => { const rest: Record<string, unknown> = { ...read }; delete rest.updatedAt; delete rest.revision; return rest; };
+  return stable(strip(fresh)) === stable(strip(before));
+}
+
 /** Re-parse private stored readbacks too: a hash is not a substitute for shape validation. */
 export function assertMediaTransportRead(read: ShopifyMediaTransportRead, expectedRevision = read.revision): void {
   if (!read || read.side !== "shopify" || read.complete !== true || !Array.isArray(read.media) || !Array.isArray(read.variantMediaIds)) fail("MEDIA_TRANSPORT_READ_INVALID");

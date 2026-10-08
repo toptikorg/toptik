@@ -300,3 +300,100 @@ test('a stuck read port is bounded even if its adapter ignores deadline',async()
   await assert.rejects(worker.runMediaTransportPhase(f.reference,Date.now()+1030,f.deps),/TIME_BUDGET/);
   assert.ok(!f.log.includes('acquire'));assert.ok(!f.log.includes('execute'));
 });
+
+// Shopify bumps product.updatedAt asynchronously after an association. Only that
+// timestamp (and its derived revision) may be refreshed, and only before begin.
+function timestampDrift(f,edit=()=>{}){const r=response();r.data.product.updatedAt='2026-09-30T17:00:07Z';edit(r.data.product);
+  return {sourceFingerprint:f.context.sourceFingerprint,target:parse(r),observedAt:time};}
+function refreshFixture(status='refreshed'){const f=workerFixture();f.refreshCalls=[];
+  f.deps.refresh=async(...args)=>{f.log.push('refresh');f.refreshCalls.push(args);return {status,refreshed:status==='refreshed'};};return f;}
+test('product updatedAt-only drift refreshes the chain guard before begin and waits',async()=>{
+  const f=refreshFixture(),drifted=timestampDrift(f);assert.notEqual(drifted.target.revision,f.snapshot.revision);
+  f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
+  assert.deepEqual(await f.run(),{status:'pending',executed:false});
+  assert.deepEqual(f.log,['load','acquire','observe','refresh','release']);
+  const [ref,lease,guard,deadline]=f.refreshCalls[0];assert.deepEqual(ref,f.reference);assert.equal(lease,'20000000-0000-4000-8000-000000000001');
+  assert.deepEqual(guard,drifted);assert.equal(deadline,f.deadline-1000);
+});
+test('SQL refusal of a refresh (attempt exists) falls through to begin and private recovery',async()=>{
+  const f=refreshFixture('attempt_exists'),drifted=timestampDrift(f);f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
+  f.deps.begin=async()=>{f.log.push('begin');return {mayExecute:false,status:'uncertain',replayed:true};};
+  assert.deepEqual(await f.run(),{status:'verified',executed:false});
+  assert.deepEqual(f.log,['load','acquire','observe','refresh','begin','recover','release']);
+});
+test('an already-refreshed chain (stale loaded job, SQL unchanged) waits instead of beginning',async()=>{
+  const f=refreshFixture('unchanged'),drifted=timestampDrift(f);f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
+  assert.deepEqual(await f.run(),{status:'pending',executed:false});
+  assert.deepEqual(f.log,['load','acquire','observe','refresh','release']);
+});
+test('identical guard never refreshes',async()=>{
+  const f=refreshFixture();assert.deepEqual(await f.run(),{status:'verified',executed:true});assert.ok(!f.log.includes('refresh'));
+});
+for(const [name,make] of [
+  ['media alt',f=>timestampDrift(f,p=>p.media.nodes[1].alt='merchant edit')],
+  ['media updatedAt',f=>timestampDrift(f,p=>p.media.nodes[1].updatedAt='2026-09-30T17:00:05Z')],
+  ['media order',f=>timestampDrift(f,p=>p.media.nodes.reverse())],
+  ['added media',f=>timestampDrift(f,p=>{p.media.nodes.push(image(4));p.mediaCount.count=3;})],
+  ['variant image',f=>timestampDrift(f,p=>p.variants.nodes[0].image=null)],
+  ['media without timestamp drift',f=>{const r=response();r.data.product.media.nodes[1].alt='merchant edit';return {sourceFingerprint:f.context.sourceFingerprint,target:parse(r),observedAt:time};}],
+  ['source fingerprint',f=>({...timestampDrift(f),sourceFingerprint:'e'.repeat(64)})],
+]) test(`real ${name} change never refreshes; begin keeps the SQL conflict path`,async()=>{
+  const f=refreshFixture(),changed=make(f);f.deps.observe=async()=>{f.log.push('observe');return structuredClone(changed);};
+  f.deps.begin=async()=>{f.log.push('begin');return {mayExecute:false,status:'conflict'};};
+  assert.deepEqual(await f.run(),{status:'conflict',executed:false});
+  assert.ok(!f.log.includes('refresh'));assert.ok(f.log.includes('begin'));assert.ok(!f.log.includes('execute'));
+});
+test('a forward product updatedAt bump between begin and the call does not hold an associate',async()=>{
+  const f=refreshFixture();let observations=0;const drifted=timestampDrift(f);
+  f.deps.observe=async()=>{f.log.push('observe');return ++observations===1?f.guard():structuredClone(drifted);};
+  assert.deepEqual(await f.run(),{status:'verified',executed:true});
+  assert.deepEqual(f.log,['load','acquire','observe','begin','observe','execute','uncertain:accepted','recover','release']);
+});
+for(const [phase,build,ack] of [
+  ['detach_old',f=>api.buildMediaReferenceDetach(f.context,f.snapshot,image(2).id,'detach_old'),()=>({fileUpdate:{files:[image(2)],userErrors:[]}})],
+  ['detach_reference',f=>api.buildMediaReferenceDetach(f.context,f.snapshot,image(2).id,'detach_reference'),()=>({fileUpdate:{files:[image(2)],userErrors:[]}})],
+  ['reorder',f=>api.buildMediaReorder(f.context,f.snapshot,[image(2).id,image(1).id]),()=>({productReorderMedia:{job:{id:'gid://shopify/Job/123'},mediaUserErrors:[]}})],
+]) test(`a forward product updatedAt bump between begin and the call does not hold ${phase}`,async()=>{
+  const f=refreshFixture();let observations=0;const drifted=timestampDrift(f);f.job.request=build(f);
+  f.deps.begin=async(_ref,_lease,attemptId,intent)=>{f.log.push('begin');return {mayExecute:true,phase:journal.mediaJournalPhase(f.job.request),attemptId,requestHash:'d'.repeat(64),request:intent,replayed:false};};
+  f.deps.execute=async()=>{f.log.push('execute');return {data:ack()};};
+  f.deps.observe=async()=>{f.log.push('observe');return ++observations===1?f.guard():structuredClone(drifted);};
+  assert.deepEqual(await f.run(),{status:'verified',executed:true});
+  assert.deepEqual(f.log,['load','acquire','observe','begin','observe','execute','uncertain:accepted','recover','release']);
+});
+for(const [name,make] of [
+  ['media alt',f=>timestampDrift(f,p=>p.media.nodes[1].alt='merchant edit')],
+  ['media updatedAt',f=>timestampDrift(f,p=>p.media.nodes[1].updatedAt='2026-09-30T17:00:05Z')],
+  ['backward product timestamp',f=>{const r=response();r.data.product.updatedAt='2026-09-29T00:00:00Z';return {sourceFingerprint:f.context.sourceFingerprint,target:parse(r),observedAt:time};}],
+  ['source fingerprint',f=>({...timestampDrift(f),sourceFingerprint:'e'.repeat(64)})],
+]) test(`real ${name} change between begin and the call still holds before sending`,async()=>{
+  const f=refreshFixture();let observations=0;const changed=make(f);
+  f.deps.observe=async()=>{f.log.push('observe');return ++observations===1?f.guard():structuredClone(changed);};
+  assert.deepEqual(await f.run(),{status:'conflict',executed:false});
+  assert.ok(!f.log.includes('refresh'));assert.ok(f.log.includes('conflict'));assert.ok(!f.log.includes('execute'));
+});
+test('create_owned stays strict: a post-begin timestamp bump holds before sending',async()=>{
+  const f=refreshFixture();let observations=0;const drifted=timestampDrift(f);
+  f.job.request=api.buildOwnedMediaCreate(f.context,f.staged,'');f.job.sourceEvidenceId='evidence-1';f.job.scopes=['write_files'];
+  f.deps.begin=async(_ref,_lease,attemptId,intent)=>{f.log.push('begin');return {mayExecute:true,phase:'create_owned',attemptId,requestHash:'d'.repeat(64),request:intent,replayed:false};};
+  f.deps.observe=async()=>{f.log.push('observe');return ++observations===1?f.guard():structuredClone(drifted);};
+  assert.deepEqual(await f.run(),{status:'conflict',executed:false});
+  assert.ok(f.log.includes('begin'));assert.ok(f.log.includes('conflict'));assert.ok(!f.log.includes('execute'));
+});
+test('a backward product timestamp never refreshes; begin keeps the SQL conflict path',async()=>{
+  const f=refreshFixture();const r=response();r.data.product.updatedAt='2026-09-29T00:00:00Z';
+  const back={sourceFingerprint:f.context.sourceFingerprint,target:parse(r),observedAt:time};
+  f.deps.observe=async()=>{f.log.push('observe');return structuredClone(back);};
+  f.deps.begin=async()=>{f.log.push('begin');return {mayExecute:false,status:'conflict'};};
+  assert.deepEqual(await f.run(),{status:'conflict',executed:false});
+  assert.ok(!f.log.includes('refresh'));assert.ok(f.log.includes('begin'));
+});
+test('onlyForwardProductTimestampDrift accepts only a forward product timestamp',()=>{
+  const f=fixture(),before=f.snapshot,fwd=timestampDrift(f).target;
+  assert.equal(read.onlyForwardProductTimestampDrift(fwd,before),true);
+  assert.equal(read.onlyForwardProductTimestampDrift(before,structuredClone(before)),false);
+  assert.equal(read.onlyForwardProductTimestampDrift(before,fwd),false);
+  assert.equal(read.onlyForwardProductTimestampDrift(timestampDrift(f,p=>p.media.nodes[0].alt='x').target,before),false);
+  assert.deepEqual([...read.PRODUCT_TIMESTAMP_TOLERANT_PHASES].sort(),['associate','detach_old','detach_reference','reorder','variant_reassign']);
+  assert.ok(Object.isFrozen(read.PRODUCT_TIMESTAMP_TOLERANT_PHASES));
+});
