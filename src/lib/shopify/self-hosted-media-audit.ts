@@ -64,6 +64,14 @@ export const SELF_HOSTED_AUDIT_EXEMPTIONS: ReadonlyArray<
 
 // A gallery angle is self-hosted when it is served from our own Supabase
 // `carousel-media` bucket rather than the Shopify store CDN.
+//
+// This matches the bucket by a project-agnostic path (`…/object/public/
+// carousel-media/`) rather than by the hardcoded project host that
+// media-planning-observation uses; the difference is intentional, so a project
+// ref change does not silently blind the audit. Scope assumption: import-handler
+// emits public bucket URLs, so only the `/object/public/` path is matched. A
+// signed URL or a custom storage domain is out of scope and would simply not be
+// flagged (under-flag), never mis-reported as a store-linked angle.
 export function isSelfHostedImagePath(imagePath: string): boolean {
   if (typeof imagePath !== "string") return false;
   if (imagePath.includes("cdn.shopify.com/")) return false;
