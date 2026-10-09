@@ -20,6 +20,10 @@
     {
       "path": "/api/admin/shopify/sync?run=1&pending=1",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/admin/shopify/media/reconcile-audit",
+      "schedule": "15 5 * * *"
     }
   ],
   "headers": [
