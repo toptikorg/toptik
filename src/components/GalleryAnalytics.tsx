@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const ID = "G-5YTS2GZ31N";
+const ID = "G-LHWB69CV2M";
 const KEY = "toptik-analytics-consent-v1";
 type Choice = "granted" | "denied";
 type AnalyticsWindow = Window & {
-  "ga-disable-G-5YTS2GZ31N"?: boolean;
+  "ga-disable-G-LHWB69CV2M"?: boolean;
   dataLayer?: unknown[];
   gtag?: (...args: unknown[]) => void;
 };
@@ -19,7 +19,7 @@ function permitted(path: string) {
 
 function startMeasurement(path: string) {
   const w = window as AnalyticsWindow;
-  w["ga-disable-G-5YTS2GZ31N"] = false;
+  w["ga-disable-G-LHWB69CV2M"] = false;
   if (!w.gtag) {
     w.dataLayer = w.dataLayer || [];
     // Google tag's documented queue uses Arguments objects.
@@ -69,7 +69,7 @@ export function GalleryAnalytics() {
     try { localStorage.setItem(KEY, choice); } catch { /* Choice still applies now. */ }
     if (choice === "granted") startMeasurement(path);
     else {
-      (window as AnalyticsWindow)["ga-disable-G-5YTS2GZ31N"] = true;
+      (window as AnalyticsWindow)["ga-disable-G-LHWB69CV2M"] = true;
       (window as AnalyticsWindow).gtag?.("consent", "update", { analytics_storage: "denied" });
       for (const part of document.cookie.split(";")) {
         const name = part.trim().split("=")[0];
