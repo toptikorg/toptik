@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import styles from "@/components/editorial/Journal.module.css";
 import { getGalleryArticle, publishableGalleryArticles } from "@/lib/editorial/gallery-articles";
 import { absoluteUrl, SITE_NAME, STORE_ORIGIN } from "@/lib/seo/site";
+import { getStoreGuides } from "@/lib/editorial/store-guides";
 import { jsonLdString } from "@/lib/seo/structured-data";
 
 export const dynamicParams = false;
@@ -78,6 +79,7 @@ export default async function JournalArticlePage({ params }: PageProps) {
   const { slug } = await params;
   const article = getGalleryArticle(slug);
   if (!article) notFound();
+  const storeGuides = getStoreGuides(article.slug);
 
   return (
     <main className={styles.article} dir="rtl">
@@ -106,6 +108,17 @@ export default async function JournalArticlePage({ params }: PageProps) {
           <figcaption>{article.hero.caption}</figcaption>
         </figure>}
         <div className={styles.articleBody}>{article.content}</div>
+        {storeGuides.length > 0 && (
+          <section className={styles.storeGuides} aria-labelledby="store-guides-heading">
+            <h2 id="store-guides-heading">מדריכי קנייה בחנות TopTik</h2>
+            <p>המשך קריאה בחנות, שם מופיעים גם המחיר, המלאי והרכישה:</p>
+            <ul>
+              {storeGuides.map((guide) => (
+                <li key={guide.slug}><a href={guide.href}>{guide.title}</a></li>
+              ))}
+            </ul>
+          </section>
+        )}
         <footer className={styles.articleFooter}>
           <Link className={styles.backLink} href="/carousel">חזרה לגלריה <span aria-hidden="true">←</span></Link>
           <span aria-hidden="true"> · </span>
