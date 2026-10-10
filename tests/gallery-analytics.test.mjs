@@ -33,7 +33,7 @@ test('tag initializes once, pageviews are explicit and advertising stays denied'
 });
 test('consent gates startup and withdrawal disables Google collection', () => {
   assert.match(source, /if \(choice === "granted"\) startMeasurement\(path\)/);
-  assert.match(source, /\["ga-disable-G-5YTS2GZ31N"\] = true/);
+  assert.match(source, /\["ga-disable-G-LHWB69CV2M"\] = true/);
   assert.match(source, /ללא מדידה/);
   assert.match(source, /העדפות מדידה/);
 });
