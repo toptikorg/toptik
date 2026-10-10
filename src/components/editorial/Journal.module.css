@@ -91,6 +91,13 @@
 .articleBody :global(.gallery-info-card) { flex: 1 1 290px; max-width: 360px; min-width: 0; }
 .articleBody :global(.gallery-info-card .catalog-card) { margin: 0 auto; }
 
+.storeGuides { margin-top: 48px; padding-top: 22px; border-top: 1px solid rgba(215, 170, 106, 0.2); }
+.storeGuides h2 { margin: 0 0 8px; font-size: 1.125rem; }
+.storeGuides p { margin: 0 0 10px; }
+.storeGuides ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; }
+.storeGuides a { color: #e5c895; text-decoration: none; }
+.storeGuides a:hover { color: #fff0cf; text-decoration: underline; text-underline-offset: 4px; }
+
 .articleFooter { margin-top: 58px; padding-top: 23px; border-top: 1px solid rgba(215, 170, 106, 0.2); }
 .backLink { font-size: 14px; }
 .collectionTeasers { width: min(100% - 32px, 1020px); margin: 28px auto 72px; color: #f2e6cf; }
