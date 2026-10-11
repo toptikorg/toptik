@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import styles from "@/components/editorial/Journal.module.css";
-import { getGalleryArticle, publishableGalleryArticles } from "@/lib/editorial/gallery-articles";
+import { getGalleryArticle, getRelatedGalleryArticles, publishableGalleryArticles } from "@/lib/editorial/gallery-articles";
 import { absoluteUrl, SITE_NAME, STORE_ORIGIN } from "@/lib/seo/site";
 import { getStoreGuides } from "@/lib/editorial/store-guides";
 import { jsonLdString } from "@/lib/seo/structured-data";
@@ -80,6 +80,7 @@ export default async function JournalArticlePage({ params }: PageProps) {
   const article = getGalleryArticle(slug);
   if (!article) notFound();
   const storeGuides = getStoreGuides(article.slug);
+  const related = getRelatedGalleryArticles(article.slug);
 
   return (
     <main className={styles.article} dir="rtl">
@@ -115,6 +116,16 @@ export default async function JournalArticlePage({ params }: PageProps) {
             <ul>
               {storeGuides.map((guide) => (
                 <li key={guide.slug}><a href={guide.href}>{guide.title}</a></li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {related.length > 0 && (
+          <section className={styles.storeGuides} aria-labelledby="related-articles-heading">
+            <h2 id="related-articles-heading">עוד במגזין</h2>
+            <ul>
+              {related.map((item) => (
+                <li key={item.slug}><Link href={`/journal/${item.slug}`}>{item.title}</Link></li>
               ))}
             </ul>
           </section>

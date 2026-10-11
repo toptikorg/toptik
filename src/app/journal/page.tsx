@@ -4,6 +4,7 @@ import Image from "next/image";
 import styles from "@/components/editorial/Journal.module.css";
 import { publishableGalleryArticles } from "@/lib/editorial/gallery-articles";
 import { absoluteUrl, SITE_NAME } from "@/lib/seo/site";
+import { jsonLdString } from "@/lib/seo/structured-data";
 
 export const metadata: Metadata = {
   title: "מגזין TopTik | מסעות, סגנון ומבט מקרוב",
@@ -18,6 +19,28 @@ export const metadata: Metadata = {
     url: absoluteUrl("/journal"),
   },
 };
+
+function archiveStructuredData() {
+  const url = absoluteUrl("/journal");
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${url}#page`,
+    url,
+    name: "מגזין TopTik",
+    inLanguage: "he",
+    isPartOf: { "@type": "WebSite", name: SITE_NAME, url: absoluteUrl("/") },
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: publishableGalleryArticles.map((article, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: absoluteUrl(`/journal/${article.slug}`),
+        name: article.title,
+      })),
+    },
+  };
+}
 
 export default function JournalArchivePage() {
   return (
@@ -51,6 +74,7 @@ export default function JournalArchivePage() {
         <footer className={styles.articleFooter}>
           <Link className={styles.backLink} href="/carousel">חזרה לגלריה <span aria-hidden="true">←</span></Link>
         </footer>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(archiveStructuredData()) }} />
       </div>
     </main>
   );
