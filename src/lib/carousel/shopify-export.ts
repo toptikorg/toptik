@@ -4,6 +4,7 @@ import { detectVendorFromCatalog, normalizeCatalogKey } from "@/lib/catalog-sour
 import { resolveColorMetaForCatalog } from "./colors";
 import { trimmedProductSrc } from "./trim-src";
 import { SUPPLIER_PRICE_LIST } from "./supplier-price-list";
+import { roundUpToWholeShekel } from "./round-price";
 import { HEBREW_TITLES } from "./product-names";
 
 // Builds the Shopify-shaped product sheet: ONE ROW PER SKU, and — per the
@@ -230,7 +231,7 @@ export function buildShopifyExportRows(items: CarouselItem[], origin: string): S
       Vendor: vendor,
       Type: type,
       Size: size,
-      Price: supplier?.price ?? ("" as const),
+      Price: supplier ? roundUpToWholeShekel(supplier.price) : ("" as const),
       Quantity: supplier?.quantity ?? ("" as const),
       // Active per the owner's decision (2026-08-16): price and stock now ship
       // in the sheet, so imported products should be live immediately.
