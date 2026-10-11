@@ -473,3 +473,14 @@ export const publishableGalleryArticles = galleryArticles.filter((article) => !a
 export function getGalleryArticle(slug: string): GalleryArticle | undefined {
   return publishableGalleryArticles.find((article) => article.slug === slug);
 }
+
+// Up to `limit` other publishable articles, same category first, then the rest
+// in catalogue order. Deterministic so the rendered links are stable per slug.
+export function getRelatedGalleryArticles(slug: string, limit = 3): GalleryArticle[] {
+  const current = getGalleryArticle(slug);
+  if (!current) return [];
+  const others = publishableGalleryArticles.filter((article) => article.slug !== slug);
+  const same = others.filter((article) => article.category === current.category);
+  const rest = others.filter((article) => article.category !== current.category);
+  return [...same, ...rest].slice(0, limit);
+}
