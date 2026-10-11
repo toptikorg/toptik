@@ -473,3 +473,22 @@ export const publishableGalleryArticles = galleryArticles.filter((article) => !a
 export function getGalleryArticle(slug: string): GalleryArticle | undefined {
   return publishableGalleryArticles.find((article) => article.slug === slug);
 }
+
+// Up to `limit` other publishable articles, ranked by relevance: shared brand or
+// model words in the title (Latin words, e.g. "Samsonite", "Intuo") weigh most,
+// then a shared category; ties keep catalogue order, so the result is stable.
+const latinWords = (title: string) => new Set(title.toLowerCase().match(/[a-z][a-z'’-]{3,}/g) ?? []);
+
+export function getRelatedGalleryArticles(slug: string, limit = 3): GalleryArticle[] {
+  const current = getGalleryArticle(slug);
+  if (!current) return [];
+  const words = latinWords(current.title);
+  const scored = publishableGalleryArticles
+    .filter((article) => article.slug !== slug)
+    .map((article, index) => {
+      const shared = [...latinWords(article.title)].filter((word) => words.has(word)).length;
+      return { article, index, score: shared * 2 + (article.category === current.category ? 1 : 0) };
+    });
+  scored.sort((a, b) => b.score - a.score || a.index - b.index);
+  return scored.slice(0, limit).map(({ article }) => article);
+}
