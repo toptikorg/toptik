@@ -12,6 +12,7 @@ import {
 import { assertVerifiedCopyApproval, assertVerifiedCopyIdentity, configuredShopifySyncMode, configuredSyncCanarySku, isSafeShopifyProductHandle, isSyncCanarySku, matchExactSkus, normalizeSyncSku, numericVariantId, shopifyProductGid, staleBindingKeys, type VerifiedCopyEligibility } from "./sync-rules";
 import { readVerifiedCopyEligibility } from "./copy-eligibility";
 import { ensurePublicShopifyOnboarding } from "./onboarding-worker";
+import { refreshProductPublication } from "./publication-sync";
 import { MD20_PRODUCT_GID, MD20_VARIANTS } from "./variant-source-policy";
 import { reconcileApprovedVariants } from "./variant-source-worker";
 import { isSyncReviewCode, mergeVisibleProductCopy, visibleCopiesEquivalent, type VisibleProductCopy } from "./sync-policy";
@@ -307,6 +308,13 @@ async function reconcileInboxEvent(supabase: SupabaseClient, event: InboxEvent, 
   const mode = configuredShopifySyncMode(process.env.SHOPIFY_SYNC_MODE);
   if (mode === "disabled") throw new Error("SYNC_MODE_NOT_CONFIGURED");
   if (mode === "verified_catalog") {
+    // Visibility must be reconciled before the copy gate rejects draft/archive/delete.
+    const publication = await refreshProductPublication(supabase, productGid, leaseOwner);
+    if (!publication.published || event.payload?.publication_recovery === true) {
+      const { error } = await supabase.from("shopify_webhook_events").update({ status: "processed", processed_at: new Date().toISOString(), last_error: null }).eq("id", event.id);
+      if (error) throw new Error("SYNC_EVENT_FINALIZE_FAILED");
+      return "processed";
+    }
     if (productGid === MD20_PRODUCT_GID) {
       if (event.topic === "products/delete") throw new Error("SYNC_VERIFIED_DELETE_DISABLED");
       await reconcileApprovedVariants(supabase, deadline);

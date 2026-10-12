@@ -34,3 +34,16 @@ test('typed projection starts before catalog resolves and is applied only to act
   assert.deepEqual(timings.map(t => t.name).sort(), ['catalog','classification','specs']);
   assert.ok(timings.every(t => t.ms >= 0));
 });
+
+test('unpublished store bindings disappear, while manual hides and gallery-only products keep their semantics', async () => {
+  const items = [
+    {id:'draft',isActive:true,shopifyLink:{isPublished:false}},
+    {id:'store',isActive:true,shopifyLink:{isPublished:true}},
+    {id:'manual',isActive:false,shopifyLink:{isPublished:true}},
+    {id:'gallery-only',isActive:true,shopifyLink:null},
+  ];
+  const get = reader({getCarouselPayload:async()=>({items,settings:{}}),readStoreClassification:async()=>null,
+    readPublicTypedSpecOverlay:async()=>items=>items});
+  assert.deepEqual((await get()).items.map(x=>x.id),['store','gallery-only']);
+  assert.equal(items.length,4,'editor records are never deleted');
+});

@@ -11,6 +11,7 @@ import { recoverMediaWork } from "@/lib/shopify/media-work-queue";
 import { scheduleMediaSyncWakeup } from "@/lib/shopify/media-schedule";
 import { recoverTypedSpecQueue } from "@/lib/shopify/typed-spec-worker";
 import { scheduleTypedSpecWakeup } from "@/lib/shopify/schedule-typed-spec-sync";
+import { enqueuePublicationRecovery } from "@/lib/shopify/publication-sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,6 +67,9 @@ export async function GET(request: NextRequest) {
       // retains the full reconciliation sweep; re-enqueuing the whole catalog
       // every five minutes would manufacture work faster than it can complete.
       const pendingOnly = request.nextUrl.searchParams.get("pending") === "1";
+      if (!pendingOnly && configuredShopifySyncMode(process.env.SHOPIFY_SYNC_MODE) === "verified_catalog") {
+        await enqueuePublicationRecovery(supabase);
+      }
       const [result] = await Promise.all([
         drainShopifySyncQueues(supabase),
         pendingOnly ? Promise.resolve() : recoverMediaWork().catch(() => console.error("Media recovery pending", { code: "MEDIA_RECOVERY_FAILED" })),

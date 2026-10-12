@@ -52,13 +52,13 @@ test('typed webhook identity rejects unsafe coercion/mismatched GID and deletion
 
 const route=read('src/app/api/admin/shopify/sync/route.ts');
 const makeCron=await factory(route.slice(route.indexOf('export async function GET')),
- 'NextResponse,requireAdminToken,hasSupabaseAdminEnv,isShopifySyncConfigured,createSupabaseServiceRoleClient,drainShopifySyncQueues,recoverTypedSpecQueue,recoverMediaWork,scheduleMediaSyncWakeup,scheduleShopifySyncContinuation,scheduleTypedSpecWakeup,console','GET');
+ 'NextResponse,requireAdminToken,hasSupabaseAdminEnv,isShopifySyncConfigured,createSupabaseServiceRoleClient,drainShopifySyncQueues,configuredShopifySyncMode,enqueuePublicationRecovery,recoverTypedSpecQueue,recoverMediaWork,scheduleMediaSyncWakeup,scheduleShopifySyncContinuation,scheduleTypedSpecWakeup,console','GET');
 test('daily optional typed recovery starts alongside copy and failure never blocks copy result or schedules two tails',async()=>{
  for(const continuationNeeded of [true,false]){
   const calls=[],logs=[];let releaseCopy;
   const copyWait=new Promise(resolve=>{releaseCopy=resolve;});
   const {GET}=makeCron({NextResponse:JsonResponse,requireAdminToken:()=>null,hasSupabaseAdminEnv:()=>true,isShopifySyncConfigured:()=>true,
-   createSupabaseServiceRoleClient:()=>({}),console:{error:(...args)=>logs.push(args)},
+   createSupabaseServiceRoleClient:()=>({}),configuredShopifySyncMode:()=> 'verified_catalog',enqueuePublicationRecovery:async()=>{},console:{error:(...args)=>logs.push(args)},
    drainShopifySyncQueues:async()=>{calls.push('copy');await copyWait;return {continuationNeeded};},
    recoverTypedSpecQueue:async()=>{calls.push('typedRecovery');releaseCopy();throw Error('SPEC_DB_RETRY');},
    recoverMediaWork:async()=>{calls.push('mediaRecovery');},scheduleMediaSyncWakeup:()=>calls.push('mediaTail'),

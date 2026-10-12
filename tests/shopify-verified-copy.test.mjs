@@ -23,6 +23,7 @@ const workerModule = await import(url(`
   import { isSyncReviewCode, mergeVisibleProductCopy, visibleCopiesEquivalent } from '${policyUrl}';
   export function createWorker(provider) {
     const {fetchProductSnapshot, visibleCopyFromProduct, writeShopifyVisibleCopy} = provider;
+    const refreshProductPublication = async () => ({ published: true }); // isolate the existing copy contract
     ${workerSource.replace(/^export /gm, "")}
     return {reconcileInboxEvent,reconcileOutboxRow,mergeAndPersist,processShopifySyncQueues,processQueue};
   }
