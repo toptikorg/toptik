@@ -1,0 +1,1635 @@
+{
+  "bxl58117-101": {
+    "id": "9375026970874",
+    "vendor": "BRICS",
+    "type": "טרולי",
+    "family": "BRICS|טרולי|x-collection|55",
+    "skus": [
+      "BXL58117.101"
+    ],
+    "fallbacks": []
+  },
+  "p10ujv24-a92-tu": {
+    "id": "9375027855610",
+    "vendor": "Mandarina Duck",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "P10UJV24-A92-TU"
+    ],
+    "fallbacks": []
+  },
+  "ori05500-909": {
+    "id": "9375027364090",
+    "vendor": "Porsche Design",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "ORI05500.909"
+    ],
+    "fallbacks": []
+  },
+  "bxl38124101": {
+    "id": "9375026905338",
+    "vendor": "BRICS",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "BXL38124101"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-urbify-55-navy-blue-ko701005": {
+    "id": "9382886375674",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|urbify|55",
+    "skus": [
+      "KO701005"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-55-black-ko709005",
+      "samsonite-urbify-55-lava-ko776005"
+    ]
+  },
+  "samsonite-upscape-55-nautical-blue-kj111001": {
+    "id": "9403438530810",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|upscape|55",
+    "skus": [
+      "KJ111001"
+    ],
+    "fallbacks": [
+      "samsonite-upscape-55-black-kj109001",
+      "samsonite-upscape-55-climbing-ivy-kj114001"
+    ]
+  },
+  "bah08453-001": {
+    "id": "9375026544890",
+    "vendor": "BRICS",
+    "type": "מזוודה",
+    "family": "BRICS|מזוודה|taormina|75",
+    "skus": [
+      "BAH08453.001"
+    ],
+    "fallbacks": [
+      "bah08453-006"
+    ]
+  },
+  "samsonite-intuo-55-blue-nights-kl901001": {
+    "id": "9382883524858",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL901001"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-black-kl909001",
+      "samsonite-intuo-55-citrus-kl966001"
+    ]
+  },
+  "samsonite-intuo-69-black-kl909002": {
+    "id": "9382884147450",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|intuo|69",
+    "skus": [
+      "KL909002"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-69-blue-nights-kl901002",
+      "samsonite-intuo-69-lime-kl974002"
+    ]
+  },
+  "samsonite-urbify-68-black-ko709006": {
+    "id": "9382886605050",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|urbify|68",
+    "skus": [
+      "KO709006"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-68-navy-blue-ko701006"
+    ]
+  },
+  "samsonite-intuo-81-black-kl909004": {
+    "id": "9382884966650",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|intuo|81",
+    "skus": [
+      "KL909004"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-81-lime-kl974004"
+    ]
+  },
+  "bxl58145-101": {
+    "id": "9375027200250",
+    "vendor": "BRICS",
+    "type": "מזוודה",
+    "family": "BRICS|מזוודה|x-collection|77",
+    "skus": [
+      "BXL58145.101"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-urbify-78-black-ko709007": {
+    "id": "9382887227642",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|urbify|78",
+    "skus": [
+      "KO709007"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-78-pine-green-ko704007"
+    ]
+  },
+  "p10oun01-a89-tu": {
+    "id": "9375027495162",
+    "vendor": "Mandarina Duck",
+    "type": "מזוודה",
+    "family": null,
+    "skus": [
+      "P10OUN01-A89-TU"
+    ],
+    "fallbacks": []
+  },
+  "p10ujn01-a92-tu": {
+    "id": "9375027790074",
+    "vendor": "Mandarina Duck",
+    "type": "מזוודה",
+    "family": null,
+    "skus": [
+      "P10UJN01-A92-TU"
+    ],
+    "fallbacks": []
+  },
+  "p10qmn01b10": {
+    "id": "15402538893562",
+    "vendor": "Mandarina Duck",
+    "type": "תיק רחצה",
+    "family": "Mandarina Duck|תיק רחצה|md20|",
+    "skus": [
+      "P10QMN01B10"
+    ],
+    "fallbacks": []
+  },
+  "smile-go-trolley-m-i-טרולי": {
+    "id": "7550892507386",
+    "vendor": "Mandarina Duck",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "P10JNV0508Q"
+    ],
+    "fallbacks": []
+  },
+  "p10osn0205j": {
+    "id": "15402535190778",
+    "vendor": "Mandarina Duck",
+    "type": "תיק רחצה",
+    "family": "Mandarina Duck|תיק רחצה|eco coated|",
+    "skus": [
+      "P10OSN0205J"
+    ],
+    "fallbacks": [
+      "p10osn0105j"
+    ]
+  },
+  "bah08451-001": {
+    "id": "9375026446586",
+    "vendor": "BRICS",
+    "type": "טרולי",
+    "family": "BRICS|טרולי|taormina|55",
+    "skus": [
+      "BAH08451.001"
+    ],
+    "fallbacks": []
+  },
+  "טרולי-תרמיל-פלדה-smile-go-trolley-m": {
+    "id": "7586616934650",
+    "vendor": "Mandarina Duck",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "P10JNV05465"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-c-lite-75-black-s209004": {
+    "id": "9382883098874",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|c-lite|75",
+    "skus": [
+      "S209004"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-upscape-55-yellow-kj106001": {
+    "id": "9382885425402",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|upscape|55",
+    "skus": [
+      "KJ106001"
+    ],
+    "fallbacks": [
+      "samsonite-upscape-55-black-kj109001",
+      "samsonite-upscape-55-climbing-ivy-kj114001"
+    ]
+  },
+  "samsonite-intuo-75-black-kl909003": {
+    "id": "9382884606202",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|intuo|75",
+    "skus": [
+      "KL909003"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-75-blue-nights-kl901003",
+      "samsonite-intuo-75-lime-kl974003"
+    ]
+  },
+  "american-tourister-deep-dive-navy-blue-2694-77navy-blue": {
+    "id": "9382880215290",
+    "vendor": "American Tourister",
+    "type": "מזוודה",
+    "family": null,
+    "skus": [
+      "2694-77NAVY BLUE"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-urbify-3-navy-blue-ko701011": {
+    "id": "9382885884154",
+    "vendor": "Samsonite",
+    "type": "תיק נסיעות",
+    "family": "Samsonite|תיק נסיעות|urbify|",
+    "skus": [
+      "KO701011"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-3-black-ko709011",
+      "samsonite-urbify-3-pine-green-ko704011"
+    ]
+  },
+  "km209008": {
+    "id": "15403781783802",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": null,
+    "skus": [
+      "KM209008"
+    ],
+    "fallbacks": []
+  },
+  "p10oxt03645": {
+    "id": "15402568351994",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|revival 2.0|",
+    "skus": [
+      "P10OXT03645"
+    ],
+    "fallbacks": [
+      "p10oxt01001",
+      "p10oxt01b11"
+    ]
+  },
+  "p10oxt01001": {
+    "id": "15402567631098",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|revival 2.0|",
+    "skus": [
+      "P10OXT01001"
+    ],
+    "fallbacks": [
+      "p10oxt01b11",
+      "p10oxt03645"
+    ]
+  },
+  "p10uytx5466": {
+    "id": "15402565304570",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|md20 lux 2.0|",
+    "skus": [
+      "P10UYTX5466"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-biz2go-15-6-black-ki109005": {
+    "id": "9382880641274",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": "Samsonite|תיק גב למחשב|biz2go|",
+    "skus": [
+      "KI109005"
+    ],
+    "fallbacks": [
+      "samsonite-biz2go-15-6-deep-blue-ki101004",
+      "samsonite-biz2go-15-6-earth-green-ki104005"
+    ]
+  },
+  "samsonite-guardit-classy-2-0-15-6-black-kt009004": {
+    "id": "9382960103674",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": "Samsonite|תיק גב למחשב|guardit classy|",
+    "skus": [
+      "KT009004"
+    ],
+    "fallbacks": []
+  },
+  "p10qmt3901v": {
+    "id": "15402540531962",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|md20|",
+    "skus": [
+      "P10QMT3901V"
+    ],
+    "fallbacks": [
+      "p10qmt17465",
+      "p10qmt17a46"
+    ]
+  },
+  "p10qmt39b06": {
+    "id": "15402541187322",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|md20|",
+    "skus": [
+      "P10QMT39B06"
+    ],
+    "fallbacks": [
+      "p10qmt17465",
+      "p10qmt17a46"
+    ]
+  },
+  "p10oxt0829o": {
+    "id": "15402568843514",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|revival 2.0|",
+    "skus": [
+      "P10OXT0829O"
+    ],
+    "fallbacks": [
+      "p10oxt08a96",
+      "p10oxt08b11"
+    ]
+  },
+  "samsonite-urbify-68-navy-blue-ko701006": {
+    "id": "9382886899962",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|urbify|68",
+    "skus": [
+      "KO701006"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-68-black-ko709006"
+    ]
+  },
+  "samsonite-intuo-69-blue-nights-kl901002": {
+    "id": "9382884245754",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|intuo|69",
+    "skus": [
+      "KL901002"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-69-black-kl909002",
+      "samsonite-intuo-69-lime-kl974002"
+    ]
+  },
+  "samsonite-respark-79-light-sage-kj344007": {
+    "id": "9382885294330",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|respark|79",
+    "skus": [
+      "KJ344007"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-intuo-55-black-kl909001": {
+    "id": "9382883393786",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL909001"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-blue-nights-kl901001",
+      "samsonite-intuo-55-citrus-kl966001"
+    ]
+  },
+  "samsonite-intuo-55-lime-kl974001": {
+    "id": "9403434959098",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL974001"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-black-kl909001",
+      "samsonite-intuo-55-blue-nights-kl901001"
+    ]
+  },
+  "american-tourister-deep-dive-navy-blue-2694-66navy-blue": {
+    "id": "9382880182522",
+    "vendor": "American Tourister",
+    "type": "מזוודה",
+    "family": null,
+    "skus": [
+      "2694-66NAVY BLUE"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-intuo-69-lime-kl974002": {
+    "id": "9403435352314",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|intuo|69",
+    "skus": [
+      "KL974002"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-69-black-kl909002",
+      "samsonite-intuo-69-blue-nights-kl901002"
+    ]
+  },
+  "samsonite-intuo-81-lime-kl974004": {
+    "id": "9403436007674",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|intuo|81",
+    "skus": [
+      "KL974004"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-81-black-kl909004"
+    ]
+  },
+  "samsonite-intuo-75-lime-kl974003": {
+    "id": "9403435647226",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|intuo|75",
+    "skus": [
+      "KL974003"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-75-black-kl909003",
+      "samsonite-intuo-75-blue-nights-kl901003"
+    ]
+  },
+  "samsonite-upscape-55-easy-access-yellow-kj106007": {
+    "id": "9403437023482",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|upscape|55",
+    "skus": [
+      "KJ106007"
+    ],
+    "fallbacks": [
+      "samsonite-upscape-55-black-kj109001",
+      "samsonite-upscape-55-climbing-ivy-kj114001"
+    ]
+  },
+  "samsonite-upscape-55-black-kj109001": {
+    "id": "9403437809914",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|upscape|55",
+    "skus": [
+      "KJ109001"
+    ],
+    "fallbacks": [
+      "samsonite-upscape-55-climbing-ivy-kj114001",
+      "samsonite-upscape-55-easy-access-climbing-ivy-kj114007"
+    ]
+  },
+  "samsonite-upscape-81-lava-kj17176004": {
+    "id": "9382885556474",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|upscape|81",
+    "skus": [
+      "KJ17176004"
+    ],
+    "fallbacks": []
+  },
+  "p10otv01651": {
+    "id": "15402569400570",
+    "vendor": "Mandarina Duck",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "P10OTV01651"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-upscape-55-climbing-ivy-kj114001": {
+    "id": "9403440005370",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|upscape|55",
+    "skus": [
+      "KJ114001"
+    ],
+    "fallbacks": [
+      "samsonite-upscape-55-black-kj109001",
+      "samsonite-upscape-55-easy-access-climbing-ivy-kj114007"
+    ]
+  },
+  "american-tourister-deep-dive-55-black-grey-1062-55black": {
+    "id": "9382879428858",
+    "vendor": "American Tourister",
+    "type": "טרולי",
+    "family": "American Tourister|טרולי|deep dive|55",
+    "skus": [
+      "1062-55BLACK"
+    ],
+    "fallbacks": [
+      "american-tourister-deep-dive-55-navy-blue-2694-55navy-blue",
+      "american-tourister-deep-dive-55-teal-lime-4815-55teal-lime"
+    ]
+  },
+  "samsonite-upscape-55-easy-access-climbing-ivy-kj114007": {
+    "id": "9403440365818",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|upscape|55",
+    "skus": [
+      "KJ114007"
+    ],
+    "fallbacks": [
+      "samsonite-upscape-55-black-kj109001",
+      "samsonite-upscape-55-climbing-ivy-kj114001"
+    ]
+  },
+  "p10ouv24-a89-tu": {
+    "id": "9375027527930",
+    "vendor": "Mandarina Duck",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "P10OUV24-A89-TU"
+    ],
+    "fallbacks": []
+  },
+  "p10qmmm301v": {
+    "id": "15402537451770",
+    "vendor": "Mandarina Duck",
+    "type": "פאוץ׳",
+    "family": "Mandarina Duck|פאוץ׳|md20|",
+    "skus": [
+      "P10QMMM301V"
+    ],
+    "fallbacks": [
+      "p10qmmm3b10"
+    ]
+  },
+  "p10osn0105j": {
+    "id": "15402534895866",
+    "vendor": "Mandarina Duck",
+    "type": "תיק רחצה",
+    "family": "Mandarina Duck|תיק רחצה|eco coated|",
+    "skus": [
+      "P10OSN0105J"
+    ],
+    "fallbacks": [
+      "p10osn0205j"
+    ]
+  },
+  "samsonite-urbify-55-black-ko709005": {
+    "id": "9382886080762",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|urbify|55",
+    "skus": [
+      "KO709005"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-55-lava-ko776005",
+      "samsonite-urbify-55-navy-blue-ko701005"
+    ]
+  },
+  "samsonite-biz2go-15-6-deep-blue-ki101004": {
+    "id": "9382880706810",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": "Samsonite|תיק גב למחשב|biz2go|",
+    "skus": [
+      "KI101004"
+    ],
+    "fallbacks": [
+      "samsonite-biz2go-15-6-black-ki109005",
+      "samsonite-biz2go-15-6-earth-green-ki104005"
+    ]
+  },
+  "samsonite-biz2go-15-6-graphite-apricot-ki139005": {
+    "id": "9382880936186",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": "Samsonite|תיק גב למחשב|biz2go|",
+    "skus": [
+      "KI139005"
+    ],
+    "fallbacks": [
+      "samsonite-biz2go-15-6-black-ki109005",
+      "samsonite-biz2go-15-6-deep-blue-ki101004"
+    ]
+  },
+  "samsonite-intuo-55-easy-access-black-kl909005": {
+    "id": "9382883688698",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL909005"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-black-kl909001",
+      "samsonite-intuo-55-blue-nights-kl901001"
+    ]
+  },
+  "samsonite-biz2go-15-6-earth-green-ki104005": {
+    "id": "9382880837882",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": "Samsonite|תיק גב למחשב|biz2go|",
+    "skus": [
+      "KI104005"
+    ],
+    "fallbacks": [
+      "samsonite-biz2go-15-6-black-ki109005",
+      "samsonite-biz2go-15-6-deep-blue-ki101004"
+    ]
+  },
+  "samsonite-urbify-3-black-ko709011": {
+    "id": "9382885851386",
+    "vendor": "Samsonite",
+    "type": "תיק נסיעות",
+    "family": "Samsonite|תיק נסיעות|urbify|",
+    "skus": [
+      "KO709011"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-3-navy-blue-ko701011",
+      "samsonite-urbify-3-pine-green-ko704011"
+    ]
+  },
+  "samsonite-urbify-3-pine-green-ko704011": {
+    "id": "9382886015226",
+    "vendor": "Samsonite",
+    "type": "תיק נסיעות",
+    "family": "Samsonite|תיק נסיעות|urbify|",
+    "skus": [
+      "KO704011"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-3-black-ko709011",
+      "samsonite-urbify-3-navy-blue-ko701011"
+    ]
+  },
+  "samsonite-biz2go-15-6-terracotta-red-ki100005": {
+    "id": "9382883000570",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": "Samsonite|תיק גב למחשב|biz2go|",
+    "skus": [
+      "KI100005"
+    ],
+    "fallbacks": [
+      "samsonite-biz2go-15-6-black-ki109005",
+      "samsonite-biz2go-15-6-deep-blue-ki101004"
+    ]
+  },
+  "samsonite-biz2go-15-6-radiant-yellow-ki106005": {
+    "id": "9382881100026",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": "Samsonite|תיק גב למחשב|biz2go|",
+    "skus": [
+      "KI106005"
+    ],
+    "fallbacks": [
+      "samsonite-biz2go-15-6-black-ki109005",
+      "samsonite-biz2go-15-6-deep-blue-ki101004"
+    ]
+  },
+  "samsonite-urbify-55-lava-ko776005": {
+    "id": "9382886244602",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|urbify|55",
+    "skus": [
+      "KO776005"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-55-black-ko709005",
+      "samsonite-urbify-55-navy-blue-ko701005"
+    ]
+  },
+  "american-tourister-urban-groove-15-6-black-24g09064": {
+    "id": "9382880575738",
+    "vendor": "American Tourister",
+    "type": "תיק גב למחשב",
+    "family": "American Tourister|תיק גב למחשב|urban groove|",
+    "skus": [
+      "24G09064"
+    ],
+    "fallbacks": []
+  },
+  "american-tourister-at-work-nxt-17-3-black-mk609005": {
+    "id": "9382878904570",
+    "vendor": "American Tourister",
+    "type": "תיק גב למחשב",
+    "family": "American Tourister|תיק גב למחשב|at work|",
+    "skus": [
+      "MK609005"
+    ],
+    "fallbacks": []
+  },
+  "american-tourister-nitestream-55-olive-orange-mj7014901s": {
+    "id": "9382894993658",
+    "vendor": "American Tourister",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "MJ7014901S"
+    ],
+    "fallbacks": []
+  },
+  "american-tourister-deep-dive-55-teal-lime-4815-55teal-lime": {
+    "id": "9382879756538",
+    "vendor": "American Tourister",
+    "type": "טרולי",
+    "family": "American Tourister|טרולי|deep dive|55",
+    "skus": [
+      "4815-55TEAL LIME"
+    ],
+    "fallbacks": [
+      "american-tourister-deep-dive-55-black-grey-1062-55black",
+      "american-tourister-deep-dive-55-navy-blue-2694-55navy-blue"
+    ]
+  },
+  "samsonite-urbify-55-pine-green-ko704005": {
+    "id": "9382886506746",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|urbify|55",
+    "skus": [
+      "KO704005"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-55-black-ko709005",
+      "samsonite-urbify-55-lava-ko776005"
+    ]
+  },
+  "american-tourister-deep-dive-55-navy-blue-2694-55navy-blue": {
+    "id": "9382879691002",
+    "vendor": "American Tourister",
+    "type": "טרולי",
+    "family": "American Tourister|טרולי|deep dive|55",
+    "skus": [
+      "2694-55NAVY BLUE"
+    ],
+    "fallbacks": [
+      "american-tourister-deep-dive-55-black-grey-1062-55black",
+      "american-tourister-deep-dive-55-teal-lime-4815-55teal-lime"
+    ]
+  },
+  "samsonite-intuo-55-citrus-kl966001": {
+    "id": "9382883590394",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL966001"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-black-kl909001",
+      "samsonite-intuo-55-blue-nights-kl901001"
+    ]
+  },
+  "p10osv0116q": {
+    "id": "15402535256314",
+    "vendor": "Mandarina Duck",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "P10OSV0116Q"
+    ],
+    "fallbacks": []
+  },
+  "bxg45072078": {
+    "id": "15405937131770",
+    "vendor": "BRICS",
+    "type": "תיק יד",
+    "family": "BRICS|תיק יד|x-collection|",
+    "skus": [
+      "BXG45072078"
+    ],
+    "fallbacks": [
+      "bxg45072101"
+    ]
+  },
+  "p10ost02651": {
+    "id": "15402535223546",
+    "vendor": "Mandarina Duck",
+    "type": "תיק מנשא",
+    "family": "Mandarina Duck|תיק מנשא|eco coated|",
+    "skus": [
+      "P10OST02651"
+    ],
+    "fallbacks": []
+  },
+  "bxg45072101": {
+    "id": "15405937164538",
+    "vendor": "BRICS",
+    "type": "תיק יד",
+    "family": "BRICS|תיק יד|x-collection|",
+    "skus": [
+      "BXG45072101"
+    ],
+    "fallbacks": [
+      "bxg45072078"
+    ]
+  },
+  "boo05956003": {
+    "id": "15405887291642",
+    "vendor": "BRICS",
+    "type": "תיק גב",
+    "family": "BRICS|תיק גב|volterra|",
+    "skus": [
+      "BOO05956003"
+    ],
+    "fallbacks": []
+  },
+  "bxl44649001": {
+    "id": "15405938409722",
+    "vendor": "BRICS",
+    "type": "תיק גב",
+    "family": null,
+    "skus": [
+      "BXL44649001"
+    ],
+    "fallbacks": []
+  },
+  "bxl43756101": {
+    "id": "15405937066234",
+    "vendor": "BRICS",
+    "type": "תיק גב",
+    "family": "BRICS|תיק גב|x-collection|",
+    "skus": [
+      "BXL43756101"
+    ],
+    "fallbacks": [
+      "bxl44649050"
+    ]
+  },
+  "p10qmt17a46": {
+    "id": "15404125389050",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|md20|",
+    "skus": [
+      "P10QMT17A46"
+    ],
+    "fallbacks": [
+      "p10qmt17465",
+      "p10qmt3901v"
+    ]
+  },
+  "p10qmt17465": {
+    "id": "15404125356282",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|md20|",
+    "skus": [
+      "P10QMT17465"
+    ],
+    "fallbacks": [
+      "p10qmt17a46",
+      "p10qmt3901v"
+    ]
+  },
+  "p10fzt10001": {
+    "id": "15407012544762",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|mellow leather|",
+    "skus": [
+      "P10FZT10001"
+    ],
+    "fallbacks": [
+      "p10fzt13001",
+      "p10fzt1327o"
+    ]
+  },
+  "p10qmt58651": {
+    "id": "15404125487354",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|md20|",
+    "skus": [
+      "P10QMT58651"
+    ],
+    "fallbacks": [
+      "p10qmtv8b03",
+      "p10qmtx5a46"
+    ]
+  },
+  "km201008": {
+    "id": "15403781751034",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": null,
+    "skus": [
+      "KM201008"
+    ],
+    "fallbacks": []
+  },
+  "p10qmtt2b06": {
+    "id": "15402544136442",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|md20|",
+    "skus": [
+      "P10QMTT2B06"
+    ],
+    "fallbacks": [
+      "p10qmt17465",
+      "p10qmt17a46"
+    ]
+  },
+  "p10oxb01001": {
+    "id": "15402566713594",
+    "vendor": "Mandarina Duck",
+    "type": "תיק נסיעות",
+    "family": "Mandarina Duck|תיק נסיעות|revival 2.0|",
+    "skus": [
+      "P10OXB01001"
+    ],
+    "fallbacks": [
+      "p10oxb0129o",
+      "p10oxb01b11"
+    ]
+  },
+  "p10szv24-a81-tu": {
+    "id": "9375027593466",
+    "vendor": "Mandarina Duck",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "P10SZV24-A81-TU"
+    ],
+    "fallbacks": []
+  },
+  "p10oxb0129o": {
+    "id": "15402566779130",
+    "vendor": "Mandarina Duck",
+    "type": "תיק נסיעות",
+    "family": "Mandarina Duck|תיק נסיעות|revival 2.0|",
+    "skus": [
+      "P10OXB0129O"
+    ],
+    "fallbacks": [
+      "p10oxb01001",
+      "p10oxb01b11"
+    ]
+  },
+  "p10qmt71651": {
+    "id": "15402543153402",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|md20|",
+    "skus": [
+      "P10QMT71651"
+    ],
+    "fallbacks": [
+      "p10qmt17465",
+      "p10qmt17a46"
+    ]
+  },
+  "p10fzt5924f": {
+    "id": "15408359571706",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|mellow leather|",
+    "skus": [
+      "P10FZT5924F"
+    ],
+    "fallbacks": [
+      "p10fzt10001",
+      "p10fzt13001"
+    ]
+  },
+  "p10fzt6624f": {
+    "id": "15408359637242",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|mellow leather|",
+    "skus": [
+      "P10FZT6624F"
+    ],
+    "fallbacks": [
+      "p10fzt46a28"
+    ]
+  },
+  "p10fzp61b09": {
+    "id": "15402565763322",
+    "vendor": "Mandarina Duck",
+    "type": "ארנק",
+    "family": "Mandarina Duck|ארנק|mellow leather|",
+    "skus": [
+      "P10FZP61B09"
+    ],
+    "fallbacks": [
+      "p10fzp61a28",
+      "p10fzp61b01"
+    ]
+  },
+  "p10qmtx5a46": {
+    "id": "15404125618426",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|md20|",
+    "skus": [
+      "P10QMTX5A46"
+    ],
+    "fallbacks": [
+      "p10qmt58651",
+      "p10qmtv8b03"
+    ]
+  },
+  "p10fzt52369": {
+    "id": "15408359473402",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|mellow leather|",
+    "skus": [
+      "P10FZT52369"
+    ],
+    "fallbacks": [
+      "p10fzt10001",
+      "p10fzt13001"
+    ]
+  },
+  "p10fzt73a46": {
+    "id": "15415495983354",
+    "vendor": "Mandarina Duck",
+    "type": "תיק חגורה",
+    "family": "Mandarina Duck|תיק חגורה|mellow leather|",
+    "skus": [
+      "P10FZT73A46"
+    ],
+    "fallbacks": []
+  },
+  "p10otn02651": {
+    "id": "15402569138426",
+    "vendor": "Mandarina Duck",
+    "type": "תיק רחצה",
+    "family": "Mandarina Duck|תיק רחצה|zephyr|",
+    "skus": [
+      "P10OTN02651"
+    ],
+    "fallbacks": [
+      "p10otn01651"
+    ]
+  },
+  "p10oxm04b11": {
+    "id": "15402567532794",
+    "vendor": "Mandarina Duck",
+    "type": "נרתיק",
+    "family": "Mandarina Duck|נרתיק|revival 2.0|",
+    "skus": [
+      "P10OXM04B11"
+    ],
+    "fallbacks": [
+      "p10oxm04645"
+    ]
+  },
+  "p10otn01651": {
+    "id": "15402569040122",
+    "vendor": "Mandarina Duck",
+    "type": "תיק רחצה",
+    "family": "Mandarina Duck|תיק רחצה|zephyr|",
+    "skus": [
+      "P10OTN01651"
+    ],
+    "fallbacks": [
+      "p10otn02651"
+    ]
+  },
+  "p10oxt08a96": {
+    "id": "15402568941818",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|revival 2.0|",
+    "skus": [
+      "P10OXT08A96"
+    ],
+    "fallbacks": [
+      "p10oxt0829o",
+      "p10oxt08b11"
+    ]
+  },
+  "p10qmtt1b03": {
+    "id": "15402543481082",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|md20|",
+    "skus": [
+      "P10QMTT1B03"
+    ],
+    "fallbacks": [
+      "p10qmt17465",
+      "p10qmt17a46"
+    ]
+  },
+  "p10fzt79a82": {
+    "id": "15407013036282",
+    "vendor": "Mandarina Duck",
+    "type": "תיק כתף",
+    "family": "Mandarina Duck|תיק כתף|mellow leather|",
+    "skus": [
+      "P10FZT79A82"
+    ],
+    "fallbacks": []
+  },
+  "p10oxt04b11": {
+    "id": "15402568581370",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|revival 2.0|",
+    "skus": [
+      "P10OXT04B11"
+    ],
+    "fallbacks": [
+      "p10oxt01001",
+      "p10oxt01b11"
+    ]
+  },
+  "p10fzt13001": {
+    "id": "15402565894394",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|mellow leather|",
+    "skus": [
+      "P10FZT13001"
+    ],
+    "fallbacks": [
+      "p10fzt10001",
+      "p10fzt1327o"
+    ]
+  },
+  "p10fzt1327o": {
+    "id": "15407012741370",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|mellow leather|",
+    "skus": [
+      "P10FZT1327O"
+    ],
+    "fallbacks": [
+      "p10fzt10001",
+      "p10fzt13001"
+    ]
+  },
+  "p10fzta8001": {
+    "id": "15402566418682",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|mellow leather|",
+    "skus": [
+      "P10FZTA8001"
+    ],
+    "fallbacks": [
+      "p10fzt10001",
+      "p10fzt13001"
+    ]
+  },
+  "p10qmtv8b03": {
+    "id": "15402559439098",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|md20|",
+    "skus": [
+      "P10QMTV8B03"
+    ],
+    "fallbacks": [
+      "p10qmt58651",
+      "p10qmtx5a46"
+    ]
+  },
+  "p10fzp61a28": {
+    "id": "15402565665018",
+    "vendor": "Mandarina Duck",
+    "type": "ארנק",
+    "family": "Mandarina Duck|ארנק|mellow leather|",
+    "skus": [
+      "P10FZP61A28"
+    ],
+    "fallbacks": [
+      "p10fzp61b01",
+      "p10fzp61b09"
+    ]
+  },
+  "p10fzt46a28": {
+    "id": "15402565992698",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|mellow leather|",
+    "skus": [
+      "P10FZT46A28"
+    ],
+    "fallbacks": [
+      "p10fzt6624f"
+    ]
+  },
+  "p10qmmo1b10": {
+    "id": "15402538500346",
+    "vendor": "Mandarina Duck",
+    "type": "נרתיק",
+    "family": "Mandarina Duck|נרתיק|md20|",
+    "skus": [
+      "P10QMMO1B10"
+    ],
+    "fallbacks": []
+  },
+  "p10oxm04645": {
+    "id": "15402567368954",
+    "vendor": "Mandarina Duck",
+    "type": "נרתיק",
+    "family": "Mandarina Duck|נרתיק|revival 2.0|",
+    "skus": [
+      "P10OXM04645"
+    ],
+    "fallbacks": [
+      "p10oxm04b11"
+    ]
+  },
+  "p10fzt8208q": {
+    "id": "15407013167354",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|mellow leather|",
+    "skus": [
+      "P10FZT8208Q"
+    ],
+    "fallbacks": [
+      "p10fzt10001",
+      "p10fzt13001"
+    ]
+  },
+  "p10tktv8001": {
+    "id": "15402536370426",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|md20 leather|",
+    "skus": [
+      "P10TKTV8001"
+    ],
+    "fallbacks": []
+  },
+  "p10oxt01b11": {
+    "id": "15402568057082",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|revival 2.0|",
+    "skus": [
+      "P10OXT01B11"
+    ],
+    "fallbacks": [
+      "p10oxt01001",
+      "p10oxt03645"
+    ]
+  },
+  "p10osv0405j": {
+    "id": "15401872654586",
+    "vendor": "Mandarina Duck",
+    "type": "מזוודה",
+    "family": null,
+    "skus": [
+      "P10OSV0405J"
+    ],
+    "fallbacks": []
+  },
+  "p10oxb01b11": {
+    "id": "15402566942970",
+    "vendor": "Mandarina Duck",
+    "type": "תיק נסיעות",
+    "family": "Mandarina Duck|תיק נסיעות|revival 2.0|",
+    "skus": [
+      "P10OXB01B11"
+    ],
+    "fallbacks": [
+      "p10oxb01001",
+      "p10oxb0129o"
+    ]
+  },
+  "bah08453-006": {
+    "id": "9375026610426",
+    "vendor": "BRICS",
+    "type": "מזוודה",
+    "family": "BRICS|מזוודה|taormina|75",
+    "skus": [
+      "BAH08453.006"
+    ],
+    "fallbacks": [
+      "bah08453-001"
+    ]
+  },
+  "bxl44649050": {
+    "id": "15405937393914",
+    "vendor": "BRICS",
+    "type": "תיק גב",
+    "family": "BRICS|תיק גב|x-collection|",
+    "skus": [
+      "BXL44649050"
+    ],
+    "fallbacks": [
+      "bxl43756101"
+    ]
+  },
+  "american-tourister-deep-dive-black-grey-1062-77black-gre": {
+    "id": "9382880116986",
+    "vendor": "American Tourister",
+    "type": "מזוודה",
+    "family": null,
+    "skus": [
+      "1062-77BLACK GRE"
+    ],
+    "fallbacks": []
+  },
+  "p10fzt73b07": {
+    "id": "15404125749498",
+    "vendor": "Mandarina Duck",
+    "type": "פאוץ׳",
+    "family": "Mandarina Duck|פאוץ׳|mellow leather|",
+    "skus": [
+      "P10FZT73B07"
+    ],
+    "fallbacks": [
+      "p10fzt73209",
+      "p10fzt73b01"
+    ]
+  },
+  "p10fzt73b01": {
+    "id": "15404125716730",
+    "vendor": "Mandarina Duck",
+    "type": "פאוץ׳",
+    "family": "Mandarina Duck|פאוץ׳|mellow leather|",
+    "skus": [
+      "P10FZT73B01"
+    ],
+    "fallbacks": [
+      "p10fzt73209",
+      "p10fzt73b07"
+    ]
+  },
+  "km203009": {
+    "id": "15403781816570",
+    "vendor": "Samsonite",
+    "type": "תיק גב למחשב",
+    "family": null,
+    "skus": [
+      "KM203009"
+    ],
+    "fallbacks": []
+  },
+  "p10fzt73209": {
+    "id": "15404125683962",
+    "vendor": "Mandarina Duck",
+    "type": "פאוץ׳",
+    "family": "Mandarina Duck|פאוץ׳|mellow leather|",
+    "skus": [
+      "P10FZT73209"
+    ],
+    "fallbacks": [
+      "p10fzt73b01",
+      "p10fzt73b07"
+    ]
+  },
+  "bxl38124078": {
+    "id": "9375026807034",
+    "vendor": "BRICS",
+    "type": "טרולי",
+    "family": null,
+    "skus": [
+      "BXL38124078"
+    ],
+    "fallbacks": []
+  },
+  "bah08454-001": {
+    "id": "9375026741498",
+    "vendor": "BRICS",
+    "type": "מזוודה",
+    "family": "BRICS|מזוודה|taormina|82",
+    "skus": [
+      "BAH08454.001"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-intuo-55-easy-access-lime-kl974005": {
+    "id": "9403436466426",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL974005"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-black-kl909001",
+      "samsonite-intuo-55-blue-nights-kl901001"
+    ]
+  },
+  "samsonite-urbify-78-pine-green-ko704007": {
+    "id": "9382887522554",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|urbify|78",
+    "skus": [
+      "KO704007"
+    ],
+    "fallbacks": [
+      "samsonite-urbify-78-black-ko709007"
+    ]
+  },
+  "samsonite-intuo-75-blue-nights-kl901003": {
+    "id": "9382884770042",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": "Samsonite|מזוודה|intuo|75",
+    "skus": [
+      "KL901003"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-75-black-kl909003",
+      "samsonite-intuo-75-lime-kl974003"
+    ]
+  },
+  "samsonite-intuo-55-olive-green-kl924001": {
+    "id": "9382884081914",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL924001"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-black-kl909001",
+      "samsonite-intuo-55-blue-nights-kl901001"
+    ]
+  },
+  "samsonite-intuo-55-easy-access-olive-green-kl924005": {
+    "id": "9382883983610",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL924005"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-black-kl909001",
+      "samsonite-intuo-55-blue-nights-kl901001"
+    ]
+  },
+  "samsonite-intuo-55-easy-access-citrus-kl966005": {
+    "id": "9382883918074",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL966005"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-black-kl909001",
+      "samsonite-intuo-55-blue-nights-kl901001"
+    ]
+  },
+  "samsonite-c-lite-86-lavender-s281006": {
+    "id": "9382883229946",
+    "vendor": "Samsonite",
+    "type": "מזוודה",
+    "family": null,
+    "skus": [
+      "S281006"
+    ],
+    "fallbacks": []
+  },
+  "p10qmt49651": {
+    "id": "15402541515002",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|md20|",
+    "skus": [
+      "P10QMT49651"
+    ],
+    "fallbacks": [
+      "p10qmt17465",
+      "p10qmt17a46"
+    ]
+  },
+  "p10qmmm3b10": {
+    "id": "15402538041594",
+    "vendor": "Mandarina Duck",
+    "type": "פאוץ׳",
+    "family": "Mandarina Duck|פאוץ׳|md20|",
+    "skus": [
+      "P10QMMM3B10"
+    ],
+    "fallbacks": [
+      "p10qmmm301v"
+    ]
+  },
+  "p10fzp61b01": {
+    "id": "15402565730554",
+    "vendor": "Mandarina Duck",
+    "type": "ארנק",
+    "family": "Mandarina Duck|ארנק|mellow leather|",
+    "skus": [
+      "P10FZP61B01"
+    ],
+    "fallbacks": [
+      "p10fzp61a28",
+      "p10fzp61b09"
+    ]
+  },
+  "p10fzt69a28": {
+    "id": "15402566189306",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": "Mandarina Duck|תיק צד|mellow leather|",
+    "skus": [
+      "P10FZT69A28"
+    ],
+    "fallbacks": [
+      "p10fzt10001",
+      "p10fzt13001"
+    ]
+  },
+  "p10oxt05b11": {
+    "id": "15402568712442",
+    "vendor": "Mandarina Duck",
+    "type": "תיק יד",
+    "family": "Mandarina Duck|תיק יד|revival 2.0|",
+    "skus": [
+      "P10OXT05B11"
+    ],
+    "fallbacks": []
+  },
+  "p10oxt08b11": {
+    "id": "15402569007354",
+    "vendor": "Mandarina Duck",
+    "type": "תיק גב",
+    "family": "Mandarina Duck|תיק גב|revival 2.0|",
+    "skus": [
+      "P10OXT08B11"
+    ],
+    "fallbacks": [
+      "p10oxt0829o",
+      "p10oxt08a96"
+    ]
+  },
+  "p10ukt07a28": {
+    "id": "15402570121466",
+    "vendor": "Mandarina Duck",
+    "type": "תיק צד",
+    "family": null,
+    "skus": [
+      "P10UKT07A28"
+    ],
+    "fallbacks": []
+  },
+  "samsonite-intuo-55-easy-access-blue-nights-kl901005": {
+    "id": "9382883819770",
+    "vendor": "Samsonite",
+    "type": "טרולי",
+    "family": "Samsonite|טרולי|intuo|55",
+    "skus": [
+      "KL901005"
+    ],
+    "fallbacks": [
+      "samsonite-intuo-55-black-kl909001",
+      "samsonite-intuo-55-blue-nights-kl901001"
+    ]
+  }
+}

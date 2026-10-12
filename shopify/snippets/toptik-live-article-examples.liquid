@@ -1,0 +1,66 @@
+{% doc %}
+  Resolve article examples at render time against Shopify publication state.
+  No browser JavaScript, scheduled worker, article-body write or secret needed.
+  Product facts outside examples remain historical; replacements are labelled.
+  @param {string} content
+{% enddoc %}
+{%- assign result = content -%}
+{%- assign seen = '|' -%}
+{%- assign read_count = 0 -%}
+{%- assign anchors = content | replace: "href='", 'href="' | split: 'href="' -%}
+{%- assign original_handles = '|' -%}
+{%- for anchor in anchors offset: 1 -%}
+  {%- assign path = anchor | split: '"' | first | split: "'" | first | remove_first: 'https://www.toptik.co.il' | remove_first: 'https://toptik.co.il' -%}
+  {%- assign prefix = path | slice: 0, 10 -%}
+  {%- if prefix == '/products/' -%}
+    {%- assign original_handle = path | remove_first: '/products/' | split: '?' | first | split: '#' | first | url_decode -%}
+    {%- assign original_marker = '|' | append: original_handle | append: '|' -%}
+    {%- unless original_handles contains original_marker -%}
+      {%- assign original_handles = original_handles | append: original_handle | append: '|' -%}
+      {%- assign read_count = read_count | plus: 1 -%}
+    {%- endunless -%}
+  {%- endif -%}
+{%- endfor -%}
+{%- assign original_count = read_count -%}
+{%- for anchor in anchors offset: 1 -%}
+  {%- assign href = anchor | split: '"' | first | split: "'" | first -%}
+  {%- assign path = href | remove_first: 'https://www.toptik.co.il' | remove_first: 'https://toptik.co.il' -%}
+  {%- assign prefix = path | slice: 0, 10 -%}
+  {%- if prefix == '/products/' -%}
+    {%- assign source_handle = path | remove_first: '/products/' | split: '?' | first | split: '#' | first -%}
+    {%- assign handle = source_handle | url_decode -%}
+    {%- assign marker = '|' | append: handle | append: '|' -%}
+    {%- unless seen contains marker -%}
+      {%- assign seen = seen | append: handle | append: '|' -%}
+      {%- assign primary = blank -%}
+      {%- if original_count <= 18 -%}
+        {%- assign primary = all_products[handle] -%}
+      {%- endif -%}
+      {%- if primary == blank -%}
+        {%- assign replacement = blank -%}
+        {%- capture rules -%}{%- render 'toptik-article-example-policy', handle: handle -%}{%- endcapture -%}
+        {%- assign fields = rules | strip | split: '|' -%}
+        {%- assign candidates = fields[2] | split: ',' -%}
+        {%- for candidate_entry in candidates -%}
+          {%- assign candidate_parts = candidate_entry | split: ':' -%}
+          {%- assign candidate_handle = candidate_parts[0] -%}
+          {%- assign expected_id = candidate_parts[1] | plus: 0 -%}
+          {%- assign candidate_marker = '|' | append: candidate_handle | append: '|' -%}
+          {%- unless original_handles contains candidate_marker -%}
+            {%- if read_count >= 18 -%}{%- break -%}{%- endif -%}
+            {%- assign original_handles = original_handles | append: candidate_handle | append: '|' -%}
+            {%- assign read_count = read_count | plus: 1 -%}
+          {%- endunless -%}
+          {%- assign candidate = all_products[candidate_handle] -%}
+          {%- if candidate != blank and candidate.id == expected_id and candidate.available and candidate.featured_image != blank and candidate.vendor == fields[0] and candidate.type == fields[1] -%}
+            {%- assign replacement = candidate -%}{%- break -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- capture result -%}{%- render 'toptik-article-example-blocks', content: result, source_handle: source_handle, replacement: replacement, tag: 'figure' -%}{%- endcapture -%}
+        {%- capture result -%}{%- render 'toptik-article-example-blocks', content: result, source_handle: source_handle, replacement: replacement, tag: 'li' -%}{%- endcapture -%}
+        {%- capture result -%}{%- render 'toptik-article-example-blocks', content: result, source_handle: source_handle, replacement: replacement, tag: 'a' -%}{%- endcapture -%}
+      {%- endif -%}
+    {%- endunless -%}
+  {%- endif -%}
+{%- endfor -%}
+{{- result -}}

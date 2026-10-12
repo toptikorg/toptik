@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { EditorialProductFigure, EditorialProductLink } from '@/components/editorial/EditorialProductReference';
 import Link from "next/link";
 import type { GalleryArticle } from "./gallery-articles";
 import stories from "./mandarina-image-stories.json";
@@ -27,13 +27,13 @@ export const mandarinaImageArticles: readonly GalleryArticle[] = stories.map((st
       </section>)}
       {story.images.length > 0 && <section aria-label="צבעים נוספים של הדגם">
         <h2>הדגם בצבעים נוספים</h2>
-        {story.images.map((image) => <figure key={image.src}>
-          <Image src={image.src} alt={image.alt} width={image.width} height={image.height} sizes="(max-width: 780px) 94vw, 560px" quality={75} loading="lazy" />
-          <figcaption>{image.color}</figcaption>
-        </figure>)}
+        {story.images.map(image => {
+          const matches = story.products.filter(product => product.color === image.color);
+          return matches.length === 1 ? <EditorialProductFigure key={image.src} image={image} href={matches[0].url} /> : null;
+        })}
       </section>}
       <h2>לפרטים ולרכישה ב־TopTik</h2>
-      <ul>{story.products.map((product) => <li key={product.url}><a href={product.url}>{product.title}</a></li>)}</ul>
+      <ul>{story.products.map((product) => <li key={product.url}><EditorialProductLink href={product.url}>{product.title}</EditorialProductLink></li>)}</ul>
       <h2>להמשך הקריאה</h2>
       <ul>
         <li><a href={story.store.url}>{story.store.title}</a></li>

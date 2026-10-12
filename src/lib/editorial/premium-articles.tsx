@@ -1,5 +1,6 @@
 import type { GalleryArticle } from "./gallery-articles";
 import stories from "./premium-stories.json";
+import { EditorialProductLink } from '@/components/editorial/EditorialProductReference';
 
 export const premiumArticles: readonly GalleryArticle[] = stories.map((story) => ({
   slug: story.slug,
@@ -27,7 +28,7 @@ export const premiumArticles: readonly GalleryArticle[] = stories.map((story) =>
     </section>)}
     <h2>דגמים לעיון בטופ תיק</h2>
     <p>לבדיקת המידות, התמונות והמחיר העדכני בחנות:</p>
-    <ul>{story.products.map((product) => <li key={product.url}><a href={product.url}>{product.title}</a></li>)}</ul>
+    <ul>{story.products.map((product) => <li key={product.url}><EditorialProductLink href={product.url}>{product.title}</EditorialProductLink></li>)}</ul>
     {story.sourceUrls.length > 0 && <p>תנאי זכאות, זמינות והטבות עשויים להשתנות; בדקו את התנאים העדכניים של הספק והמנפיק שלכם לפני הזמנה.</p>}
     <h2>להמשך הקריאה</h2>
     <p><a href={story.related.url}>{story.related.title}</a> במרכז המידע של החנות.</p>
