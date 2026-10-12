@@ -10,6 +10,7 @@ const encoded = Buffer.from(`
   export function makeWorker(deps) {
   ${variantPolicySource}
     const { readVerifiedCopyEligibility, ensurePublicShopifyOnboarding } = deps;
+    const refreshProductPublication = async () => ({ published: true }); // publication behavior tested separately
     function configuredShopifySyncMode(value) { return value === 'verified_catalog' ? value : 'disabled'; }
     function assertVerifiedCopyApproval(approval) { if (!approval?.enabled) throw new Error('SYNC_COPY_NOT_APPROVED'); }
     ${source}

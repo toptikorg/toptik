@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
         { status: 503, headers: { ...NO_STORE, "Retry-After": "60" } },
       );
     }
-    const items = appendSamsoniteItems(payload.items).filter((item) => item.isActive);
+    const items = appendSamsoniteItems(payload.items).filter((item) => item.isActive)
+      .filter((item) => item.shopifyLink?.isPublished !== false);
     const result = resolvePublicProductDetails(rawUrl, items);
     return NextResponse.json(result.body, { status: result.status, headers: NO_STORE });
   } catch (error) {

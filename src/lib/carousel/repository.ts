@@ -102,6 +102,8 @@ export async function getCarouselPayload(
   // + publication bit). If the sync migration is not installed yet, retain the
   // audited static map in purchase-links.ts as a backwards-compatible fallback.
   if (options.rawAdmin && (linksError || !Array.isArray(liveLinks))) throw new Error("GALLERY_ADMIN_READ_INCOMPLETE");
+  // A missing publication projection must not revive withdrawn products.
+  if (!options.rawAdmin && (linksError || !Array.isArray(liveLinks))) throw new Error("GALLERY_READ_INCOMPLETE");
   const liveLinksByKey = new Map((liveLinks ?? []).map((row: {
     catalog_key: string;
     product_handle: string;

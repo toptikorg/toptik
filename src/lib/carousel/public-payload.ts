@@ -24,7 +24,8 @@ export async function getPublicCarouselPayload(onTiming?: (name: string, ms: num
   ]);
   if (isUnavailableCarouselPayload(payload)) return payload;
 
-  let items = appendSamsoniteItems(payload.items).filter((item) => item.isActive);
+  let items = appendSamsoniteItems(payload.items).filter((item) => item.isActive)
+    .filter((item) => item.shopifyLink?.isPublished !== false);
   if (applySpecs) items = applySpecs(items);
   return { ...payload, items: applyStoreClassification(items, classification) };
 }
