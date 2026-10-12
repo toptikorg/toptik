@@ -13,8 +13,8 @@ create table public.shopify_gallery_bindings(catalog_key text primary key,carous
 create table public.shopify_gallery_public_links(catalog_key text primary key,product_handle text,variant_id text,is_published boolean,updated_at timestamptz,
  check(not is_published or (product_handle~'^[A-Za-z0-9א-ת][A-Za-z0-9א-ת-]*$' and variant_id~'^[0-9]+$')));
 create table public.shopify_gallery_reconciliation_leases(product_gid text primary key,owner uuid,expires_at timestamptz);
-grant select,update on public.shopify_gallery_bindings to service_role;
-grant select,insert,update on public.shopify_gallery_public_links to service_role;
+grant select on public.shopify_gallery_bindings to service_role;
+grant select on public.shopify_gallery_public_links to service_role;
 `);
 await db.exec(extract(base,'acquire_shopify_reconciliation_lease'));
 await db.exec(extract(base,'release_shopify_reconciliation_lease'));
@@ -36,6 +36,13 @@ const call=async(published,variants=[],stamp='2026-10-12T10:00:00Z',who=owner)=>
 await assert.rejects(call(false),/MEDIA_LEASE_LOST/);
 await db.query('select acquire_shopify_reconciliation_lease($1,$2)',[gid,owner]);
 await assert.rejects(call(false,[],undefined,'00000000-0000-4000-8000-000000000088'),/MEDIA_LEASE_LOST/);
+await assert.rejects(call(false),/permission denied/,'reproduce production read-only table grants');
+await db.exec(readFileSync('supabase/migrations/20261012_gallery_publication_columns.sql','utf8'));
+await db.exec('set role service_role');
+await assert.rejects(db.query("update public.shopify_gallery_bindings set product_gid='gid://shopify/Product/999'"),/permission denied/);
+await assert.rejects(db.query('delete from public.shopify_gallery_bindings'),/permission denied/);
+await assert.rejects(db.query('delete from public.shopify_gallery_public_links'),/permission denied/);
+await db.exec('reset role');
 assert.equal(await call(false),2);
 assert.equal((await db.query('select count(*)::int n from shopify_gallery_public_links where is_published')).rows[0].n,0);
 const first=(await db.query('select * from shopify_gallery_public_links order by catalog_key')).rows;
