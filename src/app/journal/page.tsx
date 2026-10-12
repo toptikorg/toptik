@@ -5,6 +5,8 @@ import styles from "@/components/editorial/Journal.module.css";
 import { publishableGalleryArticles } from "@/lib/editorial/gallery-articles";
 import { absoluteUrl, SITE_NAME } from "@/lib/seo/site";
 import { jsonLdString } from "@/lib/seo/structured-data";
+import { resolveArticleHero } from '@/lib/editorial/product-reference';
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "מגזין TopTik | מסעות, סגנון ומבט מקרוב",
@@ -42,7 +44,8 @@ function archiveStructuredData() {
   };
 }
 
-export default function JournalArchivePage() {
+export default async function JournalArchivePage() {
+  const articles = await Promise.all(publishableGalleryArticles.map(async article => ({ ...article, hero: await resolveArticleHero(article.hero) })));
   return (
     <main className={styles.archive} dir="rtl">
       <div className={styles.archiveInner}>
@@ -56,7 +59,7 @@ export default function JournalArchivePage() {
           <p>רגעים בדרך, מקומות לעצור וסיפורים לקחת הביתה. לייפסטייל של נסיעות, לצד מדריכים והשוואות מהגלריה.</p>
         </header>
         <section className={styles.archiveGrid} aria-label="מאמרים במגזין">
-          {publishableGalleryArticles.map((article) => (
+          {articles.map((article) => (
             <article className={styles.archiveCard} key={article.slug}>
               {article.hero && <Link className={styles.archiveImageLink} href={`/journal/${article.slug}`} tabIndex={-1} aria-hidden="true">
                 <Image className={styles.archiveImage} src={article.hero.src} alt="" width={article.hero.width} height={article.hero.height} sizes="(max-width: 680px) 90vw, 480px" quality={75} />

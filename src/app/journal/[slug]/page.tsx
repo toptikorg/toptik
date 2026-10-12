@@ -7,6 +7,7 @@ import { getGalleryArticle, getRelatedGalleryArticles, publishableGalleryArticle
 import { absoluteUrl, SITE_NAME, STORE_ORIGIN } from "@/lib/seo/site";
 import { getStoreGuides } from "@/lib/editorial/store-guides";
 import { jsonLdString } from "@/lib/seo/structured-data";
+import { resolveArticleHero } from '@/lib/editorial/product-reference';
 
 export const dynamicParams = false;
 // Article copy is authored in source, while embedded products are resolved
@@ -23,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const article = getGalleryArticle(slug);
   if (!article) return { title: "המאמר לא נמצא | מגזין TopTik" };
+  const hero = await resolveArticleHero(article.hero);
 
   return {
     title: `${article.title} | מגזין TopTik`,
@@ -37,7 +39,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: absoluteUrl(`/journal/${article.slug}`),
       publishedTime: `${article.publishedAt}T00:00:00+03:00`,
       modifiedTime: `${article.updatedAt}T00:00:00+03:00`,
-      ...(article.hero ? { images: [{ url: absoluteUrl(article.hero.src), width: article.hero.width, height: article.hero.height, alt: article.hero.alt }] } : {}),
+      ...(hero ? { images: [{ url: absoluteUrl(hero.src), width: hero.width, height: hero.height, alt: hero.alt }] } : {}),
     },
   };
 }
@@ -77,8 +79,9 @@ function articleStructuredData(article: NonNullable<ReturnType<typeof getGallery
 
 export default async function JournalArticlePage({ params }: PageProps) {
   const { slug } = await params;
-  const article = getGalleryArticle(slug);
-  if (!article) notFound();
+  const authored = getGalleryArticle(slug);
+  if (!authored) notFound();
+  const article = { ...authored, hero: await resolveArticleHero(authored.hero) };
   const storeGuides = getStoreGuides(article.slug);
   const related = getRelatedGalleryArticles(article.slug);
 

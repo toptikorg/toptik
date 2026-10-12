@@ -1,0 +1,299 @@
+{{ 'toptik-article-collection.css' | asset_url | stylesheet_tag }}
+
+<style>
+  .toptik-article-hero-link {
+    display: block;
+    margin-bottom: 24px;
+    overflow: hidden;
+    border-radius: 14px;
+    color: #3a2e22;
+    text-decoration: none;
+    background: #fdfbf6;
+    box-shadow: 0 8px 24px rgba(26, 21, 18, .08);
+  }
+  .toptik-article-hero-link__image {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    transition: transform .2s ease, opacity .2s ease;
+  }
+  .toptik-article-hero-link__caption {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 16px;
+    border-top: 1px solid rgba(201, 160, 99, .28);
+    font-weight: 700;
+    text-align: center;
+  }
+  .toptik-article-hero-link:hover .toptik-article-hero-link__image {
+    transform: scale(1.01);
+    opacity: .96;
+  }
+  .toptik-article-hero-link:focus-visible {
+    outline: 3px solid #c9a063;
+    outline-offset: 4px;
+  }
+</style>
+
+{% assign tt_article_image_target_url = blank %}
+{% assign tt_article_image_target_label = blank %}
+{% for tt_article_tag in article.tags %}
+  {% if tt_article_tag contains 'toptik-product:' %}
+    {% assign tt_article_product_handle = tt_article_tag | remove_first: 'toptik-product:' | strip %}
+    {% assign tt_article_product = all_products[tt_article_product_handle] %}
+    {% if tt_article_product != blank %}
+      {% assign tt_article_image_target_url = tt_article_product.url %}
+      {% capture tt_article_image_target_label %}לצפייה ורכישה: {{ tt_article_product.title }}{% endcapture %}
+      {% break %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% if tt_article_image_target_url == blank %}
+  {% for tt_article_tag in article.tags %}
+    {% if tt_article_tag contains 'toptik-collection:' %}
+      {% assign tt_article_collection_handle = tt_article_tag | remove_first: 'toptik-collection:' | strip %}
+      {% assign tt_article_collection = collections[tt_article_collection_handle] %}
+      {% if tt_article_collection != blank %}
+        {% assign tt_article_image_target_url = tt_article_collection.url %}
+        {% capture tt_article_image_target_label %}לצפייה בגלריה: {{ tt_article_collection.title }}{% endcapture %}
+        {% break %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+<div class="wrapper">
+{% assign number_of_comments = article.comments_count %}
+
+{% if comment and comment.created_at %}
+  {% assign number_of_comments = article.comments_count | plus: 1 %}
+{% endif %}
+
+{% include 'breadcrumb' %}
+
+<div class="grid grid-border">
+
+  <div class="grid-item large--four-fifths">
+    <div class="grid">
+      <div class="grid-item large--ten-twelfths">
+{% if section.settings.article_image and article.image != blank %}
+        {% capture tt_article_hero_image %}<img class="toptik-article-hero-link__image" src="{{ article.image.src | img_url: '1600x' }}" alt="{{ article.image.alt | default: article.title | escape }}" width="{{ article.image.width }}" height="{{ article.image.height }}" loading="eager" fetchpriority="high">{% endcapture %}
+        {% if tt_article_image_target_url != blank %}
+          <a class="toptik-article-hero-link" href="{{ tt_article_image_target_url }}" aria-label="{{ tt_article_image_target_label | strip | escape }}">
+            {{ tt_article_hero_image }}
+            <span class="toptik-article-hero-link__caption">{{ tt_article_image_target_label | strip }} <span aria-hidden="true">←</span></span>
+          </a>
+        {% else %}
+          {{ tt_article_hero_image }}
+        {% endif %}
+        {% endif %}
+        <header class="section-header">
+          
+          <div class="section-header--left">
+            <h1>{{ article.title }}</h1>
+            <p class="text-light">
+              {% capture date %}<strong><time pubdate datetime="{{ article.published_at | date: '%Y-%m-%d' }}">{{ article.published_at | date: format: 'month_day_year' }}</time></strong>{% endcapture %}
+              {% capture author %}<strong>{{ article.author }}</strong>{% endcapture %}
+              {{ 'blogs.article.author_on_date_html' | t: author: author, date: date }}
+            </p>
+          </div>
+        </header>
+        <div class="rte">
+          {% render 'toptik-live-article-examples', content: article.content %}
+        </div>
+
+        {% render 'toptik-article-collection-cta' %}
+
+        {% if section.settings.social_sharing_blog %}
+          <hr class="hr--clear">
+          <h2 class="h3">{{ 'blogs.article.share_this_post' | t }}</h2>
+          {% include 'social-sharing' %}
+          <hr>
+        {% endif %}
+
+        <ul dir="rtl">
+          {% if blog.comments_enabled? %}
+          <li>
+            <a href="#comments">
+              {{ 'blogs.comments.with_count' | t: count: number_of_comments }}
+            </a>
+          </li>
+          {% endif %}
+
+          {% include 'tags-article' %}
+
+        </ul>
+
+        {% if blog.next_article or blog.previous_article %}
+        <hr>
+
+        <p class="clearfix">
+          {% if blog.previous_article %}
+            <span class="left">
+              {{ 'blogs.article.older_post' | t | prepend: '← ' | link_to: blog.previous_article }}
+            </span>
+          {% endif %}
+          {% if blog.next_article %}
+            <span class="right">
+              {{ 'blogs.article.newer_post' | t | append: ' →' | link_to: blog.next_article }}
+            </span>
+          {% endif %}
+        </p>
+        {% endif %}
+
+
+        {% if blog.comments_enabled? %}
+
+        <hr>
+
+        <div class="section-header">
+          <h2 class="h1 section-header--left">{{ 'blogs.comments.with_count' | t: count: number_of_comments }}</h2>
+          <div class="section-header--right">
+            <a href="#write-comment">{{ 'blogs.comments.title' | t }} &rsaquo;</a>
+          </div>
+        </div>
+
+          {% paginate article.comments by 5 %}
+
+          <div id="comments">
+
+            {% if comment and comment.created_at %}
+            <p class="note form-success">
+              {% if blog.moderated? %}
+                {{ 'blogs.comments.success_moderated' | t }}
+              {% else %}
+                {{ 'blogs.comments.success' | t }}
+              {% endif %}
+            </p>
+            {% endif %}
+
+            {% if number_of_comments > 0 %}
+              <ul>
+                {% if comment and comment.created_at %}
+                <li id="{{ comment.id }}" class="comment first{% if article.comments_count == 0 %} last{% endif %}">
+
+                  {% include 'comment' %}
+
+                </li>
+                {% endif %}
+
+                {% for comment in article.comments %}
+                <li id="{{ comment.id }}" class="comment{% unless number_of_comments > article.comments_count %}{% if forloop.first %} first{% endif %}{% endunless %}{% if forloop.last %} last {% endif %}">
+
+                  {% include 'comment' %}
+
+                </li>
+                {% endfor %}
+
+              </ul>
+
+              <hr>
+
+              {% if paginate.pages > 1 %}
+              <div class="text-center">
+                {% include 'pagination-custom' %}
+              </div>
+              {% endif %}
+
+            {% endif %}
+
+            <div id="write-comment">
+              {% form 'new_comment', article %}
+
+                <h2 class="h1">{{ 'blogs.comments.title' | t }}</h2>
+
+                {% include 'form-errors-custom' %}
+
+                <div class="grid" dir="rtl">
+
+                  <div class="grid-item large--one-half" style="width:100%; float:right">
+                    <label for="comment-author" class="hidden-label">{{ 'blogs.comments.name' | t }}</label>
+                    <input {% if form.errors contains "author" %} class="error"{% endif %} type="text" name="comment[author]" placeholder="{{ 'blogs.comments.name' | t }}" id="comment-author" value="{{ form.author }}">
+
+                    <label for="comment-email" class="hidden-label">{{ 'blogs.comments.email' | t }}</label>
+                    <input {% if form.errors contains "email" %} class="error"{% endif %} type="email" name="comment[email]" placeholder="{{ 'blogs.comments.email' | t }}" id="comment-email" value="{{ form.email }}" autocorrect="off" autocapitalize="off">
+                  </div>
+
+                  <div class="grid-item">
+                    <label for="comment-body" class="hidden-label">{{ 'blogs.comments.message' | t }}</label>
+                    <textarea {% if form.errors contains "body" %} class="error"{% endif %} name="comment[body]" id="comment-body" placeholder="{{ 'blogs.comments.message' | t }}">{{ form.body }}</textarea>
+                  </div>
+
+                </div>
+
+                {% if blog.moderated? %}
+                  <p class="text-light"><em>{{ 'blogs.comments.moderated' | t }}</em></p>
+                {% endif %}
+
+                <input type="submit" class="btn" value="{{ 'blogs.comments.post' | t }}">
+
+              {% endform %}
+            </div>
+
+          </div>
+
+          {% endpaginate %}
+
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% if section.settings.enable_sidebar %}
+  <aside class="sidebar grid-item large--one-fifth grid-border--left">
+    {% include 'blog-sidebar' %}
+  </aside>
+  {%endif%}
+</div>
+</div>
+
+{% schema %}
+{
+  "name": {
+    "de": "Artikelseiten",
+    "he": "Article pages",
+"en": "עמודי מאמרים",
+"es": "Páginas del artículo",
+    "fr": "Pages d'articles",
+    "it": "Pagine articoli",
+    "ja": "記事ページ",
+    "pt-BR": "Páginas de artigo"
+  },
+  "settings": [
+{
+      "type": "checkbox",
+      "id": "article_image",
+      "label": {
+"en": "הצג תמונה של הפוסט"
+      },
+      "default": true
+    },    
+{
+      "type": "checkbox",
+      "id": "social_sharing_blog",
+      "label": {
+        "de": "Social-Sharing-Schaltflächen anzeigen",
+        "he": "Show social sharing buttons",
+"en": "הצגת כפתורי שיתוף לרשתות החברתיות",
+"es": "Mostrar botones para compartir en redes sociales",
+        "fr": "Afficher les boutons de partage social",
+        "it": "Mostra i pulsanti per la condivisione sui social",
+        "ja": "ソーシャル共有ボタンを表示する",
+        "pt-BR": "Exibir botões de compartilhamento em redes sociais"
+      },
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sidebar",
+      "label": {
+"en": "הצג תפריט צד"
+      },
+      "default": true
+    }
+  ]
+}
+{% endschema %}
+

@@ -1,0 +1,40 @@
+{% doc %}
+  Replace a complete example container, never just its image or link label.
+  @param {string} content
+  @param {string} source_handle
+  @param {product} replacement
+  @param {string} tag
+{% enddoc %}
+{%- assign opening = '<' | append: tag -%}
+{%- if tag == 'a' -%}{%- assign opening = '<a ' -%}{%- endif -%}
+{%- assign closing = '</' | append: tag | append: '>' -%}
+{%- assign parts = content | split: opening -%}
+{{- parts.first -}}
+{%- for part in parts offset: 1 -%}
+  {%- assign inside = part | split: closing | first -%}
+  {%- assign consumed = inside | append: closing -%}
+  {%- assign remainder = part | remove_first: consumed -%}
+  {%- assign matches = false -%}
+  {%- assign matching_inside = inside | replace: "'", '"' -%}
+  {%- assign prefixes = 'href="/products/|href="https://www.toptik.co.il/products/|href="https://toptik.co.il/products/' | split: '|' -%}
+  {%- for prefix in prefixes -%}
+    {%- assign exact = prefix | append: source_handle | append: '"' -%}
+    {%- assign query = prefix | append: source_handle | append: '?' -%}
+    {%- if matching_inside contains exact or matching_inside contains query -%}{%- assign matches = true -%}{%- endif -%}
+  {%- endfor -%}
+  {%- unless part contains closing -%}{%- assign matches = false -%}{%- endunless -%}
+  {%- assign boundary = inside | slice: 0, 1 | strip -%}
+  {%- if tag != 'a' and boundary != '>' and boundary != '' -%}{%- assign matches = false -%}{%- endif -%}
+  {%- if matches -%}
+    {%- if tag == 'figure' -%}<figure class="toptik-live-example">{%- elsif tag == 'li' -%}<li>{%- endif -%}
+    {%- if replacement.title != blank and replacement.featured_image != blank -%}
+      <a href="{{ replacement.url | escape }}" data-toptik-live-example="{{ source_handle | escape }}">
+        {%- if tag == 'figure' or inside contains '<img' -%}<img src="{{ replacement.featured_image | image_url: width: 800 }}" alt="{{ replacement.title | escape }}" width="{{ replacement.featured_image.width }}" height="{{ replacement.featured_image.height }}" loading="lazy" style="max-width:100%;height:auto">{%- endif -%}
+        <span>דוגמה זמינה נוספת: {{ replacement.title | escape }}</span>
+      </a>
+      {%- if tag == 'figure' -%}<figcaption>מפרט הדגם המתואר במאמר אינו מפרט החלופה.</figcaption>{%- endif -%}
+    {%- else -%}<span class="toptik-example-unavailable">הדוגמה אינה זמינה כרגע לרכישה</span>{%- endif -%}
+    {%- if tag == 'figure' -%}</figure>{%- elsif tag == 'li' -%}</li>{%- endif -%}
+    {{- remainder -}}
+  {%- else -%}{{- opening -}}{{- part -}}{%- endif -%}
+{%- endfor -%}

@@ -36,6 +36,7 @@ const nextConfig: NextConfig = {
     qualities: [60, 75, 85, 100],
     minimumCacheTTL: 2678400,
     remotePatterns: [
+      { protocol: 'https', hostname: 'cdn.shopify.com', pathname: '/s/files/1/0622/8082/7130/**' },
       {
         protocol: "https",
         hostname: "*.supabase.co",
