@@ -18,6 +18,17 @@ const item = (sku, overrides = {}) => ({
   ...overrides,
 });
 
+test('four imported color names are readable while sibling identities and images stay exact', () => {
+  const members = [['001','שחור'],['08Q','כחול'],['24B','תכלת'],['27D',"צ'אי הודי (חום)"]]
+    .map(([code,color]) => item('P10FZT73'+code,{color,title:'FZT73'}));
+  const groups = buildModelSiblingSwatches(members);
+  for (const member of members) {
+    assert.deepEqual(groups.get(member.id).map(s=>s.name), members.map(m=>m.color));
+    assert.deepEqual(groups.get(member.id).map(s=>s.itemId), members.map(m=>m.id));
+    assert.deepEqual(groups.get(member.id).map(s=>s.imagePath), members.map(m=>m.coverImagePath));
+  }
+});
+
 test('compact Mandarina SKU separates exact model and trailing color, including alphanumeric models', () => {
   for (const [sku, model, color] of [
     ['P10FZT73209', 'FZT73', '209'], ['P10FZT73A46', 'FZT73', 'A46'],
