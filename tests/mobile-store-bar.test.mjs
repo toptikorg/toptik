@@ -17,8 +17,8 @@ function fixture({ bottom = 500, mobile = true, href = 'https://www.toptik.co.il
   const media = { matches: mobile, ...events };
   let observer;
   let mutation;
-  class Observer { constructor(fn, options) { this.fn = fn; this.options = options; observer = this; } observe(target) { this.target = target; } disconnect() { this.target = null; } }
-  class Mutation { constructor(fn) { mutation = this; this.fn = fn; } observe() {} disconnect() { this.closed = true; } }
+  function Observer(fn, options) { observer = { fn, options, observe(target) { this.target = target; }, disconnect() { this.target = null; } }; return observer; }
+  function Mutation(fn) { mutation = { fn, observe() {}, disconnect() { this.closed = true; } }; return mutation; }
   const context = vm.createContext({ document: { body, createElement: create, ...events }, window: { matchMedia: () => media, ...events },
     IntersectionObserver: Observer, MutationObserver: Mutation, getComputedStyle: () => ({ visibility: 'visible' }), URL });
   vm.runInContext(source + '\nthis.mount = mountMobileStoreBar;', context);
