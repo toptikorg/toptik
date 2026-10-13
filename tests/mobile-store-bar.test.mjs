@@ -14,7 +14,7 @@ function fixture({ bottom = 500, mobile = true, intro = false, href = 'https://w
     appendChild(node) { this.children.push(node); node.parentElement = this; },
     getBoundingClientRect: () => ({ top: 252, bottom: 300, height: 48 }),
     remove() { if (this.parentElement) this.parentElement.children = this.parentElement.children.filter(el => el !== this); } });
-  const anchor = { href, dataset: { productName: 'Verified product' }, getBoundingClientRect: () => ({ top: bottom - 48, bottom, height: 48 }), closest: () => null };
+  const anchor = { href, dataset: { productName: 'Verified product' }, getBoundingClientRect: () => ({ top: bottom - 48, bottom, height: 48, left: 0, right: 375 }), closest: () => null };
   const introHost = intro ? create() : null;
   const root = { querySelectorAll: () => [anchor], querySelector: () => introHost };
   const media = { matches: mobile, ...events };
@@ -22,7 +22,7 @@ function fixture({ bottom = 500, mobile = true, intro = false, href = 'https://w
   let mutation;
   function Observer(fn, options) { observer = { fn, options, observe(target) { this.target = target; }, disconnect() { this.target = null; } }; return observer; }
   function Mutation(fn) { mutation = { fn, observe() {}, disconnect() { this.closed = true; } }; return mutation; }
-  const context = vm.createContext({ document: { body, createElement: create, ...events }, window: { scrollY: 0, matchMedia: () => media, ...events },
+  const context = vm.createContext({ document: { body, createElement: create, ...events }, window: { scrollY: 0, innerWidth: 375, matchMedia: () => media, ...events },
     IntersectionObserver: Observer, MutationObserver: Mutation, getComputedStyle: () => ({ visibility: 'visible' }), URL });
   vm.runInContext(source + '\nthis.mount = mountMobileStoreBar;', context);
   const cleanup = context.mount(root, 'bar');

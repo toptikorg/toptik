@@ -30,8 +30,9 @@ export function mountMobileStoreBar(root: HTMLElement, className: string) {
     const candidate = Array.from(root.querySelectorAll<HTMLAnchorElement>('a[href]')).find(anchor => {
       try {
         const url = new URL(anchor.href);
+        const bounds = anchor.getBoundingClientRect();
         return url.protocol === 'https:' && url.hostname === 'www.toptik.co.il' && url.pathname.startsWith('/products/') &&
-          anchor.getBoundingClientRect().height > 0 && getComputedStyle(anchor).visibility !== 'hidden' &&
+          bounds.height > 0 && bounds.right > 0 && bounds.left < window.innerWidth && getComputedStyle(anchor).visibility !== 'hidden' &&
           !anchor.closest('[aria-hidden="true"]') && !anchor.closest('[data-mobile-store-intro]');
       } catch { return false; }
     });
