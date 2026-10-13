@@ -258,7 +258,7 @@ export function buildModelSiblingSwatches(items: CarouselItem[]): Map<string, Re
       if (seen.has(code)) continue;
       seen.add(code);
       const { name, hex } = resolveColorMeta(
-        extractColorWord(member.title),
+        member.color?.trim() || extractColorWord(member.title),
         colorCodeFromCatalog(member.catalogNumber),
       );
       const angles =
