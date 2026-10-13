@@ -1,23 +1,29 @@
 /** Own only the body-level bar; leave source links and their tracking intact. */
 export function mountMobileStoreBar(root: HTMLElement, className: string) {
-  const bar = document.createElement('aside');
-  bar.className = className;
-  bar.dataset.mobileStoreBar = '';
-  bar.dir = 'rtl';
-  bar.setAttribute('aria-label', 'מעבר למוצר בחנות');
-  bar.hidden = true;
-  const name = document.createElement('span');
-  const link = document.createElement('a');
-  link.textContent = 'למוצר בחנות';
-  bar.append(name, link);
-  document.body.appendChild(bar);
+  let bar: HTMLElement | undefined;
+  let name: HTMLSpanElement | undefined;
+  let link: HTMLAnchorElement | undefined;
+  const ensureBar = () => {
+    if (bar) return;
+    bar = document.createElement('aside');
+    bar.className = className;
+    bar.dataset.mobileStoreBar = '';
+    bar.dir = 'rtl';
+    bar.setAttribute('aria-label', 'מעבר למוצר בחנות');
+    bar.hidden = true;
+    name = document.createElement('span');
+    link = document.createElement('a');
+    link.textContent = 'למוצר בחנות';
+    bar.append(name, link);
+    document.body.appendChild(bar);
+  };
   const mobile = window.matchMedia('(max-width:767px)');
   let original: HTMLAnchorElement | undefined;
   let source: HTMLAnchorElement | undefined;
   const intro = root.querySelector<HTMLElement>('[data-mobile-store-intro]');
   let introLink: HTMLAnchorElement | undefined;
   let passed = false;
-  const sync = () => { bar.hidden = !mobile.matches || !original || !passed; };
+  const sync = () => { if (bar) bar.hidden = !mobile.matches || !original || !passed; };
   // Extending only the bottom detects fast jumps from below to above the
   // viewport, even when the source link never intersects the visible screen.
   const observer = new IntersectionObserver(entries => {
@@ -59,7 +65,14 @@ export function mountMobileStoreBar(root: HTMLElement, className: string) {
       original = next;
       if (original) observer.observe(original);
     }
-    if (original) {
+    if (original) ensureBar();
+    else {
+      bar?.remove();
+      bar = undefined;
+      name = undefined;
+      link = undefined;
+    }
+    if (original && name && link) {
       const title = original.dataset.productName || original.querySelector('img')?.alt || original.textContent?.trim() || 'המוצר';
       if (name.textContent !== title) name.textContent = title;
       if (link.href !== original.href) link.href = original.href;
@@ -84,7 +97,7 @@ export function mountMobileStoreBar(root: HTMLElement, className: string) {
     window.removeEventListener('pageshow', bind);
     window.removeEventListener('resize', bind);
     mobile.removeEventListener('change', bind);
-    bar.remove();
+    bar?.remove();
     introLink?.remove();
   };
 }
