@@ -13,7 +13,8 @@ import { assertVerifiedCopyApproval, assertVerifiedCopyIdentity, configuredShopi
 import { readVerifiedCopyEligibility } from "./copy-eligibility";
 import { ensurePublicShopifyOnboarding } from "./onboarding-worker";
 import { refreshProductPublication } from "./publication-sync";
-import { MD20_PRODUCT_GID, MD20_VARIANTS } from "./variant-source-policy";
+import { MD20_PRODUCT_GID, MD20_VARIANTS, FZT73_PRODUCT_GID, FZT73_VARIANTS } from "./variant-source-policy";
+import { reconcileFzt73Variants } from "./fzt73-source-worker";
 import { reconcileApprovedVariants } from "./variant-source-worker";
 import { isSyncReviewCode, mergeVisibleProductCopy, visibleCopiesEquivalent, type VisibleProductCopy } from "./sync-policy";
 
@@ -310,6 +311,14 @@ async function reconcileInboxEvent(supabase: SupabaseClient, event: InboxEvent, 
   if (mode === "verified_catalog") {
     // Visibility must be reconciled before the copy gate rejects draft/archive/delete.
     const publication = await refreshProductPublication(supabase, productGid, leaseOwner);
+    // Reviewed multi-color source projections must run for recovery and withdrawal
+    // as well as ordinary edits; they have no single-variant binding to refresh.
+    if (productGid === FZT73_PRODUCT_GID) {
+      await reconcileFzt73Variants(supabase, deadline);
+      const { error } = await supabase.from("shopify_webhook_events").update({ status: "processed", processed_at: new Date().toISOString(), last_error: null }).eq("id", event.id);
+      if (error) throw new Error("SYNC_EVENT_FINALIZE_FAILED");
+      return "processed";
+    }
     if (!publication.published || event.payload?.publication_recovery === true) {
       const { error } = await supabase.from("shopify_webhook_events").update({ status: "processed", processed_at: new Date().toISOString(), last_error: null }).eq("id", event.id);
       if (error) throw new Error("SYNC_EVENT_FINALIZE_FAILED");
@@ -367,6 +376,12 @@ async function processOneOutboxRow(supabase: SupabaseClient, row: OutboxRow, can
   const mode = configuredShopifySyncMode(process.env.SHOPIFY_SYNC_MODE);
   if (mode === "disabled") throw new Error("SYNC_MODE_NOT_CONFIGURED");
   if (mode !== "verified_catalog" && !isSyncCanarySku(row.catalog_key, canarySku)) throw new Error("SYNC_SKU_OUTSIDE_CANARY");
+  if (mode === "verified_catalog" && FZT73_VARIANTS.some(v => v.sku === row.catalog_key && v.itemId === row.carousel_item_id)) {
+    return withProductReconciliationLease(supabase, FZT73_PRODUCT_GID, async () => {
+      await reconcileFzt73Variants(supabase, deadline);
+      return "synced";
+    });
+  }
   if (mode === "verified_catalog" && MD20_VARIANTS.some(v => v.sku === row.catalog_key && v.itemId === row.carousel_item_id)) {
     return withProductReconciliationLease(supabase, MD20_PRODUCT_GID, async () => {
       await reconcileApprovedVariants(supabase, deadline);
