@@ -6,6 +6,7 @@ import { CarouselGrid } from "@/components/carousel/CarouselGrid";
 import BrandPicker from "@/components/carousel/BrandPicker";
 import { CategoryNav } from "@/components/carousel/CategoryNav";
 import { ProductModal } from "@/components/carousel/ProductModal";
+import { lockModalScroll } from "@/lib/carousel/modal-scroll-lock";
 import { MobileStoreBar } from '@/components/commerce/MobileStoreBar';
 import { TechSpecsModal } from "@/components/carousel/TechSpecsModal";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
@@ -36,6 +37,10 @@ export default function CarouselPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<CarouselItem | null>(null);
   const [techSpecsItem, setTechSpecsItem] = useState<CarouselItem | null>(null);
+  const hasProductDialog = Boolean(selectedItem || techSpecsItem);
+  useEffect(() => {
+    if (hasProductDialog) return lockModalScroll(window);
+  }, [hasProductDialog]);
   const productOpener = useRef<HTMLElement | null>(null);
   const specsOpener = useRef<HTMLElement | null>(null);
   const [requestedSeries, setRequestedSeries] = useState(() =>
@@ -89,7 +94,7 @@ export default function CarouselPageClient() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const save = () => {
-      try { sessionStorage.setItem(`carousel-scroll:${window.location.search}`, String(window.scrollY)); } catch { /* private mode */ }
+      try { sessionStorage.setItem(`carousel-scroll:${window.location.search}`, document.body.dataset.modalScrollY ?? String(window.scrollY)); } catch { /* private mode */ }
     };
     window.addEventListener("pagehide", save);
     return () => window.removeEventListener("pagehide", save);
