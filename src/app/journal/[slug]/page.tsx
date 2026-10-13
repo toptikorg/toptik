@@ -99,6 +99,7 @@ export default async function JournalArticlePage({ params }: PageProps) {
         <header className={styles.articleHeader}>
           <p className={styles.eyebrow}>{article.category}</p>
           <h1>{article.title}</h1>
+          <div className={styles.mobileStoreIntro} data-mobile-store-intro="" />
           <p className={styles.articleStandfirst}>{article.standfirst}</p>
           <div className={styles.articleMeta}>
             <span>{article.byline}</span>

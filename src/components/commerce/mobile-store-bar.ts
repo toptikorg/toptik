@@ -13,6 +13,9 @@ export function mountMobileStoreBar(root: HTMLElement, className: string) {
   document.body.appendChild(bar);
   const mobile = window.matchMedia('(max-width:767px)');
   let original: HTMLAnchorElement | undefined;
+  let source: HTMLAnchorElement | undefined;
+  const intro = root.querySelector<HTMLElement>('[data-mobile-store-intro]');
+  let introLink: HTMLAnchorElement | undefined;
   let passed = false;
   const sync = () => { bar.hidden = !mobile.matches || !original || !passed; };
   // Extending only the bottom detects fast jumps from below to above the
@@ -24,14 +27,32 @@ export function mountMobileStoreBar(root: HTMLElement, className: string) {
     sync();
   }, { threshold: 0, rootMargin: '0px 0px 100000px 0px' });
   const bind = () => {
-    const next = Array.from(root.querySelectorAll<HTMLAnchorElement>('a[href]')).find(anchor => {
+    const candidate = Array.from(root.querySelectorAll<HTMLAnchorElement>('a[href]')).find(anchor => {
       try {
         const url = new URL(anchor.href);
         return url.protocol === 'https:' && url.hostname === 'www.toptik.co.il' && url.pathname.startsWith('/products/') &&
           anchor.getBoundingClientRect().height > 0 && getComputedStyle(anchor).visibility !== 'hidden' &&
-          !anchor.closest('[aria-hidden="true"]');
+          !anchor.closest('[aria-hidden="true"]') && !anchor.closest('[data-mobile-store-intro]');
       } catch { return false; }
     });
+    if (candidate !== source) {
+      introLink?.remove();
+      introLink = undefined;
+      source = candidate;
+      // A text/card-only article can put its first product link thousands of
+      // pixels down. Surface the same exact destination below the title on
+      // mobile, retaining the authored source and all desktop layout in DOM.
+      if (intro && source && source.getBoundingClientRect().top + window.scrollY >= 812) {
+        introLink = document.createElement('a');
+        introLink.textContent = 'לפרטי המוצר בחנות ←';
+        intro.appendChild(introLink);
+      }
+    }
+    if (introLink && source) {
+      if (introLink.href !== source.href) introLink.href = source.href;
+      introLink.dataset.productName = source.dataset.productName || source.querySelector('img')?.alt || source.textContent?.trim() || 'המוצר';
+    }
+    const next = mobile.matches && introLink ? introLink : source;
     if (next !== original) {
       observer.disconnect();
       original = next;
@@ -63,5 +84,6 @@ export function mountMobileStoreBar(root: HTMLElement, className: string) {
     window.removeEventListener('resize', bind);
     mobile.removeEventListener('change', bind);
     bar.remove();
+    introLink?.remove();
   };
 }
