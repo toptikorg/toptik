@@ -10,7 +10,10 @@ import { CatalogCard } from "./CarouselGrid";
 export function ArticleProductCard({ item }: { item: CarouselItem }) {
   const [hidden, setHidden] = useState(false);
   const purchaseUrl = purchaseUrlFor(item.catalogNumber, item.shopifyLink);
-  if (!purchaseUrl || hidden) return null;
+  if (!purchaseUrl) return null;
+  // The server has already verified this exact active product. An image
+  // failure must not erase its otherwise valid editorial purchase link.
+  if (hidden) return <a className="journal-product-text-link" data-product-name={item.title} href={purchaseUrl}>לפרטי {item.title} בחנות TopTik</a>;
 
   return (
     <div className="gallery-info-card">

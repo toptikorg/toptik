@@ -55,7 +55,9 @@ test("contextual product cards are server-selected by exact active SKU and safe 
   assert.match(serverCards, /normalizeCatalogKey\(candidate\.catalogNumber\) === key/);
   assert.match(serverCards, /matches\.length === 1 \? matches\[0\] : undefined/);
   assert.match(serverCards, /purchaseUrlFor\(item\.catalogNumber, item\.shopifyLink\)/);
-  assert.match(card, /if \(!purchaseUrl \|\| hidden\) return null;/);
+  assert.match(card, /if \(!purchaseUrl\) return null;/);
+  assert.match(card, /if \(hidden\) return <a className="journal-product-text-link"/);
+  assert.match(card, /data-product-name=\{item\.title\} href=\{purchaseUrl\}/);
   assert.match(card, /interactive=\{false\}/);
   assert.doesNotMatch(card, /ProductModal|TechSpecsModal/);
   assert.doesNotMatch(card, /fetch\("\/api\/carousel"\)/);

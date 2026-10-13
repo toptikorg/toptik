@@ -131,6 +131,8 @@ export function CatalogCard({
               className="catalog-card-buy-btn"
               /* GAL-027: same tab; one Back returns to the gallery */
               href={purchaseUrl}
+              data-mobile-store-link=""
+              data-product-name={item.title}
               onClick={(e) => e.stopPropagation()}
               aria-label={`להמשך רכישה בחנות TopTik: ${item.title}`}
             >
