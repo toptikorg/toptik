@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { configuredShopifyDomain, fetchProductSnapshot } from "./admin-api";
 import { isSafeShopifyProductHandle } from "./sync-rules";
+import { FZT73_PRODUCT_GID } from "./variant-source-policy";
 
 /** Publication is independent of copy/media approval. Caller holds the product lease.
  * Read current Shopify state even for delete events: a delayed event is not authority.
@@ -27,11 +28,13 @@ export async function refreshProductPublication(supabase: SupabaseClient, produc
 }
 
 /** Daily repair of missed deliveries, deduplicated without resetting old events.
- * Replay does publication only, never generates copy/media writes or approvals.
+ * Generic replay does publication only. The explicitly reviewed FZT73 family
+ * also repairs its source-owned projection, including missing initial intake.
  */
 export async function enqueuePublicationRecovery(supabase: SupabaseClient, day = new Date().toISOString().slice(0, 10)) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("SYNC_PUBLICATION_DAY_INVALID");
-  const ids = new Set<string>();
+  // Include the approved unbound family so a missed create webhook self-recovers.
+  const ids = new Set<string>([FZT73_PRODUCT_GID]);
   for (let offset = 0; ; offset += 500) {
     const { data, error } = await supabase.from("shopify_gallery_bindings").select("catalog_key,product_gid")
       .order("catalog_key").range(offset, offset + 499);

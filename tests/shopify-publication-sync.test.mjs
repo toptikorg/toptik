@@ -8,6 +8,7 @@ const {make} = await import('data:text/javascript;base64,'+Buffer.from(`export f
  const configuredShopifyDomain=()=> 'toptik.myshopify.com';
  const isSafeShopifyProductHandle=x=>/^[a-z0-9-]+$/.test(x);
  const configuredShopifySyncMode=()=> 'verified_catalog';
+ const FZT73_PRODUCT_GID='gid://shopify/Product/7524873044218';
  ${source}
  ${worker}
  return {refreshProductPublication,enqueuePublicationRecovery,reconcileInboxEvent};
@@ -51,5 +52,6 @@ test('recovery paginates, deduplicates products and preserves historical events'
   pages++;return{data:offset===0?Array.from({length:500},()=>({product_gid:gid})):[{product_gid:'gid://shopify/Product/789'}],error:null};
  }})})}:{upsert:async(rows,options)=>{assert.deepEqual(options,{onConflict:'delivery_id',ignoreDuplicates:true});for(const row of rows)if(!events.has(row.delivery_id))events.set(row.delivery_id,row);return{error:null};}}};
  const api=make(async()=>product);await api.enqueuePublicationRecovery(db,'2026-10-12');await api.enqueuePublicationRecovery(db,'2026-10-12');
- assert.equal(pages,4);assert.equal(events.size,2);assert.ok([...events.values()].every(e=>e.payload.publication_recovery===true));
+ assert.equal(pages,4);assert.equal(events.size,3);assert.ok([...events.values()].every(e=>e.payload.publication_recovery===true));
+ assert.ok([...events.values()].some(e=>e.payload.id==='7524873044218'));
 });
