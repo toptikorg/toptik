@@ -504,6 +504,13 @@ body {
 }
 
 /* ─────── Carousel page ─────── */
+/* Stop native rubber-band/chained scrolling at the gallery's document edge.
+   Do not cap content height: descriptions, magazine and footer remain reachable. */
+html:has(.carousel-page),
+body:has(.carousel-page) {
+  overscroll-behavior-y: none;
+}
+
 .carousel-page {
   min-height: 100dvh;
   height: auto;
@@ -1171,6 +1178,7 @@ body {
   justify-content: center;
   padding: 20px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .product-modal {
@@ -1533,6 +1541,7 @@ body {
   justify-content: center;
   padding: 20px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .tech-specs-modal {
@@ -1540,6 +1549,7 @@ body {
   width: min(640px, 94vw);
   max-height: 88dvh;
   overflow: auto;
+  overscroll-behavior: contain;
   background: #fdf8ee;
   border-radius: 16px;
   padding: 32px 28px 28px;

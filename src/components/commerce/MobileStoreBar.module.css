@@ -1,5 +1,6 @@
 .bar { display: none; }
 .bar[hidden] { display: none !important; }
+:global(body):has(:global(.product-modal-backdrop), :global(.tech-specs-backdrop)) > .bar { display: none !important; }
 @media (max-width: 767px) {
   .bar {
     position: fixed;
