@@ -1,0 +1,22 @@
+.bar { display: none; }
+.bar[hidden] { display: none !important; }
+@media (max-width: 767px) {
+  .bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: #0a0a0a;
+    color: #f2e6cf;
+    border-top: 1px solid #bd9864;
+    box-shadow: 0 -4px 18px #0006;
+  }
+  .bar span { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .bar a { flex-shrink: 0; display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px 16px; border-radius: 999px; background: #d7aa6a; color: #0a0a0a; font-size: 16px; font-weight: 600; text-decoration: none; }
+  .bar a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  :global(body):has(> .bar:not([hidden])) { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+}

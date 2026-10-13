@@ -8,6 +8,7 @@ import { absoluteUrl, SITE_NAME, STORE_ORIGIN } from "@/lib/seo/site";
 import { getStoreGuides } from "@/lib/editorial/store-guides";
 import { jsonLdString } from "@/lib/seo/structured-data";
 import { resolveArticleHero } from '@/lib/editorial/product-reference';
+import { MobileStoreBar } from '@/components/commerce/MobileStoreBar';
 
 export const dynamicParams = false;
 // Article copy is authored in source, while embedded products are resolved
@@ -86,7 +87,8 @@ export default async function JournalArticlePage({ params }: PageProps) {
   const related = getRelatedGalleryArticles(article.slug);
 
   return (
-    <main className={styles.article} dir="rtl">
+    <main className={styles.article} dir="rtl" data-mobile-store-page="article">
+      <MobileStoreBar page="article" />
       <article className={styles.articleInner}>
         <nav className={styles.breadcrumb} aria-label="פירורי לחם">
           <Link href="/">TopTik</Link><span aria-hidden="true">/</span>
@@ -106,7 +108,8 @@ export default async function JournalArticlePage({ params }: PageProps) {
           <div className={styles.articleRule} aria-hidden="true" />
         </header>
         {article.hero && <figure className={styles.heroFigure}>
-          {article.hero.href ? <Link href={article.hero.href} aria-label={article.hero.href.startsWith("https://www.toptik.co.il/products/") ? "לפרטי המוצר בחנות" : "לצפייה במוצרים בגלריה"}>
+          {article.hero.href ? <Link href={article.hero.href} data-mobile-store-link={article.hero.href.startsWith("https://www.toptik.co.il/products/") ? '' : undefined} data-product-name={article.hero.alt} aria-label={article.hero.href.startsWith("https://www.toptik.co.il/products/") ? "לפרטי המוצר בחנות" : "לצפייה במוצרים בגלריה"}>
+            {article.hero.href.startsWith("https://www.toptik.co.il/products/") && <span className={styles.mobileProductLink}>לפרטי המוצר בחנות ←</span>}
             <Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height} sizes="(max-width: 780px) 94vw, 740px" quality={75} />
           </Link> : <Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height} sizes="(max-width: 780px) 94vw, 740px" quality={75} />}
           <figcaption>{article.hero.caption}</figcaption>
