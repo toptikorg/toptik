@@ -1,7 +1,9 @@
 {
   "functions": {
     "src/app/api/carousel/route.ts": {
-      "regions": ["syd1"]
+      "regions": [
+        "syd1"
+      ]
     }
   },
   "crons": [
@@ -30,8 +32,16 @@
     {
       "source": "/mobile-tuner.html",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0, must-revalidate"
+        }
       ]
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "codex/seo-20261014-*": false
+    }
+  }
 }
