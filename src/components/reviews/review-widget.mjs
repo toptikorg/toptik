@@ -55,7 +55,7 @@ export function mountReviewWidget(host, branches, options = {}) {
     choice.onclick = () => {
       lastChoice = choice;
       branchTitle.textContent = `${b.name}, ${b.address}`;
-      qr.src = `${options.assetOrigin || ''}${b.qrPath}`;
+      qr.src = options.qrSources?.[b.id] || `${options.assetOrigin || ''}${b.qrPath}`;
       qr.alt = `קוד QR לכתיבת ביקורת על סניף ${b.name}`;
       link.href = b.reviewUrl;
       choices.hidden = true; intro.hidden = true; detail.hidden = false;
