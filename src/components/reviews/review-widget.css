@@ -1,0 +1,20 @@
+.tt-review-host { position:relative; z-index:2; text-align:center; }
+.tt-review-header { font:inherit; font-size:14px; min-height:44px; padding:8px 12px; color:inherit; background:transparent; border:0; text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
+.tt-review-fab { position:fixed; left:16px; bottom:24px; z-index:900; min-height:44px; padding:10px 16px; border:1px solid #d0c6b6; border-radius:999px; background:#fffaf2; color:#24201a; font:600 15px/1.4 Arial,sans-serif; box-shadow:0 3px 14px #0003; cursor:pointer; }
+.tt-review-dialog { box-sizing:border-box; width:min(440px,calc(100vw - 24px)); max-height:calc(100dvh - 32px); padding:0; border:1px solid #d0c6b6; border-radius:18px; margin:auto; color:#24201a; background:#fffaf2; overflow:auto; overscroll-behavior:contain; font:16px/1.6 Arial,sans-serif; text-align:right; }
+.tt-review-dialog::backdrop { background:#0009; }
+.tt-review-content { padding:24px; }
+.tt-review-close { display:block; margin-right:auto; width:44px; height:44px; border:1px solid #d0c6b6; border-radius:50%; background:#fff; color:#24201a; font-size:26px; cursor:pointer; }
+.tt-review-dialog h2 { font-size:23px; line-height:1.4; margin:12px 0; color:inherit; }
+.tt-review-dialog h3 { font-size:20px; line-height:1.5; margin:12px 0; color:inherit; }
+.tt-review-dialog p { font:inherit; margin:12px 0; }
+.tt-review-choices { display:grid; gap:10px; }
+.tt-review-choice,.tt-review-direct,.tt-review-back { box-sizing:border-box; display:block; width:100%; min-height:48px; padding:12px; border:1px solid #8b7350; border-radius:10px; background:#fff; color:#24201a; font:inherit; text-align:center; text-decoration:none; cursor:pointer; }
+.tt-review-direct { background:#24201a; color:#fff; margin:12px 0; }
+.tt-review-qr { display:block; width:224px; max-width:100%; height:auto; aspect-ratio:1; margin:16px auto; background:white; }
+.tt-review-note { font-size:13px!important; color:#575148; }
+.tt-review-detail { text-align:center; }
+.tt-review-dialog [hidden],.tt-review-fab[hidden],.tt-review-header[hidden] { display:none!important; }
+.tt-review-dialog :focus-visible,.tt-review-header:focus-visible,.tt-review-fab:focus-visible { outline:3px solid #2465a8; outline-offset:3px; }
+@media(max-width:767px) { .tt-review-fab { left:12px; bottom:calc(110px + env(safe-area-inset-bottom)); padding:8px 12px; font-size:13px; } .tt-review-content { padding:16px; } }
+@media(prefers-reduced-motion:reduce) { .tt-review-dialog,.tt-review-fab { animation:none!important; transition:none!important; } }

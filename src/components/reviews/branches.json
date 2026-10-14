@@ -1,0 +1,5 @@
+[
+  {"id":"gan","name":"גן העיר","address":"אבן גבירול 71","reviewUrl":"","qrPath":"","verified":false},
+  {"id":"ramat","name":"רמת אביב","address":"ברודצקי 43","reviewUrl":"","qrPath":"","verified":false},
+  {"id":"weiz","name":"ויצמן, ליד איכילוב","address":"ויצמן 14","reviewUrl":"","qrPath":"","verified":false}
+]
