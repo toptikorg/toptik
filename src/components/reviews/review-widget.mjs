@@ -124,6 +124,7 @@ export function mountReviewWidget(host, branches, options = {}) {
       if (disposed || dialog.open) { frame = 0; return; }
       update();
       if (!blocked()) {
+        console.debug('review-focus-diagnostic', JSON.stringify({ opener: opener?.className, connected: opener?.isConnected, hidden: opener?.hidden, rect: opener?.getBoundingClientRect().toJSON(), y: win.scrollY }));
         const target = opener?.isConnected && visible(opener) ? opener : header;
         if (visible(target)) target.focus({preventScroll:true});
       }
