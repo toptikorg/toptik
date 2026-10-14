@@ -1,4 +1,6 @@
 .tt-review-host { position:relative; z-index:2; text-align:center; }
+.carousel-header > .tt-review-host { flex-basis:100%; min-height:44px; color:#f2ece2; }
+.carousel-header .tt-review-star { color:#d7aa6a; }
 .tt-review-star { color:#b88416; font-size:1.15em; margin-inline-end:6px; text-decoration:none; display:inline-block; line-height:1; }
 .tt-review-header { font:inherit; font-size:14px; min-height:44px; padding:8px 12px; color:inherit; background:transparent; border:0; text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
 .tt-review-fab { position:fixed; left:16px; bottom:24px; z-index:900; min-height:44px; padding:10px 16px; border:1px solid #d0c6b6; border-radius:999px; background:#fffaf2; color:#24201a; font:600 15px/1.4 Arial,sans-serif; box-shadow:0 3px 14px #0003; cursor:pointer; }
