@@ -120,15 +120,22 @@ export function mountReviewWidget(host, branches, options = {}) {
     // Let restored scroll/layout settle before collision checks and focus.
     // The floating opener is hidden while the modal is open.
     win.cancelAnimationFrame(frame);
-    frame = win.requestAnimationFrame(() => {
+    let remainingLayoutFrames = 2;
+    const restoreFocus = () => {
       if (disposed || dialog.open) { frame = 0; return; }
       update();
       if (!blocked()) {
-        console.debug('review-focus-diagnostic', JSON.stringify({ opener: opener?.className, connected: opener?.isConnected, hidden: opener?.hidden, rect: opener?.getBoundingClientRect().toJSON(), y: win.scrollY }));
+        // Gallery scroll consumers can settle after our first frame. A transient
+        // collision must not redirect focus away from a still-connected opener.
+        if (opener?.isConnected && !visible(opener) && remainingLayoutFrames-- > 0) {
+          frame = win.requestAnimationFrame(restoreFocus);
+          return;
+        }
         const target = opener?.isConnected && visible(opener) ? opener : header;
         if (visible(target)) target.focus({preventScroll:true});
       }
-    });
+    };
+    frame = win.requestAnimationFrame(restoreFocus);
   });
   [header,floating].forEach(el => { el.setAttribute('aria-haspopup','dialog'); el.setAttribute('aria-controls',dialog.id); });
   host.append(header); doc.body.append(floating,dialog);
