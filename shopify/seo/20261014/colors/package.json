@@ -1,6 +1,6 @@
 {
   "name": "toptik-seo-color-review",
   "private": true,
-  "scripts": { "test": "node verify.cjs" },
+  "scripts": { "test": "node verify.mjs" },
   "devDependencies": { "liquidjs": "10.24.0" }
 }

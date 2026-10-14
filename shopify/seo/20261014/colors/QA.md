@@ -3,7 +3,7 @@
 Date: 2026-10-14. This is a review candidate, not a release.
 
 * 2,134 local checks against captured live schema, all passed.
-* 2,087 reproducible synthetic-fixture checks in verify.cjs, all passed. Run `npm ci && npm test` in this package.
+* 2,087 reproducible synthetic-fixture checks in verify.mjs, all passed. Run `npm ci && npm test` in this package.
 * 66 parent schemas parsed as JSON, preserved native offer/identifier fields; 178 unique child canonical mappings.
 * Explicit variant, collection-path and tag alternates preserved; unpublished/missing parent falls back to prior canonical.
 * Both new snippets passed Shopify Theme Check. Full-layout lint has 37 errors, also present in the baseline with the same messages, including legacy blocking scripts and assets/locales absent from the partial theme snapshot. No new lint errors were introduced. The full theme is not lint-clean.

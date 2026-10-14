@@ -1,7 +1,10 @@
 // Synthetic fixtures only. Does not call Shopify or deploy.
-const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const {Liquid}=require('liquidjs');
-const root=__dirname, read=n=>fs.readFileSync(path.join(root,n),'utf8');
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import {fileURLToPath} from 'node:url';
+import {Liquid} from 'liquidjs';
+const root=path.dirname(fileURLToPath(import.meta.url)), read=n=>fs.readFileSync(path.join(root,n),'utf8');
 const map=JSON.parse(read('canonical-map.json')),updates=JSON.parse(read('product-updates.json'));
 const engine=new Liquid({root:path.join(root,'theme/snippets'),extname:'.liquid'});
 engine.registerFilter('json',JSON.stringify);
