@@ -28,8 +28,13 @@ export function mountReviewWidget(host, branches, options = {}) {
     return node;
   };
   const button = (cls, text) => { const el = make('button', cls, text); el.type = 'button'; return el; };
-  const header = button('tt-review-header', 'דרגו אותנו');
-  const floating = button('tt-review-fab', 'דרגו אותנו ב־Google');
+  const header = button('tt-review-header', 'דרגו אותנו בגוגל');
+  const floating = button('tt-review-fab', 'דרגו אותנו בגוגל');
+  [header, floating].forEach(el => {
+    const star = make('span', 'tt-review-star', '★');
+    star.setAttribute('aria-hidden', 'true');
+    el.prepend(star);
+  });
   const dialog = make('dialog', 'tt-review-dialog');
   dialog.id = 'toptik-review-dialog'; dialog.dir = 'rtl';
   dialog.setAttribute('aria-labelledby', 'tt-review-title');
