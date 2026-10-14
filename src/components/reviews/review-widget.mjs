@@ -41,11 +41,14 @@ export function mountReviewWidget(host, branches, options = {}) {
   const detail = make('section', 'tt-review-detail'); detail.hidden = true;
   const branchTitle = make('h3'); branchTitle.tabIndex = -1;
   const qr = make('img', 'tt-review-qr'); qr.width = 224; qr.height = 224;
+  const qrStatus = make('p'); qrStatus.setAttribute('role','status');
+  qr.onload = () => { qr.hidden = false; qrStatus.hidden = true; };
+  qr.onerror = () => { qr.hidden = true; qrStatus.hidden = false; qrStatus.textContent = 'הקוד לא נטען. אפשר לכתוב ביקורת באמצעות הקישור למטה.'; };
   const hint = make('p', '', 'סרקו את הקוד במצלמת הטלפון, או לחצו כאן:');
   const link = make('a', 'tt-review-direct', 'כתבו ביקורת ב־Google');
   link.target = '_blank'; link.rel = 'noopener noreferrer';
   const back = button('tt-review-back', 'בחירת סניף אחר');
-  detail.append(branchTitle, qr, hint, link, back);
+  detail.append(branchTitle, qrStatus, qr, hint, link, back);
   const note = make('p', 'tt-review-note', 'הביקורת נכתבת ב־Google ונפתחת בלשונית חדשה. ייתכן שתידרש התחברות לחשבון Google.');
   content.append(close, title, intro, choices, detail, note); dialog.append(content);
   let lastChoice = null;
@@ -55,6 +58,8 @@ export function mountReviewWidget(host, branches, options = {}) {
     choice.onclick = () => {
       lastChoice = choice;
       branchTitle.textContent = `${b.name}, ${b.address}`;
+      qr.hidden = true; qrStatus.hidden = false; qrStatus.textContent = 'טוען קוד QR';
+      qr.removeAttribute('src');
       qr.src = options.qrSources?.[b.id] || `${options.assetOrigin || ''}${b.qrPath}`;
       qr.alt = `קוד QR לכתיבת ביקורת על סניף ${b.name}`;
       link.href = b.reviewUrl;
