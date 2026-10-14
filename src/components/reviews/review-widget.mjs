@@ -117,14 +117,17 @@ export function mountReviewWidget(host, branches, options = {}) {
   dialog.addEventListener('close', () => {
     restoreScroll?.(); restoreScroll = null;
     if (disposed) return;
-    // The floating opener is hidden while the modal is open. Restore layout and
-    // visibility synchronously before focus; focusing a hidden button is ignored.
+    // Let restored scroll/layout settle before collision checks and focus.
+    // The floating opener is hidden while the modal is open.
     win.cancelAnimationFrame(frame);
-    update();
-    if (!blocked()) {
-      const target = opener?.isConnected && visible(opener) ? opener : header;
-      if (visible(target)) target.focus({preventScroll:true});
-    }
+    frame = win.requestAnimationFrame(() => {
+      if (disposed || dialog.open) { frame = 0; return; }
+      update();
+      if (!blocked()) {
+        const target = opener?.isConnected && visible(opener) ? opener : header;
+        if (visible(target)) target.focus({preventScroll:true});
+      }
+    });
   });
   [header,floating].forEach(el => { el.setAttribute('aria-haspopup','dialog'); el.setAttribute('aria-controls',dialog.id); });
   host.append(header); doc.body.append(floating,dialog);
