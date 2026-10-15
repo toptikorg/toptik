@@ -1,0 +1,21 @@
+{% doc %}
+  Links to the two published TopTik community pages from the contact page.
+  @example
+  {% render 'toptik-contact-community-links' %}
+{% enddoc %}
+<section class="tt-contact-community" dir="rtl" aria-labelledby="tt-community-links-title">
+  <h2 id="tt-community-links-title">המטיילים של טופ תיק</h2>
+  <p>העדויות והבחירות שלכם, במקום אחד.</p>
+  <div class="tt-contact-community__links">
+    <a href="/pages/מפת-השקילה">מפת השקילה של הקבוצה</a>
+    <a href="/pages/אתם-בוחרים">אתם בוחרים מה נביא לקולקציה הבאה</a>
+  </div>
+</section>
+<style>
+  .tt-contact-community { max-width: 1040px; margin: 32px auto; padding: 24px; background: #eaf4ef; color: #252a28; border-radius: 12px; text-align: right; }
+  .tt-contact-community h2 { margin: 0 0 12px; font-size: 26px; line-height: 1.4; }
+  .tt-contact-community__links { display: flex; flex-wrap: wrap; gap: 14px; }
+  .tt-contact-community__links a { display: inline-flex; align-items: center; min-height: 48px; padding: 12px 18px; color: #fff; background: #245e53; border-radius: 8px; text-decoration: underline; text-underline-offset: 3px; font-size: 18px; line-height: 1.5; overflow-wrap: anywhere; }
+  .tt-contact-community__links a:focus-visible { outline: 3px solid #b05a12; outline-offset: 3px; }
+  @media (max-width: 700px) { .tt-contact-community { margin: 24px 15px; padding: 20px; } .tt-contact-community__links a { width: 100%; } }
+</style>

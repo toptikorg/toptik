@@ -1,0 +1,50 @@
+
+
+  <div class="">
+
+
+   {%comment%}
+    <div class="rte text-center">
+      {{ page.content }}
+    </div>
+   {% endcomment %}
+
+    <div class="form-wrapper">
+      <div class="form-wrapper-inner">
+       {% include 'breadcrumb' %}
+       <h1 class="page-title text-center">צור קשר</h1>
+
+       {% form 'contact' %}
+
+          {% if form.posted_successfully? %}
+            <p class="note form-success">
+              {{ 'contact.form.post_success' | t }}
+            </p>
+          {% endif %}
+
+          {% include 'form-errors-custom' %}
+
+          <div id="contactFormWrapper">
+            <label for="contactFormName" class="">{{ 'contact.form.name' | t }}*</label>
+            <input type="text" id="contactFormName" required="" name="contact[name]"  value="{% if form.name %}{{ form.name }}{% elsif customer %}{{ customer.name }}{% endif %}">
+
+            <label for="contactFormEmail" class="">{{ 'contact.form.email' | t }}*</label>
+            <input type="email" id="contactFormEmail" required="" name="contact[email]"  autocorrect="off" autocapitalize="off" value="{% if form.email %}{{ form.email }}{% elsif customer %}{{ customer.email }}{% endif %}">
+
+            <label for="contactFormPhone" class="">{{ 'contact.form.phone' | t }}</label>
+            <input type="tel" id="contactFormPhone" name="contact[phone]" value="{% if form.phone %}{{ form.phone }}{% elsif customer %}{{ customer.phone }}{% endif %}">
+
+            <label for="contactFormMessage" class="">{{ 'contact.form.message' | t }}</label>
+            <textarea rows="5" id="contactFormMessage" name="contact[body]" >{% if form.body %}{{ form.body }}{% endif %}</textarea>
+
+            <input type="submit" class="btn right" value="{{ 'contact.form.send' | t }}">
+          </div>
+
+        {% endform %}
+      </div>
+    </div>
+    {% render 'toptik-contact-community-links' %}
+    {% section 'contact_time_duration' %}
+    {% section 'toptik-branch-links' %}
+    {% section 'map_contact' %}
+  </div>
