@@ -1,0 +1,16 @@
+{% comment %}Preserve all Shopify-managed groups, rules and sitemap declarations.{% endcomment %}
+{% for group in robots.default_groups %}
+{{ group.user_agent }}
+{% for rule in group.rules %}
+{{ rule }}
+{% endfor %}
+{% if group.user_agent.value == '*' %}
+Disallow: /*/tag$
+Disallow: /*?constraint=
+Disallow: /*&constraint=
+Disallow: /*.atom
+{% endif %}
+{% if group.sitemap != blank %}
+{{ group.sitemap }}
+{% endif %}
+{% endfor %}
