@@ -1,0 +1,41 @@
+{
+  "collections": [
+    {
+      "handle": "samsonite-intuo",
+      "words": 131,
+      "metaCharacters": 154
+    },
+    {
+      "handle": "samsonite-urbify",
+      "words": 132,
+      "metaCharacters": 148
+    },
+    {
+      "handle": "samsonite-respark",
+      "words": 135,
+      "metaCharacters": 149
+    },
+    {
+      "handle": "samsonite-biz2go",
+      "words": 134,
+      "metaCharacters": 146
+    },
+    {
+      "handle": "samsonite-guardit-classy-2-0",
+      "words": 132,
+      "metaCharacters": 144
+    },
+    {
+      "handle": "american-tourister-at-work-nxt",
+      "words": 136,
+      "metaCharacters": 144
+    },
+    {
+      "handle": "american-tourister-deep-dive",
+      "words": 137,
+      "metaCharacters": 142
+    }
+  ],
+  "maximumWordFrequencyCosineSimilarity": 0.3849874881099513,
+  "liveDesktopAndMobileBrowser": "7/7 content and product destination clicks verified; physical iPhone not tested"
+}
