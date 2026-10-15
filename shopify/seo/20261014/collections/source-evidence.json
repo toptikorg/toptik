@@ -1,0 +1,64 @@
+[
+  {
+    "handle": "samsonite-intuo",
+    "sources": [
+      "https://www.samsonite.ro/cataloage/catalog-2025.pdf",
+      "https://www.samsonite.fi/intuo-spinner-expandable-81cm--black/146916-1041.html"
+    ],
+    "omitted": []
+  },
+  {
+    "handle": "samsonite-urbify",
+    "sources": [
+      "https://www.samsonite.co.uk/samsonite-collections/softside-luggage-collections/urbify/?cgid=luggage_all-luggage",
+      "https://www.samsonite.co.uk/urbify-spinner-expandable-78cm--navy-blue/150717-1598.html"
+    ],
+    "omitted": []
+  },
+  {
+    "handle": "samsonite-respark",
+    "sources": [
+      "https://www.samsonite.co.uk/respark-spinner-79-29-exp-79cm-sand-storm/143331-A010.html",
+      "https://www.samsonite.co.uk/respark-set/product-set_143325-143331.html"
+    ],
+    "omitted": [
+      "לא הוחל אחוז חומר ממוחזר אחד על כל דגמי הסדרה, משום שהמקורות מציגים גרסאות שונות."
+    ]
+  },
+  {
+    "handle": "samsonite-biz2go",
+    "sources": [
+      "https://www.samsonite.co.uk/biz2go-laptop-backpack-15.6---earth-green/142143-1316.html?cgid=root"
+    ],
+    "omitted": [
+      "מידות חיצוניות ומשקל של Biz2Go הושארו בחוץ בגלל הבדל בין דגם 142143 למפרט KI1-005 המקומי."
+    ]
+  },
+  {
+    "handle": "samsonite-guardit-classy-2-0",
+    "sources": [
+      "https://www.samsonite.com.au/samsonite/guardit-classy-2/laptop-backpack/ss-158243-1041.html",
+      "https://www.samsonite.com.au/samsonite/guardit-classy-2/laptop-backpack/ss-158246-1041.html"
+    ],
+    "omitted": []
+  },
+  {
+    "handle": "american-tourister-at-work-nxt",
+    "sources": [
+      "https://www.americantourister.co.uk/at-work-nxt/",
+      "https://www.americantourister.co.uk/at-work-nxt-laptop-backpack-15.6-black/160124-1041.html",
+      "https://www.americantourister.co.uk/at-work-nxt-laptop-backpack-17.3-black/160125-1041.html"
+    ],
+    "omitted": []
+  },
+  {
+    "handle": "american-tourister-deep-dive",
+    "sources": [
+      "https://www.americantourister.co.uk/deep-dive-luggage-set-navy-blue/132506-2694.html",
+      "https://www.americantourister.co.uk/deep-dive-spinner-4-wheels-55cm-20cm-teal-lime/132503-4815.html"
+    ],
+    "omitted": [
+      "המידות החיצוניות המלאות של Deep Dive הבינונית והגדולה הושארו בחוץ בגלל אי התאמה בין כינויי 66/77 למידות בדפי היצרן."
+    ]
+  }
+]
