@@ -10,6 +10,7 @@ import { lockModalScroll } from "@/lib/carousel/modal-scroll-lock";
 import { MobileStoreBar } from '@/components/commerce/MobileStoreBar';
 import { TechSpecsModal } from "@/components/carousel/TechSpecsModal";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
+import { ReviewWidget } from "@/components/reviews/ReviewWidget";
 import { CarouselItem, CarouselPayload } from "@/lib/carousel/types";
 import {
   CAROUSEL_UNAVAILABLE_MESSAGE,
@@ -292,6 +293,7 @@ export default function CarouselPageClient() {
             חזרה לחנות
           </Link>
         </div>
+        <ReviewWidget />
       </header>
 
       <p className="carousel-showroom-note" dir="rtl">
