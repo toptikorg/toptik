@@ -17,7 +17,10 @@ async function loadEntries(): Promise<readonly IndexEntry[]> {
     const seen = new Set<string>();
     const entries: IndexEntry[] = [];
     for (const item of payload.items) {
-      const href = purchaseUrlFor(item.catalogNumber, item.shopifyLink);
+      // Crawlable links point at the clean product URL (the store's canonical),
+      // without the ?variant= preselection the interactive modal uses.
+      const purchaseUrl = purchaseUrlFor(item.catalogNumber, item.shopifyLink);
+      const href = purchaseUrl ? purchaseUrl.split("?")[0] : null;
       const key = href ?? `${item.id}`;
       if (seen.has(key)) continue;
       seen.add(key);
