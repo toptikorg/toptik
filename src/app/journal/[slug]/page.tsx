@@ -6,6 +6,7 @@ import styles from "@/components/editorial/Journal.module.css";
 import { getGalleryArticle, getRelatedGalleryArticles, publishableGalleryArticles } from "@/lib/editorial/gallery-articles";
 import { absoluteUrl, SITE_NAME, STORE_ORIGIN } from "@/lib/seo/site";
 import { getStoreGuides } from "@/lib/editorial/store-guides";
+import { getStoreCategoryLinks } from "@/lib/editorial/store-categories";
 import { jsonLdString } from "@/lib/seo/structured-data";
 import { resolveArticleHero } from '@/lib/editorial/product-reference';
 import { MobileStoreBar } from '@/components/commerce/MobileStoreBar';
@@ -84,6 +85,7 @@ export default async function JournalArticlePage({ params }: PageProps) {
   if (!authored) notFound();
   const article = { ...authored, hero: await resolveArticleHero(authored.hero) };
   const storeGuides = getStoreGuides(article.slug);
+  const storeCategories = getStoreCategoryLinks(article);
   const related = getRelatedGalleryArticles(article.slug);
 
   return (
@@ -116,6 +118,15 @@ export default async function JournalArticlePage({ params }: PageProps) {
           <figcaption>{article.hero.caption}</figcaption>
         </figure>}
         <div className={styles.articleBody}>{article.content}</div>
+        <section className={styles.storeGuides} aria-labelledby="store-categories-heading" data-store-categories="">
+          <h2 id="store-categories-heading">בחנות TopTik</h2>
+          <p>הדגמים מהמאמר ודגמים נוספים, עם מחיר, מלאי ומשלוח חינם לכל הארץ:</p>
+          <ul>
+            {storeCategories.map((link) => (
+              <li key={link.href}><a href={link.href}>{link.title}</a></li>
+            ))}
+          </ul>
+        </section>
         {storeGuides.length > 0 && (
           <section className={styles.storeGuides} aria-labelledby="store-guides-heading">
             <h2 id="store-guides-heading">מדריכי קנייה בחנות TopTik</h2>

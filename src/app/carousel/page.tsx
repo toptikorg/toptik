@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import CarouselPageClient from "./CarouselPageClient";
 import { GalleryContentSections } from "@/components/carousel/GalleryContentSections";
+import { CarouselStoreIndex } from "@/components/carousel/CarouselStoreIndex";
+import { Suspense } from "react";
 import { isCarouselEnabled } from "@/lib/carousel/feature-flag";
 import {
   CAROUSEL_DESCRIPTION,
@@ -12,6 +14,10 @@ import {
   absoluteUrl,
 } from "@/lib/seo/site";
 import { carouselStructuredData, jsonLdString } from "@/lib/seo/structured-data";
+
+// The server-rendered store index below reads the live catalog; refresh it
+// every five minutes so the crawlable list follows catalog changes.
+export const revalidate = 300;
 
 // Public indexing directives are inherited from the root layout. Admin and API
 // paths receive separate noindex headers in next.config.ts.
@@ -48,6 +54,9 @@ export default function CarouselPage() {
       />
       <CarouselPageClient />
       <GalleryContentSections />
+      <Suspense fallback={null}>
+        <CarouselStoreIndex />
+      </Suspense>
       <footer className="carousel-footer-links" aria-label="קישורי שירות בגלריה" dir="rtl">
         <Link href="/accessibility">הצהרת נגישות</Link>
         <Link className="carousel-footer-home" href="https://www.toptik.co.il/">חזרה לחנות</Link>

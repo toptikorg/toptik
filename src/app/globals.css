@@ -3603,3 +3603,11 @@ html.a11y-big-cursor * {
    ~740px each card takes its own row. */
 .gallery-info-card { flex: 1 1 360px; max-width: 420px; min-width: 0; }
 .gallery-info-card .catalog-card { margin: 0 auto; }
+
+.carousel-store-index { padding: 8px 24px 0; color: #ded4c2; font-size: 14px; }
+.carousel-store-index details { max-width: 980px; margin: 0 auto; }
+.carousel-store-index summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: center; text-decoration: underline; text-underline-offset: 3px; }
+.carousel-store-index summary:focus-visible { outline: 2px solid #d7aa6a; outline-offset: 4px; }
+.carousel-store-index ul { display: flex; flex-wrap: wrap; gap: 6px 18px; list-style: none; margin: 12px 0; padding: 0; }
+.carousel-store-index a { color: #ded4c2; text-decoration: underline; text-underline-offset: 3px; display: inline-flex; min-height: 32px; align-items: center; }
+.carousel-store-index p { margin: 12px 0 0; }

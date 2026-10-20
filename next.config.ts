@@ -29,6 +29,27 @@ const nextConfig: NextConfig = {
         destination: "https://landing.toptik.co.il/:path*",
         permanent: true,
       })),
+      // 2026-10-20: twelve single model articles were merged into three
+      // comparison articles; keep the old URLs pointing at their replacement.
+      // Keep in sync with src/lib/editorial/mandarina-hub-redirects.json.
+      ...([
+        ["mandarina-duck-mellow-leather-fzt46", "mandarina-duck-city-bags-compared"],
+        ["mandarina-duck-md20-qmt39", "mandarina-duck-city-bags-compared"],
+        ["mandarina-duck-revival-2-0-oxt03", "mandarina-duck-city-bags-compared"],
+        ["mandarina-duck-mellow-leather-fzt10", "mandarina-duck-city-bags-compared"],
+        ["mandarina-duck-md20-leather-tktv8", "mandarina-duck-city-bags-compared"],
+        ["mandarina-duck-mellow-leather-fzt82", "mandarina-duck-city-bags-compared"],
+        ["mandarina-duck-revival-2-0-oxt01", "mandarina-duck-city-bags-compared"],
+        ["mandarina-duck-revival-2-0-oxm04", "mandarina-duck-pouches-toiletry-compared"],
+        ["mandarina-duck-md20-qmmo1", "mandarina-duck-pouches-toiletry-compared"],
+        ["mandarina-duck-eco-coated-osn02", "mandarina-duck-pouches-toiletry-compared"],
+        ["mandarina-duck-eco-coated-osv04", "mandarina-duck-suitcase-and-weekender"],
+        ["mandarina-duck-revival-2-0-oxb01", "mandarina-duck-suitcase-and-weekender"],
+      ] as const).map(([from, to]) => ({
+        source: `/journal/${from}`,
+        destination: `/journal/${to}`,
+        permanent: true,
+      })),
     ];
   },
   images: {

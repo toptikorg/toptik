@@ -6,6 +6,8 @@ import { publishableGalleryArticles } from "@/lib/editorial/gallery-articles";
 import { absoluteUrl, SITE_NAME } from "@/lib/seo/site";
 import { jsonLdString } from "@/lib/seo/structured-data";
 import { resolveArticleHero } from '@/lib/editorial/product-reference';
+import { STORE_BRANDS, STORE_MAIN_CATEGORIES } from '@/lib/editorial/store-categories';
+import { STORE_ORIGIN } from '@/lib/seo/site';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
@@ -58,6 +60,17 @@ export default async function JournalArchivePage() {
           <h1>מסעות, סגנון ומבט מקרוב</h1>
           <p>רגעים בדרך, מקומות לעצור וסיפורים לקחת הביתה. לייפסטייל של נסיעות, לצד מדריכים והשוואות מהגלריה.</p>
         </header>
+        <nav className={styles.storeGuides} aria-labelledby="journal-store-heading" data-journal-store-links="">
+          <h2 id="journal-store-heading">לקנייה בחנות TopTik</h2>
+          <p>כל הדגמים שמופיעים במגזין נמכרים בחנות, עם משלוח חינם לכל הארץ.</p>
+          <ul>
+            {STORE_MAIN_CATEGORIES.map((link) => <li key={link.href}><a href={link.href}>{link.title}</a></li>)}
+          </ul>
+          <ul>
+            {STORE_BRANDS.map((link) => <li key={link.href}><a href={link.href}>{link.title}</a></li>)}
+            <li><a href={`${STORE_ORIGIN}/`}>לדף הבית של החנות</a></li>
+          </ul>
+        </nav>
         <section className={styles.archiveGrid} aria-label="מאמרים במגזין">
           {articles.map((article) => (
             <article className={styles.archiveCard} key={article.slug}>

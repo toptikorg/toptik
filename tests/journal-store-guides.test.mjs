@@ -7,6 +7,8 @@ const read = async (name) => JSON.parse(await readFile(new URL(`../src/lib/edito
 async function gallerySlugs() {
   const source = await readFile(new URL("../src/lib/editorial/gallery-articles.tsx", import.meta.url), "utf8");
   const handwritten = [...source.matchAll(/^\s{4}slug: "([^"]+)"/gm)].map((m) => m[1]);
+  const hubSource = await readFile(new URL("../src/lib/editorial/mandarina-hub-articles.tsx", import.meta.url), "utf8");
+  handwritten.push(...[...hubSource.matchAll(/^\s{4}slug: "([^"]+)"/gm)].map((m) => m[1]));
   const fromStories = [];
   for (const file of ["collection-stories.json", "lifestyle-stories.json", "practical-stories.json", "premium-stories.json", "product-guide-stories.json"]) {
     for (const story of await read(file)) fromStories.push(story.slug);

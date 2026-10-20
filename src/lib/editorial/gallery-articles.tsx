@@ -1,5 +1,5 @@
 import { productGuideArticles } from "./product-guide-articles";
-import { mandarinaImageArticles } from "./mandarina-image-articles";
+import { mandarinaHubArticles } from "./mandarina-hub-articles";
 import type { ReactNode } from "react";
 import { premiumArticles } from "./premium-articles";
 import { lifestyleArticles } from "./lifestyle-articles";
@@ -263,7 +263,7 @@ const samsoniteRespark79MaterialsContent: ReactNode = <>
 
 export const galleryArticles: readonly GalleryArticle[] = [
   ...productGuideArticles,
-  ...mandarinaImageArticles,
+  ...mandarinaHubArticles,
   ...premiumArticles,
   ...collectionArticles,
   ...practicalArticles,
