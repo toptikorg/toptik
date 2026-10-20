@@ -69,7 +69,7 @@ function articleStructuredData(article: NonNullable<ReturnType<typeof getGallery
         "@type": "BreadcrumbList",
         "@id": `${url}#breadcrumb`,
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: SITE_NAME, item: absoluteUrl("/") },
+          { "@type": "ListItem", position: 1, name: `גלריית ${SITE_NAME}`, item: absoluteUrl("/") },
           { "@type": "ListItem", position: 2, name: "גלריה", item: absoluteUrl("/carousel") },
           { "@type": "ListItem", position: 3, name: "מגזין", item: absoluteUrl("/journal") },
           { "@type": "ListItem", position: 4, name: article.title, item: url },
