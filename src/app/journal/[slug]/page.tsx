@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const hero = await resolveArticleHero(article.hero);
 
   return {
-    title: `${article.title} | מגזין TopTik`,
+    title: article.title,
     description: article.description,
     alternates: { canonical: `/journal/${article.slug}` },
     openGraph: {
