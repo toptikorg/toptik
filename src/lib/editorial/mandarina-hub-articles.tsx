@@ -58,12 +58,12 @@ function ProductLinks({ slugs }: { slugs: readonly string[] }) {
 }
 
 const CITY_ROWS: readonly SpecRow[] = [
-  { slug: "mandarina-duck-mellow-leather-fzt46", model: "Mellow Leather FZT46", type: "תיק גב", size: "33 x 25 x 12", weight: "0.6 ק״ג", strap: "93 ס״מ", material: "עור עגל", pockets: "קדמי עם רוכסן, פנימי עם רוכסן, פנימי לטלפון" },
+  { slug: "mandarina-duck-mellow-leather-fzt46", model: "Mellow Leather FZT46", type: "תיק גב", size: "33 x 25 x 12", weight: "0.6 ק״ג", strap: "93 ס״מ", material: "עור", pockets: "קדמי עם רוכסן, פנימי עם רוכסן, פנימי לטלפון" },
   { slug: "mandarina-duck-md20-qmt39", model: "MD20 QMT39", type: "תיק גב", size: "40 x 30 x 11", weight: "0.5 ק״ג", strap: "91 ס״מ", material: "פוליאסטר", pockets: "שני קדמיים עם רוכסן, פנימי עם רוכסן, פנימי לטלפון" },
   { slug: "mandarina-duck-revival-2-0-oxt03", model: "Revival 2.0 OXT03", type: "תיק כתף", size: "26 x 38 x 12", weight: "0.3 ק״ג", strap: "123 ס״מ", material: "פוליאסטר ממוחזר", pockets: "קדמי עם רוכסן, פנימי עם רוכסן" },
-  { slug: "mandarina-duck-mellow-leather-fzt10", model: "Mellow Leather FZT10", type: "תיק צד", size: "25 x 30 x 8", weight: "0.5 ק״ג", strap: "137 ס״מ", material: "עור עגל", pockets: "פנימי עם רוכסן, פנימי לטלפון" },
-  { slug: "mandarina-duck-md20-leather-tktv8", model: "MD20 Leather TKTV8", type: "תיק צד", size: "18.5 x 25 x 9", weight: "0.4 ק״ג", strap: "בעמוד המוצר", material: "עור נאפה של כבש", pockets: "בעמוד המוצר" },
-  { slug: "mandarina-duck-mellow-leather-fzt82", model: "Mellow Leather FZT82", type: "תיק צד", size: "15 x 23 x 9", weight: "0.4 ק״ג", strap: "137 ס״מ", material: "עור עגל", pockets: "בעמוד המוצר" },
+  { slug: "mandarina-duck-mellow-leather-fzt10", model: "Mellow Leather FZT10", type: "תיק צד", size: "25 x 30 x 8", weight: "0.5 ק״ג", strap: "137 ס״מ", material: "עור", pockets: "פנימי עם רוכסן, פנימי לטלפון" },
+  { slug: "mandarina-duck-md20-leather-tktv8", model: "MD20 Leather TKTV8", type: "תיק צד", size: "18.5 x 25 x 9", weight: "0.4 ק״ג", strap: "בעמוד המוצר", material: "עור נאפה", pockets: "בעמוד המוצר" },
+  { slug: "mandarina-duck-mellow-leather-fzt82", model: "Mellow Leather FZT82", type: "תיק צד", size: "15 x 23 x 9", weight: "0.4 ק״ג", strap: "137 ס״מ", material: "עור", pockets: "בעמוד המוצר" },
   { slug: "mandarina-duck-revival-2-0-oxt01", model: "Revival 2.0 OXT01", type: "תיק צד", size: "16 x 24 x 6", weight: "0.2 ק״ג", strap: "137 ס״מ", material: "פוליאסטר ממוחזר", pockets: "קדמי עם רוכסן, פנימי לטלפון" },
 ];
 
@@ -83,12 +83,12 @@ const cityContent: ReactNode = <>
   <p>ריכזנו כאן שבעה דגמים של Mandarina Duck שנמכרים בחנות TopTik, לפי מידות, משקל, אורך רצועה, חומר וכיסים. כל הנתונים לקוחים ממפרט היצרן.</p>
   <SpecTable caption="שבעה תיקים של Mandarina Duck ליום בעיר" rows={CITY_ROWS} />
   <h2>שני תיקי גב: עור מול פוליאסטר</h2>
-  <p>FZT46 מסדרת Mellow Leather עשוי עור עגל, והוא הקומפקטי מבין השניים: 33 על 25 ס״מ, עם כיס קדמי אחד עם רוכסן. QMT39 מסדרת MD20 גדול יותר, 40 על 30 ס״מ, ודווקא קל יותר, 0.5 ק״ג מול 0.6. יש לו שני כיסים קדמיים עם רוכסן, כך שקל להפריד בין המטען לבין המפתחות.</p>
+  <p>FZT46 מסדרת Mellow Leather עשוי עור, והוא הקומפקטי מבין השניים: 33 על 25 ס״מ, עם כיס קדמי אחד עם רוכסן. QMT39 מסדרת MD20 גדול יותר, 40 על 30 ס״מ, ודווקא קל יותר, 0.5 ק״ג מול 0.6. יש לו שני כיסים קדמיים עם רוכסן, כך שקל להפריד בין המטען לבין המפתחות.</p>
   <p>מי שנושא מחשב קטן, ספר וסוודר ירוויח מהנפח של QMT39. מי שמחפש תיק גב שנראה טוב גם בפגישה, ונושא פחות, יעדיף את העור של FZT46.</p>
   <h2>תיק כתף אחד, לנפח בלי גב</h2>
   <p>OXT03 מסדרת Revival 2.0 הוא התיק הגדול ביותר ברשימה ברוחב, 38 ס״מ, ושוקל רק 0.3 ק״ג. הרצועה באורך 123 ס״מ, והתיק יושב בצד הגוף. הכיס הקדמי עם הרוכסן מתאים לטלפון ולכרטיסים, והתא המרכזי לכל השאר.</p>
   <h2>ארבעה תיקי צד: מהשטוח ועד הקטן ביותר</h2>
-  <p>FZT10 הוא תיק הצד הרחב, 30 ס״מ ברוחב ו־8 בעומק, בעור עגל. הוא מתאים למי שרוצה להכניס גם טאבלט קטן או מחברת. TKTV8 מסדרת MD20 Leather עשוי עור נאפה של כבש, רך למגע, במידות 18.5 על 25 ס״מ. FZT82 הוא הקומפקטי מבין דגמי העור, 15 על 23 ס״מ, לטלפון, ארנק ומפתחות. OXT01 הוא הקל ביותר ברשימה, 0.2 ק״ג, ועומקו 6 ס״מ בלבד.</p>
+  <p>FZT10 הוא תיק הצד הרחב, 30 ס״מ ברוחב ו־8 בעומק, בעור. הוא מתאים למי שרוצה להכניס גם טאבלט קטן או מחברת. TKTV8 מסדרת MD20 Leather עשוי עור נאפה, רך למגע, במידות 18.5 על 25 ס״מ. FZT82 הוא הקומפקטי מבין דגמי העור, 15 על 23 ס״מ, לטלפון, ארנק ומפתחות. OXT01 הוא הקל ביותר ברשימה, 0.2 ק״ג, ועומקו 6 ס״מ בלבד.</p>
   <p>לשלושה מתוך הארבעה רצועה באורך 137 ס״מ, שמאפשרת לשאת אותם באלכסון על הגוף.</p>
   <h2>איך מחליטים</h2>
   <p>הדרך הפשוטה היא להניח על השולחן את מה שאתם באמת נושאים ביום רגיל, ולהשוות למידות בטבלה. אחר כך בוחרים חומר: עור מבקש ניגוב יבש והגנה ממים, ופוליאסטר מתנקה בבד לח. הצבע נבחר אחרון.</p>
