@@ -4,7 +4,7 @@ import { AccessibilityStatement } from "@/components/AccessibilityStatement";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 
 export const metadata: Metadata = {
-  title: "הצהרת נגישות | גלריית טופ תיק",
+  title: "הצהרת נגישות",
   description: "אמצעי נגישות ועזרה ברורה לגלישה בגלריה ובמגזין של טופ תיק בטלפון ובמחשב.",
   alternates: { canonical: "/accessibility" },
 };

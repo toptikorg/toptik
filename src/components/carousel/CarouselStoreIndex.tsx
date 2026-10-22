@@ -14,16 +14,20 @@ async function loadEntries(): Promise<readonly IndexEntry[]> {
   try {
     const payload = await getPublicCarouselPayload();
     if (isUnavailableCarouselPayload(payload)) return [];
-    const seen = new Set<string>();
+    const seenHrefs = new Set<string>();
+    const seenTitles = new Set<string>();
     const entries: IndexEntry[] = [];
     for (const item of payload.items) {
       // Crawlable links point at the clean product URL (the store's canonical),
       // without the ?variant= preselection the interactive modal uses.
       const purchaseUrl = purchaseUrlFor(item.catalogNumber, item.shopifyLink);
       const href = purchaseUrl ? purchaseUrl.split("?")[0] : null;
-      const key = href ?? `${item.id}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
+      const hrefKey = href?.replace(/\/$/, "").toLowerCase() ?? null;
+      const titleKey = item.title.trim().toLocaleLowerCase("he");
+      if ((hrefKey && seenHrefs.has(hrefKey)) || seenTitles.has(titleKey)) continue;
+      if (hrefKey) seenHrefs.add(hrefKey);
+      seenTitles.add(titleKey);
+      const key = hrefKey ?? `title:${titleKey}`;
       entries.push({ key, title: item.title, href });
     }
     return entries;

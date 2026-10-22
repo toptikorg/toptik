@@ -58,7 +58,7 @@ test("sitemap includes only the public root, gallery, journal, and publishable a
   assert.match(source, /absoluteUrl\(`\/journal\/\$\{article\.slug\}`\)/);
   assert.doesNotMatch(source, /releaseBlocker|draft|blocked/i);
   const articles = await read("src/lib/editorial/gallery-articles.tsx");
-  assert.match(articles, /publishableGalleryArticles = galleryArticles\.filter\(\(article\) => !article\.releaseBlocker\)/);
+  assert.match(articles, /!article\.releaseBlocker && !THIN_CONTENT_REDIRECT_SLUGS\.has\(article\.slug\)/);
 });
 
 test("only admin surfaces retain noindex metadata", async () => {

@@ -11,13 +11,14 @@ export const HOME_PATH = "/";
 export const CAROUSEL_PATH = "/carousel";
 
 
-// Visible heading of the collection page ("קולקציה נבחרת"); the structured data
-// must not claim anything the visitor cannot read on the page.
-export const CAROUSEL_VISIBLE_HEADING = "קולקציה נבחרת";
+// The visible heading and metadata title stay identical so structured data and
+// the page make the same promise to visitors and search engines.
+export const CAROUSEL_VISIBLE_HEADING =
+  "קטלוג מזוודות, טרולי ותיקים בתצוגת זוויות: סמסונייט, בריקס ומנדרינה דאק";
 
-export const CAROUSEL_TITLE = "קולקציה נבחרת | גלריית TopTik";
+export const CAROUSEL_TITLE = CAROUSEL_VISIBLE_HEADING;
 export const CAROUSEL_DESCRIPTION =
-  "גלריית TopTik: מזוודות, טרולי ותיקי נסיעות מהקולקציה שלנו, עם תמונות מכמה זוויות ומפרט טכני. לרכישה ממשיכים לחנות TopTik.";
+  "השוו תמונות מכל הזוויות ומפרטי יצרן של מזוודות, טרולי, תיקי גב ותיקי צד מבית סמסונייט, בריקס, מנדרינה דאק ואמריקן טוריסטר, והמשיכו לרכישה בחנות.";
 
 export function absoluteUrl(path: string): string {
   return new URL(path, SITE_ORIGIN).href;
