@@ -20,6 +20,30 @@ export function reviewedCopyFor(catalogNumber: string | null | undefined) {
   return sku && Object.hasOwn(reviewedCopies, sku) ? reviewedCopies[sku] : null;
 }
 
+function naturalSizePhrasing(value: string | null | undefined) {
+  return value
+    ?.replaceAll("בגובה של ", "בגודל של ")
+    .replaceAll("בגובה ", "בגודל של ") ?? value;
+}
+
+// Public copy follows the editorial wording rule even when an older database
+// row still contains the retired phrasing. The raw admin representation stays
+// byte-identical so an unrelated save never rewrites merchant-authored copy.
+export function applyPublicLanguage<T extends {
+  title: string;
+  description?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+}>(item: T): T {
+  return {
+    ...item,
+    title: naturalSizePhrasing(item.title) ?? item.title,
+    ...(Object.hasOwn(item, "description") ? { description: naturalSizePhrasing(item.description) } : {}),
+    ...(Object.hasOwn(item, "seoTitle") ? { seoTitle: naturalSizePhrasing(item.seoTitle) } : {}),
+    ...(Object.hasOwn(item, "seoDescription") ? { seoDescription: naturalSizePhrasing(item.seoDescription) } : {}),
+  };
+}
+
 // JSONB may return object keys in a different order. Values, array order and
 // the complete legacy object must still match before replacing any specs.
 function sameJsonValue(left: unknown, right: unknown): boolean {
@@ -48,9 +72,9 @@ export function applyReviewedCopy<T extends {
   techSpecs?: CachedTechSpecs | null;
 }>(item: T): T {
   const copy = reviewedCopyFor(item.catalogNumber);
-  if (!copy) return item;
+  if (!copy) return applyPublicLanguage(item);
   const replaceSpecs = sameJsonValue(item.techSpecs ?? null, copy.expectedLegacyTechSpecs);
-  return {
+  return applyPublicLanguage({
     ...item,
     title: item.title === copy.expectedLegacyTitle ? copy.title : item.title,
     description: item.descriptionHtml == null && (item.description ?? null) === copy.expectedLegacyDescription
@@ -62,5 +86,5 @@ export function applyReviewedCopy<T extends {
         colors: item.techSpecs?.colors ?? [],
       },
     } : {}),
-  };
+  });
 }
