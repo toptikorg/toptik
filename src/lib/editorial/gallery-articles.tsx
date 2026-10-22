@@ -5,7 +5,9 @@ import { premiumArticles } from "./premium-articles";
 import { lifestyleArticles } from "./lifestyle-articles";
 import { practicalArticles } from "./practical-articles";
 import { collectionArticles } from "./collection-articles";
+import { comparisonArticles } from "./comparison-articles";
 import { ArticleProductCards } from "@/components/editorial/ArticleProductCards";
+import type { StoreCategoryLink } from "./store-categories";
 
 export type GalleryArticle = {
   slug: string;
@@ -18,6 +20,7 @@ export type GalleryArticle = {
   readingMinutes: number;
   byline: string;
   sourceUrls: readonly string[];
+  storeCategoryLinks?: readonly StoreCategoryLink[];
   releaseBlocker?: string;
   hero?: { src: string; alt: string; width: number; height: number; caption: string; href?: string };
   content: ReactNode;
@@ -262,6 +265,7 @@ const samsoniteRespark79MaterialsContent: ReactNode = <>
 </>;
 
 export const galleryArticles: readonly GalleryArticle[] = [
+  ...comparisonArticles,
   ...productGuideArticles,
   ...mandarinaHubArticles,
   ...premiumArticles,

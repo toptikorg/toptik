@@ -48,9 +48,10 @@ const FALLBACK: readonly StoreCategoryLink[] = [
 ];
 
 export function getStoreCategoryLinks(
-  article: { readonly slug: string; readonly title: string; readonly description: string; readonly category: string },
+  article: { readonly slug: string; readonly title: string; readonly description: string; readonly category: string; readonly storeCategoryLinks?: readonly StoreCategoryLink[] },
   limit = 4,
 ): readonly StoreCategoryLink[] {
+  if (article.storeCategoryLinks?.length) return article.storeCategoryLinks.slice(0, limit);
   const text = [article.slug, article.title, article.description, article.category].join(" ");
   const links: StoreCategoryLink[] = [];
   for (const [pattern, link] of RULES) {
