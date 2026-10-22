@@ -147,7 +147,7 @@ const LINE_TRANSLATIONS: Record<string, string> = {
   "padded compartment": "תא מרופד",
   "padded laptop compartment": "תא מרופד למחשב נייד",
   "italian leather": "עור איטלקי",
-  "calf leather": "עור עגל",
+  "calf leather": "עור",
   "real leather": "עור אמיתי",
   "genuine leather": "עור אמיתי",
   "designed in italy": "",  // dropped

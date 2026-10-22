@@ -44,6 +44,16 @@ test("the ten requested article titles are exact and the forbidden height phrasi
   assert.doesNotMatch(combined, /בגובה/);
 });
 
+test("public leather copy never names the source animal", async () => {
+  const sources = await Promise.all([
+    read("src/lib/editorial/mandarina-hub-articles.tsx"),
+    read("src/lib/editorial/mandarina-image-stories.json"),
+    read("src/lib/catalog-source/product-details.ts"),
+  ]);
+  assert.doesNotMatch(sources.join("\n"), /עור (?:עגל|בקר|פרה|כבש|עז|חזיר|תנין|נחש)|עור נאפה של כבש/);
+  assert.match(sources[2], /"calf leather": "עור"/);
+});
+
 test("thin articles are redirected permanently and excluded from the active inventory", async () => {
   const config = await read("next.config.ts");
   const articles = await read("src/lib/editorial/gallery-articles.tsx");
