@@ -50,6 +50,18 @@ const nextConfig: NextConfig = {
         destination: `/journal/${to}`,
         permanent: true,
       })),
+      // 2026-10-22: thin single-model guides were consolidated into richer
+      // comparison articles. Permanent redirects preserve their search value.
+      ...([
+        ["samsonite-pro-dlx6-17-work-trip", "samsonite-laptop-backpacks-pro-dlx-6-vs-biz2go-vs-guardit"],
+        ["mandarina-md20-qmtx5-city-day", "mandarina-duck-md20-vs-md20-leather-vs-md20-lux-bags"],
+        ["mandarina-fzt73-light-daily-carry", "mandarina-duck-mellow-leather-vs-revival-vs-daisy-bags"],
+        ["brics-x-collection-wheeled-pilot-case-bxl38124", "underseat-and-wheeled-business-bags-urbify-vs-brics-vs-eco-coated"],
+      ] as const).map(([from, to]) => ({
+        source: `/journal/${from}`,
+        destination: `/journal/${to}`,
+        permanent: true,
+      })),
     ];
   },
   images: {

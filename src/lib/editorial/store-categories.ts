@@ -33,6 +33,11 @@ const RULES: ReadonlyArray<readonly [RegExp, StoreCategoryLink]> = [
   [/mandarina|מנדרינה|mellow|md20|revival|logoduck|zephyr|eco coated|daisy/i, collection("mandarina-duck", "מנדרינה דאק")],
   [/bric|בריקס|taormina|volterra|x-collection/i, collection("brics", "בריקס")],
   [/american tourister|אמריקן טוריסטר/i, collection("american-tourister", "אמריקן טוריסטר")],
+  [/pro-dlx|biz2go|guardit|תיק(?:י)? גב.*מחשב|laptop|KM203009|KI139005|KI106005|KI101004/i, collection("תיקי-גב-למחשב", "תיקי גב למחשב")],
+  [/intuo|upscape|c-lite|taormina|logoduck|מזווד(?:ה|ות) קשיח(?:ה|ות)|\bKL\d+|\bBAH\d+/i, collection("מזוודות-קשיחות", "מזוודות קשיחות")],
+  [/urbify|respark|x-collection|eco coated|nitestream|deep dive|מזווד(?:ה|ות) רכ(?:ה|ות)|\bKO7\d+|\bKJ344\d+|\bBXL\d+|\bOSV04\b|\bOXB01\b/i, collection("מזוודות-רכות", "מזוודות רכות")],
+  [/\b(?:75|77|78|79|81|82|86)\b|large|\bxl\b|מזווד(?:ה|ות) גדול(?:ה|ות)/i, collection("מזוודות-גדולות", "מזוודות גדולות")],
+  [/\b(?:68|69)\b|medium|מזווד(?:ה|ות) בינוני(?:ת|ות)/i, collection("מזוודות-בינוניות", "מזוודות בינוניות")],
   [/טרולי|carry-?on|55 ס|עלייה למטוס|כבודת יד/i, collection("טרולי-carry-on", "טרולי לעלייה למטוס")],
   [/מזוודה|מזוודות|suitcase|luggage/i, collection("מזוודות", "מזוודות")],
   [/תיק גב|תיקי גב|backpack/i, collection("backpacks", "תיקי גב")],
@@ -42,7 +47,7 @@ const RULES: ReadonlyArray<readonly [RegExp, StoreCategoryLink]> = [
 ];
 
 const FALLBACK: readonly StoreCategoryLink[] = [
-  collection("מזוודות-וטרולי", "מזוודות וטרולי"),
+  collection("מזוודות", "מזוודות"),
   collection("fashion-bags", "תיקי צד ותיקי כתף"),
   collection("all", "כל המוצרים בחנות"),
 ];

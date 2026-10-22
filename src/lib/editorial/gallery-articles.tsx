@@ -167,7 +167,7 @@ const bricsTaorminaSizesContent: ReactNode = <>
 </>;
 
 const bricsXCollectionSizesContent: ReactNode = <>
-  <p>ב-X-Collection מופיעים בגלריה שני טרולים רכים בקצוות שונים של טווח הגודל: דגם carry-on בגובה 55 ס״מ ודגם XL בגובה 77 ס״מ. שניהם בנויים מבד עם ציפוי, אבל המידות, קיבולת הארגון והגלגלים מתאימים להשוואה חזותית בין תיק קטן יותר למזוודה גדולה.</p>
+  <p>ב-X-Collection מופיעים בגלריה שני טרולים רכים בקצוות שונים של טווח הגודל: דגם carry-on בגודל של 55 ס״מ ודגם XL בגודל של 77 ס״מ. שניהם בנויים מבד עם ציפוי, אבל המידות, קיבולת הארגון והגלגלים מתאימים להשוואה חזותית בין תיק קטן יותר למזוודה גדולה.</p>
   <h2>מה משתנה בין 55 ל-77 ס״מ</h2>
   <div className="journal-table-scroll" role="region" aria-label="השוואת X-Collection בגודל 55 ו-77" tabIndex={0}>
     <table className="journal-table"><caption>מידות חיצוניות ופרטים מעמודי Bric&apos;s</caption><thead><tr><th scope="col">דגם</th><th scope="col">מידות</th><th scope="col">מבנה מתועד</th></tr></thead><tbody>
@@ -243,7 +243,7 @@ const samsoniteCLite75vs86Content: ReactNode = <>
       <tr><th scope="row">חומר המעטפת</th><td>Curv™ — פוליפרופילן ארוג</td><td>Curv™ — פוליפרופילן ארוג</td></tr>
     </tbody></table>
   </div>
-  <p>ההפרש בין שני המפרטים הוא 11 ס״מ בגובה, 7 ס״מ ברוחב, 5 ס״מ בעומק ו-50 ליטר בנפח הרשמי. המספרים מתארים את הדגמים הספציפיים; הם לא אומדן לכמות פריטים שתיכנס בפועל.</p>
+  <p>ההפרש בין שני המפרטים הוא 11 ס״מ בממד הארוך, 7 ס״מ ברוחב, 5 ס״מ בעומק ו-50 ליטר בנפח הרשמי. המספרים מתארים את הדגמים הספציפיים; הם לא אומדן לכמות פריטים שתיכנס בפועל.</p>
   <h2>מה משותף למבנה</h2>
   <p>בשני עמודי Samsonite מצוינים מעטפת Curv™, מנעול קומבינציה עם TSA, ידיות עליונה, צדית ותחתונה, ידית משיכה דו-צינורית וארבעה גלגלים עם מתלה שמפחית רעש וזעזועים. בפנים, תחתית עם רצועות ותא עליון עם מחיצה מרופדת.</p>
   <p className="journal-note">לפני נסיעה, בדקו בנפרד את מגבלות המידות והמשקל של חברת התעופה. ההשוואה אינה קובעת שאחד הגדלים מתקבל בטיסה מסוימת.</p>
@@ -293,11 +293,11 @@ export const galleryArticles: readonly GalleryArticle[] = [
   {
     slug: "samsonite-intuo-55-vs-easy-access",
     category: "השוואה חזותית",
-    title: "Samsonite Intuo 55 מול Easy Access: ההבדלים במידות ובנפח",
+    title: "טרולי סמסונייט Intuo בגודל של 55 ס״מ מול Easy Access: ההבדלים במידות ובנפח",
     description: "השוואה בין שתי גרסאות Samsonite Intuo בגודל 55 ס״מ: מידות סגורות ובהרחבה, נפח, צבעים ותמונות המוצרים בגלריה.",
-    standfirst: "שתי גרסאות באותה סדרה ובאותו גובה — עם הבדל מדיד בעומק ובנפח, ותמונות שאפשר להשוות זו לצד זו.",
+    standfirst: "שתי גרסאות באותה סדרה ובאותו גודל, עם הבדל מדיד בעומק ובנפח ותמונות שאפשר להשוות זו לצד זו.",
     publishedAt: "2026-09-30",
-    updatedAt: "2026-09-30",
+    updatedAt: "2026-10-22",
     readingMinutes: 3,
     byline: "מערכת מגזין TopTik",
     sourceUrls: [
@@ -309,11 +309,11 @@ export const galleryArticles: readonly GalleryArticle[] = [
   {
     slug: "samsonite-intuo-sizes-55-69-81",
     category: "מידות לפי סדרה",
-    title: "Samsonite Intuo: ההבדלים בין 55, 69 ו-81 ס״מ",
+    title: "מזוודות סמסונייט (Samsonite Intuo): ההבדלים בין 55, 69 ו־81 ס״מ",
     description: "השוואת מידות ונפח יצרן בשלושה גדלי Samsonite Intuo שמופיעים בגלריה, כולל השינוי שמוסיפה ההרחבה.",
-    standfirst: "גובה המזוודה משתנה יחד עם הרוחב, העומק והנפח. כך נראים שלושה גדלי Intuo זה לצד זה לפי מפרט Samsonite.",
+    standfirst: "מידות המזוודה משתנות יחד עם הרוחב, העומק והנפח. כך נראים שלושה גדלי Intuo זה לצד זה לפי מפרט Samsonite.",
     publishedAt: "2026-09-30",
-    updatedAt: "2026-09-30",
+    updatedAt: "2026-10-22",
     readingMinutes: 3,
     byline: "מערכת מגזין TopTik",
     sourceUrls: [
@@ -339,11 +339,11 @@ export const galleryArticles: readonly GalleryArticle[] = [
   {
     slug: "brics-taormina-four-sizes-dimensions",
     category: "מידות לפי סדרה",
-    title: "Bric's Taormina: השוואת מידות בין 55, 69, 75 ו-82 ס״מ",
+    title: "מזוודות וטרולי בריקס (Bric's Taormina): השוואת מידות בין 55, 69, 75 ו־82 ס״מ",
     description: "טבלת מידות היצרן לארבעת גדלי Bric's Taormina, כולל עומק בהרחבה ודרך להשוות את המוצרים בתמונות הגלריה.",
-    standfirst: "ארבעה גדלים באותה סדרה: כך משתנים הגובה, הרוחב והעומק לפי מפרט Bric's.",
+    standfirst: "ארבעה גדלים באותה סדרה: כך משתנות המידות החיצוניות לפי מפרט Bric's.",
     publishedAt: "2026-09-30",
-    updatedAt: "2026-09-30",
+    updatedAt: "2026-10-22",
     readingMinutes: 3,
     byline: "מערכת מגזין TopTik",
     sourceUrls: [
@@ -357,11 +357,11 @@ export const galleryArticles: readonly GalleryArticle[] = [
   {
     slug: "brics-x-collection-soft-trolley-55-vs-77",
     category: "השוואת מידות וארגון",
-    title: "Bric's X-Collection: טרולי 55 ס״מ מול מזוודת XL בגודל 77",
+    title: "מזוודות רכות בריקס (Bric's X-Collection): טרולי בגודל של 55 ס״מ מול מזוודת 77 ס״מ",
     description: "השוואה בין שני דגמי X-Collection לפי מידות היצרן, כיסים, חלוקה וגלגלים, עם כרטיסי המוצרים בגלריה.",
     standfirst: "שני טרולים רכים באותה קולקציה, עם מידות שונות ופרטי ארגון שאפשר לבדוק בתמונות.",
     publishedAt: "2026-09-30",
-    updatedAt: "2026-09-30",
+    updatedAt: "2026-10-22",
     readingMinutes: 3,
     byline: "מערכת מגזין TopTik",
     sourceUrls: [
@@ -373,11 +373,11 @@ export const galleryArticles: readonly GalleryArticle[] = [
   {
     slug: "samsonite-urbify-55-68-78-dimensions",
     category: "מידות לפי סדרה",
-    title: "Samsonite Urbify: מה משתנה בין 55, 68 ו-78 ס״מ",
+    title: "מזוודות רכות סמסונייט (Samsonite Urbify): מה משתנה בין 55, 68 ו־78 ס״מ",
     description: "השוואת מידות סגורות ובהרחבה בשלושה גדלי Samsonite Urbify לפי מק״ט יצרן ותמונות הגלריה.",
-    standfirst: "שלושה גדלים של Urbify, עם שינוי הדרגתי בגובה, ברוחב ובעומק לפני ואחרי הרחבה.",
+    standfirst: "שלושה גדלים של Urbify, עם שינוי הדרגתי במידות החיצוניות לפני ואחרי הרחבה.",
     publishedAt: "2026-09-30",
-    updatedAt: "2026-09-30",
+    updatedAt: "2026-10-22",
     readingMinutes: 3,
     byline: "מערכת מגזין TopTik",
     sourceUrls: [
@@ -446,11 +446,11 @@ export const galleryArticles: readonly GalleryArticle[] = [
   {
     slug: "samsonite-c-lite-75-vs-86",
     category: "השוואת מידות וארגון",
-    title: "Samsonite C-Lite 75 מול 86 ס״מ: מידות, נפח ומבנה",
+    title: "מזוודות סמסונייט C-Lite בגודל של 75 מול 86 ס״מ: מידות, נפח ומבנה Curv",
     description: "השוואה בין שני דגמי C-Lite המוצגים בגלריה: מידות חיצוניות, נפח, חומר המעטפת ופרטי הארגון לפי Samsonite.",
     standfirst: "C-Lite 75 שחורה מול C-Lite 86 בלבנדר: נתוני היצרן זה לצד זה, יחד עם תמונות של שני הדגמים המדויקים.",
     publishedAt: "2026-09-30",
-    updatedAt: "2026-09-30",
+    updatedAt: "2026-10-22",
     readingMinutes: 3,
     byline: "מערכת מגזין TopTik",
     sourceUrls: [
@@ -462,11 +462,11 @@ export const galleryArticles: readonly GalleryArticle[] = [
   {
     slug: "samsonite-respark-79-recycled-materials",
     category: "מפרט לפי מק״ט",
-    title: "Samsonite Respark 79: מידות ההרחבה וחומרי הבד הממוחזרים",
+    title: "מזוודה רכה סמסונייט Respark בגודל של 79 ס״מ: מידות ההרחבה והחומרים",
     description: "מידות, נפח והגדרת Samsonite לחומר הממוחזר בבד החיצוני ובבטנה של Respark Spinner 79/29 בגוון Light Sage.",
     standfirst: "מפרט לפי דגם מדויק: מה משתנה כשההרחבה פתוחה, ואילו חלקים מקבלים אחוז PET ממוחזר לפי היצרן.",
     publishedAt: "2026-09-30",
-    updatedAt: "2026-09-30",
+    updatedAt: "2026-10-22",
     readingMinutes: 2,
     byline: "מערכת מגזין TopTik",
     sourceUrls: ["https://www.samsonite.de/respark-spinner-79-29-exp-79cm-light-sage/143331-2570.html"],
@@ -474,7 +474,16 @@ export const galleryArticles: readonly GalleryArticle[] = [
   },
 ];
 
-export const publishableGalleryArticles = galleryArticles.filter((article) => !article.releaseBlocker);
+const THIN_CONTENT_REDIRECT_SLUGS = new Set([
+  "samsonite-pro-dlx6-17-work-trip",
+  "mandarina-md20-qmtx5-city-day",
+  "mandarina-fzt73-light-daily-carry",
+  "brics-x-collection-wheeled-pilot-case-bxl38124",
+]);
+
+export const publishableGalleryArticles = galleryArticles.filter(
+  (article) => !article.releaseBlocker && !THIN_CONTENT_REDIRECT_SLUGS.has(article.slug),
+);
 
 export function getGalleryArticle(slug: string): GalleryArticle | undefined {
   return publishableGalleryArticles.find((article) => article.slug === slug);

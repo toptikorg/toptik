@@ -11,7 +11,23 @@ const copy = JSON.parse(await read("src/lib/carousel/reviewed-copy.json"));
 const source = (await read("src/lib/carousel/reviewed-copy.ts"))
   .replace('import copyData from "./reviewed-copy.json";', `const copyData = ${JSON.stringify(copy)};`);
 const moduleFrom = source => import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString("base64")}`);
-const { applyReviewedCopy, reviewedCopyFor } = await moduleFrom(source);
+const { applyPublicLanguage, applyReviewedCopy, reviewedCopyFor } = await moduleFrom(source);
+
+test("public copy replaces the retired height phrasing without changing other facts", () => {
+  const original = {
+    title: "מזוודה בגובה של 77 ס״מ",
+    description: "דגם בגובה 77 ס״מ ובצבע שחור",
+    seoTitle: "מזוודה בגובה 77 ס״מ",
+    seoDescription: "מידע אחר נשאר זהה",
+  };
+  assert.deepEqual(applyPublicLanguage(original), {
+    title: "מזוודה בגודל של 77 ס״מ",
+    description: "דגם בגודל של 77 ס״מ ובצבע שחור",
+    seoTitle: "מזוודה בגודל של 77 ס״מ",
+    seoDescription: "מידע אחר נשאר זהה",
+  });
+  assert.equal(original.description, "דגם בגובה 77 ס״מ ובצבע שחור");
+});
 
 test("all 25 reviewed exact SKUs replace audited legacy copy without touching commerce or media", () => {
   assert.equal(Object.keys(copy).length, 25);

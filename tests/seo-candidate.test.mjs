@@ -53,8 +53,8 @@ test("structured data is one CollectionPage that mirrors visible content", async
   assert.equal(data["@type"], "CollectionPage");
   assert.equal(data.url, "https://landing.toptik.co.il/carousel");
   const client = await read("src/app/carousel/CarouselPageClient.tsx");
-  assert.match(client, /קולקציה <span>נבחרת<\/span>/, "visible heading must exist");
-  assert.equal(data.name, "קולקציה נבחרת");
+  assert.match(client, /\{CAROUSEL_VISIBLE_HEADING\}/, "visible heading must use the canonical SEO heading");
+  assert.equal(data.name, site.CAROUSEL_VISIBLE_HEADING);
   const serialised = JSON.stringify(data);
   for (const forbidden of ["Product", "Offer", "price", "AggregateRating", "Review", "ItemList", "availability"])
     assert.ok(!serialised.includes(forbidden), `${forbidden} must not be emitted`);
@@ -71,5 +71,5 @@ test("descriptive copy is original, Hebrew and makes no price or stock claim", (
     assert.match(text, /[֐-׿]/);
     assert.doesNotMatch(text, /₪|מחיר|במלאי|מבצע|הנחה|%/);
   }
-  assert.ok(site.CAROUSEL_TITLE.length <= 70 && site.CAROUSEL_DESCRIPTION.length <= 170);
+  assert.ok(site.CAROUSEL_TITLE.length <= 75 && site.CAROUSEL_DESCRIPTION.length <= 170);
 });

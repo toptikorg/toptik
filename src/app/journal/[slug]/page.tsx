@@ -25,7 +25,7 @@ type PageProps = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const article = getGalleryArticle(slug);
-  if (!article) return { title: "המאמר לא נמצא | מגזין TopTik" };
+  if (!article) return { title: "המאמר לא נמצא" };
   const hero = await resolveArticleHero(article.hero);
 
   return {

@@ -32,6 +32,7 @@ import {
   filterByCategory,
   parseCategoryParam,
 } from "@/lib/carousel/categories";
+import { CAROUSEL_VISIBLE_HEADING } from "@/lib/seo/site";
 
 export default function CarouselPageClient() {
   const [payload, setPayload] = useState<CarouselPayload>(fallbackCarouselPayload);
@@ -286,7 +287,7 @@ export default function CarouselPageClient() {
             onChange={onChangeBrand}
             disabled={isLoading || galleryUnavailable}
           />
-          <h1 className="collection-title">קולקציה <span>נבחרת</span></h1>
+          <h1 className="collection-title">{CAROUSEL_VISIBLE_HEADING}</h1>
         </div>
         <div className="carousel-header-actions">
           <Link className="carousel-back-link" href="https://www.toptik.co.il/">
