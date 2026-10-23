@@ -78,7 +78,10 @@ export async function ensureOrderWebhookSubscriptions(): Promise<{
     const payload = result.webhookSubscriptionCreate;
     if (payload.userErrors.length || payload.webhookSubscription?.topic !== topic ||
         payload.webhookSubscription.uri !== ORDER_WEBHOOK_URI) {
-      throw new Error("ORDER_WEBHOOK_SUBSCRIPTION_CREATE_REJECTED");
+      const details = payload.userErrors
+        .map(error => error.message.replace(/[\r\n]+/g, " ").slice(0, 240))
+        .join(" | ") || "unexpected Shopify response";
+      throw new Error(`ORDER_WEBHOOK_SUBSCRIPTION_CREATE_REJECTED [${topic}]: ${details}`);
     }
     created.push(topic);
   }
