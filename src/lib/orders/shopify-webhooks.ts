@@ -25,6 +25,12 @@ type CreateSubscription = {
   };
 };
 
+type CurrentAccessScopes = {
+  currentAppInstallation: {
+    accessScopes: Array<{ handle: string }>;
+  };
+};
+
 const EXISTING_QUERY = `
   query TopTikOrderWebhookSubscriptions($uri: String!) {
     webhookSubscriptions(first: 50, uri: $uri) {
@@ -43,6 +49,12 @@ const CREATE_MUTATION = `
       webhookSubscription { id topic uri }
       userErrors { field message }
     }
+  }
+`;
+
+const CURRENT_SCOPES_QUERY = `
+  query TopTikCurrentAppAccessScopes {
+    currentAppInstallation { accessScopes { handle } }
   }
 `;
 
@@ -81,7 +93,12 @@ export async function ensureOrderWebhookSubscriptions(): Promise<{
       const details = payload.userErrors
         .map(error => error.message.replace(/[\r\n]+/g, " ").slice(0, 240))
         .join(" | ") || "unexpected Shopify response";
-      throw new Error(`ORDER_WEBHOOK_SUBSCRIPTION_CREATE_REJECTED [${topic}]: ${details}`);
+      const scopeData = await shopifyAdminGraphql<CurrentAccessScopes>(CURRENT_SCOPES_QUERY, {});
+      const hasReadOrders = scopeData.currentAppInstallation.accessScopes
+        .some(scope => scope.handle === "read_orders");
+      throw new Error(
+        `ORDER_WEBHOOK_SUBSCRIPTION_CREATE_REJECTED [${topic}] read_orders=${hasReadOrders}: ${details}`,
+      );
     }
     created.push(topic);
   }
