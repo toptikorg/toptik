@@ -135,3 +135,16 @@ test("monthly accountant report is verified-recipient only and never estimates f
   assert.ok(vercel.crons.some(cron => cron.path === "/api/admin/orders/monthly-report"));
 });
 
+test("order automation installs only the fixed idempotent Shopify webhooks", async () => {
+  const source = await read("src/lib/orders/shopify-webhooks.ts");
+  const route = await read("src/app/api/admin/orders/automation/route.ts");
+  assert.match(source, /https:\/\/landing\.toptik\.co\.il\/api\/webhooks\/shopify\/orders/);
+  for (const topic of ["ORDERS_PAID", "ORDERS_UPDATED", "ORDERS_CANCELLED", "REFUNDS_CREATE"]) {
+    assert.match(source, new RegExp(`"${topic}"`));
+  }
+  assert.match(source, /webhookSubscriptions\(first: 50, uri: \$uri\)/);
+  assert.match(source, /if \(existing\.has\(topic\)\) continue/);
+  assert.doesNotMatch(source, /process\.env\.[A-Z_]*WEBHOOK_URI/);
+  assert.match(route, /ensureOrderWebhookSubscriptions\(\)/);
+});
+
