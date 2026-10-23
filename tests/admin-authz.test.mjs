@@ -302,7 +302,7 @@ const valueImports = (source) =>
 
 // Signed third-party webhooks have their own HMAC/shop/topic gate. Keep it
 // explicit here so privileged inbox writes cannot appear before verification.
-const GATES = /\b(requireAdminUser|requireOwnerUser|requireAdminPage|requireOwnerPage|requireAdminToken|requireGalleryAdmin|authorizeGalleryAdmin|verifyProductWebhook|authStepUp|isValidSetupToken)\(/;
+const GATES = /\b(requireAdminUser|requireOwnerUser|requireAdminPage|requireOwnerPage|requireAdminToken|requireGalleryAdmin|authorizeGalleryAdmin|verifyProductWebhook|verifyOrderWebhook|requireCronAuthorization|authStepUp|isValidSetupToken)\(/;
 const HARMLESS = new Set(["isVaultConfigured", "STEP_UP_COOKIE", "STEP_UP_MAX_AGE", "parseVaultInput", "authStepUp", "requireAdminUser", "requireOwnerUser"]);
 
 test("no route, page or server action reaches the service role without a gate", async () => {
