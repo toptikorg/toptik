@@ -27,6 +27,7 @@ type CreateSubscription = {
 
 type CurrentAccessScopes = {
   currentAppInstallation: {
+    app: { title: string };
     accessScopes: Array<{ handle: string }>;
   };
 };
@@ -54,7 +55,7 @@ const CREATE_MUTATION = `
 
 const CURRENT_SCOPES_QUERY = `
   query TopTikCurrentAppAccessScopes {
-    currentAppInstallation { accessScopes { handle } }
+    currentAppInstallation { app { title } accessScopes { handle } }
   }
 `;
 
@@ -96,8 +97,10 @@ export async function ensureOrderWebhookSubscriptions(): Promise<{
       const scopeData = await shopifyAdminGraphql<CurrentAccessScopes>(CURRENT_SCOPES_QUERY, {});
       const hasReadOrders = scopeData.currentAppInstallation.accessScopes
         .some(scope => scope.handle === "read_orders");
+      const appTitle = scopeData.currentAppInstallation.app.title
+        .replace(/[\r\n\[\]]+/g, " ").slice(0, 120);
       throw new Error(
-        `ORDER_WEBHOOK_SUBSCRIPTION_CREATE_REJECTED [${topic}] read_orders=${hasReadOrders}: ${details}`,
+        `ORDER_WEBHOOK_SUBSCRIPTION_CREATE_REJECTED [${topic}] app=${appTitle} read_orders=${hasReadOrders}: ${details}`,
       );
     }
     created.push(topic);
