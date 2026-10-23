@@ -24,6 +24,14 @@
     {
       "path": "/api/admin/shopify/media/reconcile-audit",
       "schedule": "15 5 * * *"
+    },
+    {
+      "path": "/api/admin/orders/automation",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/admin/orders/monthly-report",
+      "schedule": "15 4 1 * *"
     }
   ],
   "headers": [
