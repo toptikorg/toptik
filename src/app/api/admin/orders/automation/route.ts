@@ -19,6 +19,11 @@ export async function GET(request: NextRequest) {
   if (!requireCronAuthorization(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const webhooks = await ensureOrderWebhookSubscriptions();
   const results = await runOrderAutomation(5);
+  console.info("TopTik order automation tick", {
+    webhookExisting: webhooks.existing.length,
+    webhookCreated: webhooks.created.length,
+    processed: results.length,
+  });
   return NextResponse.json({ webhooks, processed: results.length, results: results.map(result => result.result) });
 }
 
