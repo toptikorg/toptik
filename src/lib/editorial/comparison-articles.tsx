@@ -78,19 +78,38 @@ const largeSuitcasesContent = <>
 </>;
 
 const laptopBackpacksContent = <>
-  <p>בחירת תיק גב למחשב נייד של סמסונייט תלויה בגודל המחשב, במשקל העצמי על הגב ובשאלה אם התיק משמש רק למשרד או גם לנסיעות עבודה. בגלריה זמינות שלוש סדרות עסקיות: PRO-DLX 6, Biz2Go ו־Guardit Classy 2.0.</p>
+  <p>בחירת תיק גב למחשב נייד של סמסונייט תלויה בגודל המחשב, במשקל העצמי על הגב ובשאלה אם התיק משמש רק למשרד או גם לנסיעות עבודה. בגלריה זמינות חמש סדרות עסקיות: PRO-DLX 6, Biz2Go, Guardit Classy 2.0, Guardit 3.0 ו־Mysight.</p>
   <h2>מפרט יצרן של תיקי הגב</h2>
   <Table label="השוואת תיקי גב למחשב של Samsonite" headings={["דגם", "מק״ט", "מחשב וטאבלט", "מידות", "נפח", "משקל"]} rows={[
+    ["Guardit 3.0", "KR209001 / KR201001", "14.1 ו־10.5 אינץ׳", "40 × 29 × 18 ס״מ", "17.5 ליטר", "0.7 ק״ג"],
+    ["Guardit 3.0", "KR209002", "15.6 ו־10.5 אינץ׳", "44 × 30 × 20 ס״מ", "22.5 ליטר", "0.7 ק״ג"],
+    ["Mysight", "KF909003 / KF901003", "14.1 ו־10.5 אינץ׳", "40 × 28 × 13.5 ס״מ", "16.5 ליטר", "0.9 ק״ג"],
     ["Guardit Classy 2.0", "KT009004", "15.6 ו־10.5 אינץ׳", "44 × 30 × 20 ס״מ", "22.5 ליטר", "0.7 ק״ג"],
     ["Biz2Go", "KI109005", "15.6 ו־10.5 אינץ׳", "44 × 33 × 20 ס״מ", "22.5 ליטר", "1.1 ק״ג"],
     ["PRO-DLX 6 מתרחב", "KM209003", "15.6 ו־10.5 אינץ׳", "43 × 30 × 15 / 21 ס״מ", "21 / 26 ליטר", "1.3 ק״ג"],
     ["PRO-DLX 6 מתרחב", "KM203009", "17.3 ו־10.5 אינץ׳", "46 × 32 × 18 / 24 ס״מ", "24.5 / 31 ליטר", "1.5 ק״ג"],
   ]} />
-  <h2>איך להחליט בין שלוש הסדרות?</h2>
-  <p><strong>למשקל מינימלי:</strong> Guardit Classy 2.0 שוקל 700 גרם ומציע נפח של 22.5 ליטר, שני תאים מרכזיים ושרוול להלבשה על ידית טרולי.</p>
+  <h2>איך להחליט בין הסדרות?</h2>
+  <p><strong>לתיק קל ופשוט לעבודה:</strong> דגמי Guardit 3.0 שוקלים 700 גרם. גרסת 14.1 אינץ׳ מציעה 17.5 ליטר, וגרסת 15.6 אינץ׳ מציעה 22.5 ליטר.</p>
+  <p><strong>לתיק קומפקטי עם חיבור USB:</strong> Mysight בגודל של 14.1 אינץ׳ מציע 16.5 ליטר, תא לטאבלט ומערכת Easy Pass להעברת כבלים בין התאים.</p>
+  <p><strong>למשקל מינימלי עם קו עיצוב נפרד:</strong> Guardit Classy 2.0 שוקל 700 גרם ומציע נפח של 22.5 ליטר, שני תאים מרכזיים ושרוול להלבשה על ידית טרולי.</p>
   <p><strong>לנסיעות יומיות:</strong> Biz2Go מוסיף יציאת USB, פרטים מחזירי אור, רצועות גב ארגונומיות ושרוול למזוודה.</p>
   <p><strong>לנסיעות עסקים:</strong> PRO-DLX 6 כולל הרחבה, הגנת RFID ויציאת USB. רוכסן ההרחבה מוסיף שישה ס״מ לעומק.</p>
-  <ArticleProductCards skus={["KM203009", "KI109005", "KT009004"]} />
+  <ArticleProductCards skus={["KR209001", "KR201001", "KR209002", "KF909003", "KF901003", "KM203009", "KI109005", "KT009004"]} />
+</>;
+
+const urbanGrooveBackpacksContent = <>
+  <p>סדרת Urban Groove של אמריקן טוריסטר כוללת כמה מבנים של תיקי גב. ההשוואה כאן מתמקדת בשני הדגמים החדשים בגלריה: UG16 לשימוש יום יומי ו־UG25 Tote עם תא למחשב בגודל של עד 15.6 אינץ׳. הנתונים המספריים נלקחו מעמודי המוצר הרשמיים של המותג.</p>
+  <h2>Urban Groove UG16 מול UG25 Tote</h2>
+  <Table label="השוואת תיקי גב American Tourister Urban Groove" headings={["דגם", "מק״טים בגלריה", "מידות", "נפח", "משקל", "התאמה"]} rows={[
+    ["UG16", "24G09048", "36 × 25 × 20 ס״מ", "17 ליטר", "0.4 ק״ג", "תיק גב יום יומי"],
+    ["UG25 Tote", "24G09057 / 24G54057 / 24GA4057 / 24G77057", "42.5 × 30.5 × 21 ס״מ", "20.5 ליטר", "0.6 ק״ג", "תא למחשב עד 15.6 אינץ׳"],
+  ]} />
+  <h2>מה ההבדל בשימוש?</h2>
+  <p>UG16 קטן וקל יותר, ולכן מתאים למי שמחפש תיק יום יומי בסיסי. UG25 Tote מוסיף נפח, תא למחשב בגודל של עד 15.6 אינץ׳, כיס לבקבוק ושרוול לחיבור לידית מזוודה. המבנה העליון המתקפל מאפשר לסגור את התיק באבזם.</p>
+  <h2>הצבעים הזמינים בגלריה</h2>
+  <p>UG16 מופיע בשחור. UG25 Tote מופיע בשחור, ירוק, כחול אבן וכחול כהה. ההבדל בין ארבעת המק״טים הוא הצבע, בעוד המידות, הנפח והמשקל זהים לפי דפי הסדרה.</p>
+  <ArticleProductCards skus={["24G09048", "24G09057", "24G54057", "24GA4057", "24G77057"]} />
 </>;
 
 const americanTouristerContent = <>
@@ -225,14 +244,36 @@ export const comparisonArticles: readonly GalleryArticle[] = [
     ...common,
     slug: "samsonite-laptop-backpacks-pro-dlx-6-vs-biz2go-vs-guardit",
     category: "תיקים ליום יום ולעבודה",
-    title: "תיקי גב למחשב נייד סמסונייט: השוואת PRO-DLX 6, Biz2Go ו־Guardit Classy 2.0",
-    description: "השוואת תיקי גב למחשב של סמסונייט בגודל של 15.6 ו־17.3 אינץ׳: PRO-DLX 6, Biz2Go ו־Guardit Classy 2.0 לפי מידות, נפח, משקל וארגון.",
-    standfirst: "שלוש סדרות עסקיות של Samsonite בהשוואת גודל מחשב, מידות, נפח, משקל ואבזור.",
-    readingMinutes: 4,
-    hero: { src: `${STORE}/cdn/shop/files/KM203009-front.jpg?v=1790926266&width=1200`, alt: "תיקי גב למחשב נייד של סמסונייט מסדרות PRO-DLX 6, Biz2Go ו־Guardit Classy 2.0", width: 1200, height: 1200, caption: "תיקי גב למחשב של Samsonite" },
-    sourceUrls: [`${STORE}/collections/samsonite-pro-dlx-6`, `${STORE}/collections/samsonite-biz2go`, `${STORE}/collections/samsonite-guardit-classy-2-0`],
-    storeCategoryLinks: [link("תיקי-גב-למחשב", "תיקי גב למחשב"), link("samsonite-pro-dlx-6", "סדרת Samsonite PRO-DLX 6"), link("samsonite-biz2go", "סדרת Samsonite Biz2Go"), link("samsonite-guardit-classy-2-0", "סדרת Samsonite Guardit Classy 2.0")],
+    title: "תיקי גב למחשב נייד סמסונייט: השוואת Guardit 3.0, Mysight, Biz2Go ו־PRO-DLX 6",
+    description: "השוואת תיקי גב למחשב של סמסונייט בגודל של 14.1, 15.6 ו־17.3 אינץ׳: Guardit 3.0, Mysight, Guardit Classy 2.0, Biz2Go ו־PRO-DLX 6 לפי מידות, נפח ומשקל.",
+    standfirst: "חמש סדרות עסקיות של Samsonite בהשוואת גודל מחשב, מידות, נפח, משקל ואבזור.",
+    readingMinutes: 5,
+    hero: { src: `${STORE}/cdn/shop/files/KM203009-front.jpg?v=1790926266&width=1200`, alt: "תיקי גב למחשב נייד של סמסונייט מסדרות PRO-DLX 6, Biz2Go, Guardit ו־Mysight", width: 1200, height: 1200, caption: "תיקי גב למחשב של Samsonite" },
+    sourceUrls: [
+      "https://www.samsonite.az/en/products/guardit-30-laptbackpack-m-156-100641",
+      "https://www.samsonite.az/en/products/mysight-lpt-backpack-141",
+      `${STORE}/collections/samsonite-pro-dlx-6`,
+      `${STORE}/collections/samsonite-biz2go`,
+      `${STORE}/collections/samsonite-guardit-classy-2-0`,
+    ],
+    storeCategoryLinks: [link("תיקי-גב-למחשב", "תיקי גב למחשב"), link("samsonite-guardit-3-0", "סדרת Samsonite Guardit 3.0"), link("samsonite-mysight", "סדרת Samsonite Mysight"), link("samsonite", "כל מוצרי סמסונייט")],
     content: laptopBackpacksContent,
+  },
+  {
+    ...common,
+    slug: "american-tourister-urban-groove-ug16-vs-ug25-backpacks",
+    category: "תיקים ליום יום ולעבודה",
+    title: "תיקי גב אמריקן טוריסטר Urban Groove: השוואת UG16 מול UG25 Tote",
+    description: "השוואת תיקי הגב American Tourister Urban Groove UG16 ו־UG25 Tote לפי מידות, נפח, משקל, תא מחשב וצבעים, עם קישורים לחמשת הדגמים בגלריה ובחנות.",
+    standfirst: "UG16 הקל לשימוש יום יומי מול UG25 Tote עם תא למחשב בגודל של עד 15.6 אינץ׳, בארבעה צבעים.",
+    readingMinutes: 3,
+    hero: { src: `${STORE}/cdn/shop/files/24G09057.webp?v=1792839461&width=1200`, alt: "תיק גב למחשב American Tourister Urban Groove UG25 Tote בצבע שחור", width: 1200, height: 1200, caption: "American Tourister Urban Groove UG25 Tote" },
+    sourceUrls: [
+      "https://www.samsonite.az/en/products/urban-groove-ug16-backpack-city",
+      "https://samsonite.ua/urban-groove-ryukzak-dlya-noutbuka-156-24g09057",
+    ],
+    storeCategoryLinks: [link("american-tourister", "אמריקן טוריסטר American Tourister"), link("american-tourister-urban-groove", "סדרת American Tourister Urban Groove"), link("תיקי-גב-למחשב", "תיקי גב למחשב"), link("backpacks", "תיקי גב")],
+    content: urbanGrooveBackpacksContent,
   },
   {
     ...common,
