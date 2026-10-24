@@ -211,7 +211,7 @@ export const comparisonArticles: readonly GalleryArticle[] = [
     readingMinutes: 4,
     hero: { src: `${STORE}/cdn/shop/files/01-868538ee7e64.jpg?v=1788460841&width=1200`, alt: "מזוודת טרולי קשיחה סמסונייט Upscape בגודל של 55 ס״מ בצבע שחור", width: 1200, height: 1200, caption: "Samsonite Upscape בגודל של 55 ס״מ" },
     sourceUrls: [`${STORE}/collections/samsonite-intuo`, `${STORE}/collections/samsonite-upscape`],
-    storeCategoryLinks: [link("samsonite", "מזוודות סמסונייט"), link("מזוודות-קשיחות", "מזוודות קשיחות"), link("samsonite-intuo", "סדרת Samsonite Intuo"), link("samsonite-upscape", "סדרת Samsonite Upscape")],
+    storeCategoryLinks: [link("מזוודות-סמסונייט", "מזוודות סמסונייט"), link("samsonite", "סמסונייט ישראל"), link("samsonite-intuo", "סדרת Samsonite Intuo"), link("samsonite-upscape", "סדרת Samsonite Upscape")],
     content: intuoUpscapeContent,
   },
   {
@@ -224,7 +224,7 @@ export const comparisonArticles: readonly GalleryArticle[] = [
     readingMinutes: 4,
     hero: { src: `${STORE}/cdn/shop/files/01-432f62498d3c.jpg?v=1787391235&width=1200`, alt: "השוואת מזוודות סמסונייט קשיחות מסדרת Intuo ומזוודות רכות מסדרת Urbify", width: 1200, height: 1200, caption: "Samsonite Intuo הקשיחה מול Urbify הרכה" },
     sourceUrls: [`${STORE}/collections/samsonite-intuo`, `${STORE}/collections/samsonite-urbify`],
-    storeCategoryLinks: [link("מזוודות-קשיחות", "מזוודות קשיחות"), link("מזוודות-רכות", "מזוודות רכות"), link("samsonite-intuo", "סדרת Samsonite Intuo"), link("samsonite-urbify", "סדרת Samsonite Urbify")],
+    storeCategoryLinks: [link("מזוודות-סמסונייט", "מזוודות סמסונייט"), link("samsonite", "סמסונייט ישראל"), link("samsonite-intuo", "סדרת Samsonite Intuo"), link("samsonite-urbify", "סדרת Samsonite Urbify")],
     content: hardSoftContent,
   },
   {
@@ -237,7 +237,7 @@ export const comparisonArticles: readonly GalleryArticle[] = [
     readingMinutes: 3,
     hero: { src: `${STORE}/cdn/shop/files/01-ed7a6e3065b6.jpg?v=1787390986&width=1200`, alt: "מזוודה קשיחה גדולה Samsonite C-Lite מחומר Curv לצד Samsonite Intuo", width: 1200, height: 1200, caption: "Samsonite C-Lite לצד Samsonite Intuo" },
     sourceUrls: [`${STORE}/collections/samsonite-c-lite`, `${STORE}/collections/samsonite-intuo`],
-    storeCategoryLinks: [link("מזוודות-גדולות", "מזוודות גדולות"), link("samsonite-c-lite", "סדרת Samsonite C-Lite"), link("samsonite-intuo", "סדרת Samsonite Intuo"), link("מזוודות-קשיחות", "מזוודות קשיחות")],
+    storeCategoryLinks: [link("מזוודות-סמסונייט", "מזוודות סמסונייט"), link("samsonite", "סמסונייט ישראל"), link("samsonite-c-lite", "סדרת Samsonite C-Lite"), link("samsonite-intuo", "סדרת Samsonite Intuo")],
     content: largeSuitcasesContent,
   },
   {
@@ -256,7 +256,7 @@ export const comparisonArticles: readonly GalleryArticle[] = [
       `${STORE}/collections/samsonite-biz2go`,
       `${STORE}/collections/samsonite-guardit-classy-2-0`,
     ],
-    storeCategoryLinks: [link("תיקי-גב-למחשב", "תיקי גב למחשב"), link("samsonite-guardit-3-0", "סדרת Samsonite Guardit 3.0"), link("samsonite-mysight", "סדרת Samsonite Mysight"), link("samsonite", "כל מוצרי סמסונייט")],
+    storeCategoryLinks: [link("תיקי-סמסונייט", "תיקי סמסונייט"), link("samsonite", "סמסונייט ישראל"), link("samsonite-guardit-3-0", "סדרת Samsonite Guardit 3.0"), link("samsonite-mysight", "סדרת Samsonite Mysight")],
     content: laptopBackpacksContent,
   },
   {
