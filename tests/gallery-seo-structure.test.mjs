@@ -88,3 +88,10 @@ test("journal priority, store subcategories and carousel index dedupe are explic
   assert.match(categories, /collection\("תיקי-סמסונייט", "תיקי סמסונייט"\)/);
   assert.match(index, /STORE_BRANDS\.map/);
 });
+
+test("explicit Samsonite comparison links use the clean indexed hubs", async () => {
+  const comparisons = await read("src/lib/editorial/comparison-articles.tsx");
+  assert.equal((comparisons.match(/link\("מזוודות-סמסונייט", "מזוודות סמסונייט"\)/g) ?? []).length, 3);
+  assert.equal((comparisons.match(/link\("תיקי-סמסונייט", "תיקי סמסונייט"\)/g) ?? []).length, 1);
+  assert.equal((comparisons.match(/link\("samsonite", "סמסונייט ישראל"\)/g) ?? []).length, 4);
+});
