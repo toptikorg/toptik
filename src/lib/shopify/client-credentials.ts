@@ -10,6 +10,7 @@ type ProviderOptions = {
   clientSecret: string;
   fetchImpl?: typeof fetch;
   now?: () => number;
+  requiredScopes?: string[];
 };
 
 const SHOP_DOMAIN = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
@@ -21,9 +22,13 @@ export function createShopifyClientCredentialsProvider({
   clientSecret,
   fetchImpl = fetch,
   now = Date.now,
+  requiredScopes = ["write_products"],
 }: ProviderOptions) {
   if (!SHOP_DOMAIN.test(shopDomain) || !clientId || !clientSecret) {
     throw new Error("SHOPIFY_CONFIG_CLIENT_CREDENTIALS_INVALID");
+  }
+  if (!requiredScopes.length || requiredScopes.some(scope => !/^[a-z][a-z0-9_]{1,80}$/.test(scope))) {
+    throw new Error("SHOPIFY_CONFIG_REQUIRED_SCOPES_INVALID");
   }
 
   let cachedToken = "";
@@ -62,7 +67,8 @@ export function createShopifyClientCredentialsProvider({
         throw new Error("SHOPIFY_TOKEN_RESPONSE_INVALID");
       }
       const scopes = typeof payload.scope === "string" ? payload.scope.split(/[\s,]+/).filter(Boolean) : [];
-      if (!scopes.includes("write_products")) throw new Error("SHOPIFY_TOKEN_WRITE_PRODUCTS_SCOPE_MISSING");
+      const missingScope = requiredScopes.find(scope => !scopes.includes(scope));
+      if (missingScope) throw new Error(`SHOPIFY_TOKEN_${missingScope.toUpperCase()}_SCOPE_MISSING`);
 
       cachedToken = payload.access_token;
       expiresAt = now() + payload.expires_in * 1000;

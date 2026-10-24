@@ -1,5 +1,5 @@
 import "server-only";
-import { shopifyAdminGraphql } from "@/lib/shopify/admin-api";
+import { shopifyOrderGraphql } from "@/lib/shopify/admin-api";
 import type { OrderAddress, PaidOrder } from "./types";
 
 const ORDER_QUERY = `
@@ -79,7 +79,7 @@ function sameMoney(a: PaidOrder["total"], b: PaidOrder["total"]) {
 
 export async function fetchPaidOrder(orderGid: string): Promise<PaidOrder | null> {
   if (!/^gid:\/\/shopify\/Order\/[1-9]\d*$/.test(orderGid)) throw new Error("ORDER_ID_INVALID");
-  const result = await shopifyAdminGraphql<{ order: RawOrder | null }>(ORDER_QUERY, { id: orderGid });
+  const result = await shopifyOrderGraphql<{ order: RawOrder | null }>(ORDER_QUERY, { id: orderGid });
   const order = result.order;
   if (!order) return null;
   if (order.lineItems.pageInfo.hasNextPage) throw new Error("ORDER_LINE_ITEM_LIMIT");
@@ -89,7 +89,7 @@ export async function fetchPaidOrder(orderGid: string): Promise<PaidOrder | null
   if (!payment) throw new Error("ORDER_SUCCESSFUL_PAYMENT_MISSING");
   let fulfillment: RawFulfillmentNode | null = null;
   try {
-    const fulfillmentResult = await shopifyAdminGraphql<RawFulfillment>(FULFILLMENT_QUERY, { id: orderGid });
+    const fulfillmentResult = await shopifyOrderGraphql<RawFulfillment>(FULFILLMENT_QUERY, { id: orderGid });
     fulfillment = fulfillmentResult.order?.fulfillmentOrders.nodes[0] ?? null;
   } catch (error) {
     if (!(error instanceof Error) || error.message !== "SHOPIFY_GRAPHQL_ACCESS_DENIED") throw error;
