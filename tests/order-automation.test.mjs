@@ -108,6 +108,8 @@ test("Tranzila document reads use the required server-side HMAC headers", async 
 
 test("Hebrew packing slip is generated as a valid PDF", async () => {
   let source = await read("src/lib/orders/packing-pdf.ts");
+  assert.match(source, /src", "app", "fonts", "NotoSansHebrew-Variable\.ttf"/);
+  assert.doesNotMatch(source, /bidi\.getReorderedString/);
   source = source.replace(/^import[^;]+;\s*$/gm, "");
   const key = `__packing_pdf_${Math.random().toString(36).slice(2)}`;
   globalThis[key] = { readFile, path, PDFDocument, rgb, fontkit, bidiFactory };

@@ -83,4 +83,8 @@ test("journal priority, store subcategories and carousel index dedupe are explic
   assert.match(index, /seenHrefs\.has\(hrefKey\)/);
   assert.match(index, /seenTitles\.has\(titleKey\)/);
   assert.match(index, /purchaseUrl\.split\("\?"\)\[0\]/);
+  assert.match(categories, /collection\("samsonite", "סמסונייט ישראל"\)/);
+  assert.match(categories, /collection\("מזוודות-סמסונייט", "מזוודות סמסונייט"\)/);
+  assert.match(categories, /collection\("תיקי-סמסונייט", "תיקי סמסונייט"\)/);
+  assert.match(index, /STORE_BRANDS\.map/);
 });

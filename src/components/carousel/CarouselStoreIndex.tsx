@@ -1,7 +1,7 @@
 import { getPublicCarouselPayload } from "@/lib/carousel/public-payload";
 import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
-import { STORE_MAIN_CATEGORIES } from "@/lib/editorial/store-categories";
+import { STORE_BRANDS, STORE_MAIN_CATEGORIES } from "@/lib/editorial/store-categories";
 
 // Server-rendered product index for the gallery. The interactive carousel loads
 // its catalog in the browser, so the first HTML a crawler receives held only a
@@ -53,6 +53,10 @@ export async function CarouselStoreIndex() {
         <p>לפי קטגוריה בחנות:</p>
         <ul>
           {STORE_MAIN_CATEGORIES.map((link) => <li key={link.href}><a href={link.href}>{link.title}</a></li>)}
+        </ul>
+        <p>לפי מותג בחנות:</p>
+        <ul>
+          {STORE_BRANDS.map((link) => <li key={link.href}><a href={link.href}>{link.title}</a></li>)}
         </ul>
       </details>
     </section>
