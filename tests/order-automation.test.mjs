@@ -84,6 +84,8 @@ test("database and worker enforce idempotency and fail closed around email deliv
   assert.ok(sent > sending && sent < missingAlert, "successful send is durably recorded before a secondary alert");
   assert.match(worker, /GMAIL_DELIVERY_UNCERTAIN/);
   assert.match(worker, /operationalSnapshot\(order\)/);
+  assert.match(worker, /לא נשלחה ליעקב הוראת משלוח רגילה/);
+  assert.doesNotMatch(worker, /לא נשלחה לאבי הוראת משלוח רגילה/);
   assert.doesNotMatch(worker, /order_snapshot:\s*order[,}]/, "full customer PII is not persisted");
 });
 

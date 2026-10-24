@@ -51,7 +51,7 @@ async function alertOwner(order: PaidOrder | null, code: string) {
   const to = process.env.ORDER_ALERT_EMAIL || "talns33@gmail.com";
   const from = process.env.GMAIL_SENDER || "service@toptik.co.il";
   const label = order?.name || "לא ידועה";
-  const html = `<html lang="he" dir="rtl"><body style="direction:rtl;text-align:right;font-family:Arial,sans-serif"><h1>נדרשת בדיקה בהזמנה ${label}</h1><p>קוד טיפול: ${code}</p><p>לא נשלחה לאבי הוראת משלוח רגילה.</p></body></html>`;
+  const html = `<html lang="he" dir="rtl"><body style="direction:rtl;text-align:right;font-family:Arial,sans-serif"><h1>נדרשת בדיקה בהזמנה ${label}</h1><p>קוד טיפול: ${code}</p><p>לא נשלחה ליעקב הוראת משלוח רגילה.</p></body></html>`;
   return sendGmail(buildMimeMessage({ from, to, subject: `TopTik | נדרשת בדיקה בהזמנה ${label}`, html, attachments: [] }));
 }
 
