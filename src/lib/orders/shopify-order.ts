@@ -11,7 +11,6 @@ const ORDER_QUERY = `
       currentTotalTaxSet { shopMoney { amount currencyCode } }
       totalRefundedSet { shopMoney { amount currencyCode } }
       risk { recommendation }
-      customer { displayName }
       shippingAddress { name phone address1 address2 city zip country }
       billingAddress { name phone address1 address2 city zip country }
       shippingLine { title }
@@ -52,7 +51,6 @@ type RawOrder = {
   currentTotalTaxSet: { shopMoney: PaidOrder["tax"] } | null;
   totalRefundedSet: { shopMoney: PaidOrder["refunded"] };
   risk: { recommendation: string };
-  customer: { displayName: string } | null;
   shippingAddress: OrderAddress | null; billingAddress: OrderAddress | null;
   shippingLine: { title: string } | null;
   lineItems: { nodes: Array<{
@@ -104,7 +102,7 @@ export async function fetchPaidOrder(orderGid: string): Promise<PaidOrder | null
     financialStatus: order.displayFinancialStatus,
     fulfillmentStatus: order.displayFulfillmentStatus,
     riskRecommendation: order.risk.recommendation,
-    customerName: order.customer?.displayName || order.shippingAddress?.name || order.billingAddress?.name || "לא צוין",
+    customerName: order.shippingAddress?.name || order.billingAddress?.name || "לא צוין",
     email: order.email,
     phone: order.phone || order.shippingAddress?.phone || order.billingAddress?.phone || null,
     shippingAddress: order.shippingAddress,

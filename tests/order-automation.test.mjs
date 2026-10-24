@@ -90,6 +90,7 @@ test("database and worker enforce idempotency and fail closed around email deliv
   assert.match(worker, /ORDER_PICKUP_LOCATION_MISSING/);
   assert.match(shopifyOrder, /const FULFILLMENT_QUERY/);
   assert.match(shopifyOrder, /error\.message !== "SHOPIFY_GRAPHQL_ACCESS_DENIED"/);
+  assert.doesNotMatch(shopifyOrder, /customer\s*\{\s*displayName/);
   assert.doesNotMatch(worker, /order_snapshot:\s*order[,}]/, "full customer PII is not persisted");
 });
 
