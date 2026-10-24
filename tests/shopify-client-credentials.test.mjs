@@ -71,6 +71,15 @@ test("redirects, missing write scope and malformed tokens cannot authorize Shopi
     /SHOPIFY_CONFIG_CLIENT_CREDENTIALS_INVALID/);
 });
 
+test("callers can require the exact granted scopes needed by an isolated workflow", async () => {
+  const provider = createShopifyClientCredentialsProvider({
+    ...config,
+    requiredScopes: ["read_orders", "read_merchant_managed_fulfillment_orders"],
+    fetchImpl: async () => Response.json({ access_token: "value", expires_in: 86400, scope: "read_orders" }),
+  });
+  await assert.rejects(provider(), { message: "SHOPIFY_TOKEN_READ_MERCHANT_MANAGED_FULFILLMENT_ORDERS_SCOPE_MISSING" });
+});
+
 test("separate GraphQL calls reuse the provider and credential rotation creates a new one", async t => {
   let apiSource = await readFile("src/lib/shopify/admin-api.ts", "utf8");
   apiSource = apiSource.replace(/^import "server-only";\s*/m, "")

@@ -41,12 +41,14 @@ type ShopifyBootstrapPage = {
 
 type GraphqlError = { message?: string; extensions?: { code?: unknown } };
 
-let tokenProviderCache: {
+type TokenProviderCache = {
   domain: string;
   clientId: string;
   clientSecret: string;
   getAccessToken: () => Promise<string>;
-} | null = null;
+};
+let tokenProviderCache: TokenProviderCache | null = null;
+let orderTokenProviderCache: TokenProviderCache | null = null;
 
 const PRODUCT_QUERY = `
   query GallerySyncProduct($id: ID!, $publicationId: ID!, $after: String) {
@@ -194,6 +196,41 @@ async function graphql<T>(query: string, variables: Record<string, unknown>, tim
   return payload.data;
 }
 
+async function orderGraphql<T>(query: string, variables: Record<string, unknown>, timeoutMs = 15_000): Promise<T> {
+  const { domain, clientId, clientSecret, version } = getConfig();
+  if (!orderTokenProviderCache || orderTokenProviderCache.domain !== domain ||
+      orderTokenProviderCache.clientId !== clientId || orderTokenProviderCache.clientSecret !== clientSecret) {
+    orderTokenProviderCache = {
+      domain,
+      clientId,
+      clientSecret,
+      getAccessToken: createShopifyClientCredentialsProvider({
+        shopDomain: domain,
+        clientId,
+        clientSecret,
+        requiredScopes: ["read_orders", "read_merchant_managed_fulfillment_orders"],
+      }),
+    };
+  }
+  const response = await fetch(`https://${domain}/admin/api/${version}/graphql.json`, {
+    method: "POST",
+    redirect: "manual",
+    signal: AbortSignal.timeout(Math.max(1, Math.min(15_000, timeoutMs))),
+    headers: { "content-type": "application/json", "x-shopify-access-token": await orderTokenProviderCache.getAccessToken() },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (response.status >= 300 && response.status < 400) throw new Error("SHOPIFY_API_REDIRECT_REJECTED");
+  if (!response.ok) throw new Error(`SHOPIFY_API_HTTP_${response.status}`);
+  const payload = await response.json() as { data?: T; errors?: GraphqlError[] };
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("SHOPIFY_GRAPHQL_RESPONSE_INVALID");
+  if (Object.hasOwn(payload, "errors")) {
+    if (!Array.isArray(payload.errors)) throw new Error("SHOPIFY_GRAPHQL_ERROR");
+    if (payload.errors.length) throw new Error(graphqlErrorCode(payload.errors[0]?.extensions?.code));
+  }
+  if (!payload.data || typeof payload.data !== "object" || Array.isArray(payload.data)) throw new Error("SHOPIFY_GRAPHQL_DATA_MISSING");
+  return payload.data;
+}
+
 /** Dedicated typed-spec adapters. Same existing product scopes; never an arbitrary query executor. */
 export async function fetchTypedSpecSnapshot(identity: TypedSpecIdentity & { productHandle: string }, provenance: ProvenanceResolver, timeoutMs = 8_000): Promise<TypedSpecSnapshot> {
   const deadline = Date.now() + Math.max(1, Math.min(8_000, timeoutMs));
@@ -218,6 +255,10 @@ export async function writeTypedSpecFields(snapshot: TypedSpecSnapshot, operatio
 /** Server-only authenticated transport shared by the isolated draft creator. */
 export async function shopifyAdminGraphql<T>(query: string, variables: Record<string, unknown>, timeoutMs = 15_000, deadline?: number): Promise<T> {
   return graphql<T>(query, variables, timeoutMs, deadline);
+}
+
+export async function shopifyOrderGraphql<T>(query: string, variables: Record<string, unknown>, timeoutMs = 15_000): Promise<T> {
+  return orderGraphql<T>(query, variables, timeoutMs);
 }
 
 export async function fetchProductSnapshot(productGid: string): Promise<ShopifyProductSnapshot | null> {
