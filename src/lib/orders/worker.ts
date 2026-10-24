@@ -20,6 +20,7 @@ function shipmentBlock(order: PaidOrder) {
   if (order.fulfillmentStatus !== "UNFULFILLED") return "ORDER_ALREADY_FULFILLED";
   if (!order.phone) return "ORDER_PHONE_MISSING";
   if (order.requiresShipping && !order.shippingAddress) return "ORDER_SHIPPING_ADDRESS_MISSING";
+  if (!order.requiresShipping && !order.pickupLocation) return "ORDER_PICKUP_LOCATION_MISSING";
   return null;
 }
 
