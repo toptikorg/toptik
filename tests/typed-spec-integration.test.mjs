@@ -17,21 +17,23 @@ test('typed admin editor checks role on each request and stays outside indexing'
 const rules=read('src/lib/shopify/sync-rules.ts');
 const {shopifyProductGid}=await import(moduleUrl(rules.slice(rules.indexOf('export function shopifyProductGid'),rules.indexOf('export function numericVariantId'))));
 const makeWebhook=await factory(read('src/app/api/webhooks/shopify/products/route.ts'),
- 'NextResponse,verifyProductWebhook,hasSupabaseAdminEnv,createSupabaseServiceRoleClient,scheduleShopifySync,enqueueTypedSpecProduct,shopifyProductGid,process,console','POST');
+ 'NextResponse,verifyProductWebhook,hasSupabaseAdminEnv,createSupabaseServiceRoleClient,scheduleShopifySync,scheduleMediaSyncWakeup,enqueueTypedSpecProduct,shopifyProductGid,process,console','POST');
 function webhookFixture({payload={id:123},duplicate=false,inboxFailure=false,typedFailure=false,topic='products/update',invalidSignature=false}={}){
  const calls=[],logs=[];
  const {POST}=makeWebhook({NextResponse:JsonResponse,process:{env:{}},console:{error:(...args)=>logs.push(args)},shopifyProductGid,
   hasSupabaseAdminEnv:()=>true,verifyProductWebhook:()=>invalidSignature?{ok:false,reason:'bad_signature'}:{ok:true,event:{payload,topic,deliveryId:'d1',shopDomain:'toptikcoil.myshopify.com'}},
   createSupabaseServiceRoleClient:()=>({from:table=>({insert:async data=>{calls.push(['inbox',table,data]);return {error:inboxFailure?{code:'XX'}:duplicate?{code:'23505'}:null};}})}),
-  scheduleShopifySync:()=>calls.push(['copy']),enqueueTypedSpecProduct:async(_db,gid)=>{calls.push(['typed',gid]);if(typedFailure)throw Error('private payload must not leak');},
+  scheduleShopifySync:()=>calls.push(['copy']),scheduleMediaSyncWakeup:()=>calls.push(['media']),
+  enqueueTypedSpecProduct:async(_db,gid)=>{calls.push(['typed',gid]);if(typedFailure)throw Error('private payload must not leak');},
  });
  return {calls,logs,run:()=>POST(new Request('https://landing.toptik.co.il/api/webhooks/shopify/products',{method:'POST',body:JSON.stringify(payload)}))};
 }
 
-test('accepted and duplicate signed events preserve copy scheduling when optional typed enqueue fails',async()=>{
+test('fresh signed product updates wake media immediately while duplicate deliveries remain idempotent',async()=>{
  for(const duplicate of [false,true]){
   const f=webhookFixture({duplicate,typedFailure:true}),response=await f.run();assert.equal(response.status,200);
-  assert.deepEqual(f.calls.map(c=>c[0]),['inbox','copy','typed']);assert.equal(f.calls[2][1],'gid://shopify/Product/123');
+  assert.deepEqual(f.calls.map(c=>c[0]),duplicate?['inbox','copy','typed']:['inbox','media','copy','typed']);
+  assert.equal(f.calls.find(c=>c[0]==='typed')[1],'gid://shopify/Product/123');
   assert.equal(f.logs[0][1].code,'SPEC_ENQUEUE_FAILED');assert.ok(!JSON.stringify(f.logs).includes('private payload'));
  }
  for(const options of [{invalidSignature:true},{inboxFailure:true}]){
@@ -48,6 +50,7 @@ test('typed webhook identity rejects unsafe coercion/mismatched GID and deletion
   const f=webhookFixture({payload});assert.equal((await f.run()).status,200);assert.ok(f.calls.some(c=>c[0]==='copy'));assert.ok(!f.calls.some(c=>c[0]==='typed'));
  }
  const deleted=webhookFixture({topic:'products/delete'});assert.equal((await deleted.run()).status,200);assert.ok(!deleted.calls.some(c=>c[0]==='typed'));
+ assert.ok(!deleted.calls.some(c=>c[0]==='media'));
 });
 
 const route=read('src/app/api/admin/shopify/sync/route.ts');

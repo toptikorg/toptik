@@ -3,6 +3,7 @@ import { verifyProductWebhook } from "@/lib/shopify/webhook-security";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { hasSupabaseAdminEnv } from "@/lib/supabase/env";
 import { scheduleShopifySync } from "@/lib/shopify/schedule-sync";
+import { scheduleMediaSyncWakeup } from "@/lib/shopify/media-schedule";
 import { enqueueTypedSpecProduct } from "@/lib/shopify/typed-spec-worker";
 import { shopifyProductGid } from "@/lib/shopify/sync-rules";
 
@@ -98,6 +99,10 @@ export async function POST(request: NextRequest) {
       console.error("Shopify webhook inbox insert failed", { code: error.code });
       return NextResponse.json({ error: "Webhook could not be queued" }, { status: 503 });
     }
+    // The database trigger durably enqueues media work with the signed event.
+    // Wake the media worker only for a newly inserted product update; duplicate
+    // Shopify deliveries must remain idempotent and do not add new queue work.
+    if (!error && checked.event.topic === "products/update") scheduleMediaSyncWakeup();
     // The existing durable copy inbox remains successful even if optional typed
     // admission is unavailable. Daily typed recovery observes current values.
     scheduleShopifySync();
