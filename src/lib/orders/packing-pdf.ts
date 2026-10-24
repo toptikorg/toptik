@@ -3,16 +3,18 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import bidiFactory from "bidi-js";
 import type { PaidOrder } from "./types";
 
-const FONT_PATH = path.join(process.cwd(), "node_modules", "@fontsource", "noto-sans-hebrew", "files", "noto-sans-hebrew-hebrew-400-normal.woff");
-const bidi = bidiFactory();
+const FONT_PATH = path.join(process.cwd(), "src", "app", "fonts", "NotoSansHebrew-Variable.ttf");
 const PAGE = { width: 595.28, height: 841.89, margin: 46 };
 
 function visual(text: string) {
-  if (!text) return "";
-  return bidi.getReorderedString(text, bidi.getEmbeddingLevels(text, "rtl"));
+  // pdf-lib does not perform bidirectional layout. Noto Sans Hebrew keeps the
+  // Hebrew readable, while embedded LTR runs are painted in reverse inside an
+  // RTL line. Reverse only those runs before drawing so the rendered PDF shows
+  // order numbers, phones, email addresses, SKUs and Latin product names in
+  // their natural direction.
+  return text.replace(/[A-Za-z0-9@._+:/-]+(?:\s+[A-Za-z0-9@._+:/-]+)*/g, value => [...value].reverse().join(""));
 }
 
 function money(amount: string, currency: string) {

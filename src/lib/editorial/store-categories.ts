@@ -19,7 +19,7 @@ export const STORE_MAIN_CATEGORIES: readonly StoreCategoryLink[] = [
 ];
 
 export const STORE_BRANDS: readonly StoreCategoryLink[] = [
-  collection("samsonite", "סמסונייט"),
+  collection("samsonite", "סמסונייט ישראל"),
   collection("mandarina-duck", "מנדרינה דאק"),
   collection("brics", "בריקס"),
   collection("american-tourister", "אמריקן טוריסטר"),
@@ -29,7 +29,9 @@ export const STORE_BRANDS: readonly StoreCategoryLink[] = [
 // generic product type. Matching runs on the article slug, title, description
 // and category only, never on body copy.
 const RULES: ReadonlyArray<readonly [RegExp, StoreCategoryLink]> = [
-  [/samsonite|סמסונייט|intuo|upscape|urbify|c-lite|respark|biz2go|pro-dlx|guardit|mysight/i, collection("samsonite", "סמסונייט")],
+  [/pro-dlx|biz2go|guardit|mysight/i, collection("תיקי-סמסונייט", "תיקי סמסונייט")],
+  [/(?=.*(?:samsonite|סמסונייט))(?=.*(?:intuo|upscape|c-lite|respark|מזווד|טרולי))/i, collection("מזוודות-סמסונייט", "מזוודות סמסונייט")],
+  [/samsonite|סמסונייט|intuo|upscape|urbify|c-lite|respark|biz2go|pro-dlx|guardit|mysight/i, collection("samsonite", "סמסונייט ישראל")],
   [/mandarina|מנדרינה|mellow|md20|revival|logoduck|zephyr|eco coated|daisy/i, collection("mandarina-duck", "מנדרינה דאק")],
   [/bric|בריקס|taormina|volterra|x-collection/i, collection("brics", "בריקס")],
   [/american tourister|אמריקן טוריסטר|urban groove/i, collection("american-tourister", "אמריקן טוריסטר")],
