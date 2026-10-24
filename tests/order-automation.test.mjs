@@ -68,6 +68,7 @@ test("outbound email has RTL HTML and a stable RFC message id", async () => {
 test("database and worker enforce idempotency and fail closed around email delivery", async () => {
   const migration = await read("supabase/migrations/20261023_order_automation.sql");
   const worker = await read("src/lib/orders/worker.ts");
+  const shopifyOrder = await read("src/lib/orders/shopify-order.ts");
   assert.match(migration, /delivery_id text primary key/);
   assert.match(migration, /on conflict \(delivery_id\) do nothing/);
   assert.match(migration, /state in \('pending','processing','retry','sending','held','sent','failed'\)/);
@@ -86,6 +87,9 @@ test("database and worker enforce idempotency and fail closed around email deliv
   assert.match(worker, /operationalSnapshot\(order\)/);
   assert.match(worker, /לא נשלחה ליעקב הוראת משלוח רגילה/);
   assert.doesNotMatch(worker, /לא נשלחה לאבי הוראת משלוח רגילה/);
+  assert.match(worker, /ORDER_PICKUP_LOCATION_MISSING/);
+  assert.match(shopifyOrder, /const FULFILLMENT_QUERY/);
+  assert.match(shopifyOrder, /error\.message !== "SHOPIFY_GRAPHQL_ACCESS_DENIED"/);
   assert.doesNotMatch(worker, /order_snapshot:\s*order[,}]/, "full customer PII is not persisted");
 });
 

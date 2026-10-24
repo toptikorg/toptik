@@ -15,12 +15,6 @@ const ORDER_QUERY = `
       shippingAddress { name phone address1 address2 city zip country }
       billingAddress { name phone address1 address2 city zip country }
       shippingLine { title }
-      fulfillmentOrders(first: 10) {
-        nodes {
-          deliveryMethod { methodType presentedName }
-          assignedLocation { name phone address1 address2 city zip countryCode }
-        }
-      }
       lineItems(first: 250) {
         nodes {
           title variantTitle sku quantity
@@ -37,6 +31,19 @@ const ORDER_QUERY = `
   }
 `;
 
+const FULFILLMENT_QUERY = `
+  query TopTikOrderFulfillment($id: ID!) {
+    order(id: $id) {
+      fulfillmentOrders(first: 10) {
+        nodes {
+          deliveryMethod { methodType presentedName }
+          assignedLocation { name phone address1 address2 city zip countryCode }
+        }
+      }
+    }
+  }
+`;
+
 type RawOrder = {
   id: string; name: string; createdAt: string; cancelledAt: string | null;
   displayFinancialStatus: string | null; displayFulfillmentStatus: string;
@@ -48,10 +55,6 @@ type RawOrder = {
   customer: { displayName: string } | null;
   shippingAddress: OrderAddress | null; billingAddress: OrderAddress | null;
   shippingLine: { title: string } | null;
-  fulfillmentOrders: { nodes: Array<{
-    deliveryMethod: { methodType: string; presentedName: string | null } | null;
-    assignedLocation: { name: string; phone: string | null; address1: string | null; address2: string | null; city: string | null; zip: string | null; countryCode: string };
-  }> };
   lineItems: { nodes: Array<{
     title: string; variantTitle: string | null; sku: string | null; quantity: number;
     discountedUnitPriceAfterAllDiscountsSet: { shopMoney: PaidOrder["total"] };
@@ -63,6 +66,12 @@ type RawOrder = {
     amountSet: { shopMoney: PaidOrder["total"] };
   }>;
 };
+
+type RawFulfillmentNode = {
+  deliveryMethod: { methodType: string; presentedName: string | null } | null;
+  assignedLocation: { name: string; phone: string | null; address1: string | null; address2: string | null; city: string | null; zip: string | null; countryCode: string };
+};
+type RawFulfillment = { order: null | { fulfillmentOrders: { nodes: RawFulfillmentNode[] } } };
 
 function sameMoney(a: PaidOrder["total"], b: PaidOrder["total"]) {
   return a.currencyCode === b.currencyCode && Number(a.amount) === Number(b.amount);
@@ -78,7 +87,13 @@ export async function fetchPaidOrder(orderGid: string): Promise<PaidOrder | null
     transaction.status === "SUCCESS" && ["SALE", "CAPTURE"].includes(transaction.kind) &&
     sameMoney(transaction.amountSet.shopMoney, order.totalPriceSet.shopMoney));
   if (!payment) throw new Error("ORDER_SUCCESSFUL_PAYMENT_MISSING");
-  const fulfillment = order.fulfillmentOrders.nodes[0] ?? null;
+  let fulfillment: RawFulfillmentNode | null = null;
+  try {
+    const fulfillmentResult = await shopifyAdminGraphql<RawFulfillment>(FULFILLMENT_QUERY, { id: orderGid });
+    fulfillment = fulfillmentResult.order?.fulfillmentOrders.nodes[0] ?? null;
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== "SHOPIFY_GRAPHQL_ACCESS_DENIED") throw error;
+  }
   const assigned = fulfillment?.assignedLocation;
   const isPickup = fulfillment?.deliveryMethod?.methodType === "PICK_UP";
   return {
