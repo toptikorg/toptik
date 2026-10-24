@@ -1,6 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { sendPreviousMonthAccountantReport } from "@/lib/orders/accountant-report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +15,7 @@ function authorized(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   if (!authorized(request)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { sendPreviousMonthAccountantReport } = await import("@/lib/orders/accountant-report");
   const result = await sendPreviousMonthAccountantReport();
   return NextResponse.json(result);
 }

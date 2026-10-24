@@ -29,11 +29,11 @@ export const STORE_BRANDS: readonly StoreCategoryLink[] = [
 // generic product type. Matching runs on the article slug, title, description
 // and category only, never on body copy.
 const RULES: ReadonlyArray<readonly [RegExp, StoreCategoryLink]> = [
-  [/samsonite|סמסונייט|intuo|upscape|urbify|c-lite|respark|biz2go|pro-dlx/i, collection("samsonite", "סמסונייט")],
+  [/samsonite|סמסונייט|intuo|upscape|urbify|c-lite|respark|biz2go|pro-dlx|guardit|mysight/i, collection("samsonite", "סמסונייט")],
   [/mandarina|מנדרינה|mellow|md20|revival|logoduck|zephyr|eco coated|daisy/i, collection("mandarina-duck", "מנדרינה דאק")],
   [/bric|בריקס|taormina|volterra|x-collection/i, collection("brics", "בריקס")],
-  [/american tourister|אמריקן טוריסטר/i, collection("american-tourister", "אמריקן טוריסטר")],
-  [/pro-dlx|biz2go|guardit|תיק(?:י)? גב.*מחשב|laptop|KM203009|KI139005|KI106005|KI101004/i, collection("תיקי-גב-למחשב", "תיקי גב למחשב")],
+  [/american tourister|אמריקן טוריסטר|urban groove/i, collection("american-tourister", "אמריקן טוריסטר")],
+  [/pro-dlx|biz2go|guardit|mysight|urban groove|תיק(?:י)? גב.*מחשב|laptop|KM203009|KI139005|KI106005|KI101004|KR20\d+|KF90\d+|24G(?:09057|54057|A4057|77057)/i, collection("תיקי-גב-למחשב", "תיקי גב למחשב")],
   [/intuo|upscape|c-lite|taormina|logoduck|מזווד(?:ה|ות) קשיח(?:ה|ות)|\bKL\d+|\bBAH\d+/i, collection("מזוודות-קשיחות", "מזוודות קשיחות")],
   [/urbify|respark|x-collection|eco coated|nitestream|deep dive|מזווד(?:ה|ות) רכ(?:ה|ות)|\bKO7\d+|\bKJ344\d+|\bBXL\d+|\bOSV04\b|\bOXB01\b/i, collection("מזוודות-רכות", "מזוודות רכות")],
   [/\b(?:75|77|78|79|81|82|86)\b|large|\bxl\b|מזווד(?:ה|ות) גדול(?:ה|ות)/i, collection("מזוודות-גדולות", "מזוודות גדולות")],
