@@ -11,9 +11,11 @@ function collection(handle: string, title: string): StoreCategoryLink {
 
 export const STORE_MAIN_CATEGORIES: readonly StoreCategoryLink[] = [
   collection("מזוודות", "מזוודות"),
+  collection("מזוודות-סמסונייט", "מזוודות סמסונייט"),
   collection("טרולי-carry-on", "טרולי לעלייה למטוס"),
   collection("fashion-bags", "תיקי צד ותיקי כתף"),
   collection("backpacks", "תיקי גב"),
+  collection("תיקי-סמסונייט", "תיקי סמסונייט"),
   collection("wallets", "ארנקים"),
   collection("toiletry-pouches", "תיקי רחצה ונרתיקים"),
 ];
