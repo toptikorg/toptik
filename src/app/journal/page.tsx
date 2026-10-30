@@ -52,7 +52,8 @@ function archiveStructuredData() {
     "@type": "CollectionPage",
     "@id": `${url}#page`,
     url,
-    name: "מגזין TopTik",
+    name: JOURNAL_TITLE,
+    description: JOURNAL_DESCRIPTION,
     inLanguage: "he",
     isPartOf: { "@type": "WebSite", name: SITE_NAME, url: absoluteUrl("/") },
     mainEntity: {
@@ -96,7 +97,7 @@ export default async function JournalArchivePage() {
           {articles.map((article) => (
             <article className={styles.archiveCard} key={article.slug}>
               {article.hero && <Link className={styles.archiveImageLink} href={`/journal/${article.slug}`} tabIndex={-1} aria-hidden="true">
-                <Image className={styles.archiveImage} src={article.hero.src} alt="" width={article.hero.width} height={article.hero.height} sizes="(max-width: 680px) 90vw, 480px" quality={75} />
+                <Image className={styles.archiveImage} src={article.hero.src} alt={article.hero.alt || article.title} width={article.hero.width} height={article.hero.height} sizes="(max-width: 680px) 90vw, 480px" quality={75} />
               </Link>}
               <p className={styles.cardCategory}>{article.category}</p>
               <h2><Link href={`/journal/${article.slug}`}>{article.title}</Link></h2>
