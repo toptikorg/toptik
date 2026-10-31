@@ -12,3 +12,17 @@ test("visual monitor extracts direct image and article URLs from rendered HTML",
 test("visual monitor decodes URL-safe HTML entities", () => {
   assert.equal(decodeHtmlAttribute("a&amp;b&#x27;c&quot;d"), "a&b'c\"d");
 });
+
+test("visual monitor extracts Shopify collection and product links", () => {
+  const html = [
+    '<a href="/collections/samsonite">סמסונייט</a>',
+    '<a href="/products/example">מוצר</a>',
+    '<a href="https://www.toptik.co.il/products/example-two">מוצר נוסף</a>',
+  ].join("");
+
+  assert.deepEqual(extractAttributeValues(html, "a", "href"), [
+    "/collections/samsonite",
+    "/products/example",
+    "https://www.toptik.co.il/products/example-two",
+  ]);
+});

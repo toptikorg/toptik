@@ -41,7 +41,11 @@ jobs:
         run: |
           curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/journal.headers --output production-monitor-evidence/journal.html https://landing.toptik.co.il/journal || true
           curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/article.headers --output production-monitor-evidence/article.html https://landing.toptik.co.il/journal/samsonite-intuo-vs-upscape-hard-suitcases || true
+          curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/gallery.headers --output production-monitor-evidence/gallery.html https://landing.toptik.co.il/carousel || true
           curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/carousel.headers --output production-monitor-evidence/carousel.json https://landing.toptik.co.il/api/carousel || true
+          curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/store-home.headers --output production-monitor-evidence/store-home.html https://www.toptik.co.il/ || true
+          curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/store-collection.headers --output production-monitor-evidence/store-collection.html https://www.toptik.co.il/collections/samsonite || true
+          curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/store-product.headers --output production-monitor-evidence/store-product.html https://www.toptik.co.il/products/p10fzta9001 || true
           git rev-parse HEAD > production-monitor-evidence/source-commit.txt
           date --utc --iso-8601=seconds > production-monitor-evidence/detected-at-utc.txt
 
@@ -60,7 +64,7 @@ jobs:
         with:
           script: |
             const title = "[Production monitor] TopTik visual failure";
-            const body = `The live visual smoke test failed.\n\nRun and 30-day evidence backup: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nThe monitor checks the journal archive, one full article, the carousel API and a sample of real image assets. The failed run preserves the HTML, HTTP headers, API response, source commit, UTC detection time and smoke log before any repair.`;
+            const body = `The live production smoke test failed.\n\nRun and 30-day evidence backup: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nThe monitor checks the Shopify storefront, a collection and product, the gallery HTML and API, the journal archive, a full article and real image assets. The failed run preserves the HTML, HTTP headers, API response, source commit, UTC detection time and smoke log before any repair.`;
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
