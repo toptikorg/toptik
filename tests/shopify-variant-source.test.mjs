@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 const url = text => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(text)).toString('base64')}`;
 const policy = await import(url(readFileSync('src/lib/shopify/variant-source-policy.ts','utf8')));
 const source = stripTypeScriptTypes(readFileSync('src/lib/shopify/variant-source-worker.ts','utf8')).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
-const { make } = await import(url(`export function make(deps) { const {randomUUID,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,MD20_PRODUCT_GID,MD20_PRODUCT_HANDLE,MD20_VARIANTS,MD20_LEGACY_UNASSIGNED_MEDIA,exactVariantMedia,exactVariantSeo,process}=deps; ${source}; return reconcileApprovedVariants; }`));
+const { make } = await import(url(`export function make(deps) { const {randomUUID,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,upsertExactGalleryBindings,MD20_PRODUCT_GID,MD20_PRODUCT_HANDLE,MD20_VARIANTS,MD20_LEGACY_UNASSIGNED_MEDIA,exactVariantMedia,exactVariantSeo,process}=deps; ${source}; return reconcileApprovedVariants; }`));
 
 function fixture() {
   const p = { id: policy.MD20_PRODUCT_GID, handle: policy.MD20_PRODUCT_HANDLE, title: 'MD20', descriptionHtml: '<p>Source</p>',
@@ -23,7 +23,8 @@ function fixture() {
     async rpc(name,args){calls.push({name,args}); for(const row of args.p_items) Object.assign(tables.carousel_items.find(x=>x.id===row.id),row); tables.carousel_item_angles=structuredClone(args.p_angles);return {data:args.p_items.map(x=>({id:x.id})),error:null}}};
   const deps={...policy,randomUUID,process:{env:{SHOPIFY_ONLINE_STORE_PUBLICATION_ID:'gid://shopify/Publication/79538258170'}},
     shopifyAdminGraphql:async()=>({product:structuredClone(p)}),visibleCopyFromProduct:s=>({title:s.title,description:'Source',descriptionHtml:s.descriptionHtml,seoTitle:s.seoTitle,seoDescription:s.seoDescription}),
-    assertSafeDescriptionHtml:()=>{},verifyOnboardingImage:async media=>{verified.push(media.id)}};
+    assertSafeDescriptionHtml:()=>{},verifyOnboardingImage:async media=>{verified.push(media.id)},
+    upsertExactGalleryBindings:async(_db,input)=>{calls.push({linkSync:input})}};
   return {p,tables,calls,verified,db,deps,run:()=>make(deps)(db,Date.now()+45000)};
 }
 test('three exact identities are inbound only; unrelated items are not classified',()=>{
@@ -36,6 +37,7 @@ test('projects all three colors atomically, decodes every exact image, then sett
   const commit=f.calls.find(c=>c.name);assert.equal(commit.name,'save_gallery_catalog_atomic');assert.equal(commit.args.p_items.length,3);
   for(const v of policy.MD20_VARIANTS){const row=f.tables.carousel_items.find(r=>r.id===v.itemId);assert.ok(row.cover_image_path.includes(v.sku));assert.equal(row.title,'MD20');assert.ok(f.tables.carousel_item_angles.filter(a=>a.item_id===v.itemId).every(a=>a.image_path.includes(v.sku)));}
   assert.equal(f.calls.at(-1).table,'shopify_gallery_content_outbox');assert.equal(f.calls.at(-1).body.status,'synced');
+  assert.equal(f.calls.find(c=>c.linkSync).linkSync.bindings.length,3);
   assert.ok(!f.calls.some(c=>c.table==='shopify_gallery_public_links'));
 });
 test('changed handle requires review instead of leaving a stale purchase destination',async()=>{

@@ -159,7 +159,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     });
   const catalogCoverage = compareStoreGalleryProductHandles(storeProductUrls, carouselPayload.items);
   if (catalogCoverage.missing.length > 0) {
-    throw new Error(`Gallery is missing ${catalogCoverage.missing.length} live Shopify products: ${catalogCoverage.missing.slice(0, 20).join(",")}`);
+    throw new Error(`Gallery is missing purchase links for ${catalogCoverage.missing.length} live Shopify products: ${catalogCoverage.missing.slice(0, 20).join(",")}`);
   }
 
   const storeHomeHtml = await fetchText(storeBase);

@@ -5,6 +5,7 @@ import { configuredShopifyDomain, shopifyAdminGraphql, visibleCopyFromProduct, t
 import { assertSafeDescriptionHtml } from "./description-document";
 import { verifyOnboardingImage } from "./onboarding-worker";
 import { FZT73_PRODUCT_GID, FZT73_PRODUCT_HANDLE, FZT73_VARIANTS, exactFzt73Media, exactVariantSeo } from "./variant-source-policy";
+import { upsertExactGalleryBindings } from "./publication-sync";
 
 async function snapshot(deadline: number): Promise<ShopifyOnboardingSnapshot | null> {
   const publicationId = process.env.SHOPIFY_ONLINE_STORE_PUBLICATION_ID?.trim();
@@ -128,6 +129,12 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
       readAngles.data?.length !== projectedAngles.length || projectedAngles.some(p=>!same(readAngles.data?.find(r=>r.id===p.id),p))) {
     throw new Error("SYNC_COPY_READBACK_MISMATCH");
   }
+  if (source) await upsertExactGalleryBindings(db, {
+    productGid:FZT73_PRODUCT_GID,handle:FZT73_PRODUCT_HANDLE,
+    sourceUpdatedAt:source.updatedAt,published,
+    bindings:FZT73_VARIANTS.map(v=>({catalogKey:v.sku,itemId:v.itemId,
+      variantGid:`gid://shopify/ProductVariant/${v.variantId}`})),
+  });
   const settled = await db.from("shopify_gallery_content_outbox").update({status:"synced",synced_at:new Date().toISOString(),last_error:null})
     .in("carousel_item_id",ids).in("catalog_key",FZT73_VARIANTS.map(v=>v.sku)).in("status",["pending","processing","review","failed"]);
   if (settled.error) throw new Error("SYNC_OUTBOX_FINALIZE_FAILED");

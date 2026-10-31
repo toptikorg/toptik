@@ -23,7 +23,7 @@ const {makeWorker}=await import(moduleUrl(`
   import {approvedShopifyImageUrl,assertOnboardingShopifyUniqueness,MAX_ONBOARDING_IMAGE_BYTES,ONBOARDING_SHOP_DOMAIN,
     onboardingSnapshotFingerprint,PUBLIC_ONBOARDING_POLICY,publicOnboardingCandidate} from '${policyUrl}';
   export function makeWorker(deps){
-    const {configuredShopifyDomain,fetchAllOnboardingVariantIdentities,fetchPublicOnboardingProductSnapshot,lookup,fetch,process}=deps;
+    const {configuredShopifyDomain,fetchAllOnboardingVariantIdentities,fetchPublicOnboardingProductSnapshot,upsertExactGalleryBindings,lookup,fetch,process}=deps;
     ${workerSource}
     return {ensurePublicShopifyOnboarding,verifyOnboardingImage};
   }
@@ -49,10 +49,11 @@ function fixture(options={}){
     select(fields){query.fields=fields;return builder;},order(){return builder;},range(a,b){start=a;end=b;return builder;},
     eq(){return builder;},async maybeSingle(){return {data:options.receipt??null,error:null};},
     async abortSignal(){return {data:rows.slice(start,end+1),error:null};}};return builder;},
-    async rpc(name,args){rpcCalls.push({name,args});return {data:{changed:true,itemId:"new-item",catalogKey:"NEW001",approvalId:"new-approval"},error:null};}};
+    async rpc(name,args){rpcCalls.push({name,args});return {data:name==="upsert_shopify_gallery_binding"?true:{changed:true,itemId:"new-item",catalogKey:"NEW001",approvalId:"new-approval"},error:null};}};
   const worker=makeWorker({process:{env:{SHOPIFY_SYNC_AUTOCREATE:options.enabled===false?undefined:"published_shopify"}},configuredShopifyDomain:()=>"toptikcoil.myshopify.com",
     fetchPublicOnboardingProductSnapshot:async()=>{snapshots++;const result=structuredClone(product);if(snapshots>1)options.late?.(result);return result;},
     fetchAllOnboardingVariantIdentities:async()=>{variantReads++;return options.variants??[{id:variantId,sku:product.variants[0].sku,product:{id:productId}}];},
+    upsertExactGalleryBindings:async(db,input)=>{for(const binding of input.bindings)await db.rpc("upsert_shopify_gallery_binding",{binding,input});},
     lookup:async()=>options.addresses??[{address:"8.8.8.8"}],
     fetch:async(url,init)=>{assert.equal(url,product.media[0].image.url);assert.equal(init.redirect,"error");return options.response?.()??new Response(bytes,{headers:{"content-type":"image/png"}});}});
   return {worker,db,product,rpcCalls,reads,counts:()=>({snapshots,variantReads}),run:extra=>worker.ensurePublicShopifyOnboarding(db,{...input,...extra})};
@@ -100,6 +101,14 @@ test("only matching onboarding receipt permits exact idempotent RPC replay",asyn
   const receipt={product_gid:productId,variant_gid:variantId,catalog_key:"NEW001",carousel_item_id:"item",exact_sku:"NEW-001"};
   assert.equal(await fixture({gallery,receipt}).run(),true);
   await assert.rejects(fixture({gallery,receipt:{...receipt,exact_sku:"NEW001"}}).run(),/GALLERY_SKU_COLLISION/);
+});
+
+test("an exact pre-existing Gallery row receives a purchase binding without rewriting media or copy",async()=>{
+  const gallery=[{id:"00000000-0000-4000-8000-000000000099",catalog_number:"NEW-001",is_active:true}];
+  const f=fixture({gallery});
+  assert.equal(await f.run(),true);
+  assert.deepEqual(f.rpcCalls.map(call=>call.name),["upsert_shopify_gallery_binding"]);
+  assert.deepEqual(f.counts(),{snapshots:2,variantReads:2});
 });
 
 test("changed version, SKU, image association or publication after decoding prevents commit",async()=>{

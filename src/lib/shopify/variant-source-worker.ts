@@ -5,6 +5,7 @@ import { shopifyAdminGraphql, visibleCopyFromProduct, type ShopifyOnboardingSnap
 import { assertSafeDescriptionHtml } from "./description-document";
 import { verifyOnboardingImage } from "./onboarding-worker";
 import { MD20_PRODUCT_GID, MD20_PRODUCT_HANDLE, MD20_VARIANTS, MD20_LEGACY_UNASSIGNED_MEDIA, exactVariantMedia, exactVariantSeo } from "./variant-source-policy";
+import { upsertExactGalleryBindings } from "./publication-sync";
 
 async function snapshot(deadline: number): Promise<ShopifyOnboardingSnapshot> {
   const publicationId = process.env.SHOPIFY_ONLINE_STORE_PUBLICATION_ID?.trim();
@@ -96,9 +97,12 @@ export async function reconcileApprovedVariants(db: SupabaseClient, deadline: nu
     const row = readAngles.data?.find(r => r.id === p.id);
     return !row || Object.entries(p).some(([key, value]) => row[key] !== value);
   })) throw new Error("SYNC_COPY_READBACK_MISMATCH");
-  // These existing variants use the reviewed static purchase map. Identity and
-  // handle were checked before writing; do not write the read-only public link
-  // projection or enlarge database permissions. A handle change needs review.
+  await upsertExactGalleryBindings(db, {
+    productGid: MD20_PRODUCT_GID, handle: MD20_PRODUCT_HANDLE,
+    sourceUpdatedAt: source.updatedAt, published,
+    bindings: MD20_VARIANTS.map(v => ({ catalogKey: v.sku, itemId: v.itemId,
+      variantGid: `gid://shopify/ProductVariant/${v.variantId}` })),
+  });
   // These rows are audit history, not outbound instructions: Shopify is the
   // approved source. Settle only after all three exact projections read back.
   const settled = await db.from("shopify_gallery_content_outbox").update({ status: "synced", synced_at: new Date().toISOString(), last_error: null })
