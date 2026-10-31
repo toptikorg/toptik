@@ -985,7 +985,9 @@ body:has(.carousel-page) {
 
 .catalog-card-title {
   font-size: clamp(16px, 1.05vw, 19px);
-  font-weight: 800;
+  /* Rubik is registered up to 700. Avoid synthetic 800, which can merge
+     adjacent Hebrew glyphs visually (for example the two vavs in מזוודת). */
+  font-weight: 700;
   color: #1f2731;
   line-height: 1.2;
   /* Titles and descriptions determine card height; the page owns scrolling. */
@@ -1292,7 +1294,7 @@ body:has(.carousel-page) {
 .product-modal-title {
   flex-shrink: 0;
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 700;
   color: #1f2731;
   line-height: 1.15;
 }
