@@ -19,6 +19,46 @@ export function extractAttributeValues(html, element, attribute) {
   return [...html.matchAll(expression)].map((match) => decodeHtmlAttribute(match[1]));
 }
 
+export function assertCarouselTitleTypography(css) {
+  for (const selector of [".catalog-card-title", ".product-modal-title"]) {
+    const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const blocks = [...css.matchAll(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`, "g"))]
+      .map((match) => match[1]);
+    if (blocks.length === 0) throw new Error(`Production CSS is missing ${selector}`);
+    if (blocks.some((block) => /font-weight\s*:\s*800\b/.test(block))) {
+      throw new Error(`${selector} requests unsupported synthetic font weight 800`);
+    }
+    if (!blocks.some((block) => /font-weight\s*:\s*700\b/.test(block))) {
+      throw new Error(`${selector} is not pinned to supported Rubik font weight 700`);
+    }
+  }
+}
+
+export function compareStoreGalleryProductHandles(storeProductUrls, carouselItems) {
+  const handleFromUrl = (raw) => {
+    try {
+      const parts = new URL(raw).pathname.split("/").filter(Boolean);
+      return parts[0] === "products" && parts[1] ? decodeURIComponent(parts[1]).toLowerCase() : null;
+    } catch { return null; }
+  };
+  const storeHandles = new Set(storeProductUrls.map(handleFromUrl).filter(Boolean));
+  const galleryHandles = new Set(carouselItems.flatMap((item) => {
+    const handle = item?.shopifyLink?.isPublished && typeof item.shopifyLink.handle === "string"
+      ? item.shopifyLink.handle.trim().toLowerCase()
+      : "";
+    return handle ? [handle] : [];
+  }));
+  return {
+    storeCount: storeHandles.size,
+    galleryLinkedCount: galleryHandles.size,
+    missing: [...storeHandles].filter((handle) => !galleryHandles.has(handle)).sort(),
+  };
+}
+
+function extractXmlLocations(xml) {
+  return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)].map((match) => decodeHtmlAttribute(match[1]));
+}
+
 async function monitoredFetch(url, options = {}) {
   let lastResponse;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -90,11 +130,36 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   }
 
   const carouselHtml = await fetchText(`${normalizedBase}/carousel`);
+  const carouselStylesheets = [...new Set(
+    extractAttributeValues(carouselHtml, "link", "href").filter((href) => href.includes("/_next/static/css/")),
+  )];
+  if (carouselStylesheets.length === 0) throw new Error("Carousel rendered without a production stylesheet");
+  const carouselCss = (await Promise.all(
+    carouselStylesheets.map((href) => fetchText(absoluteUrl(normalizedBase, href))),
+  )).join("\n");
+  assertCarouselTitleTypography(carouselCss);
   const carouselProductLinks = [...new Set(
     extractAttributeValues(carouselHtml, "a", "href").filter((href) => href.includes("toptik.co.il/products/")),
   )];
   if (carouselProductLinks.length < MIN_CAROUSEL_PRODUCT_LINKS) {
     throw new Error(`Carousel HTML rendered ${carouselProductLinks.length} store product links, expected at least ${MIN_CAROUSEL_PRODUCT_LINKS}`);
+  }
+
+  const storeSitemapIndex = await fetchText(`${storeBase}/sitemap.xml`);
+  const productSitemaps = extractXmlLocations(storeSitemapIndex).filter((url) => {
+    try { return new URL(url).pathname.startsWith("/sitemap_products_"); }
+    catch { return false; }
+  });
+  if (productSitemaps.length === 0) throw new Error("Shopify sitemap index contains no product sitemap");
+  const storeProductUrls = (await Promise.all(productSitemaps.map(fetchText)))
+    .flatMap(extractXmlLocations)
+    .filter((url) => {
+      try { return new URL(url).origin === storeBase && new URL(url).pathname.startsWith("/products/"); }
+      catch { return false; }
+    });
+  const catalogCoverage = compareStoreGalleryProductHandles(storeProductUrls, carouselPayload.items);
+  if (catalogCoverage.missing.length > 0) {
+    throw new Error(`Gallery is missing ${catalogCoverage.missing.length} live Shopify products: ${catalogCoverage.missing.slice(0, 20).join(",")}`);
   }
 
   const storeHomeHtml = await fetchText(storeBase);
@@ -145,6 +210,9 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     articleImages: articleImages.length,
     carouselItems: carouselPayload.items.length,
     carouselProductLinks: carouselProductLinks.length,
+    carouselTitleTypography: "supported-rubik-700",
+    storeSitemapProducts: catalogCoverage.storeCount,
+    galleryLinkedStoreProducts: catalogCoverage.galleryLinkedCount,
     storeHomeImages: storeHomeImages.length,
     storeCollectionProducts: storeProductLinks.length,
     storeProductImages: storeProductImages.length,

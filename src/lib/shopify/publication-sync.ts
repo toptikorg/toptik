@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { configuredShopifyDomain, fetchProductSnapshot } from "./admin-api";
-import { isSafeShopifyProductHandle } from "./sync-rules";
+import { configuredShopifyDomain, fetchAllOnboardingVariantIdentities, fetchProductSnapshot } from "./admin-api";
+import { isSafeShopifyProductHandle, normalizeSyncSku } from "./sync-rules";
 import { FZT73_PRODUCT_GID } from "./variant-source-policy";
 
 /** Publication is independent of copy/media approval. Caller holds the product lease.
@@ -35,19 +35,43 @@ export async function enqueuePublicationRecovery(supabase: SupabaseClient, day =
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("SYNC_PUBLICATION_DAY_INVALID");
   // Include the approved unbound family so a missed create webhook self-recovers.
   const ids = new Set<string>([FZT73_PRODUCT_GID]);
+  const boundVariantIds = new Set<string>();
   for (let offset = 0; ; offset += 500) {
-    const { data, error } = await supabase.from("shopify_gallery_bindings").select("catalog_key,product_gid")
+    const { data, error } = await supabase.from("shopify_gallery_bindings").select("catalog_key,product_gid,variant_gid")
       .order("catalog_key").range(offset, offset + 499);
     if (error || !Array.isArray(data)) throw new Error("SYNC_PUBLICATION_BINDINGS_READ_FAILED");
     for (const row of data) {
       if (!/^gid:\/\/shopify\/Product\/\d+$/.test(row.product_gid)) throw new Error("SYNC_PUBLICATION_BINDING_INVALID");
+      if (!/^gid:\/\/shopify\/ProductVariant\/\d+$/.test(row.variant_gid)) throw new Error("SYNC_PUBLICATION_BINDING_INVALID");
       ids.add(row.product_gid);
+      boundVariantIds.add(row.variant_gid);
     }
     if (data.length < 500) break;
     if (offset >= 9500) throw new Error("SYNC_PUBLICATION_BINDINGS_LIMIT");
   }
-  const rows = [...ids].map(id => ({ delivery_id: `publication-recovery:${day}:${id}`, topic: "products/update",
+  const galleryCatalogKeys = new Set<string>();
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await supabase.from("carousel_items").select("catalog_number")
+      .order("id").range(offset, offset + 999);
+    if (error || !Array.isArray(data)) throw new Error("SYNC_CATALOG_COVERAGE_GALLERY_READ_FAILED");
+    for (const row of data) {
+      const key = normalizeSyncSku(row.catalog_number);
+      if (key) galleryCatalogKeys.add(key);
+    }
+    if (data.length < 1000) break;
+    if (offset >= 9000) throw new Error("SYNC_CATALOG_COVERAGE_GALLERY_LIMIT");
+  }
+  const variants = await fetchAllOnboardingVariantIdentities(Date.now() + 40_000);
+  const missingProductIds = new Set(variants.filter(variant => !boundVariantIds.has(variant.id) &&
+    !galleryCatalogKeys.has(normalizeSyncSku(variant.sku) ?? "")).map(variant => variant.product.id));
+  if ([...missingProductIds].some(id => !/^gid:\/\/shopify\/Product\/\d+$/.test(id))) {
+    throw new Error("SYNC_CATALOG_COVERAGE_IDENTITY_INVALID");
+  }
+  const rows: Array<{ delivery_id: string; topic: "products/update"; shop_domain: string;
+    payload: Record<string, unknown>; status: "pending" }> = [...ids].map(id => ({ delivery_id: `publication-recovery:${day}:${id}`, topic: "products/update",
     shop_domain: configuredShopifyDomain(), payload: { id: id.split("/").at(-1), publication_recovery: true }, status: "pending" }));
+  rows.push(...[...missingProductIds].map(id => ({ delivery_id: `catalog-coverage:${day}:${id}`, topic: "products/update" as const,
+    shop_domain: configuredShopifyDomain(), payload: { id: id.split("/").at(-1), catalog_coverage_recovery: true }, status: "pending" as const })));
   for (let offset = 0; offset < rows.length; offset += 100) {
     const { error } = await supabase.from("shopify_webhook_events").upsert(rows.slice(offset, offset + 100),
       { onConflict: "delivery_id", ignoreDuplicates: true });

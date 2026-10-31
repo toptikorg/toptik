@@ -4,9 +4,10 @@ import {readFileSync} from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 const source = stripTypeScriptTypes(readFileSync('src/lib/shopify/publication-sync.ts','utf8')).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
 const worker = stripTypeScriptTypes(readFileSync('src/lib/shopify/sync-worker.ts','utf8')).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
-const {make} = await import('data:text/javascript;base64,'+Buffer.from(`export function make(fetchProductSnapshot) {
+const {make} = await import('data:text/javascript;base64,'+Buffer.from(`export function make(fetchProductSnapshot,fetchAllOnboardingVariantIdentities=async()=>[]) {
  const configuredShopifyDomain=()=> 'toptik.myshopify.com';
  const isSafeShopifyProductHandle=x=>/^[a-z0-9-]+$/.test(x);
+ const normalizeSyncSku=x=>typeof x==='string'?x.replace(/[^a-z0-9]/gi,'').toUpperCase()||null:null;
  const configuredShopifySyncMode=()=> 'verified_catalog';
  const FZT73_PRODUCT_GID='gid://shopify/Product/7524873044218';
  ${source}
@@ -46,12 +47,18 @@ test('daily recovery rereads current publication without calling content or medi
  await make(async()=>product).reconcileInboxEvent(db,{id:'e',payload:{publication_recovery:true}},gid,'owner');
  assert.equal(patch.status,'processed');
 });
-test('recovery paginates, deduplicates products and preserves historical events',async()=>{
+test('recovery paginates, repairs missing Shopify variants and preserves historical events',async()=>{
  const events=new Map();let pages=0;
  const db={from:table=> table==='shopify_gallery_bindings'?{select:()=>({order:()=>({range:async offset=>{
-  pages++;return{data:offset===0?Array.from({length:500},()=>({product_gid:gid})):[{product_gid:'gid://shopify/Product/789'}],error:null};
- }})})}:{upsert:async(rows,options)=>{assert.deepEqual(options,{onConflict:'delivery_id',ignoreDuplicates:true});for(const row of rows)if(!events.has(row.delivery_id))events.set(row.delivery_id,row);return{error:null};}}};
- const api=make(async()=>product);await api.enqueuePublicationRecovery(db,'2026-10-12');await api.enqueuePublicationRecovery(db,'2026-10-12');
- assert.equal(pages,4);assert.equal(events.size,3);assert.ok([...events.values()].every(e=>e.payload.publication_recovery===true));
+  pages++;return{data:offset===0?Array.from({length:500},()=>({catalog_key:'BOUND',product_gid:gid,variant_gid:variant})):[{catalog_key:'SECOND',product_gid:'gid://shopify/Product/789',variant_gid:'gid://shopify/ProductVariant/790'}],error:null};
+ }})})}:table==='carousel_items'?{select:()=>({order:()=>({range:async()=>({data:[{catalog_number:'LEGACY-1'}],error:null})})})}:{upsert:async(rows,options)=>{assert.deepEqual(options,{onConflict:'delivery_id',ignoreDuplicates:true});for(const row of rows)if(!events.has(row.delivery_id))events.set(row.delivery_id,row);return{error:null};}}};
+ const variants=async()=>[{id:variant,sku:'BAG',product:{id:gid}},
+  {id:'gid://shopify/ProductVariant/997',sku:'LEGACY 1',product:{id:'gid://shopify/Product/996'}},
+  {id:'gid://shopify/ProductVariant/999',sku:'NEW',product:{id:'gid://shopify/Product/998'}}];
+ const api=make(async()=>product,variants);await api.enqueuePublicationRecovery(db,'2026-10-12');await api.enqueuePublicationRecovery(db,'2026-10-12');
+ assert.equal(pages,4);assert.equal(events.size,4);assert.equal([...events.values()].filter(e=>e.payload.catalog_coverage_recovery).length,1);
+ assert.ok([...events.values()].filter(e=>e.payload.publication_recovery).length===3);
  assert.ok([...events.values()].some(e=>e.payload.id==='7524873044218'));
+ assert.ok([...events.values()].some(e=>e.delivery_id==='catalog-coverage:2026-10-12:gid://shopify/Product/998'));
+ assert.ok(![...events.values()].some(e=>e.delivery_id.includes('gid://shopify/Product/996')));
 });
