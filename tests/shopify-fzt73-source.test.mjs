@@ -6,7 +6,7 @@ import {randomUUID} from 'node:crypto';
 const url=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
 const policy=await import(url(readFileSync('src/lib/shopify/variant-source-policy.ts','utf8')));
 const worker=stripTypeScriptTypes(readFileSync('src/lib/shopify/fzt73-source-worker.ts','utf8')).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
-const {make}=await import(url(`export function make(deps){const {randomUUID,configuredShopifyDomain,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,FZT73_PRODUCT_GID,FZT73_PRODUCT_HANDLE,FZT73_VARIANTS,exactFzt73Media,exactVariantSeo,process}=deps; ${worker};return reconcileFzt73Variants;}`));
+const {make}=await import(url(`export function make(deps){const {randomUUID,configuredShopifyDomain,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,upsertExactGalleryBindings,FZT73_PRODUCT_GID,FZT73_PRODUCT_HANDLE,FZT73_VARIANTS,exactFzt73Media,exactVariantSeo,process}=deps; ${worker};return reconcileFzt73Variants;}`));
 function fixture(){
  const p={id:policy.FZT73_PRODUCT_GID,handle:policy.FZT73_PRODUCT_HANDLE,title:'פאוץ׳ FZT73',descriptionHtml:'<p>עור</p>',status:'ACTIVE',updatedAt:'2026-10-13T00:00:00Z',vendor:'mandarinaduck',productType:'bag',publishedOnPublication:true,seo:{title:'פאוץ׳ FZT73',description:'פאוץ׳ עור.'},
  variants:{nodes:policy.FZT73_VARIANTS.map(v=>({id:'gid://shopify/ProductVariant/'+v.variantId,sku:v.sku,selectedOptions:[{name:'צבע',value:v.color}]})),pageInfo:{hasNextPage:false}},
@@ -15,13 +15,14 @@ function fixture(){
  const calls=[],verified=[];
  const db={from(table){let filters=[],slice,action='read',body;const q={select(){return q},in(k,v){filters.push(r=>v.includes(r[k]));return q},eq(){return q},single(){return q},order(){return q},range(a,b){slice=[a,b+1];return q},update(v){action='update';body=v;return q},then(resolve){calls.push({table,action,body});let data=structuredClone(tables[table]??[]);if(Array.isArray(data)){data=data.filter(r=>filters.every(f=>f(r)));if(slice)data=data.slice(...slice);}return Promise.resolve({data,error:null}).then(resolve)}};return q},
  async rpc(name,args){calls.push({name,args});for(const row of args.p_items){const old=tables.carousel_items.find(r=>r.id===row.id);if(old)Object.assign(old,row);else tables.carousel_items.push({...row,editor_revision:1,copy_updated_at:'created'});}const ids=args.p_items.map(r=>r.id);tables.carousel_item_angles=tables.carousel_item_angles.filter(r=>!ids.includes(r.item_id)).concat(structuredClone(args.p_angles));return{error:null}}};
- const deps={...policy,randomUUID,configuredShopifyDomain:()=> 'toptikcoil.myshopify.com',process:{env:{SHOPIFY_ONLINE_STORE_PUBLICATION_ID:'gid://shopify/Publication/79538258170',SHOPIFY_SYNC_AUTOCREATE:'published_shopify'}},shopifyAdminGraphql:async()=>({product:structuredClone(p)}),visibleCopyFromProduct:s=>({title:s.title,description:'עור',descriptionHtml:s.descriptionHtml,seoTitle:s.seoTitle,seoDescription:s.seoDescription}),assertSafeDescriptionHtml:()=>{},verifyOnboardingImage:async m=>verified.push(m.id)};
+ const deps={...policy,randomUUID,configuredShopifyDomain:()=> 'toptikcoil.myshopify.com',process:{env:{SHOPIFY_ONLINE_STORE_PUBLICATION_ID:'gid://shopify/Publication/79538258170',SHOPIFY_SYNC_AUTOCREATE:'published_shopify'}},shopifyAdminGraphql:async()=>({product:structuredClone(p)}),visibleCopyFromProduct:s=>({title:s.title,description:'עור',descriptionHtml:s.descriptionHtml,seoTitle:s.seoTitle,seoDescription:s.seoDescription}),assertSafeDescriptionHtml:()=>{},verifyOnboardingImage:async m=>verified.push(m.id),upsertExactGalleryBindings:async(_db,input)=>calls.push({linkSync:input})};
  return{p,tables,calls,verified,db,deps,run:()=>make(deps)(db,Date.now()+45000)};
 }
 test('creates four exact colors and fifteen decoded images atomically without touching unrelated rows',async()=>{
  const f=fixture(),other=structuredClone(f.tables.carousel_items[0]);await f.run();
  assert.deepEqual(f.tables.carousel_items[0],other);assert.equal(f.verified.length,15);assert.equal(f.tables.carousel_item_angles.length,15);
  const write=f.calls.find(c=>c.name);assert.equal(write.args.p_items.length,4);assert.ok(Object.values(write.args.p_expected_versions).every(v=>v===null));
+ assert.equal(f.calls.find(c=>c.linkSync).linkSync.bindings.length,4);
  for(const v of policy.FZT73_VARIANTS){const row=f.tables.carousel_items.find(r=>r.id===v.itemId);assert.equal(row.catalog_number,v.sku);assert.ok(row.title.endsWith(v.color));assert.ok(row.cover_image_alt.includes(v.color));assert.ok(f.tables.carousel_item_angles.filter(a=>a.item_id===v.itemId).every(a=>policy.FZT73_MEDIA.some(m=>m.sku===v.sku&&m.url===a.image_path)));}
 });
 test('replay preserves revisions and angle identities with no RPC or repeated image download',async()=>{

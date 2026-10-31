@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isPrivateAddress } from "@/lib/catalog-source/source-allowlist";
 import { configuredShopifyDomain, fetchAllOnboardingVariantIdentities, fetchPublicOnboardingProductSnapshot, type ShopifyOnboardingSnapshot } from "./admin-api";
 import { normalizeSyncSku } from "./sync-rules";
+import { upsertExactGalleryBindings } from "./publication-sync";
 import { approvedShopifyImageUrl, assertOnboardingShopifyUniqueness, MAX_ONBOARDING_IMAGE_BYTES, ONBOARDING_SHOP_DOMAIN,
   onboardingSnapshotFingerprint, PUBLIC_ONBOARDING_POLICY, publicOnboardingCandidate, type OnboardingImageEvidence } from "./onboarding-policy";
 
@@ -98,8 +99,25 @@ export async function ensurePublicShopifyOnboarding(supabase: SupabaseClient,
     const { data: receipt, error } = await supabase.from("shopify_gallery_product_onboarding_receipts")
       .select("product_gid,variant_gid,catalog_key,carousel_item_id,exact_sku").eq("product_gid", product.id).maybeSingle();
     if (error) throw new Error("SYNC_ONBOARDING_RECEIPT_READ_FAILED");
-    if (galleryMatches.length !== 1 || !receipt || receipt.variant_gid !== candidate.variantGid || receipt.catalog_key !== candidate.catalogKey ||
-        receipt.carousel_item_id !== galleryMatches[0].id || receipt.exact_sku !== candidate.exactSku || galleryMatches[0].catalog_number !== candidate.exactSku) {
+    if (galleryMatches.length !== 1 || galleryMatches[0].catalog_number !== candidate.exactSku) {
+      throw new Error("SYNC_ONBOARDING_GALLERY_SKU_COLLISION");
+    }
+    if (!receipt) {
+      const [fresh, finalVariants] = await Promise.all([
+        fetchPublicOnboardingProductSnapshot(product.id, deadline), fetchAllOnboardingVariantIdentities(deadline),
+      ]);
+      if (!fresh || onboardingSnapshotFingerprint(fresh) !== onboardingSnapshotFingerprint(product)) {
+        throw new Error("SYNC_ONBOARDING_SOURCE_CHANGED");
+      }
+      assertOnboardingShopifyUniqueness(fresh, finalVariants);
+      await upsertExactGalleryBindings(supabase, {
+        productGid: product.id, handle: product.handle, sourceUpdatedAt: product.updatedAt, published: true,
+        bindings: [{ catalogKey: candidate.catalogKey, itemId: galleryMatches[0].id, variantGid: candidate.variantGid }],
+      });
+      return true;
+    }
+    if (receipt.variant_gid !== candidate.variantGid || receipt.catalog_key !== candidate.catalogKey ||
+        receipt.carousel_item_id !== galleryMatches[0].id || receipt.exact_sku !== candidate.exactSku) {
       throw new Error("SYNC_ONBOARDING_GALLERY_SKU_COLLISION");
     }
   }

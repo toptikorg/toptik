@@ -10,12 +10,24 @@ const {make} = await import('data:text/javascript;base64,'+Buffer.from(`export f
  const normalizeSyncSku=x=>typeof x==='string'?x.replace(/[^a-z0-9]/gi,'').toUpperCase()||null:null;
  const configuredShopifySyncMode=()=> 'verified_catalog';
  const FZT73_PRODUCT_GID='gid://shopify/Product/7524873044218';
+ const MD20_PRODUCT_GID='gid://shopify/Product/7512404951290';
  ${source}
  ${worker}
- return {refreshProductPublication,enqueuePublicationRecovery,reconcileInboxEvent};
+ return {refreshProductPublication,upsertExactGalleryBindings,enqueuePublicationRecovery,reconcileInboxEvent};
 }`).toString('base64'));
 const gid='gid://shopify/Product/123', variant='gid://shopify/ProductVariant/456';
 const product={id:gid,handle:'bag',status:'ACTIVE',publishedOnPublication:true,updatedAt:'2026-10-12T10:00:00Z',variants:[{id:variant,sku:'BAG'}]};
+test('exact existing Gallery binding validates identity and writes only through the guarded RPC',async()=>{
+ const calls=[];const api=make(async()=>product);
+ await api.upsertExactGalleryBindings({rpc:async(name,args)=>{calls.push({name,args});return{data:true,error:null};}},
+  {productGid:gid,handle:'bag',sourceUpdatedAt:product.updatedAt,published:true,
+   bindings:[{catalogKey:'BAG',itemId:'00000000-0000-4000-8000-000000000001',variantGid:variant}]});
+ assert.equal(calls.length,1);assert.equal(calls[0].name,'upsert_shopify_gallery_binding');
+ assert.equal(calls[0].args.p_product_gid,gid);assert.equal(calls[0].args.p_variant_gid,variant);
+ await assert.rejects(api.upsertExactGalleryBindings({rpc:()=>assert.fail('no write')},
+  {productGid:gid,handle:'bag',sourceUpdatedAt:product.updatedAt,published:true,
+   bindings:[{catalogKey:'BAG-',itemId:'bad',variantGid:variant}]}),/BINDING_INVALID/);
+});
 for (const [name,value,published] of [ ['draft',{...product,status:'DRAFT'},false],['archived',{...product,status:'ARCHIVED'},false],
  ['unpublished',{...product,publishedOnPublication:false},false],['confirmed missing',null,false],['active',product,true]]) {
  test(`publication snapshot: ${name}`,async()=>{
@@ -56,9 +68,10 @@ test('recovery paginates, repairs missing Shopify variants and preserves histori
   {id:'gid://shopify/ProductVariant/997',sku:'LEGACY 1',product:{id:'gid://shopify/Product/996'}},
   {id:'gid://shopify/ProductVariant/999',sku:'NEW',product:{id:'gid://shopify/Product/998'}}];
  const api=make(async()=>product,variants);await api.enqueuePublicationRecovery(db,'2026-10-12');await api.enqueuePublicationRecovery(db,'2026-10-12');
- assert.equal(pages,4);assert.equal(events.size,4);assert.equal([...events.values()].filter(e=>e.payload.catalog_coverage_recovery).length,1);
- assert.ok([...events.values()].filter(e=>e.payload.publication_recovery).length===3);
+ assert.equal(pages,4);assert.equal(events.size,6);assert.equal([...events.values()].filter(e=>e.payload.catalog_coverage_recovery).length,1);
+ assert.equal([...events.values()].filter(e=>e.payload.catalog_link_recovery).length,1);
+ assert.ok([...events.values()].filter(e=>e.payload.publication_recovery).length===4);
  assert.ok([...events.values()].some(e=>e.payload.id==='7524873044218'));
  assert.ok([...events.values()].some(e=>e.delivery_id==='catalog-coverage:2026-10-12:gid://shopify/Product/998'));
- assert.ok(![...events.values()].some(e=>e.delivery_id.includes('gid://shopify/Product/996')));
+ assert.ok([...events.values()].some(e=>e.delivery_id==='catalog-link:2026-10-12:gid://shopify/Product/996'));
 });
