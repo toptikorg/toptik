@@ -8,6 +8,7 @@ const KEY = "toptik-analytics-consent-v1";
 type Choice = "granted" | "denied";
 type AnalyticsWindow = Window & {
   "ga-disable-G-LHWB69CV2M"?: boolean;
+  toptikGalleryAnalyticsConfigured?: boolean;
   dataLayer?: unknown[];
   gtag?: (...args: unknown[]) => void;
 };
@@ -17,8 +18,9 @@ function permitted(path: string) {
     !/^\/(admin|login|setup|reset|dashboard|settings|auth|api)(\/|$)/.test(path);
 }
 
-function startMeasurement(path: string) {
+function setConsent(choice: Choice) {
   const w = window as AnalyticsWindow;
+  // Consent Mode keeps measurement cookieless until the visitor opts in.
   w["ga-disable-G-LHWB69CV2M"] = false;
   if (!w.gtag) {
     w.dataLayer = w.dataLayer || [];
@@ -26,10 +28,19 @@ function startMeasurement(path: string) {
     // eslint-disable-next-line prefer-rest-params
     w.gtag = function () { w.dataLayer!.push(arguments); };
     w.gtag("consent", "default", {
-      analytics_storage: "granted", ad_storage: "denied",
+      analytics_storage: "denied", ad_storage: "denied",
       ad_user_data: "denied", ad_personalization: "denied",
+      wait_for_update: 500,
     });
     w.gtag("js", new Date());
+  }
+  w.gtag("consent", "update", {
+    analytics_storage: choice,
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+  if (!w.toptikGalleryAnalyticsConfigured) {
     w.gtag("config", ID, {
       send_page_view: false, allow_google_signals: false,
       allow_ad_personalization_signals: false,
@@ -40,10 +51,15 @@ function startMeasurement(path: string) {
     script.src = `https://www.googletagmanager.com/gtag/js?id=${ID}`;
     script.id = "toptik-gallery-google-tag";
     document.head.appendChild(script);
+    w.toptikGalleryAnalyticsConfigured = true;
   }
-  w.gtag("consent", "update", { analytics_storage: "granted" });
+}
+
+function startMeasurement(path: string, choice: Choice) {
+  const w = window as AnalyticsWindow;
+  setConsent(choice);
   // Deliberately omit query strings, hashes and titles that might contain input.
-  w.gtag("event", "page_view", {
+  w.gtag!("event", "page_view", {
     page_location: `https://landing.toptik.co.il${path}`,
     page_title: "TopTik Gallery",
     page_referrer: document.referrer ? new URL(document.referrer).origin : "",
@@ -62,15 +78,13 @@ export function GalleryAnalytics() {
     let choice: string | null = null;
     try { choice = localStorage.getItem(KEY); } catch { /* Optional storage. */ }
     setVisible(!choice);
-    if (choice === "granted") startMeasurement(path);
+    startMeasurement(path, choice === "granted" ? "granted" : "denied");
   }, [path]);
 
   function choose(choice: Choice) {
     try { localStorage.setItem(KEY, choice); } catch { /* Choice still applies now. */ }
-    if (choice === "granted") startMeasurement(path);
-    else {
-      (window as AnalyticsWindow)["ga-disable-G-LHWB69CV2M"] = true;
-      (window as AnalyticsWindow).gtag?.("consent", "update", { analytics_storage: "denied" });
+    setConsent(choice);
+    if (choice === "denied") {
       for (const part of document.cookie.split(";")) {
         const name = part.trim().split("=")[0];
         if (name === "_ga" || name.startsWith("_ga_")) {
@@ -89,10 +103,10 @@ export function GalleryAnalytics() {
       <button type="button" onClick={() => setVisible(true)} style={{ color: "#fff", textDecoration: "underline", minHeight: 44, padding: "8px 16px", cursor: "pointer" }}>העדפות מדידה</button>
     </div>
     {visible && <section aria-label="העדפות מדידה" style={{ position: "fixed", bottom: 16, insetInline: 16, margin: "0 auto", maxWidth: 580, zIndex: 10000, background: "#fff", color: "#171717", padding: 18, borderRadius: 12, boxShadow: "0 4px 24px #0005", fontSize: 16, lineHeight: 1.6 }}>
-      <p>אפשר לעזור לנו לשפר את הגלריה באמצעות Google Analytics ועוגיות מדידה. הבחירה אינה נדרשת לשימוש באתר, ואפשר לשנות אותה בתחתית העמוד.</p>
+      <p>אפשר לעזור לנו לשפר את הגלריה באמצעות Google Analytics. אפשר לבחור מדידה עם עוגיות או מדידה בסיסית ללא עוגיות, ולשנות את הבחירה בכל עת בתחתית העמוד.</p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12 }}>
         <button type="button" onClick={() => choose("granted")} style={{ border: "1px solid #333", borderRadius: 6, padding: "10px 18px", minHeight: 44, cursor: "pointer" }}>אישור מדידה</button>
-        <button type="button" onClick={() => choose("denied")} style={{ border: "1px solid #333", borderRadius: 6, padding: "10px 18px", minHeight: 44, cursor: "pointer" }}>ללא מדידה</button>
+        <button type="button" onClick={() => choose("denied")} style={{ border: "1px solid #333", borderRadius: 6, padding: "10px 18px", minHeight: 44, cursor: "pointer" }}>ללא עוגיות מדידה</button>
       </div>
     </section>}
   </>;

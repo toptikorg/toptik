@@ -21,19 +21,22 @@ test('only public gallery routes are eligible', () => {
 });
 test('tag initializes once, pageviews are explicit and advertising stays denied', () => {
   const h = harness();
-  h.run("startMeasurement('/'); startMeasurement('/journal');");
+  h.run("startMeasurement('/', 'denied'); startMeasurement('/journal', 'granted');");
   assert.equal(h.scripts.length, 1);
   assert.equal(h.scripts[0].async, true);
   const events = h.run('window.dataLayer').map(a => Array.from(a));
   assert.equal(events.find(e => e[0] === 'config')[2].send_page_view, false);
+  assert.equal(events[0][2].analytics_storage, 'denied');
   assert.equal(events[0][2].ad_storage, 'denied');
+  assert.equal(events.filter(e => e[0] === 'consent' && e[1] === 'update').at(-1)[2].analytics_storage, 'granted');
   assert.equal(events.filter(e => e[0] === 'event').length, 2);
   assert.equal(events.at(-1)[2].page_referrer, 'https://www.google.com');
   assert.equal(events.at(-1)[2].page_location, 'https://landing.toptik.co.il/journal');
 });
-test('consent gates startup and withdrawal disables Google collection', () => {
-  assert.match(source, /if \(choice === "granted"\) startMeasurement\(path\)/);
-  assert.match(source, /\["ga-disable-G-LHWB69CV2M"\] = true/);
-  assert.match(source, /ללא מדידה/);
+test('consent mode defaults to cookieless measurement and keeps advertising denied', () => {
+  assert.match(source, /startMeasurement\(path, choice === "granted" \? "granted" : "denied"\)/);
+  assert.match(source, /analytics_storage: "denied"/);
+  assert.doesNotMatch(source, /\["ga-disable-G-LHWB69CV2M"\] = true/);
+  assert.match(source, /ללא עוגיות מדידה/);
   assert.match(source, /העדפות מדידה/);
 });
