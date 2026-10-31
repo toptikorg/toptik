@@ -116,7 +116,7 @@ export function GalleryAnalytics() {
       for (const part of document.cookie.split(";")) {
         const name = part.trim().split("=")[0];
         if (name === "_ga" || name.startsWith("_ga_")) {
-          for (const domain of ["", "; domain=landing.toptik.co.il"]) {
+          for (const domain of ["", "; domain=landing.toptik.co.il", "; domain=toptik.co.il", "; domain=.toptik.co.il"]) {
             document.cookie = `${name}=; Max-Age=0; path=/${domain}; SameSite=Lax; Secure`;
           }
         }

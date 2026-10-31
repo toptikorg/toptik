@@ -49,4 +49,5 @@ test('consent mode defaults to cookieless measurement and keeps advertising deni
   assert.doesNotMatch(source, /\["ga-disable-G-LHWB69CV2M"\] = true/);
   assert.match(source, /ללא עוגיות מדידה/);
   assert.match(source, /העדפות מדידה/);
+  assert.match(source, /domain=toptik\.co\.il/);
 });
