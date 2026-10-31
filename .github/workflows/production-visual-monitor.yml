@@ -1,0 +1,116 @@
+name: Production Visual Monitor
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: production-visual-monitor
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check live pages, catalog and image assets
+        id: visual_smoke
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p production-monitor-evidence
+          set -o pipefail
+          node scripts/production-visual-smoke.mjs 2>&1 | tee production-monitor-evidence/smoke.log
+
+      - name: Preserve failure evidence
+        if: steps.visual_smoke.outcome == 'failure'
+        shell: bash
+        run: |
+          curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/journal.headers --output production-monitor-evidence/journal.html https://landing.toptik.co.il/journal || true
+          curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/article.headers --output production-monitor-evidence/article.html https://landing.toptik.co.il/journal/samsonite-intuo-vs-upscape-hard-suitcases || true
+          curl --fail-with-body --silent --show-error --location --dump-header production-monitor-evidence/carousel.headers --output production-monitor-evidence/carousel.json https://landing.toptik.co.il/api/carousel || true
+          git rev-parse HEAD > production-monitor-evidence/source-commit.txt
+          date --utc --iso-8601=seconds > production-monitor-evidence/detected-at-utc.txt
+
+      - name: Upload immutable failure evidence
+        if: steps.visual_smoke.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-visual-failure-${{ github.run_id }}
+          path: production-monitor-evidence
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Open or update a production incident
+        if: steps.visual_smoke.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "[Production monitor] TopTik visual failure";
+            const body = `The live visual smoke test failed.\n\nRun and 30-day evidence backup: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nThe monitor checks the journal archive, one full article, the carousel API and a sample of real image assets. The failed run preserves the HTML, HTTP headers, API response, source commit, UTC detection time and smoke log before any repair.`;
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const incident = issues.find((issue) => issue.title === title && !issue.pull_request);
+            if (incident) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: incident.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+            }
+
+      - name: Close the incident after recovery
+        if: steps.visual_smoke.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "[Production monitor] TopTik visual failure";
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            for (const issue of issues.filter((item) => item.title === title && !item.pull_request)) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: "The production visual smoke test passed again. Closing this incident automatically.",
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: "closed",
+              });
+            }
+
+      - name: Mark the workflow failed after evidence is preserved
+        if: steps.visual_smoke.outcome == 'failure'
+        run: exit 1
