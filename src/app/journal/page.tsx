@@ -8,6 +8,7 @@ import { jsonLdString } from "@/lib/seo/structured-data";
 import { resolveArticleHero } from '@/lib/editorial/product-reference';
 import { STORE_BRANDS, STORE_MAIN_CATEGORIES } from '@/lib/editorial/store-categories';
 import { STORE_ORIGIN } from '@/lib/seo/site';
+import { comparisonArticles } from '@/lib/editorial/comparison-articles';
 export const dynamic = 'force-dynamic';
 
 const JOURNAL_TITLE = "מדריכי השוואת מזוודות, טרולי ותיקים: סמסונייט, בריקס ומנדרינה דאק";
@@ -91,6 +92,15 @@ export default async function JournalArchivePage() {
           <ul>
             {STORE_BRANDS.map((link) => <li key={link.href}><a href={link.href}>{link.title}</a></li>)}
             <li><a href={`${STORE_ORIGIN}/`}>לדף הבית של החנות</a></li>
+          </ul>
+        </nav>
+        <nav className={styles.storeGuides} aria-labelledby="journal-comparisons-heading" data-journal-comparison-links="">
+          <h2 id="journal-comparisons-heading">השוואות חדשות לפי סדרה ומק״ט</h2>
+          <p>מדריכים ממוקדים לבחירה בין סדרות, גדלים וחומרים לפי נתוני היצרן.</p>
+          <ul>
+            {comparisonArticles.map((article) => (
+              <li key={article.slug}><Link href={`/journal/${article.slug}`}>{article.title}</Link></li>
+            ))}
           </ul>
         </nav>
         <section className={styles.archiveGrid} aria-label="מאמרים במגזין">

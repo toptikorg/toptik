@@ -21,7 +21,7 @@ const Table = ({ label, headings, rows }: { label: string; headings: readonly st
 
 const common = {
   publishedAt: "2026-10-22",
-  updatedAt: "2026-10-22",
+  updatedAt: "2026-10-31",
   byline: "מערכת מגזין TopTik",
 } as const;
 

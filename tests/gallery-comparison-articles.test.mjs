@@ -5,6 +5,9 @@ import test from "node:test";
 const articles = fs.readFileSync("src/lib/editorial/comparison-articles.tsx", "utf8");
 const page = fs.readFileSync("src/app/journal/[slug]/page.tsx", "utf8");
 const reviewedSeries = JSON.parse(fs.readFileSync("src/lib/carousel/series-reviewed.json", "utf8"));
+const storeGuides = JSON.parse(fs.readFileSync("src/lib/editorial/store-guides.json", "utf8"));
+const journal = fs.readFileSync("src/app/journal/page.tsx", "utf8");
+const sitemap = fs.readFileSync("src/app/sitemap.ts", "utf8");
 
 const slugs = [
   "samsonite-intuo-vs-upscape-hard-suitcases",
@@ -26,6 +29,16 @@ test("the comparison articles are registered with the required clean language", 
   assert.doesNotMatch(articles, /בגובה|—|–/);
   assert.match(page, /title: article\.title,/);
   assert.doesNotMatch(page, /title: `\$\{article\.title\} \|/);
+});
+
+test("comparison articles have strong crawl paths and current sitemap dates", () => {
+  for (const slug of slugs) {
+    assert.ok(Array.isArray(storeGuides[slug]) && storeGuides[slug].length > 0, `${slug}: missing store guide links`);
+  }
+  assert.match(journal, /comparisonArticles\.map/);
+  assert.match(journal, /data-journal-comparison-links/);
+  assert.match(sitemap, /lastModified: latestArticleUpdate/);
+  assert.match(articles, /updatedAt: "2026-10-31"/);
 });
 
 test("comparison cards use exact color SKUs instead of Mandarina family prefixes", () => {
