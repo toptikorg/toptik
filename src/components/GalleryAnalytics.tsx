@@ -44,7 +44,9 @@ function setConsent(choice: Choice) {
     w.gtag("config", ID, {
       send_page_view: false, allow_google_signals: false,
       allow_ad_personalization_signals: false,
-      cookie_domain: "landing.toptik.co.il",
+      // Share the first-party GA client cookie with the Shopify store. This
+      // keeps one visitor identity while moving between the gallery and shop.
+      cookie_domain: "toptik.co.il",
     });
     const script = document.createElement("script");
     script.async = true;
@@ -61,8 +63,26 @@ function startMeasurement(path: string, choice: Choice) {
   // Deliberately omit query strings, hashes and titles that might contain input.
   w.gtag!("event", "page_view", {
     page_location: `https://landing.toptik.co.il${path}`,
-    page_title: "TopTik Gallery",
+    page_title: document.title || "גלריית TopTik",
     page_referrer: document.referrer ? new URL(document.referrer).origin : "",
+  });
+}
+
+function trackStoreSelection(link: HTMLAnchorElement, path: string) {
+  const w = window as AnalyticsWindow;
+  if (!w.gtag) return;
+  const url = new URL(link.href, window.location.href);
+  if (url.hostname !== "www.toptik.co.il" || !url.pathname.startsWith("/products/")) return;
+  const itemName = link.dataset.productName
+    || link.getAttribute("aria-label")?.replace(/^להמשך רכישה בחנות TopTik:\s*/, "")
+    || link.textContent?.trim()
+    || "מוצר בחנות TopTik";
+  w.gtag("event", "select_item", {
+    item_list_name: path.startsWith("/journal") ? "TopTik Journal" : "TopTik Gallery",
+    link_url: `https://www.toptik.co.il${url.pathname}`,
+    source_path: path,
+    transport_type: "beacon",
+    items: [{ item_id: url.pathname.split("/").filter(Boolean).at(-1), item_name: itemName }],
   });
 }
 
@@ -79,6 +99,14 @@ export function GalleryAnalytics() {
     try { choice = localStorage.getItem(KEY); } catch { /* Optional storage. */ }
     setVisible(!choice);
     startMeasurement(path, choice === "granted" ? "granted" : "denied");
+    const onStoreClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const link = target.closest<HTMLAnchorElement>('a[href*="www.toptik.co.il/products/"]');
+      if (link) trackStoreSelection(link, path);
+    };
+    document.addEventListener("click", onStoreClick, true);
+    return () => document.removeEventListener("click", onStoreClick, true);
   }, [path]);
 
   function choose(choice: Choice) {
