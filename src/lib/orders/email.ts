@@ -123,6 +123,10 @@ async function gmailAccessToken() {
   return data.access_token;
 }
 
+export async function checkGmailAuthorization() {
+  await gmailAccessToken();
+}
+
 export async function sendGmail(rawMime: string) {
   const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
     method: "POST", signal: AbortSignal.timeout(20_000),
