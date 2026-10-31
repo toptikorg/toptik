@@ -125,6 +125,12 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     throw new Error(`${storeProductUrl} rendered ${storeProductImages.length} product images, expected at least 2`);
   }
 
+  const orderHealthResponse = await monitoredFetch(`${normalizedBase}/api/health/order-automation`);
+  const orderHealth = await orderHealthResponse.json();
+  if (orderHealth.status !== "healthy") {
+    throw new Error(`Order automation health is ${orderHealth.status || "unknown"}: ${(orderHealth.issueCodes || []).join(",")}`);
+  }
+
   const imageUrls = [
     ...journalImages.slice(0, 6).map((src) => absoluteUrl(normalizedBase, src)),
     absoluteUrl(normalizedBase, articleImages[0]),
@@ -143,6 +149,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     storeCollectionProducts: storeProductLinks.length,
     storeProductImages: storeProductImages.length,
     verifiedImageAssets: new Set(imageUrls).size,
+    orderAutomationHealth: orderHealth.status,
   };
 }
 

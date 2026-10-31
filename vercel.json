@@ -30,6 +30,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/admin/orders/health",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/admin/orders/monthly-report",
       "schedule": "15 4 1 * *"
     }

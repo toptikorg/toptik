@@ -63,6 +63,15 @@ const FULFILLMENT_QUERY = `
   }
 `;
 
+const RECENT_PAID_ORDERS_QUERY = `
+  query TopTikRecentPaidOrders($query: String!) {
+    orders(first: 50, query: $query, sortKey: CREATED_AT, reverse: true) {
+      nodes { id createdAt cancelledAt displayFinancialStatus }
+      pageInfo { hasNextPage }
+    }
+  }
+`;
+
 type RawOrder = {
   id: string; name: string; createdAt: string; cancelledAt: string | null;
   displayFinancialStatus: string | null; displayFulfillmentStatus: string;
@@ -172,5 +181,19 @@ export async function fetchPaidOrder(orderGid: string): Promise<PaidOrder | null
       totalPrice: item.discountedTotalSet.shopMoney,
     })),
   };
+}
+
+export async function fetchRecentPaidOrders(since: string) {
+  if (!Number.isFinite(Date.parse(since))) throw new Error("ORDER_HEALTH_SINCE_INVALID");
+  const result = await shopifyOrderGraphql<{
+    orders: {
+      nodes: Array<{ id: string; createdAt: string; cancelledAt: string | null; displayFinancialStatus: string | null }>;
+      pageInfo: { hasNextPage: boolean };
+    };
+  }>(RECENT_PAID_ORDERS_QUERY, { query: `financial_status:paid created_at:>='${since}'` });
+  if (result.orders.pageInfo.hasNextPage) throw new Error("ORDER_HEALTH_ORDER_LIMIT");
+  return result.orders.nodes
+    .filter(order => !order.cancelledAt && order.displayFinancialStatus === "PAID")
+    .map(order => ({ id: order.id, createdAt: order.createdAt }));
 }
 
