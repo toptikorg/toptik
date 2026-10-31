@@ -113,8 +113,8 @@ export default async function JournalArticlePage({ params }: PageProps) {
         {article.hero && <figure className={styles.heroFigure}>
           {article.hero.href ? <Link href={article.hero.href} data-mobile-store-link={article.hero.href.startsWith("https://www.toptik.co.il/products/") ? '' : undefined} data-product-name={article.hero.alt} aria-label={article.hero.href.startsWith("https://www.toptik.co.il/products/") ? "לפרטי המוצר בחנות" : "לצפייה במוצרים בגלריה"}>
             {article.hero.href.startsWith("https://www.toptik.co.il/products/") && <span className={styles.mobileProductLink}>לפרטי המוצר בחנות ←</span>}
-            <Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height} sizes="(max-width: 780px) 94vw, 740px" quality={75} />
-          </Link> : <Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height} sizes="(max-width: 780px) 94vw, 740px" quality={75} />}
+            <Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height} sizes="(max-width: 780px) 94vw, 740px" quality={75} unoptimized />
+          </Link> : <Image src={article.hero.src} alt={article.hero.alt} width={article.hero.width} height={article.hero.height} sizes="(max-width: 780px) 94vw, 740px" quality={75} unoptimized />}
           <figcaption>{article.hero.caption}</figcaption>
         </figure>}
         <div className={styles.articleBody}>{article.content}</div>
