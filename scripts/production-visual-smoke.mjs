@@ -55,6 +55,13 @@ export function compareStoreGalleryProductHandles(storeProductUrls, carouselItem
   };
 }
 
+export function retainPublicMissingHandles(missingHandles, statusByHandle) {
+  return missingHandles.filter((handle) => {
+    const status = statusByHandle.get(handle);
+    return status === undefined || status === 200;
+  });
+}
+
 function extractXmlLocations(xml) {
   return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)].map((match) => decodeHtmlAttribute(match[1]));
 }
@@ -76,6 +83,26 @@ async function monitoredFetch(url, options = {}) {
     await new Promise((resolve) => setTimeout(resolve, attempt * 1_000));
   }
   throw new Error(`${url} returned HTTP ${lastResponse?.status ?? "unknown"}`);
+}
+
+async function fetchStoreProductStatus(url) {
+  let lastResponse;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    lastResponse = await fetch(url, {
+      method: "HEAD",
+      redirect: "manual",
+      headers: { "user-agent": "TopTik-Production-Monitor/1.0" },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (lastResponse.status === 200 || [301, 302, 303, 307, 308, 404, 410].includes(lastResponse.status)) {
+      await lastResponse.body?.cancel();
+      return lastResponse.status;
+    }
+    if (![429, 500, 502, 503, 504].includes(lastResponse.status) || attempt === 3) break;
+    await lastResponse.body?.cancel();
+    await new Promise((resolve) => setTimeout(resolve, attempt * 1_000));
+  }
+  throw new Error(`${url} returned HTTP ${lastResponse?.status ?? "unknown"} while checking product publication`);
 }
 
 async function fetchText(url) {
@@ -159,7 +186,19 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     });
   const catalogCoverage = compareStoreGalleryProductHandles(storeProductUrls, carouselPayload.items);
   if (catalogCoverage.missing.length > 0) {
-    throw new Error(`Gallery is missing purchase links for ${catalogCoverage.missing.length} live Shopify products: ${catalogCoverage.missing.slice(0, 20).join(",")}`);
+    const storeUrlByHandle = new Map(storeProductUrls.map((url) => {
+      const handle = decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean)[1] ?? "").toLowerCase();
+      return [handle, url];
+    }));
+    const statusByHandle = new Map();
+    for (const handle of catalogCoverage.missing) {
+      const productUrl = storeUrlByHandle.get(handle);
+      if (productUrl) statusByHandle.set(handle, await fetchStoreProductStatus(productUrl));
+    }
+    const publicMissing = retainPublicMissingHandles(catalogCoverage.missing, statusByHandle);
+    if (publicMissing.length > 0) {
+      throw new Error(`Gallery is missing purchase links for ${publicMissing.length} live Shopify products: ${publicMissing.slice(0, 20).join(",")}`);
+    }
   }
 
   const storeHomeHtml = await fetchText(storeBase);

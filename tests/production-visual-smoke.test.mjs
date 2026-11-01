@@ -5,6 +5,7 @@ import {
   compareStoreGalleryProductHandles,
   decodeHtmlAttribute,
   extractAttributeValues,
+  retainPublicMissingHandles,
 } from "../scripts/production-visual-smoke.mjs";
 
 test("visual monitor extracts direct image and article URLs from rendered HTML", () => {
@@ -63,4 +64,15 @@ test("visual monitor compares every live Shopify product handle with gallery pur
   assert.deepEqual(compareStoreGalleryProductHandles(urls, [
     complete[0], { shopifyLink: { handle: "מוצר-שני", isPublished: false } },
   ]).missing, ["מוצר-שני"]);
+});
+
+test("visual monitor ignores stale sitemap entries for archived or redirected products", () => {
+  const missing = ["archived", "redirected", "live", "unknown"];
+  const statuses = new Map([
+    ["archived", 404],
+    ["redirected", 301],
+    ["live", 200],
+  ]);
+
+  assert.deepEqual(retainPublicMissingHandles(missing, statuses), ["live", "unknown"]);
 });
