@@ -5,6 +5,7 @@ import {
   compareStoreGalleryProductHandles,
   decodeHtmlAttribute,
   extractAttributeValues,
+  assertShippingPolicyConsistency,
   retainPublicMissingHandles,
 } from "../scripts/production-visual-smoke.mjs";
 
@@ -17,6 +18,32 @@ test("visual monitor extracts direct image and article URLs from rendered HTML",
 
 test("visual monitor decodes URL-safe HTML entities", () => {
   assert.equal(decodeHtmlAttribute("a&amp;b&#x27;c&quot;d"), "a&b'c\"d");
+});
+
+test("shipping monitor accepts the canonical free-shipping copy", () => {
+  assert.doesNotThrow(() => assertShippingPolicyConsistency(
+    "<p>משלוח חינם לכל הארץ</p>",
+    "homepage",
+  ));
+  assert.doesNotThrow(() => assertShippingPolicyConsistency(
+    "<p>משלוח חינם עד הבית: 3 עד 5 ימי עסקים</p>",
+    "product",
+    { requireDoorstep: true },
+  ));
+});
+
+test("shipping monitor rejects stale or contradictory shipping copy", () => {
+  assert.throws(
+    () => assertShippingPolicyConsistency(
+      "<p>משלוח חינם לכל הארץ</p><p>עלות הסופית מוצגת בקופה</p>",
+      "product",
+    ),
+    /stale shipping copy/,
+  );
+  assert.throws(
+    () => assertShippingPolicyConsistency("<p>משלוח לכל הארץ</p>", "collection"),
+    /missing the canonical shipping statement/,
+  );
 });
 
 test("visual monitor extracts Shopify collection and product links", () => {
