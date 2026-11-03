@@ -6,6 +6,15 @@ const MIN_JOURNAL_IMAGES = 20;
 const MIN_CAROUSEL_ITEMS = 300;
 const MIN_CAROUSEL_PRODUCT_LINKS = 300;
 const MIN_STORE_COLLECTION_PRODUCTS = 8;
+const STALE_SHIPPING_COPY = [
+  "עלות הסופית מוצגת בקופה",
+  "דואר שליחים בתיאום",
+  "משלוחים לכל הארץ מ־TopTik",
+  "משלוחים לכל הארץ מ-TopTik",
+  "65 ₪",
+  "85 ₪",
+  "155 ₪",
+];
 
 export function decodeHtmlAttribute(value) {
   return value
@@ -17,6 +26,17 @@ export function decodeHtmlAttribute(value) {
 export function extractAttributeValues(html, element, attribute) {
   const expression = new RegExp(`<${element}\\b[^>]*\\b${attribute}="([^"]+)"`, "gi");
   return [...html.matchAll(expression)].map((match) => decodeHtmlAttribute(match[1]));
+}
+
+export function assertShippingPolicyConsistency(html, label, { requireDoorstep = false } = {}) {
+  const required = requireDoorstep ? "משלוח חינם עד הבית" : "משלוח חינם לכל הארץ";
+  if (!html.includes(required)) {
+    throw new Error(`${label} is missing the canonical shipping statement: ${required}`);
+  }
+  const stale = STALE_SHIPPING_COPY.filter((phrase) => html.includes(phrase));
+  if (stale.length > 0) {
+    throw new Error(`${label} contains stale shipping copy: ${stale.join(", ")}`);
+  }
 }
 
 export function assertCarouselTitleTypography(css) {
@@ -202,6 +222,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   }
 
   const storeHomeHtml = await fetchText(storeBase);
+  assertShippingPolicyConsistency(storeHomeHtml, "Store homepage");
   const storeHomeImages = [...new Set(extractAttributeValues(storeHomeHtml, "img", "src"))];
   const storeCollectionLinks = [...new Set(
     extractAttributeValues(storeHomeHtml, "a", "href").filter((href) => href.startsWith("/collections/")),
@@ -212,6 +233,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
 
   const storeCollectionUrl = `${storeBase}/collections/samsonite`;
   const storeCollectionHtml = await fetchText(storeCollectionUrl);
+  assertShippingPolicyConsistency(storeCollectionHtml, "Samsonite collection");
   const storeProductLinks = [...new Set(
     extractAttributeValues(storeCollectionHtml, "a", "href").filter((href) => href.startsWith("/products/")),
   )];
@@ -221,6 +243,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
 
   const storeProductUrl = `${storeBase}/products/p10fzta9001`;
   const storeProductHtml = await fetchText(storeProductUrl);
+  assertShippingPolicyConsistency(storeProductHtml, "Product page", { requireDoorstep: true });
   const storeProductImages = [...new Set(extractAttributeValues(storeProductHtml, "img", "src"))];
   if (!storeProductHtml.includes('"@type":"Product"') && !storeProductHtml.includes('"@type": "Product"')) {
     throw new Error(`${storeProductUrl} rendered without Product structured data`);
@@ -228,6 +251,9 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   if (storeProductImages.length < 2) {
     throw new Error(`${storeProductUrl} rendered ${storeProductImages.length} product images, expected at least 2`);
   }
+
+  const faqHtml = await fetchText(`${storeBase}/pages/faq`);
+  assertShippingPolicyConsistency(faqHtml, "FAQ page");
 
   const orderHealthResponse = await monitoredFetch(`${normalizedBase}/api/health/order-automation`);
   const orderHealth = await orderHealthResponse.json();
