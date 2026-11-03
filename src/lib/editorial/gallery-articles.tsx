@@ -6,6 +6,7 @@ import { lifestyleArticles } from "./lifestyle-articles";
 import { practicalArticles } from "./practical-articles";
 import { collectionArticles } from "./collection-articles";
 import { comparisonArticles } from "./comparison-articles";
+import { suitcaseArticles } from "./suitcase-articles";
 import { ArticleProductCards } from "@/components/editorial/ArticleProductCards";
 import type { StoreCategoryLink } from "./store-categories";
 
@@ -266,6 +267,7 @@ const samsoniteRespark79MaterialsContent: ReactNode = <>
 
 export const galleryArticles: readonly GalleryArticle[] = [
   ...comparisonArticles,
+  ...suitcaseArticles,
   ...productGuideArticles,
   ...mandarinaHubArticles,
   ...premiumArticles,
