@@ -11,8 +11,14 @@ function collection(handle: string, title: string): StoreCategoryLink {
 
 export const STORE_MAIN_CATEGORIES: readonly StoreCategoryLink[] = [
   collection("מזוודות", "מזוודות"),
+  collection("מזוודות-וטרולי", "כל המזוודות והטרולי"),
   collection("מזוודות-סמסונייט", "מזוודות סמסונייט"),
-  collection("טרולי-carry-on", "טרולי לעלייה למטוס"),
+  collection("טרולי-carry-on", "טרולי ומזוודות עלייה למטוס"),
+  collection("מזוודות-קשיחות", "מזוודות קשיחות"),
+  collection("מזוודות-רכות", "מזוודות רכות"),
+  collection("מזוודות-גדולות", "מזוודות גדולות"),
+  collection("מזוודות-בינוניות", "מזוודות בינוניות"),
+  collection("מזוודות-מנדרינה-דאק", "מזוודות מנדרינה דאק"),
   collection("fashion-bags", "תיקי צד ותיקי כתף"),
   collection("backpacks", "תיקי גב"),
   collection("תיקי-סמסונייט", "תיקי סמסונייט"),
@@ -34,6 +40,7 @@ const RULES: ReadonlyArray<readonly [RegExp, StoreCategoryLink]> = [
   [/pro-dlx|biz2go|guardit|mysight/i, collection("תיקי-סמסונייט", "תיקי סמסונייט")],
   [/(?=.*(?:samsonite|סמסונייט))(?=.*(?:intuo|upscape|c-lite|respark|מזווד|טרולי))/i, collection("מזוודות-סמסונייט", "מזוודות סמסונייט")],
   [/samsonite|סמסונייט|intuo|upscape|urbify|c-lite|respark|biz2go|pro-dlx|guardit|mysight/i, collection("samsonite", "סמסונייט ישראל")],
+  [/(?=.*(?:mandarina|מנדרינה|logoduck|zephyr|eco coated|smile|week.end))(?=.*(?:מזווד|טרולי|suitcase|luggage|carry))/i, collection("מזוודות-מנדרינה-דאק", "מזוודות מנדרינה דאק")],
   [/mandarina|מנדרינה|mellow|md20|revival|logoduck|zephyr|eco coated|daisy/i, collection("mandarina-duck", "מנדרינה דאק")],
   [/bric|בריקס|taormina|volterra|x-collection/i, collection("brics", "בריקס")],
   [/american tourister|אמריקן טוריסטר|urban groove/i, collection("american-tourister", "אמריקן טוריסטר")],
