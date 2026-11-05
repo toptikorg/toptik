@@ -31,9 +31,9 @@ const intuoUpscapeContent = <>
   <Table label="השוואת Samsonite Intuo מול Upscape" headings={["דגם וגודל", "מק״ט בגלריה", "מידות חיצוניות", "נפח", "משקל", "מאפיינים בולטים"]} rows={[
     ["Intuo בגודל של 55 ס״מ", "KL909001", "55 × 40 × 20 / 23 ס״מ", "39 / 45 ליטר", "2.3 ק״ג", "גלגלים כפולים, מנעול TSA ובטנה נשלפת"],
     ["Upscape בגודל של 55 ס״מ", "KJ109001", "55 × 40 × 20 / 23 ס״מ", "39 / 45 ליטר", "2.3 ק״ג", "גלגלים כפולים בולמי זעזועים ובטנה נשלפת"],
-    ["Intuo Easy Access בגודל של 55 ס״מ", "KL909005", "55 × 40 × 23 / 26 ס״מ", "42 / 48 ליטר", "2.8 ק״ג", "תא קדמי למחשב בגודל של 15.6 אינץ׳ ולטאבלט"],
+    ["Intuo Easy Access בגודל של 55 ס״מ", "KL909005", "55 × 40 × 23 / 26 ס״מ", "42 / 48 ליטר", "2.7 ק״ג", "תא קדמי למחשב בגודל של 15.6 אינץ׳ ולטאבלט"],
     ["Upscape Easy Access בגודל של 55 ס״מ", "KJ114007", "55 × 40 × 23 / 26 ס״מ", "42 / 48 ליטר", "2.6 ק״ג", "תא קדמי נגיש למחשב וגלגלים בולמי זעזועים"],
-    ["Intuo בגודל של 81 ס״מ", "KL909004", "81 × 54 × 34 / 37 ס״מ", "132 / 144 ליטר", "4.1 ק״ג", "ארבעה גדלים וחמישה צבעים בסדרה"],
+    ["Intuo בגודל של 81 ס״מ", "KL909004", "81 × 54 × 33 / 36 ס״מ", "132 / 144 ליטר", "4.1 ק״ג", "ארבעה גדלים וחמישה צבעים בסדרה"],
     ["Upscape בגודל של 81 ס״מ", "KJ17176004", "81 × 54 × 34 / 37 ס״מ", "133 / 145 ליטר", "3.9 ק״ג", "מתלה גלגלים בולם זעזועים ורעש"],
   ]} />
   <h2>מה משותף לשתי הסדרות?</h2>
@@ -51,9 +51,9 @@ const hardSoftContent = <>
     ["טרולי עלייה למטוס", "Urbify 55, KO709005", "פוליאסטר ממוחזר", "55 × 40 × 23 / 26 ס״מ", "39 / 46 ליטר", "2.3 ק״ג"],
     ["מזוודה בינונית", "Intuo 69, KL909002", "פוליפרופילן", "69 × 48 × 28 / 31 ס״מ", "79 / 87 ליטר", "3.1 ק״ג"],
     ["מזוודה בינונית", "Urbify 68, KO709006", "פוליאסטר ממוחזר", "68 × 43 × 27 / 31 ס״מ", "68 / 76 ליטר", "2.8 ק״ג"],
-    ["מזוודה גדולה", "Intuo 75, KL909003", "פוליפרופילן", "75 × 51 × 31 / 34 ס״מ", "105 / 115 ליטר", "3.6 ק״ג"],
+    ["מזוודה גדולה", "Intuo 75, KL909003", "פוליפרופילן", "75 × 52 × 31 / 34 ס״מ", "105 / 115 ליטר", "3.6 ק״ג"],
     ["מזוודה גדולה", "Urbify 78, KO709007", "פוליאסטר ממוחזר", "78 × 48 × 30 / 34 ס״מ", "107 / 115 ליטר", "3.1 ק״ג"],
-    ["מזוודה גדולה מאוד", "Intuo 81, KL909004", "פוליפרופילן", "81 × 54 × 34 / 37 ס״מ", "132 / 144 ליטר", "4.1 ק״ג"],
+    ["מזוודה גדולה מאוד", "Intuo 81, KL909004", "פוליפרופילן", "81 × 54 × 33 / 36 ס״מ", "132 / 144 ליטר", "4.1 ק״ג"],
   ]} />
   <h2>שלושה הבדלים מרכזיים</h2>
   <p><strong>אופן הפתיחה:</strong> Intuo נפתחת באמצע לשני תאים שווים. Urbify נפתחת במבנה של תא עמוק אחד ומכסה קדמי, ולכן דורשת פחות שטח רצפה בעת הפתיחה.</p>
@@ -67,9 +67,9 @@ const largeSuitcasesContent = <>
   <h2>נתוני היצרן בגדלים הגדולים</h2>
   <Table label="השוואת C-Lite מול Intuo בגדלים הגדולים" headings={["דגם וגודל", "מק״ט", "מידות", "נפח", "משקל", "אחריות"]} rows={[
     ["C-Lite בגודל של 75 ס״מ", "S209004", "75 × 51 × 31 ס״מ", "94 ליטר", "2.8 ק״ג", "10 שנים"],
-    ["Intuo בגודל של 75 ס״מ", "KL909003", "75 × 51 × 31 / 34 ס״מ", "105 / 115 ליטר", "3.6 ק״ג", "5 שנים"],
+    ["Intuo בגודל של 75 ס״מ", "KL909003", "75 × 52 × 31 / 34 ס״מ", "105 / 115 ליטר", "3.6 ק״ג", "5 שנים"],
     ["C-Lite בגודל של 86 ס״מ", "S281006", "86 × 58 × 36 ס״מ", "144 ליטר", "3.6 ק״ג", "10 שנים"],
-    ["Intuo בגודל של 81 ס״מ", "KL909004", "81 × 54 × 34 / 37 ס״מ", "132 / 144 ליטר", "4.1 ק״ג", "5 שנים"],
+    ["Intuo בגודל של 81 ס״מ", "KL909004", "81 × 54 × 33 / 36 ס״מ", "132 / 144 ליטר", "4.1 ק״ג", "5 שנים"],
   ]} />
   <h2>מה אומרים המספרים?</h2>
   <p>בגודל של 75 ס״מ, C-Lite קלה ב־800 גרם מ־Intuo. דגם C-Lite בגודל של 86 ס״מ מציע 144 ליטר במשקל של 3.6 ק״ג, בעוד Intuo בגודל של 81 ס״מ מגיעה ל־144 ליטר לאחר פתיחת ההרחבה ושוקלת 4.1 ק״ג.</p>
@@ -204,39 +204,42 @@ export const comparisonArticles: readonly GalleryArticle[] = [
   {
     ...common,
     slug: "samsonite-intuo-vs-upscape-hard-suitcases",
+    updatedAt: "2026-11-05",
     category: "השוואת דגמים",
     title: "מזוודות סמסונייט Intuo מול Upscape: השוואת דגמים קשיחים בגודל של 55 ו־81 ס״מ",
     description: "השוואה בין סדרות המזוודות הקשיחות Samsonite Intuo ו־Upscape מפוליפרופילן: מידות, נפח בליטרים, משקל, גלגלים וגרסאות Easy Access בגודל של 55 ו־81 ס״מ.",
     standfirst: "נתוני היצרן של Intuo ו־Upscape זה לצד זה, מטרולי עלייה למטוס ועד מזוודה גדולה בגודל של 81 ס״מ.",
     readingMinutes: 4,
     hero: { src: `${STORE}/cdn/shop/files/01-868538ee7e64.jpg?v=1788460841&width=1200`, alt: "מזוודת טרולי קשיחה סמסונייט Upscape בגודל של 55 ס״מ בצבע שחור", width: 1200, height: 1200, caption: "Samsonite Upscape בגודל של 55 ס״מ" },
-    sourceUrls: [`${STORE}/collections/samsonite-intuo`, `${STORE}/collections/samsonite-upscape`],
+    sourceUrls: ["https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf", `${STORE}/collections/samsonite-intuo`, `${STORE}/collections/samsonite-upscape`],
     storeCategoryLinks: [link("מזוודות-סמסונייט", "מזוודות סמסונייט"), link("samsonite", "סמסונייט ישראל"), link("samsonite-intuo", "סדרת Samsonite Intuo"), link("samsonite-upscape", "סדרת Samsonite Upscape")],
     content: intuoUpscapeContent,
   },
   {
     ...common,
     slug: "samsonite-hard-vs-soft-intuo-vs-urbify",
+    updatedAt: "2026-11-05",
     category: "השוואת דגמים",
     title: "מזוודה קשיחה או רכה של סמסונייט: השוואת Samsonite Intuo מול Urbify",
     description: "מתלבטים בין מזוודה קשיחה למזוודת בד של סמסונייט? השוואת Samsonite Intuo מפוליפרופילן מול Urbify מפוליאסטר ממוחזר לפי מידות, נפח ומשקל בכל הגדלים.",
     standfirst: "השוואה בין מעטפת קשיחה למעטפת בד, לפי מידות, נפח, משקל ואופן הפתיחה בכל גודל.",
     readingMinutes: 4,
     hero: { src: `${STORE}/cdn/shop/files/01-432f62498d3c.jpg?v=1787391235&width=1200`, alt: "השוואת מזוודות סמסונייט קשיחות מסדרת Intuo ומזוודות רכות מסדרת Urbify", width: 1200, height: 1200, caption: "Samsonite Intuo הקשיחה מול Urbify הרכה" },
-    sourceUrls: [`${STORE}/collections/samsonite-intuo`, `${STORE}/collections/samsonite-urbify`],
+    sourceUrls: ["https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf", `${STORE}/collections/samsonite-intuo`, `${STORE}/collections/samsonite-urbify`],
     storeCategoryLinks: [link("מזוודות-סמסונייט", "מזוודות סמסונייט"), link("samsonite", "סמסונייט ישראל"), link("samsonite-intuo", "סדרת Samsonite Intuo"), link("samsonite-urbify", "סדרת Samsonite Urbify")],
     content: hardSoftContent,
   },
   {
     ...common,
     slug: "samsonite-c-lite-curv-vs-intuo-large-suitcases",
+    updatedAt: "2026-11-05",
     category: "השוואת מידות וארגון",
     title: "מזוודות גדולות של סמסונייט: השוואת C-Lite מחומר Curv מול Intuo בגודל של 75 ו־81 ס״מ",
     description: "השוואת מזוודות גדולות Samsonite C-Lite מחומר Curv מול Samsonite Intuo מפוליפרופילן: פערי משקל, נפח בליטרים ואחריות בגודל של 75 עד 86 ס״מ.",
     standfirst: "C-Lite הקלה מול Intuo המתרחבת, עם נתוני משקל, נפח, חומר ואחריות בגדלים הגדולים.",
     readingMinutes: 3,
     hero: { src: `${STORE}/cdn/shop/files/01-ed7a6e3065b6.jpg?v=1787390986&width=1200`, alt: "מזוודה קשיחה גדולה Samsonite C-Lite מחומר Curv לצד Samsonite Intuo", width: 1200, height: 1200, caption: "Samsonite C-Lite לצד Samsonite Intuo" },
-    sourceUrls: [`${STORE}/collections/samsonite-c-lite`, `${STORE}/collections/samsonite-intuo`],
+    sourceUrls: ["https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf", `${STORE}/collections/samsonite-c-lite`, `${STORE}/collections/samsonite-intuo`],
     storeCategoryLinks: [link("מזוודות-סמסונייט", "מזוודות סמסונייט"), link("samsonite", "סמסונייט ישראל"), link("samsonite-c-lite", "סדרת Samsonite C-Lite"), link("samsonite-intuo", "סדרת Samsonite Intuo")],
     content: largeSuitcasesContent,
   },
