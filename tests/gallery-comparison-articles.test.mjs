@@ -9,6 +9,25 @@ const storeGuides = JSON.parse(fs.readFileSync("src/lib/editorial/store-guides.j
 const journal = fs.readFileSync("src/app/journal/page.tsx", "utf8");
 const sitemap = fs.readFileSync("src/app/sitemap.ts", "utf8");
 
+test("all Intuo comparison rows match the manufacturer catalogue", () => {
+  // Samsonite EXPERIENCE 1H2026, printed page 45 (PDF page 47).
+  // https://www.samsonite.ro/cataloage/EXPERIENCE_1H2026.pdf
+  const expected = {
+    KL909005: { count: 1, dimensions: "55 × 40 × 23 / 26 ס״מ", weight: "2.7 ק״ג" },
+    KL909003: { count: 2, dimensions: "75 × 52 × 31 / 34 ס״מ", weight: "3.6 ק״ג" },
+    KL909004: { count: 3, dimensions: "81 × 54 × 33 / 36 ס״מ", weight: "4.1 ק״ג" },
+  };
+  const rows = articles.split("\n").filter((line) => line.trimStart().startsWith('["'));
+  for (const [sku, spec] of Object.entries(expected)) {
+    const matches = rows.filter((row) => row.includes(sku));
+    assert.equal(matches.length, spec.count, `${sku}: check every article table`);
+    for (const row of matches) {
+      assert.ok(row.includes(spec.dimensions), `${sku}: manufacturer dimensions`);
+      assert.ok(row.includes(spec.weight), `${sku}: manufacturer weight`);
+    }
+  }
+});
+
 const slugs = [
   "samsonite-intuo-vs-upscape-hard-suitcases",
   "samsonite-hard-vs-soft-intuo-vs-urbify",
