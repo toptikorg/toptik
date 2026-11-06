@@ -43,6 +43,20 @@ test('store product clicks are recorded without query strings or variant identif
   assert.match(source, /document\.addEventListener\("click", onStoreClick, true\)/);
   assert.match(source, /document\.removeEventListener\("click", onStoreClick, true\)/);
 });
+test('video purchase clicks add a bounded video id to the existing select_item event', () => {
+  const h = harness();
+  h.run("startMeasurement('/videos', 'granted')");
+  h.context.link = { href: 'https://www.toptik.co.il/products/km209008?utm_test=ignored', dataset: { videoId: 'samsonite-pro-dlx-6', productName: 'תיק מחשב' }, getAttribute: () => null };
+  h.run("trackStoreSelection(link, '/videos')");
+  const events = h.run('window.dataLayer').map(a => Array.from(a)).filter(e => e[0] === 'event' && e[1] === 'select_item');
+  assert.equal(events.length, 1);
+  assert.equal(events[0][2].video_id, 'samsonite-pro-dlx-6');
+  assert.equal(events[0][2].link_url, 'https://www.toptik.co.il/products/km209008');
+  h.context.link.dataset.videoId = 'not valid@example.com';
+  h.run("trackStoreSelection(link, '/videos')");
+  const last = Array.from(h.run('window.dataLayer').at(-1));
+  assert.equal(Object.hasOwn(last[2], 'video_id'), false);
+});
 test('consent mode defaults to cookieless measurement and keeps advertising denied', () => {
   assert.match(source, /startMeasurement\(path, choice === "granted" \? "granted" : "denied"\)/);
   assert.match(source, /analytics_storage: "denied"/);

@@ -54,6 +54,11 @@ export default function CarouselPage() {
       />
       <CarouselPageClient />
       <GalleryContentSections />
+      <section aria-label="סרטוני TopTik" dir="rtl" style={{ textAlign: "center", padding: "28px 18px", background: "#f5f2ed", color: "#252220" }}>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: 8 }}>מכירים מקרוב בסרטונים</h2>
+        <p style={{ marginBottom: 12 }}>מזוודות ותיקים, טיפים לבחירה וקישורים לרכישה.</p>
+        <Link href="/videos" style={{ display: "inline-block", padding: "12px 20px", background: "#1d2626", color: "#fff", fontWeight: 700 }}>לגלריית הסרטונים</Link>
+      </section>
       <Suspense fallback={null}>
         <CarouselStoreIndex />
       </Suspense>

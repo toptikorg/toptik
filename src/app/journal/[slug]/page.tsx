@@ -118,6 +118,13 @@ export default async function JournalArticlePage({ params }: PageProps) {
           <figcaption>{article.hero.caption}</figcaption>
         </figure>}
         <div className={styles.articleBody}>{article.content}</div>
+        {article.slug === "samsonite-intuo-vs-upscape-hard-suitcases" && (
+          <section className={styles.storeGuides} aria-labelledby="video-guide-heading">
+            <h2 id="video-guide-heading">צפו בסרטון: Intuo או Upscape?</h2>
+            <p>הכירו את שני הדגמים בסרטון קצר והמשיכו לדפי המוצרים.</p>
+            <Link href="/videos/intuo-upscape">לצפייה בסרטון על שני הדגמים</Link>
+          </section>
+        )}
         <section className={styles.storeGuides} aria-labelledby="store-categories-heading" data-store-categories="">
           <h2 id="store-categories-heading">בחנות TopTik</h2>
           <p>הדגמים מהמאמר ודגמים נוספים, עם מחיר, מלאי ומשלוח חינם לכל הארץ:</p>
