@@ -77,10 +77,12 @@ function trackStoreSelection(link: HTMLAnchorElement, path: string) {
     || link.getAttribute("aria-label")?.replace(/^להמשך רכישה בחנות TopTik:\s*/, "")
     || link.textContent?.trim()
     || "מוצר בחנות TopTik";
+  const videoId = link.dataset.videoId;
   w.gtag("event", "select_item", {
     item_list_name: path.startsWith("/journal") ? "TopTik Journal" : "TopTik Gallery",
     link_url: `https://www.toptik.co.il${url.pathname}`,
     source_path: path,
+    ...(/^[a-z0-9-]{1,80}$/.test(videoId || "") ? { video_id: videoId } : {}),
     transport_type: "beacon",
     items: [{ item_id: url.pathname.split("/").filter(Boolean).at(-1), item_name: itemName }],
   });
