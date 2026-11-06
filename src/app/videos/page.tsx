@@ -7,7 +7,7 @@ import styles from "@/components/video-gallery/VideoGallery.module.css";
 export const metadata: Metadata = {
   title: "גלריית סרטוני TopTik | מזוודות ותיקים",
   description: "גלו מזוודות, טרולי ותיקים בסרטונים קצרים עם קישורים לרכישה בחנות TopTik.",
-  robots: { index: false, follow: true },
+  robots: { index: true, follow: true },
   alternates: { canonical: "/videos" },
 };
 

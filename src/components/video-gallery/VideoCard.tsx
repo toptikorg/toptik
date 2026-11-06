@@ -13,6 +13,9 @@ export function VideoCard({ video, detail = false }: { video: GalleryVideo; deta
         <p className={styles.eyebrow}>{video.eyebrow}</p>
         {detail ? <h1>{video.title}</h1> : <h2>{video.title}</h2>}
         <p>{video.description}</p>
+        {detail && video.collection && (
+          <p><a href={video.collection.url}>{video.collection.name}</a></p>
+        )}
         <div className={styles.actions} aria-label="קישורי רכישה">
           {video.products.map((product) => (
             <a key={product.url} href={product.url} data-product-name={product.name} data-video-id={video.slug} className={styles.buy}>

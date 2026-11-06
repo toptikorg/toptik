@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${video.title} | סרטוני TopTik`,
     description: video.description,
     alternates: { canonical: `/videos/${video.slug}` },
-    robots: { index: false, follow: true },
+    robots: { index: true, follow: true },
   };
 }
 

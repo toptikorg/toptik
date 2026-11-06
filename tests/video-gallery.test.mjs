@@ -12,6 +12,11 @@ const videos = vm.runInContext(`${js}\ngalleryVideos`, context);
 test('each video has a unique route, playable file, poster, Hebrew captions and clean store links', () => {
   assert.equal(videos.length, 4);
   assert.equal(new Set(videos.map(video => video.slug)).size, videos.length);
+  assert.deepEqual(Array.from(videos.filter(video => video.collection).map(video => video.slug)), ['intuo-upscape', 'choosing-55cm-trolley']);
+  for (const video of videos.filter(video => video.collection)) {
+    assert.equal(new URL(video.collection.url).origin, 'https://www.toptik.co.il');
+    assert.equal(decodeURI(new URL(video.collection.url).pathname), '/collections/מזוודות');
+  }
   for (const video of videos) {
     for (const extension of ['mp4', 'webp', 'he.vtt']) {
       const path = new URL(`../public/videos/${video.file}.${extension}`, import.meta.url);
@@ -43,12 +48,19 @@ test('each video has a unique route, playable file, poster, Hebrew captions and 
   }
 });
 
-test('watch pages cannot be indexed before review and unknown slugs have no matching video', () => {
+test('approved video pages are indexable, canonical and discoverable while unknown slugs remain excluded', () => {
   assert.equal(vm.runInContext("findGalleryVideo('does-not-exist')", context), undefined);
   for (const route of ['../src/app/videos/page.tsx', '../src/app/videos/[slug]/page.tsx']) {
     const source = readFileSync(new URL(route, import.meta.url), 'utf8');
-    assert.match(source, /index:\s*false/);
+    assert.match(source, /index:\s*true/);
+    assert.match(source, /canonical:/);
   }
+  const watchPage = readFileSync(new URL('../src/app/videos/[slug]/page.tsx', import.meta.url), 'utf8');
+  assert.match(watchPage, /if \(!video\) return \{ robots: \{ index: false, follow: true \} \}/);
+  const sitemap = readFileSync(new URL('../src/app/sitemap.ts', import.meta.url), 'utf8');
+  assert.match(sitemap, /absoluteUrl\("\/videos"\)/);
+  assert.match(sitemap, /galleryVideos\.map/);
+  assert.match(sitemap, /absoluteUrl\(`\/videos\/\$\{video\.slug\}`\)/);
 });
 
 test('pause and resume do not inflate starts, and replay after completion counts a new start', () => {

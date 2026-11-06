@@ -6,6 +6,7 @@ export type GalleryVideo = {
   eyebrow: string;
   description: string;
   transcript: string;
+  collection?: { name: string; url: string };
   products: readonly VideoProduct[];
 };
 
@@ -15,6 +16,7 @@ export const galleryVideos: readonly GalleryVideo[] = [
     file: "01-intuo-vs-upscape",
     title: "מזוודות Samsonite: Intuo או Upscape?",
     eyebrow: "מזוודות וטרולי",
+    collection: { name: "לכל המזוודות", url: "https://www.toptik.co.il/collections/מזוודות" },
     description: "שני דגמי טרולי של סמסונייט בגודל 55 ס״מ. צפו והכירו את הדגמים והצבעים לפני הבחירה.",
     transcript: "מתלבטים בין אינטואו לאפסקייפ? שתי מזוודות טרולי של סמסונייט בגודל חמישים וחמישה סנטימטרים. בחרו את הדגם והצבע שמתאימים לכם והזמינו באתר טופ תיק, עם משלוח חינם.",
     products: [
@@ -27,6 +29,7 @@ export const galleryVideos: readonly GalleryVideo[] = [
     file: "02-cabin-trolley",
     title: "איך בוחרים מזוודת טרולי לנסיעה?",
     eyebrow: "מדריך לנסיעה",
+    collection: { name: "לכל המזוודות", url: "https://www.toptik.co.il/collections/מזוודות" },
     description: "לפני שבוחרים טרולי, בדקו את מידות הכבודה המותרות אצל חברת התעופה שלכם. הכירו את דגם Intuo בגודל 55 ס״מ.",
     transcript: "מחפשים טרולי לנסיעה? לפני שבוחרים, בדקו את מידות הכבודה המותרות אצל חברת התעופה שלכם. באתר טופ תיק תוכלו לבחור מבין דגמי סמסונייט ולהזמין במשלוח חינם.",
     products: [{ name: "Intuo Easy Access בצבע ליים", url: "https://www.toptik.co.il/products/samsonite-intuo-55-easy-access-lime-kl974005" }],
