@@ -6,6 +6,7 @@ export type GalleryVideo = {
   eyebrow: string;
   description: string;
   transcript: string;
+  firstPublishedOn: string;
   collection?: { name: string; url: string };
   products: readonly VideoProduct[];
 };
@@ -14,6 +15,7 @@ export const galleryVideos: readonly GalleryVideo[] = [
   {
     slug: "intuo-upscape",
     file: "01-intuo-vs-upscape",
+    firstPublishedOn: "2026-11-06",
     title: "מזוודות Samsonite: Intuo או Upscape?",
     eyebrow: "מזוודות וטרולי",
     collection: { name: "לכל המזוודות", url: "https://www.toptik.co.il/collections/מזוודות" },
@@ -27,6 +29,7 @@ export const galleryVideos: readonly GalleryVideo[] = [
   {
     slug: "choosing-55cm-trolley",
     file: "02-cabin-trolley",
+    firstPublishedOn: "2026-11-06",
     title: "איך בוחרים מזוודת טרולי לנסיעה?",
     eyebrow: "מדריך לנסיעה",
     collection: { name: "לכל המזוודות", url: "https://www.toptik.co.il/collections/מזוודות" },
@@ -37,6 +40,8 @@ export const galleryVideos: readonly GalleryVideo[] = [
   {
     slug: "samsonite-pro-dlx-6",
     file: "03-pro-dlx",
+    // Publication planned for 6 Nov; update if the first public rollout occurs later.
+    firstPublishedOn: "2026-11-06",
     title: "תיק מחשב Samsonite PRO-DLX 6",
     eyebrow: "עבודה ונסיעות",
     description: "תיק גב שחור עם אפשרות הרחבה ותא למחשב עד 15.6 אינץ׳. מומלץ לבדוק את מידות המחשב לפני הבחירה.",
@@ -46,6 +51,8 @@ export const galleryVideos: readonly GalleryVideo[] = [
   {
     slug: "mandarina-duck-city-bag",
     file: "04-mandarina",
+    // Publication planned for 6 Nov; update if the first public rollout occurs later.
+    firstPublishedOn: "2026-11-06",
     title: "תיק צד Mandarina Duck ליום בעיר",
     eyebrow: "תיקים ליום יום",
     description: "הכירו תיק צד אדום מסדרת Mellow Leather של מנדרינה דאק, ליום בעיר וליציאה בערב.",
@@ -56,4 +63,20 @@ export const galleryVideos: readonly GalleryVideo[] = [
 
 export function findGalleryVideo(slug: string): GalleryVideo | undefined {
   return galleryVideos.find((video) => video.slug === slug);
+}
+
+// This data describes the one video visible on its dedicated watch page.
+export function videoStructuredData(video: GalleryVideo, origin: string) {
+  const watchUrl = new URL(`/videos/${video.slug}`, origin).href;
+  return {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "@id": `${watchUrl}#video`,
+    name: video.title,
+    description: video.description,
+    thumbnailUrl: new URL(`/videos/${video.file}.webp`, origin).href,
+    contentUrl: new URL(`/videos/${video.file}.mp4`, origin).href,
+    uploadDate: video.firstPublishedOn,
+    inLanguage: "he",
+  };
 }

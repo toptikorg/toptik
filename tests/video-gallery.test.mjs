@@ -6,8 +6,9 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../src/lib/video-gallery.ts', import.meta.url), 'utf8');
 const js = stripTypeScriptTypes(source).replaceAll('export ', '');
-const context = vm.createContext({});
+const context = vm.createContext({ URL });
 const videos = vm.runInContext(`${js}\ngalleryVideos`, context);
+const videoSchema = vm.runInContext("videoStructuredData", context);
 
 test('each video has a unique route, playable file, poster, Hebrew captions and clean store links', () => {
   assert.equal(videos.length, 4);
@@ -78,4 +79,24 @@ test('pause and resume do not inflate starts, and replay after completion counts
   tracker.play();
   tracker.ended();
   assert.deepEqual(events, ['video_start', 'video_complete', 'video_start', 'video_complete']);
+});
+
+
+test('watch-page video metadata describes the actual video and canonical assets', () => {
+  const seen = new Set();
+  for (const video of videos) {
+    const schema = videoSchema(video, 'https://landing.toptik.co.il');
+    assert.equal(schema['@type'], 'VideoObject');
+    assert.equal(schema.name, video.title);
+    assert.equal(schema.description, video.description);
+    assert.equal(schema.uploadDate, video.firstPublishedOn);
+    assert.match(schema.uploadDate, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(schema.thumbnailUrl, `https://landing.toptik.co.il/videos/${video.file}.webp`);
+    assert.equal(schema.contentUrl, `https://landing.toptik.co.il/videos/${video.file}.mp4`);
+    assert.equal(schema['@id'], `https://landing.toptik.co.il/videos/${video.slug}#video`);
+    assert.ok(!seen.has(schema.name));
+    seen.add(schema.name);
+  }
+  const page = readFileSync(new URL('../src/app/videos/[slug]/page.tsx', import.meta.url), 'utf8');
+  assert.match(page, /jsonLdString\(videoStructuredData\(video, SITE_ORIGIN\)\)/);
 });

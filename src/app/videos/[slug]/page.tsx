@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { findGalleryVideo, galleryVideos } from "@/lib/video-gallery";
+import { findGalleryVideo, galleryVideos, videoStructuredData } from "@/lib/video-gallery";
+import { SITE_ORIGIN } from "@/lib/seo/site";
+import { jsonLdString } from "@/lib/seo/structured-data";
 import { VideoCard } from "@/components/video-gallery/VideoCard";
 import styles from "@/components/video-gallery/VideoGallery.module.css";
 
@@ -29,6 +31,7 @@ export default async function VideoPage({ params }: PageProps) {
   if (!video) notFound();
   return (
     <main className={styles.shell}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(videoStructuredData(video, SITE_ORIGIN)) }} />
       <header className={styles.header}>
         <Link className={styles.brand} href="/">TOPTIK</Link>
         <nav className={styles.nav} aria-label="ניווט ראשי">
