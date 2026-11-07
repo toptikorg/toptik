@@ -26,11 +26,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install browser test dependencies
-        run: |
-          npm ci
-          npx playwright install --with-deps webkit
-
       - name: Check live pages, catalog and image assets
         id: visual_smoke
         continue-on-error: true
@@ -38,7 +33,7 @@ jobs:
         run: |
           mkdir -p production-monitor-evidence
           set -o pipefail
-          { node scripts/production-visual-smoke.mjs && node scripts/mobile-logo-smoke.mjs; } 2>&1 | tee production-monitor-evidence/smoke.log
+          { npm ci && npx playwright install --with-deps webkit && node scripts/production-visual-smoke.mjs && node scripts/mobile-logo-smoke.mjs; } 2>&1 | tee production-monitor-evidence/smoke.log
 
       - name: Preserve failure evidence
         if: steps.visual_smoke.outcome == 'failure'
