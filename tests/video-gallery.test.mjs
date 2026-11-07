@@ -11,12 +11,12 @@ const videos = vm.runInContext(`${js}\ngalleryVideos`, context);
 const videoSchema = vm.runInContext("videoStructuredData", context);
 
 test('each video has a unique route, playable file, poster, Hebrew captions and clean store links', () => {
-  assert.equal(videos.length, 5);
+  assert.equal(videos.length, 3);
   assert.equal(new Set(videos.map(video => video.slug)).size, videos.length);
   assert.deepEqual(Array.from(videos.filter(video => video.collection).map(video => video.slug)), ['intuo-upscape', 'choosing-55cm-trolley']);
   for (const video of videos.filter(video => video.collection)) {
     assert.equal(new URL(video.collection.url).origin, 'https://www.toptik.co.il');
-    assert.equal(decodeURI(new URL(video.collection.url).pathname), '/collections/מזוודות');
+    assert.equal(decodeURI(new URL(video.collection.url).pathname), '/collections/�������');
   }
   for (const video of videos) {
     for (const extension of ['mp4', 'webp', 'he.vtt']) {
@@ -36,7 +36,7 @@ test('each video has a unique route, playable file, poster, Hebrew captions and 
       previousEnd = end;
     }
     const text = captions.replace(/^WEBVTT\s*/, '').replace(/^\d\d:.*$/gm, '');
-    const normalize = value => value.replace(/[\s.,?!׳״]+/g, '');
+    const normalize = value => value.replace(/[\s.,?!��]+/g, '');
     assert.equal(normalize(text), normalize(video.transcript), `${video.slug}: captions differ from transcript`);
     assert.ok(video.transcript.length > 30);
     assert.ok(video.products.length > 0);
@@ -99,4 +99,15 @@ test('watch-page video metadata describes the actual video and canonical assets'
   }
   const page = readFileSync(new URL('../src/app/videos/[slug]/page.tsx', import.meta.url), 'utf8');
   assert.match(page, /jsonLdString\(videoStructuredData\(video, SITE_ORIGIN\)\)/);
+});
+
+test('withdrawn red bag videos and their assets remain unavailable', () => {
+  for (const slug of ['mandarina-duck-red-bag-city-style', 'mandarina-duck-city-bag']) {
+    assert.equal(videos.some(video => video.slug === slug), false);
+  }
+  for (const file of ['04-mandarina', '05-mandarina-city-style']) {
+    for (const ext of ['mp4', 'webp', 'he.vtt']) {
+      assert.equal(existsSync(new URL(`../public/videos/${file}.${ext}`, import.meta.url)), false);
+    }
+  }
 });
