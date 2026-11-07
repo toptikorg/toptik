@@ -6,12 +6,24 @@ export type GalleryVideo = {
   eyebrow: string;
   description: string;
   transcript: string;
+  durationSeconds?: number;
   firstPublishedOn: string;
   collection?: { name: string; url: string };
   products: readonly VideoProduct[];
 };
 
 export const galleryVideos: readonly GalleryVideo[] = [
+  {
+    slug: "mandarina-duck-red-bag-city-style",
+    file: "05-mandarina-city-style",
+    durationSeconds: 24,
+    firstPublishedOn: "2026-11-07",
+    title: "תיק צד אדום מנדרינה דאק Mellow Leather בעיר",
+    eyebrow: "סטייל ליום יום",
+    description: "הכירו את תיק הצד האדום של מנדרינה דאק מסדרת Mellow Leather, עם קישור לרכישה באתר TopTik ומשלוח חינם.",
+    transcript: "איזה כיף, סוף סוף מצאת תיק אדום! כן! אהבתי איך האדום מוסיף צבע לכל הופעה. הוא יתאים לי גם ליום בעיר וגם לערב. תראי לי רגע. וואו, הוא ממש יפה! נכון? אני כבר יודעת עם מה אלבש אותו הערב. מצאתי אותו בטופ תיק, והמשלוח חינם.",
+    products: [{ name: "Mellow Leather FZT52 אדום", url: "https://www.toptik.co.il/products/p10fzt5224f" }],
+  },
   {
     slug: "intuo-upscape",
     file: "01-intuo-vs-upscape",

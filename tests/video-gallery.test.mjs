@@ -11,7 +11,7 @@ const videos = vm.runInContext(`${js}\ngalleryVideos`, context);
 const videoSchema = vm.runInContext("videoStructuredData", context);
 
 test('each video has a unique route, playable file, poster, Hebrew captions and clean store links', () => {
-  assert.equal(videos.length, 4);
+  assert.equal(videos.length, 5);
   assert.equal(new Set(videos.map(video => video.slug)).size, videos.length);
   assert.deepEqual(Array.from(videos.filter(video => video.collection).map(video => video.slug)), ['intuo-upscape', 'choosing-55cm-trolley']);
   for (const video of videos.filter(video => video.collection)) {
@@ -32,7 +32,7 @@ test('each video has a unique route, playable file, poster, Hebrew captions and 
     for (const cue of cues) {
       const start = +cue[1] * 3600 + +cue[2] * 60 + +cue[3];
       const end = +cue[4] * 3600 + +cue[5] * 60 + +cue[6];
-      assert.ok(start >= previousEnd && end > start && end <= 20, `${video.slug}: invalid caption timing`);
+      assert.ok(start >= previousEnd && end > start && end <= (video.durationSeconds ?? 20), `${video.slug}: invalid caption timing`);
       previousEnd = end;
     }
     const text = captions.replace(/^WEBVTT\s*/, '').replace(/^\d\d:.*$/gm, '');
