@@ -14,17 +14,6 @@ export type GalleryVideo = {
 
 export const galleryVideos: readonly GalleryVideo[] = [
   {
-    slug: "mandarina-duck-red-bag-city-style",
-    file: "05-mandarina-city-style",
-    durationSeconds: 24,
-    firstPublishedOn: "2026-11-07",
-    title: "תיק צד אדום מנדרינה דאק Mellow Leather בעיר",
-    eyebrow: "סטייל ליום יום",
-    description: "הכירו את תיק הצד האדום של מנדרינה דאק מסדרת Mellow Leather, עם קישור לרכישה באתר TopTik ומשלוח חינם.",
-    transcript: "איזה כיף, סוף סוף מצאת תיק אדום! כן! אהבתי איך האדום מוסיף צבע לכל הופעה. הוא יתאים לי גם ליום בעיר וגם לערב. תראי לי רגע. וואו, הוא ממש יפה! נכון? אני כבר יודעת עם מה אלבש אותו הערב. מצאתי אותו בטופ תיק, והמשלוח חינם.",
-    products: [{ name: "Mellow Leather FZT52 אדום", url: "https://www.toptik.co.il/products/p10fzt5224f" }],
-  },
-  {
     slug: "intuo-upscape",
     file: "01-intuo-vs-upscape",
     firstPublishedOn: "2026-11-06",
@@ -59,17 +48,6 @@ export const galleryVideos: readonly GalleryVideo[] = [
     description: "תיק גב שחור עם אפשרות הרחבה ותא למחשב עד 15.6 אינץ׳. מומלץ לבדוק את מידות המחשב לפני הבחירה.",
     transcript: "מחפשים תיק גב למחשב? פרו די אל אקס שש של סמסונייט מתרחב ומתאים למחשב בגודל עד חמש עשרה נקודה שש אינץ׳. גלו את התיק השחור באתר טופ תיק, עם משלוח חינם.",
     products: [{ name: "PRO-DLX 6 שחור", url: "https://www.toptik.co.il/products/km209008" }],
-  },
-  {
-    slug: "mandarina-duck-city-bag",
-    file: "04-mandarina",
-    // Publication planned for 6 Nov; update if the first public rollout occurs later.
-    firstPublishedOn: "2026-11-06",
-    title: "תיק צד מנדרינה דאק Mellow Leather ליום בעיר",
-    eyebrow: "תיקים ליום יום",
-    description: "הכירו תיק צד אדום מסדרת Mellow Leather של מנדרינה דאק, ליום בעיר וליציאה בערב.",
-    transcript: "מחפשים תיק צד עם נוכחות? תיק מלו לדר האדום של מנדרינה דאק מתאים ליום בעיר וליציאה בערב. גלו את הדגם באתר טופ תיק והזמינו עם משלוח חינם.",
-    products: [{ name: "Mellow Leather FZT52 אדום", url: "https://www.toptik.co.il/products/p10fzt5224f" }],
   },
 ];
 
