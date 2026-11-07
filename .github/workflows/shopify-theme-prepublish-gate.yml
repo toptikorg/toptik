@@ -1,0 +1,26 @@
+name: Shopify theme prepublication gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      theme_id:
+        description: Shopify draft theme ID to inspect
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regression tests
+        run: python3 -m unittest discover -s tests -p test_shopify_theme_prepublish_gate.py
+      - name: Inspect draft before publishing
+        env:
+          THEME_ID: ${{ inputs.theme_id }}
+        run: python3 scripts/shopify-theme-prepublish-gate.py --theme-id "$THEME_ID"
+
