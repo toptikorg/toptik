@@ -16,7 +16,7 @@ concurrency:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir -p production-monitor-evidence
           set -o pipefail
-          node scripts/production-visual-smoke.mjs 2>&1 | tee production-monitor-evidence/smoke.log
+          { npm ci && npx playwright install --with-deps webkit && node scripts/production-visual-smoke.mjs && node scripts/mobile-logo-smoke.mjs; } 2>&1 | tee production-monitor-evidence/smoke.log
 
       - name: Preserve failure evidence
         if: steps.visual_smoke.outcome == 'failure'

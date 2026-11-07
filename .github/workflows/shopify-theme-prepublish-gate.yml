@@ -17,10 +17,30 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install WebKit test browser
+        run: |
+          npm ci
+          npx playwright install --with-deps webkit
       - name: Regression tests
-        run: python3 -m unittest discover -s tests -p test_shopify_theme_prepublish_gate.py
+        run: |
+          python3 -m unittest discover -s tests -p test_shopify_theme_prepublish_gate.py
+          node --test tests/mobile-logo-smoke.test.mjs
       - name: Inspect draft before publishing
         env:
           THEME_ID: ${{ inputs.theme_id }}
         run: python3 scripts/shopify-theme-prepublish-gate.py --theme-id "$THEME_ID"
+      - name: Check mobile logo in draft WebKit preview
+        env:
+          THEME_ID: ${{ inputs.theme_id }}
+        run: node scripts/mobile-logo-smoke.mjs --theme-id "$THEME_ID"
+      - name: Save failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopify-theme-gate-failure-${{ github.run_id }}
+          path: production-monitor-evidence/
+          if-no-files-found: ignore
 
