@@ -7,7 +7,25 @@ import {
   extractAttributeValues,
   assertShippingPolicyConsistency,
   retainPublicMissingHandles,
+  assertStoreBrandSeriesNavigation,
+  assertGalleryBrandSeries,
 } from "../scripts/production-visual-smoke.mjs";
+
+test("monitor detects missing brand series navigation even with products present", () => {
+  const valid = '<details class="tt-series-nav"><summary>בחירה לפי סדרה</summary><a href="/collections/mandarina-duck-md20">MD20</a></details><a href="/products/item">Item</a>';
+  assert.doesNotThrow(() => assertStoreBrandSeriesNavigation(valid, "mandarina-duck"));
+  assert.throws(() => assertStoreBrandSeriesNavigation('<a href="/products/item">Item</a>', "mandarina-duck"), /series navigation is missing/);
+  assert.throws(() => assertStoreBrandSeriesNavigation(valid.replace('mandarina-duck-md20', 'samsonite-intuo'), "mandarina-duck"), /no brand collection links/);
+  assert.doesNotThrow(() => assertStoreBrandSeriesNavigation(valid, "mandarina-duck", ["mandarina-duck-md20"]));
+  assert.throws(() => assertStoreBrandSeriesNavigation(valid, "mandarina-duck", ["mandarina-duck-md20", "mandarina-duck-daisy"]), /mandarina-duck-daisy/);
+});
+
+test("monitor detects when an entire brand loses gallery series data", () => {
+  const brands = ["mandarina-duck", "brics", "samsonite", "american-tourister"];
+  const items = brands.map(brand => ({ isActive: true, series: { brand, key: `${brand}-example`, label: "Example" } }));
+  assert.doesNotThrow(() => assertGalleryBrandSeries(items));
+  assert.throws(() => assertGalleryBrandSeries(items.slice(1)), /Gallery mandarina-duck/);
+});
 
 test("visual monitor extracts direct image and article URLs from rendered HTML", () => {
   const html = '<article><a href="/journal/example"><img src="https://www.toptik.co.il/a.jpg?v=1&amp;width=1200" alt="דוגמה"></a></article>';
@@ -103,3 +121,4 @@ test("visual monitor ignores stale sitemap entries for archived or redirected pr
 
   assert.deepEqual(retainPublicMissingHandles(missing, statuses), ["live", "unknown"]);
 });
+
