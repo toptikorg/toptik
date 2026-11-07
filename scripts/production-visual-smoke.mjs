@@ -6,6 +6,7 @@ const MIN_JOURNAL_IMAGES = 20;
 const MIN_CAROUSEL_ITEMS = 300;
 const MIN_CAROUSEL_PRODUCT_LINKS = 300;
 const MIN_STORE_COLLECTION_PRODUCTS = 8;
+const MONITORED_BRANDS = ["mandarina-duck", "brics", "samsonite", "american-tourister"];
 const STALE_SHIPPING_COPY = [
   "עלות הסופית מוצגת בקופה",
   "דואר שליחים בתיאום",
@@ -26,6 +27,28 @@ export function decodeHtmlAttribute(value) {
 export function extractAttributeValues(html, element, attribute) {
   const expression = new RegExp(`<${element}\\b[^>]*\\b${attribute}="([^"]+)"`, "gi");
   return [...html.matchAll(expression)].map((match) => decodeHtmlAttribute(match[1]));
+}
+
+export function assertStoreBrandSeriesNavigation(html, brand, expectedSeries = []) {
+  const section = html.match(/<details\b[^>]*class="[^"]*\btt-series-nav\b[^"]*"[^>]*>[\s\S]*?<\/details>/i)?.[0];
+  if (!section) throw new Error(`${brand}: series navigation is missing`);
+  const hrefs = extractAttributeValues(section, "a", "href");
+  if (!hrefs.some((href) => href.startsWith(`/collections/${brand}-`))) {
+    throw new Error(`${brand}: series navigation has no brand collection links`);
+  }
+  const available = new Set(hrefs.map((href) => href.split("?")[0]));
+  const missing = expectedSeries.filter((key) => !available.has(`/collections/${key}`));
+  if (missing.length) throw new Error(`${brand}: series links missing for gallery products: ${missing.join(", ")}`);
+  if (extractAttributeValues(html, "a", "href").filter((href) => href.startsWith("/products/")).length === 0) {
+    throw new Error(`${brand}: collection has no product links`);
+  }
+}
+
+export function assertGalleryBrandSeries(items) {
+  for (const brand of MONITORED_BRANDS) {
+    const series = items.filter((item) => item?.isActive && item?.series?.brand === brand && item.series.key && item.series.label);
+    if (series.length === 0) throw new Error(`Gallery ${brand}: active products with series are missing`);
+  }
 }
 
 export function assertShippingPolicyConsistency(html, label, { requireDoorstep = false } = {}) {
@@ -175,6 +198,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   if (!Array.isArray(carouselPayload.items) || carouselPayload.items.length < MIN_CAROUSEL_ITEMS) {
     throw new Error(`Carousel returned ${carouselPayload.items?.length ?? 0} items, expected at least ${MIN_CAROUSEL_ITEMS}`);
   }
+  assertGalleryBrandSeries(carouselPayload.items);
 
   const carouselHtml = await fetchText(`${normalizedBase}/carousel`);
   const carouselStylesheets = [...new Set(
@@ -241,6 +265,14 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     throw new Error(`Shopify Samsonite collection rendered ${storeProductLinks.length} product links, expected at least ${MIN_STORE_COLLECTION_PRODUCTS}`);
   }
 
+  for (const brand of MONITORED_BRANDS) {
+    const html = brand === "samsonite" ? storeCollectionHtml : await fetchText(`${storeBase}/collections/${brand}`);
+    const expected = [...new Set(carouselPayload.items
+      .filter((item) => item?.isActive && item?.shopifyLink?.isPublished && item?.series?.brand === brand && item.series.key)
+      .map((item) => item.series.key))];
+    assertStoreBrandSeriesNavigation(html, brand, expected);
+  }
+
   const storeProductUrl = `${storeBase}/products/p10fzta9001`;
   const storeProductHtml = await fetchText(storeProductUrl);
   assertShippingPolicyConsistency(storeProductHtml, "Product page", { requireDoorstep: true });
@@ -295,3 +327,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exitCode = 1;
   }
 }
+
