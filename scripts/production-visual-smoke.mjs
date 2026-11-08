@@ -202,6 +202,23 @@ async function fetchStoreCatalog(storeBase) {
   throw new Error("Store catalog exceeded pagination safety limit");
 }
 
+async function fetchStoreCollectionHandles(storeBase) {
+  const handles = new Set();
+  for (let page = 1; page <= 100; page += 1) {
+    const result = await (await monitoredFetch(`${storeBase}/collections.json?limit=250&page=${page}`)).json();
+    if (!Array.isArray(result.collections)) throw new Error(`Store collection catalog page ${page} is invalid`);
+    for (const collection of result.collections) {
+      if (typeof collection.handle !== "string" || !collection.handle) throw new Error("Store collection is missing its handle");
+      handles.add(collection.handle);
+    }
+    if (result.collections.length < 250) {
+      if (!handles.size) throw new Error("Store collection catalog is empty");
+      return [...handles];
+    }
+  }
+  throw new Error("Store collection catalog exceeded pagination safety limit");
+}
+
 export function productsWithMultipleColors(products) {
   return products.filter((product) => Array.isArray(product.options) && product.options.some((option) =>
     ["צבע", "color", "colour"].includes(String(option.name).trim().toLowerCase()) && Array.isArray(option.values) && option.values.length > 1));
@@ -241,15 +258,25 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   const storeBase = (process.env.MONITOR_STORE_URL || DEFAULT_STORE_URL).replace(/\/$/, "");
   const storeHomeHtml = await fetchText(storeBase);
   const storeCatalog = await fetchStoreCatalog(storeBase);
-  const collectionChecks = new Map([...MONITORED_BRANDS, encodeURIComponent("מזוודות")]
-    .map((handle) => [handle, fetchText(`${storeBase}/collections/${handle}`)]));
+  const collectionHandles = await fetchStoreCollectionHandles(storeBase);
+  const collectionChecks = new Map();
+  for (const handle of new Set([...MONITORED_BRANDS, ...collectionHandles])) {
+    if (collectionChecks.size) await new Promise((resolve) => setTimeout(resolve, 800));
+    collectionChecks.set(handle, await fetchText(`${storeBase}/collections/${encodeURIComponent(handle)}`).then(
+      (value) => ({ status: "fulfilled", value }),
+      (reason) => ({ status: "rejected", reason }),
+    ));
+    const page = collectionChecks.get(handle);
+    if (page.status === "rejected" && /HTTP 429/.test(page.reason.message)) break;
+  }
   const checks = await Promise.allSettled([
     Promise.resolve().then(() => assertNoUnavailableVariants(storeCatalog)),
     Promise.resolve().then(() => assertHomeGalleryLink(storeHomeHtml)),
     checkStoreColorSelectors(storeBase, storeCatalog),
     (async () => {
-      const pages = await Promise.allSettled(collectionChecks.values());
+      const pages = [...collectionChecks.values()];
       const problems = [];
+      if (pages.length < new Set([...MONITORED_BRANDS, ...collectionHandles]).size) problems.push("Collection hover scan incomplete after rate limiting");
       for (const page of pages) {
         if (page.status === "rejected") problems.push(page.reason.message);
         else {
@@ -344,7 +371,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     throw new Error(`Store homepage is incomplete: ${storeHomeImages.length} images and ${storeCollectionLinks.length} collection links`);
   }
 
-  const storeCollectionHtml = await collectionChecks.get("samsonite");
+  const storeCollectionHtml = collectionChecks.get("samsonite").value;
   assertShippingPolicyConsistency(storeCollectionHtml, "Samsonite collection");
   const storeProductLinks = [...new Set(
     extractAttributeValues(storeCollectionHtml, "a", "href").filter((href) => href.startsWith("/products/")),
@@ -354,7 +381,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   }
 
   for (const brand of MONITORED_BRANDS) {
-    const html = await collectionChecks.get(brand);
+    const html = collectionChecks.get(brand).value;
     const expected = [...new Set(carouselPayload.items
       .filter((item) => item?.isActive && item?.shopifyLink?.isPublished && item?.series?.brand === brand && item.series.key)
       .map((item) => item.series.key))];
