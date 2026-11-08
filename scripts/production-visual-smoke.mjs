@@ -173,7 +173,7 @@ export function assertHomeGalleryLink(html) {
 }
 
 export function assertVideoNavigation(html) {
-  if (!/(?:toptiklogo\.png|toptiklogo%2Epng|toptiklogo%2epng)/i.test(html)) throw new Error('Video page brand logo is missing');
+  if (!/<a\b[^>]*aria-label="טופ תיק, לדף הבית"[^>]*>\s*<b\b[^>]*>TOPTIK<\/b>/i.test(html)) throw new Error('Video page live text brand logo is missing');
   for (const label of ['מזוודות וטרולי', 'תיקים', 'ארנקים ואביזרים', 'מותגים', 'מבצעים', 'סרטוני מוצרים', 'שירות ומידע']) {
     if (!html.includes(label)) throw new Error(`Video navigation is missing ${label}`);
   }
