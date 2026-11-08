@@ -1,0 +1,25 @@
+name: Verify Shopify draft WebKit
+on:
+  push:
+    branches: [codex/theme-webkit-check-188298330362]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - run: python3 scripts/shopify-theme-prepublish-gate.py --theme-id 188298330362
+      - run: node scripts/mobile-logo-smoke.mjs --theme-id 188298330362
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: draft-check-evidence
+          path: production-monitor-evidence/
+          if-no-files-found: ignore
