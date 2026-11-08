@@ -152,6 +152,34 @@ async function fetchText(url) {
   return (await monitoredFetch(url)).text();
 }
 
+export function assertNoUnavailableVariants(products) {
+  const unavailable = products.flatMap((product) => {
+    if (!Array.isArray(product.variants) || product.variants.length === 0) {
+      throw new Error(`Store product ${product.handle} is missing variant data`);
+    }
+    return product.variants.filter((variant) => {
+      if (typeof variant.available !== "boolean") throw new Error(`Missing availability for ${product.handle}`);
+      return !variant.available;
+    }).map((variant) => `${product.handle} (${variant.sku || variant.id})`);
+  });
+  if (unavailable.length) throw new Error(`Unavailable variants visible in Shopify catalog: ${unavailable.join(", ")}`);
+}
+
+async function checkStoreAvailability(storeBase) {
+  const products = [];
+  for (let page = 1; page <= 100; page += 1) {
+    const result = await (await monitoredFetch(`${storeBase}/products.json?limit=250&page=${page}&monitor_check=${Date.now()}`)).json();
+    if (!Array.isArray(result.products)) throw new Error(`Store product catalog page ${page} is invalid`);
+    products.push(...result.products);
+    if (result.products.length < 250) {
+      if (!products.length) throw new Error("Store product catalog is empty");
+      assertNoUnavailableVariants(products);
+      return;
+    }
+  }
+  throw new Error("Store catalog exceeded pagination safety limit");
+}
+
 async function verifyImage(url) {
   let response = await monitoredFetch(url, { method: "HEAD" });
   let contentType = response.headers.get("content-type") ?? "";
@@ -172,6 +200,7 @@ function absoluteUrl(baseUrl, value) {
 export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   const normalizedBase = baseUrl.replace(/\/$/, "");
   const storeBase = (process.env.MONITOR_STORE_URL || DEFAULT_STORE_URL).replace(/\/$/, "");
+  await checkStoreAvailability(storeBase);
   const journalUrl = `${normalizedBase}/journal`;
   const journalHtml = await fetchText(journalUrl);
   const journalImages = [...new Set(extractAttributeValues(journalHtml, "img", "src"))];
