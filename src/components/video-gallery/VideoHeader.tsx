@@ -13,6 +13,11 @@ const groups = [
 
 export function VideoHeader() {
   return <header className={styles.siteHeader} dir="rtl">
+    <svg width="0" height="0" aria-hidden="true" focusable="false">
+      <filter id="toptik-logo-brown" colorInterpolationFilters="sRGB">
+        <feColorMatrix type="matrix" values="0.472 0 0 0 0  -0.4 1 0 0 0  -0.48 0 1 0 0  0 0 0 1 0" />
+      </filter>
+    </svg>
     <a className={styles.announcement} href={`${store}/policies/shipping-policy`}>משלוח חינם לכל הארץ</a>
     <div className={styles.headerRow}>
       <a href={store} className={styles.logo} aria-label="טופ תיק, לדף הבית">
@@ -28,3 +33,4 @@ export function VideoHeader() {
     </nav>
   </header>;
 }
+
