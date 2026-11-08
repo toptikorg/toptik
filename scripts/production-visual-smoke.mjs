@@ -152,6 +152,90 @@ async function fetchText(url) {
   return (await monitoredFetch(url)).text();
 }
 
+export function assertNoUnavailableVariants(products) {
+  const unavailable = products.flatMap((product) => {
+    if (!Array.isArray(product.variants) || product.variants.length === 0) {
+      throw new Error(`Store product ${product.handle} is missing variant data`);
+    }
+    return product.variants.filter((variant) => {
+      if (typeof variant.available !== "boolean") throw new Error(`Missing availability for ${product.handle}`);
+      return !variant.available;
+    }).map((variant) => `${product.handle} (${variant.sku || variant.id})`);
+  });
+  if (unavailable.length) throw new Error(`Unavailable variants visible in Shopify catalog: ${unavailable.join(", ")}`);
+}
+
+export function assertHomeGalleryLink(html) {
+  const content = html.split('<footer')[0];
+  if (!/<a\b[^>]*href="https:\/\/landing\.toptik\.co\.il\/carousel"[^>]*>[^<]*(?:גלריה|גלריית)[^<]*<\/a>/i.test(content)) {
+    throw new Error("Store homepage is missing the prominent gallery link");
+  }
+}
+
+export function assertColorSelector(html, skus) {
+  for (const sku of skus) {
+    if (!html.includes(`data-color-sku="${sku}"`)) throw new Error(`Visible color selection missing for ${sku}`);
+  }
+}
+
+export function assertReadableSubcategoryHover(html) {
+  const rules = [...html.matchAll(/\.tt-subcats\s+a:hover\s*\{([^}]*)\}/gi)];
+  if (html.includes('class="tt-subcats"') && rules.length === 0) throw new Error("Subcategory hover style is missing");
+  for (const [, declarations] of rules) {
+    if (/background(?:-color)?\s*:\s*(?:#(?:000|111)(?:000|111)?\b|black\b|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\))/i.test(declarations)) {
+      throw new Error("Subcategory hover uses a black background");
+    }
+  }
+}
+
+async function fetchStoreCatalog(storeBase) {
+  const products = [];
+  for (let page = 1; page <= 100; page += 1) {
+    const result = await (await monitoredFetch(`${storeBase}/products.json?limit=250&page=${page}&monitor_check=${Date.now()}`)).json();
+    if (!Array.isArray(result.products)) throw new Error(`Store product catalog page ${page} is invalid`);
+    products.push(...result.products);
+    if (result.products.length < 250) {
+      if (!products.length) throw new Error("Store product catalog is empty");
+      return products;
+    }
+  }
+  throw new Error("Store catalog exceeded pagination safety limit");
+}
+
+async function fetchStoreCollectionHandles(storeBase) {
+  const handles = new Set();
+  for (let page = 1; page <= 100; page += 1) {
+    const result = await (await monitoredFetch(`${storeBase}/collections.json?limit=250&page=${page}`)).json();
+    if (!Array.isArray(result.collections)) throw new Error(`Store collection catalog page ${page} is invalid`);
+    for (const collection of result.collections) {
+      if (typeof collection.handle !== "string" || !collection.handle) throw new Error("Store collection is missing its handle");
+      handles.add(collection.handle);
+    }
+    if (result.collections.length < 250) {
+      if (!handles.size) throw new Error("Store collection catalog is empty");
+      return [...handles];
+    }
+  }
+  throw new Error("Store collection catalog exceeded pagination safety limit");
+}
+
+export function productsWithMultipleColors(products) {
+  return products.filter((product) => Array.isArray(product.options) && product.options.some((option) =>
+    ["צבע", "color", "colour"].includes(String(option.name).trim().toLowerCase()) && Array.isArray(option.values) && option.values.length > 1));
+}
+
+async function checkStoreColorSelectors(storeBase, products) {
+      const failures = [];
+      for (const product of productsWithMultipleColors(products)) {
+        try {
+          const expected = product.variants.map((variant) => variant.sku);
+          if (expected.some((sku) => !sku)) throw new Error(`Missing variant SKU on ${product.handle}`);
+          assertColorSelector(await fetchText(`${storeBase}/products/${encodeURIComponent(product.handle)}?monitor_check=${Date.now()}`), expected);
+        } catch (error) { failures.push(`${product.handle}: ${error.message}`); }
+      }
+      if (failures.length) throw new Error(`Color selection errors: ${failures.join("; ")}`);
+}
+
 async function verifyImage(url) {
   let response = await monitoredFetch(url, { method: "HEAD" });
   let contentType = response.headers.get("content-type") ?? "";
@@ -172,6 +256,39 @@ function absoluteUrl(baseUrl, value) {
 export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   const normalizedBase = baseUrl.replace(/\/$/, "");
   const storeBase = (process.env.MONITOR_STORE_URL || DEFAULT_STORE_URL).replace(/\/$/, "");
+  const storeHomeHtml = await fetchText(storeBase);
+  const storeCatalog = await fetchStoreCatalog(storeBase);
+  const collectionHandles = await fetchStoreCollectionHandles(storeBase);
+  const collectionChecks = new Map();
+  for (const handle of new Set([...MONITORED_BRANDS, ...collectionHandles])) {
+    if (collectionChecks.size) await new Promise((resolve) => setTimeout(resolve, 800));
+    collectionChecks.set(handle, await fetchText(`${storeBase}/collections/${encodeURIComponent(handle)}`).then(
+      (value) => ({ status: "fulfilled", value }),
+      (reason) => ({ status: "rejected", reason }),
+    ));
+    const page = collectionChecks.get(handle);
+    if (page.status === "rejected" && /HTTP 429/.test(page.reason.message)) break;
+  }
+  const checks = await Promise.allSettled([
+    Promise.resolve().then(() => assertNoUnavailableVariants(storeCatalog)),
+    Promise.resolve().then(() => assertHomeGalleryLink(storeHomeHtml)),
+    checkStoreColorSelectors(storeBase, storeCatalog),
+    (async () => {
+      const pages = [...collectionChecks.values()];
+      const problems = [];
+      if (pages.length < new Set([...MONITORED_BRANDS, ...collectionHandles]).size) problems.push("Collection hover scan incomplete after rate limiting");
+      for (const page of pages) {
+        if (page.status === "rejected") problems.push(page.reason.message);
+        else {
+          try { assertReadableSubcategoryHover(page.value); }
+          catch (error) { problems.push(error.message); }
+        }
+      }
+      if (problems.length) throw new Error(problems.join("; "));
+    })(),
+  ]);
+  const problems = checks.filter((result) => result.status === "rejected").map((result) => result.reason.message);
+  if (problems.length) throw new Error(problems.join("; "));
   const journalUrl = `${normalizedBase}/journal`;
   const journalHtml = await fetchText(journalUrl);
   const journalImages = [...new Set(extractAttributeValues(journalHtml, "img", "src"))];
@@ -245,7 +362,6 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     }
   }
 
-  const storeHomeHtml = await fetchText(storeBase);
   assertShippingPolicyConsistency(storeHomeHtml, "Store homepage");
   const storeHomeImages = [...new Set(extractAttributeValues(storeHomeHtml, "img", "src"))];
   const storeCollectionLinks = [...new Set(
@@ -255,8 +371,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     throw new Error(`Store homepage is incomplete: ${storeHomeImages.length} images and ${storeCollectionLinks.length} collection links`);
   }
 
-  const storeCollectionUrl = `${storeBase}/collections/samsonite`;
-  const storeCollectionHtml = await fetchText(storeCollectionUrl);
+  const storeCollectionHtml = collectionChecks.get("samsonite").value;
   assertShippingPolicyConsistency(storeCollectionHtml, "Samsonite collection");
   const storeProductLinks = [...new Set(
     extractAttributeValues(storeCollectionHtml, "a", "href").filter((href) => href.startsWith("/products/")),
@@ -266,7 +381,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   }
 
   for (const brand of MONITORED_BRANDS) {
-    const html = brand === "samsonite" ? storeCollectionHtml : await fetchText(`${storeBase}/collections/${brand}`);
+    const html = collectionChecks.get(brand).value;
     const expected = [...new Set(carouselPayload.items
       .filter((item) => item?.isActive && item?.shopifyLink?.isPublished && item?.series?.brand === brand && item.series.key)
       .map((item) => item.series.key))];
