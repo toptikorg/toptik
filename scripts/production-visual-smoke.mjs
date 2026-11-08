@@ -47,6 +47,30 @@ export function assertStoreBrandSeriesNavigation(html, brand, expectedSeries = [
   }
 }
 
+export function assertCategorySeriesNavigation(html, handle, products, handles) {
+  const known = new Set(handles);
+  const series = new Set(products.flatMap((p) => Array.isArray(p.tags) ? p.tags : []).filter((t) => t.startsWith('tt-series:')).map((t) => t.slice(10)).filter((h) => known.has(h)));
+  if (!series.size) return;
+  const section = html.match(/<details\b[^>]*class="[^"]*\btt-series-nav\b[^"]*"[^>]*>[\s\S]*?<\/details>/i)?.[0];
+  if (!section) throw new Error(`${handle}: series selection missing despite tagged products`);
+  const links = extractAttributeValues(section, 'a', 'href').map((href) => decodeURI(href.split('?')[0]));
+  for (const key of series) {
+    const categoryLink = `/collections/${handle}/tt-series-${key}`;
+    if (!links.includes(categoryLink) && !links.includes(`/collections/${key}`)) throw new Error(`${handle}: missing series ${key}`);
+  }
+}
+
+async function fetchCollectionProducts(storeBase, handle) {
+  const products = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const result = await (await monitoredFetch(`${storeBase}/collections/${encodeURIComponent(handle)}/products.json?limit=250&page=${page}`)).json();
+    if (!Array.isArray(result.products)) throw new Error(`${handle}: invalid product response`);
+    products.push(...result.products);
+    if (result.products.length < 250) return products;
+  }
+  throw new Error(`${handle}: series scan incomplete`);
+}
+
 export function assertGalleryBrandSeries(items) {
   for (const brand of MONITORED_BRANDS) {
     const series = items.filter((item) => item?.isActive && item?.series?.brand === brand && item.series.key && item.series.label);
@@ -336,7 +360,20 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     const page = collectionChecks.get(handle);
     if (page.status === "rejected" && /HTTP 429/.test(page.reason.message)) break;
   }
+  const categorySeriesErrors = [];
+  for (const [handle, page] of collectionChecks) {
+    if (page.status !== 'fulfilled') continue;
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const products = await fetchCollectionProducts(storeBase, handle);
+      assertCategorySeriesNavigation(page.value, handle, products, collectionHandles);
+    } catch (error) {
+      categorySeriesErrors.push(error.message);
+      if (/HTTP 429/.test(error.message)) { categorySeriesErrors.push('Series scan incomplete after rate limiting'); break; }
+    }
+  }
   const checks = await Promise.allSettled([
+    Promise.resolve().then(() => { if (categorySeriesErrors.length) throw new Error(categorySeriesErrors.join('; ')); }),
     Promise.resolve().then(() => assertNoUnavailableVariants(storeCatalog)),
     Promise.resolve().then(() => { assertHomeGalleryLink(storeHomeHtml); assertDirectCategoryNavigation(storeHomeHtml); }),
     checkStoreColorSelectors(storeBase, storeCatalog),
@@ -516,5 +553,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exitCode = 1;
   }
 }
+
 
 
