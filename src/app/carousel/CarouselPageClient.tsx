@@ -303,6 +303,12 @@ export default function CarouselPageClient() {
         <span id="carousel-brand-help">לבחירת מותג, לחצו על שם המותג מעל הקולקציה</span>
       </p>
 
+      <p className="carousel-whatsapp-contact" dir="rtl">
+        <a href="https://wa.me/972544444918" target="_blank" rel="noopener noreferrer">
+          שאלה על מוצר? דברו איתנו בוואטסאפ
+        </a>
+      </p>
+
       {isLoading ? (
         <div className="carousel-loading" role="status" aria-live="polite"><h2>טוענים את המוצרים…</h2><p>אפשר להמתין כאן. הגלריה תופיע כשהטעינה תסתיים.</p></div>
       ) : galleryUnavailable ? (
