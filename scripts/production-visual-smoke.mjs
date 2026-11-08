@@ -174,6 +174,11 @@ export function assertHomeGalleryLink(html) {
 
 export function assertVideoNavigation(html) {
   if (!/<a\b[^>]*aria-label="טופ תיק, לדף הבית"[^>]*>\s*<b\b[^>]*>TOPTIK<\/b>/i.test(html)) throw new Error('Video page live text brand logo is missing');
+  if (!/<title>\s*[^<\s][^<]*<\/title>/i.test(html)) throw new Error('Video SEO title is missing');
+  if (!/<meta\b(?=[^>]*name="description")(?=[^>]*content="[^"\s][^"]*")[^>]*>/i.test(html)) throw new Error('Video SEO description is missing');
+  if (!/<h1\b[^>]*>\s*[^<\s][\s\S]*?<\/h1>/i.test(html)) throw new Error('Video SEO heading is missing');
+  if (!/<video\b/i.test(html)) throw new Error('Video player is missing');
+  if (/rel="canonical"[^>]*href="https:\/\/landing\.toptik\.co\.il\/videos\/[^"/]+"/i.test(html) && !/"@type"\s*:\s*"VideoObject"/.test(html)) throw new Error('Video structured data is missing');
   for (const label of ['מזוודות וטרולי', 'תיקים', 'ארנקים ואביזרים', 'מותגים', 'מבצעים', 'סרטוני מוצרים', 'שירות ומידע']) {
     if (!html.includes(label)) throw new Error(`Video navigation is missing ${label}`);
   }
