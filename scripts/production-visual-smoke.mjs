@@ -1,4 +1,6 @@
 import { pathToFileURL } from "node:url";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 const DEFAULT_BASE_URL = "https://landing.toptik.co.il";
 const DEFAULT_STORE_URL = "https://www.toptik.co.il";
@@ -7,6 +9,7 @@ const MIN_CAROUSEL_ITEMS = 300;
 const MIN_CAROUSEL_PRODUCT_LINKS = 300;
 const MIN_STORE_COLLECTION_PRODUCTS = 8;
 const MONITORED_BRANDS = ["mandarina-duck", "brics", "samsonite", "american-tourister"];
+const VIDEO_MEDIA_BASELINES = JSON.parse(readFileSync(new URL("../data/video-media-baselines.json", import.meta.url), "utf8")).assets;
 const STALE_SHIPPING_COPY = [
   "עלות הסופית מוצגת בקופה",
   "דואר שליחים בתיאום",
@@ -152,6 +155,19 @@ async function fetchText(url) {
   return (await monitoredFetch(url)).text();
 }
 
+export function assertVideoMediaHash(filename, bytes, expectedHash = VIDEO_MEDIA_BASELINES[filename]) {
+  if (!expectedHash || createHash("sha256").update(bytes).digest("hex") !== expectedHash) {
+    throw new Error(`Video media baseline changed: ${filename}; review content before updating the baseline`);
+  }
+}
+
+async function checkVideoMediaBaselines(baseUrl) {
+  for (const filename of Object.keys(VIDEO_MEDIA_BASELINES)) {
+    const response = await monitoredFetch(`${baseUrl}/videos/${filename}`);
+    assertVideoMediaHash(filename, Buffer.from(await response.arrayBuffer()));
+  }
+}
+
 export function assertNoUnavailableVariants(products) {
   const unavailable = products.flatMap((product) => {
     if (!Array.isArray(product.variants) || product.variants.length === 0) {
@@ -178,9 +194,12 @@ export function assertVideoNavigation(html) {
   if (!/<meta\b(?=[^>]*name="description")(?=[^>]*content="[^"\s][^"]*")[^>]*>/i.test(html)) throw new Error('Video SEO description is missing');
   if (!/<h1\b[^>]*>\s*[^<\s][\s\S]*?<\/h1>/i.test(html)) throw new Error('Video SEO heading is missing');
   if (!/<video\b/i.test(html)) throw new Error('Video player is missing');
-  const liveTitles = [...html.matchAll(/<h[12]\b[^>]*\bdata-video-live-title(?:="[^"]*")?[^>]*>\s*[^<\s][\s\S]*?<\/h[12]>/gi)];
-  const players = [...html.matchAll(/<video\b/gi)];
-  if (liveTitles.length < players.length) throw new Error('Visible video live title is missing');
+  const videoCards = [...html.matchAll(/<article\b[^>]*>[\s\S]*?<\/article>/gi)].map(([card]) => card).filter(card => /<video\b/i.test(card));
+  if (!videoCards.length) throw new Error('Video card is missing');
+  for (const card of videoCards) {
+    if (!/<h[12]\b[^>]*\bdata-video-live-title(?:="[^"]*")?[^>]*>\s*[^<\s][\s\S]*?<\/h[12]>/i.test(card)) throw new Error('Visible video live title is missing');
+    if (!/<p\b[^>]*\bdata-video-live-copy(?:="[^"]*")?[^>]*>\s*[^<\s][\s\S]*?<\/p>/i.test(card)) throw new Error('Visible video live copy is missing');
+  }
   if (/rel="canonical"[^>]*href="https:\/\/landing\.toptik\.co\.il\/videos\/[^"/]+"/i.test(html) && !/"@type"\s*:\s*"VideoObject"/.test(html)) throw new Error('Video structured data is missing');
   for (const label of ['מזוודות וטרולי', 'תיקים', 'ארנקים ואביזרים', 'מותגים', 'מבצעים', 'סרטוני מוצרים', 'שירות ומידע']) {
     if (!html.includes(label)) throw new Error(`Video navigation is missing ${label}`);
@@ -309,6 +328,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     Promise.resolve().then(() => assertNoUnavailableVariants(storeCatalog)),
     Promise.resolve().then(() => assertHomeGalleryLink(storeHomeHtml)),
     checkStoreColorSelectors(storeBase, storeCatalog),
+    checkVideoMediaBaselines(normalizedBase),
     (async () => {
       for (const path of ['/videos', '/videos/intuo-upscape', '/videos/choosing-55cm-trolley', '/videos/samsonite-pro-dlx-6']) {
         try { const html = await fetchText(`${normalizedBase}${path}`); assertVideoNavigation(html); assertVideoNavigationMatchesStore(storeHomeHtml, html, storeBase, normalizedBase); }
