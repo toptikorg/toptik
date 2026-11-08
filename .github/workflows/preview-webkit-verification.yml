@@ -14,4 +14,4 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npx playwright install --with-deps webkit
-      - run: node scripts/mobile-logo-smoke.mjs --theme-id 188299051258
+      - run: node scripts/mobile-logo-smoke.mjs --theme-id 188299182330
