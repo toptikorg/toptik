@@ -18,16 +18,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const video = findGalleryVideo(slug);
   if (!video) return { robots: { index: false, follow: true } };
-  const title = `${video.title} | סרטוני TopTik`;
+  const title = `${video.seoTitle} | TopTik`;
   const url = `/videos/${video.slug}`;
   const image = `/videos/${video.file}.webp`;
   return {
     title,
-    description: video.description,
+    description: video.seoDescription,
     alternates: { canonical: url },
     robots: { index: true, follow: true },
-    openGraph: { type: "website", title, description: video.description, url, images: [{ url: image, alt: video.title }] },
-    twitter: { card: "summary_large_image", title, description: video.description, images: [image] },
+    openGraph: { type: "website", title, description: video.seoDescription, url, images: [{ url: image, alt: video.title }] },
+    twitter: { card: "summary_large_image", title, description: video.seoDescription, images: [image] },
   };
 }
 

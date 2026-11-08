@@ -178,6 +178,9 @@ export function assertVideoNavigation(html) {
   if (!/<meta\b(?=[^>]*name="description")(?=[^>]*content="[^"\s][^"]*")[^>]*>/i.test(html)) throw new Error('Video SEO description is missing');
   if (!/<h1\b[^>]*>\s*[^<\s][\s\S]*?<\/h1>/i.test(html)) throw new Error('Video SEO heading is missing');
   if (!/<video\b/i.test(html)) throw new Error('Video player is missing');
+  const liveTitles = [...html.matchAll(/<h[12]\b[^>]*\bdata-video-live-title(?:="[^"]*")?[^>]*>\s*[^<\s][\s\S]*?<\/h[12]>/gi)];
+  const players = [...html.matchAll(/<video\b/gi)];
+  if (liveTitles.length < players.length) throw new Error('Visible video live title is missing');
   if (/rel="canonical"[^>]*href="https:\/\/landing\.toptik\.co\.il\/videos\/[^"/]+"/i.test(html) && !/"@type"\s*:\s*"VideoObject"/.test(html)) throw new Error('Video structured data is missing');
   for (const label of ['מזוודות וטרולי', 'תיקים', 'ארנקים ואביזרים', 'מותגים', 'מבצעים', 'סרטוני מוצרים', 'שירות ומידע']) {
     if (!html.includes(label)) throw new Error(`Video navigation is missing ${label}`);

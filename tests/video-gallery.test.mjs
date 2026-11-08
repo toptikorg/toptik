@@ -84,7 +84,14 @@ test('pause and resume do not inflate starts, and replay after completion counts
 
 test('watch-page video metadata describes the actual video and canonical assets', () => {
   const seen = new Set();
+  const seoTitles = new Set();
+  const seoDescriptions = new Set();
   for (const video of videos) {
+    assert.ok(video.seoTitle.length > 20 && video.seoDescription.length > 50);
+    assert.ok(!seoTitles.has(video.seoTitle));
+    assert.ok(!seoDescriptions.has(video.seoDescription));
+    seoTitles.add(video.seoTitle);
+    seoDescriptions.add(video.seoDescription);
     const schema = videoSchema(video, 'https://landing.toptik.co.il');
     assert.equal(schema['@type'], 'VideoObject');
     assert.equal(schema.name, video.title);
@@ -99,6 +106,11 @@ test('watch-page video metadata describes the actual video and canonical assets'
   }
   const page = readFileSync(new URL('../src/app/videos/[slug]/page.tsx', import.meta.url), 'utf8');
   assert.match(page, /jsonLdString\(videoStructuredData\(video, SITE_ORIGIN\)\)/);
+  assert.match(page, /video\.seoTitle/);
+  assert.match(page, /video\.seoDescription/);
+  const card = readFileSync(new URL('../src/components/video-gallery/VideoCard.tsx', import.meta.url), 'utf8');
+  assert.ok(card.indexOf('<h1 data-video-live-title>{video.title}</h1>') < card.indexOf('<VideoPlayer'));
+  assert.ok(card.indexOf('<h2 data-video-live-title>{video.title}</h2>') < card.indexOf('<VideoPlayer'));
 });
 
 test('withdrawn red bag videos and their assets remain unavailable', () => {

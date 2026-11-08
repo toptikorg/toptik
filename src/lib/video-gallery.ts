@@ -3,6 +3,8 @@ export type GalleryVideo = {
   slug: string;
   file: string;
   title: string;
+  seoTitle: string;
+  seoDescription: string;
   eyebrow: string;
   description: string;
   transcript: string;
@@ -17,7 +19,9 @@ export const galleryVideos: readonly GalleryVideo[] = [
     slug: "intuo-upscape",
     file: "01-intuo-vs-upscape",
     firstPublishedOn: "2026-11-06",
-    title: "מזוודות סמסונייט: Intuo או Upscape?",
+    title: "מזוודות סמסונייט Intuo ו־Upscape בגודל 55 ס״מ",
+    seoTitle: "מזוודות סמסונייט Intuo ו־Upscape בגודל 55 ס״מ | סרטון",
+    seoDescription: "צפו בסרטון והכירו את מזוודות הטרולי Samsonite Intuo ו־Upscape בגודל 55 ס״מ, עם קישורים לדגמי Easy Access בחנות TopTik.",
     eyebrow: "מזוודות וטרולי",
     collection: { name: "לכל המזוודות", url: "https://www.toptik.co.il/collections/מזוודות" },
     description: "שני דגמי טרולי של סמסונייט בגודל 55 ס״מ. צפו והכירו את הדגמים והצבעים לפני הבחירה.",
@@ -31,7 +35,9 @@ export const galleryVideos: readonly GalleryVideo[] = [
     slug: "choosing-55cm-trolley",
     file: "02-cabin-trolley",
     firstPublishedOn: "2026-11-06",
-    title: "איך בוחרים מזוודת טרולי לנסיעה? סמסונייט Intuo",
+    title: "טרולי סמסונייט Intuo בגודל 55 ס״מ לנסיעה",
+    seoTitle: "טרולי סמסונייט Intuo 55 ס״מ: בחירת מזוודה לנסיעה | סרטון",
+    seoDescription: "מחפשים טרולי לנסיעה? צפו בסרטון על Samsonite Intuo בגודל 55 ס״מ ובדקו את מידות הכבודה המותרות בחברת התעופה לפני הבחירה.",
     eyebrow: "מדריך לנסיעה",
     collection: { name: "לכל המזוודות", url: "https://www.toptik.co.il/collections/מזוודות" },
     description: "לפני שבוחרים טרולי, בדקו את מידות הכבודה המותרות אצל חברת התעופה שלכם. הכירו את דגם Intuo בגודל 55 ס״מ.",
@@ -43,7 +49,9 @@ export const galleryVideos: readonly GalleryVideo[] = [
     file: "03-pro-dlx",
     // Publication planned for 6 Nov; update if the first public rollout occurs later.
     firstPublishedOn: "2026-11-06",
-    title: "תיק גב למחשב סמסונייט PRO-DLX 6",
+    title: "תיק גב למחשב סמסונייט PRO-DLX 6 עד 15.6 אינץ׳",
+    seoTitle: "תיק גב למחשב סמסונייט PRO-DLX 6 עד 15.6 אינץ׳ | סרטון",
+    seoDescription: "הכירו בסרטון את תיק הגב Samsonite PRO-DLX 6 בצבע שחור, עם אפשרות הרחבה ותא למחשב עד 15.6 אינץ׳, וקישור לרכישה בחנות TopTik.",
     eyebrow: "עבודה ונסיעות",
     description: "תיק גב שחור עם אפשרות הרחבה ותא למחשב עד 15.6 אינץ׳. מומלץ לבדוק את מידות המחשב לפני הבחירה.",
     transcript: "מחפשים תיק גב למחשב? פרו די אל אקס שש של סמסונייט מתרחב ומתאים למחשב בגודל עד חמש עשרה נקודה שש אינץ׳. גלו את התיק השחור באתר טופ תיק, עם משלוח חינם.",
