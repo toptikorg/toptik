@@ -18,4 +18,8 @@ test('detects wrong category or missing sidebar', () => {
   assert.throws(() => assertRelevantCategoryLinks(html(['/collections/wallets']), 'wallets-and-accessories'), /missing/);
   assert.throws(() => assertRelevantCategoryLinks('<main></main>', 'all-bags'), /missing/);
 });
+test('detects the missing parent category on Mellow Urban', () => {
+  assert.throws(() => assertRelevantCategoryLinks(html([]), 'mandarina-duck-mellow-urban'), /missing/);
+  assert.doesNotThrow(() => assertRelevantCategoryLinks(html(['/collections/all-bags/mandarinaduck']), 'mandarina-duck-mellow-urban'));
+});
 

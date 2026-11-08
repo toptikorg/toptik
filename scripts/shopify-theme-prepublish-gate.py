@@ -120,6 +120,7 @@ def run(theme_id):
         'wallets-and-accessories': (['/collections/wallets', '/collections/toiletry-pouches'], ['/collections/backpacks', '/collections/fashion-bags', '/collections/מזוודות']),
         'מזוודות': (['/collections/מזוודות', '/collections/טרולי-carry-on'], ['/collections/wallets', '/collections/fashion-bags', '/collections/backpacks']),
         'samsonite': (['/collections/מזוודות-סמסונייט', '/collections/טרולי-carry-on/samsonite', '/collections/תיקי-נסיעות/samsonite', '/collections/תיקי-גב-למחשב/samsonite'], []),
+        'mandarina-duck-mellow-urban': (['/collections/all-bags/mandarinaduck'], ['/collections/wallets/mandarinaduck']),
     }
     for handle, (required, forbidden) in category_rules.items():
         try:

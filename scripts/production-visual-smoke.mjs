@@ -56,6 +56,7 @@ export function assertRelevantCategoryLinks(html, handle) {
     'wallets-and-accessories': { required: ['/collections/wallets', '/collections/toiletry-pouches'], forbidden: ['/collections/fashion-bags', '/collections/backpacks', '/collections/מזוודות'] },
     'מזוודות': { required: ['/collections/מזוודות', '/collections/טרולי-carry-on'], forbidden: ['/collections/wallets', '/collections/fashion-bags', '/collections/backpacks'] },
     'samsonite': { required: ['/collections/מזוודות-סמסונייט', '/collections/טרולי-carry-on/samsonite', '/collections/תיקי-נסיעות/samsonite', '/collections/תיקי-גב-למחשב/samsonite'], forbidden: [] },
+    'mandarina-duck-mellow-urban': { required: ['/collections/all-bags/mandarinaduck'], forbidden: ['/collections/wallets/mandarinaduck'] },
   };
   const rule = rules[handle];
   if (!rule) return;
