@@ -167,7 +167,7 @@ export function assertNoUnavailableVariants(products) {
 
 export function assertHomeGalleryLink(html) {
   const content = html.split('<footer')[0];
-  if (!/<a\b[^>]*href="https:\/\/landing\.toptik\.co\.il\/carousel"[^>]*>[\s\S]*?גלריי?ת[^<]*<\/a>/i.test(content)) {
+  if (!/<a\b[^>]*href="https:\/\/landing\.toptik\.co\.il\/carousel"[^>]*>[^<]*(?:גלריה|גלריית)[^<]*<\/a>/i.test(content)) {
     throw new Error("Store homepage is missing the prominent gallery link");
   }
 }

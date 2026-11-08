@@ -13,6 +13,7 @@ test("does not silently pass missing availability data", () => {
 
 test("requires a gallery link in homepage content, not just the footer", () => {
   assertHomeGalleryLink('<main><a href="https://landing.toptik.co.il/carousel">לגלריית המוצרים</a></main><footer></footer>');
+  assertHomeGalleryLink('<header><a href="https://landing.toptik.co.il/carousel">כניסה לגלריה</a></header><footer></footer>');
   assert.throws(() => assertHomeGalleryLink('<main></main><footer><a href="https://landing.toptik.co.il/carousel">לגלריית המוצרים</a></footer>'), /prominent gallery/);
 });
 
