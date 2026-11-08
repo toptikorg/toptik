@@ -344,7 +344,6 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     throw new Error(`Store homepage is incomplete: ${storeHomeImages.length} images and ${storeCollectionLinks.length} collection links`);
   }
 
-  const storeCollectionUrl = `${storeBase}/collections/samsonite`;
   const storeCollectionHtml = await collectionChecks.get("samsonite");
   assertShippingPolicyConsistency(storeCollectionHtml, "Samsonite collection");
   const storeProductLinks = [...new Set(
