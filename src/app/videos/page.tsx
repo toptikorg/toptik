@@ -17,7 +17,7 @@ export default function VideosPage() {
       <VideoHeader />
       <div className={styles.hero}>
         <p className={styles.eyebrow}>TOPTIK VIDEO</p>
-        <h1>רואים מקרוב, בוחרים נכון</h1>
+        <h1>סרטוני מזוודות, טרולי ותיקים</h1>
         <p>מזוודות ותיקים, היכרות וטיפים קצרים שיעזרו לכם לבחור את מה שמתאים לכם.</p>
         <p>מחפשים את הדגם הבא לנסיעה? גלו את מבחר ה<a href="https://www.toptik.co.il/collections/מזוודות">מזוודות</a> בחנות TopTik.</p>
       </div>

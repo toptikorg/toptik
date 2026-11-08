@@ -7,11 +7,14 @@ export function VideoCard({ video, detail = false }: { video: GalleryVideo; deta
   return (
     <article className={`${styles.card} ${detail ? styles.detailCard : ""}`}>
       <div className={styles.player}>
+        <div className={styles.titleBar}>
+          {detail ? <h1 data-video-live-title>{video.title}</h1> : <h2 data-video-live-title>{video.title}</h2>}
+          {video.liveCopy.map((line) => <p key={line} className={styles.liveCopy} data-video-live-copy>{line}</p>)}
+        </div>
         <VideoPlayer file={video.file} slug={video.slug} title={video.title} />
       </div>
       <div className={styles.copy}>
         <p className={styles.eyebrow}>{video.eyebrow}</p>
-        {detail ? <h1>{video.title}</h1> : <h2>{video.title}</h2>}
         <p>{video.description}</p>
         {detail && video.collection && (
           <p><a href={video.collection.url}>{video.collection.name}</a></p>
@@ -24,7 +27,7 @@ export function VideoCard({ video, detail = false }: { video: GalleryVideo; deta
           ))}
         </div>
         {!detail && <Link className={styles.watch} href={`/videos/${video.slug}`}>לצפייה בסרטון</Link>}
-        <details className={styles.transcript}>
+        <details className={styles.transcript} open>
           <summary>תמלול הסרטון</summary>
           <p>{video.transcript}</p>
         </details>

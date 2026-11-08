@@ -3,12 +3,27 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
+import { assertVideoMediaHash } from '../scripts/production-visual-smoke.mjs';
 
 const source = readFileSync(new URL('../src/lib/video-gallery.ts', import.meta.url), 'utf8');
 const js = stripTypeScriptTypes(source).replaceAll('export ', '');
 const context = vm.createContext({ URL });
 const videos = vm.runInContext(`${js}\ngalleryVideos`, context);
 const videoSchema = vm.runInContext("videoStructuredData", context);
+
+test('video and poster baselines detect changes without claiming image or audio review', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../data/video-media-baselines.json', import.meta.url), 'utf8'));
+  assert.match(manifest.purpose, /not an OCR/);
+  assert.equal(Object.keys(manifest.assets).length, videos.length * 2);
+  for (const video of videos) for (const ext of ['mp4', 'webp']) {
+    const name = `${video.file}.${ext}`;
+    const bytes = readFileSync(new URL(`../public/videos/${name}`, import.meta.url));
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), manifest.assets[name]);
+    assert.doesNotThrow(() => assertVideoMediaHash(name, bytes));
+    assert.throws(() => assertVideoMediaHash(name, Buffer.from('altered')), /baseline changed/);
+  }
+});
 
 test('each video has a unique route, playable file, poster, Hebrew captions and clean store links', () => {
   assert.equal(videos.length, 3);
@@ -84,7 +99,15 @@ test('pause and resume do not inflate starts, and replay after completion counts
 
 test('watch-page video metadata describes the actual video and canonical assets', () => {
   const seen = new Set();
+  const seoTitles = new Set();
+  const seoDescriptions = new Set();
   for (const video of videos) {
+    assert.ok(video.seoTitle.length > 20 && video.seoDescription.length > 50);
+    assert.ok(video.liveCopy.length > 0 && video.liveCopy.every(line => line.length > 0));
+    assert.ok(!seoTitles.has(video.seoTitle));
+    assert.ok(!seoDescriptions.has(video.seoDescription));
+    seoTitles.add(video.seoTitle);
+    seoDescriptions.add(video.seoDescription);
     const schema = videoSchema(video, 'https://landing.toptik.co.il');
     assert.equal(schema['@type'], 'VideoObject');
     assert.equal(schema.name, video.title);
@@ -99,6 +122,13 @@ test('watch-page video metadata describes the actual video and canonical assets'
   }
   const page = readFileSync(new URL('../src/app/videos/[slug]/page.tsx', import.meta.url), 'utf8');
   assert.match(page, /jsonLdString\(videoStructuredData\(video, SITE_ORIGIN\)\)/);
+  assert.match(page, /video\.seoTitle/);
+  assert.match(page, /video\.seoDescription/);
+  const card = readFileSync(new URL('../src/components/video-gallery/VideoCard.tsx', import.meta.url), 'utf8');
+  assert.match(card, /video\.liveCopy\.map/);
+  assert.match(card, /<details className=\{styles\.transcript\} open>/);
+  assert.ok(card.indexOf('<h1 data-video-live-title>{video.title}</h1>') < card.indexOf('<VideoPlayer'));
+  assert.ok(card.indexOf('<h2 data-video-live-title>{video.title}</h2>') < card.indexOf('<VideoPlayer'));
 });
 
 test('withdrawn red bag videos and their assets remain unavailable', () => {
