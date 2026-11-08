@@ -165,7 +165,20 @@ export function assertNoUnavailableVariants(products) {
   if (unavailable.length) throw new Error(`Unavailable variants visible in Shopify catalog: ${unavailable.join(", ")}`);
 }
 
-async function checkStoreAvailability(storeBase) {
+export function assertHomeGalleryLink(html) {
+  const content = html.split('<footer')[0];
+  if (!/<a\b[^>]*href="https:\/\/landing\.toptik\.co\.il\/carousel"[^>]*>[\s\S]*?גלריי?ת[^<]*<\/a>/i.test(content)) {
+    throw new Error("Store homepage is missing the prominent gallery link");
+  }
+}
+
+export function assertColorSelector(html, skus) {
+  for (const sku of skus) {
+    if (!html.includes(`data-color-sku="${sku}"`)) throw new Error(`Visible color selection missing for ${sku}`);
+  }
+}
+
+async function fetchStoreCatalog(storeBase) {
   const products = [];
   for (let page = 1; page <= 100; page += 1) {
     const result = await (await monitoredFetch(`${storeBase}/products.json?limit=250&page=${page}&monitor_check=${Date.now()}`)).json();
@@ -173,11 +186,27 @@ async function checkStoreAvailability(storeBase) {
     products.push(...result.products);
     if (result.products.length < 250) {
       if (!products.length) throw new Error("Store product catalog is empty");
-      assertNoUnavailableVariants(products);
-      return;
+      return products;
     }
   }
   throw new Error("Store catalog exceeded pagination safety limit");
+}
+
+export function productsWithMultipleColors(products) {
+  return products.filter((product) => Array.isArray(product.options) && product.options.some((option) =>
+    ["צבע", "color", "colour"].includes(String(option.name).trim().toLowerCase()) && Array.isArray(option.values) && option.values.length > 1));
+}
+
+async function checkStoreColorSelectors(storeBase, products) {
+      const failures = [];
+      for (const product of productsWithMultipleColors(products)) {
+        try {
+          const expected = product.variants.map((variant) => variant.sku);
+          if (expected.some((sku) => !sku)) throw new Error(`Missing variant SKU on ${product.handle}`);
+          assertColorSelector(await fetchText(`${storeBase}/products/${encodeURIComponent(product.handle)}?monitor_check=${Date.now()}`), expected);
+        } catch (error) { failures.push(`${product.handle}: ${error.message}`); }
+      }
+      if (failures.length) throw new Error(`Color selection errors: ${failures.join("; ")}`);
 }
 
 async function verifyImage(url) {
@@ -200,7 +229,15 @@ function absoluteUrl(baseUrl, value) {
 export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   const normalizedBase = baseUrl.replace(/\/$/, "");
   const storeBase = (process.env.MONITOR_STORE_URL || DEFAULT_STORE_URL).replace(/\/$/, "");
-  await checkStoreAvailability(storeBase);
+  const storeHomeHtml = await fetchText(storeBase);
+  const storeCatalog = await fetchStoreCatalog(storeBase);
+  const checks = await Promise.allSettled([
+    Promise.resolve().then(() => assertNoUnavailableVariants(storeCatalog)),
+    Promise.resolve().then(() => assertHomeGalleryLink(storeHomeHtml)),
+    checkStoreColorSelectors(storeBase, storeCatalog),
+  ]);
+  const problems = checks.filter((result) => result.status === "rejected").map((result) => result.reason.message);
+  if (problems.length) throw new Error(problems.join("; "));
   const journalUrl = `${normalizedBase}/journal`;
   const journalHtml = await fetchText(journalUrl);
   const journalImages = [...new Set(extractAttributeValues(journalHtml, "img", "src"))];
@@ -274,7 +311,6 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     }
   }
 
-  const storeHomeHtml = await fetchText(storeBase);
   assertShippingPolicyConsistency(storeHomeHtml, "Store homepage");
   const storeHomeImages = [...new Set(extractAttributeValues(storeHomeHtml, "img", "src"))];
   const storeCollectionLinks = [...new Set(
