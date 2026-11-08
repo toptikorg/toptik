@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import styles from "./VideoGallery.module.css";
 
@@ -16,7 +15,7 @@ export function VideoHeader() {
     <a className={styles.announcement} href={`${store}/policies/shipping-policy`}>משלוח חינם לכל הארץ</a>
     <div className={styles.headerRow}>
       <a href={store} className={styles.logo} aria-label="טופ תיק, לדף הבית">
-        <Image src="/toptiklogo.png" alt="TopTik" width={380} height={150} priority />
+        <b>TOPTIK</b><i>Move in Style. Travel with Purpose.</i>
       </a>
       <div className={styles.quickLinks}><Link href="/carousel">גלריית המוצרים</Link><Link href="/journal">המגזין</Link><a href={store}>לחנות</a></div>
     </div>

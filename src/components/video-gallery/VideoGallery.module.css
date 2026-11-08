@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,400&display=swap');
 .shell { min-height: 100vh; background: #f5f2ed; color: #252220; font-family: var(--font-assistant), sans-serif; }
 .header { padding: 18px clamp(20px, 5vw, 80px); background: #fff; display: flex; justify-content: space-between; align-items: center; gap: 24px; border-bottom: 1px solid #e8e2dc; }
 .brand { font-weight: 800; font-size: 23px; letter-spacing: .07em; text-decoration: none; }
@@ -41,8 +42,9 @@
 .siteHeader { position: relative; z-index: 3; background: #fff; color: #2a2118; }
 .announcement { display: block; padding: 8px 20px; text-align: center; text-decoration: none; background: #f3ebdb; color: #584321; font-size: 14px; }
 .headerRow { min-height: 94px; display: flex; justify-content: center; align-items: center; position: relative; padding: 8px 24px; }
-.logo { width: 180px; height: 66px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-.logo img { display: block; width: 380px; height: 150px; max-width: none; flex: none; object-fit: contain; }
+.logo { display: inline-block; text-align: center; text-decoration: none; direction: ltr; color: #2a2118; }
+.logo b { display: block; unicode-bidi: isolate; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 300; font-size: 45px; letter-spacing: .28em; text-indent: .28em; color: #2a2118; white-space: nowrap; line-height: 1.1; }
+.logo i { display: block; unicode-bidi: isolate; margin-top: 3px; font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 15px; letter-spacing: .05em; color: #7a5c2f; white-space: nowrap; }
 .quickLinks { position: absolute; left: 5%; display: flex; gap: 18px; font-size: 14px; }
 .quickLinks a, .mainNav a { color: inherit; text-decoration: none; }
 .quickLinks a:hover, .mainNav a:hover { color: #74552e; }
@@ -65,7 +67,8 @@
 .footer { background: #eee4d4; color: #3c3021; }
 @media (max-width: 720px) {
   .headerRow { min-height: 80px; flex-direction: column; gap: 0; }
-  .logo { height: 48px; }
+  .logo b { font-size: clamp(18px, 4.3vw, 26px); letter-spacing: .14em; text-indent: .14em; }
+  .logo i { font-size: 9px; }
   .quickLinks { position: static; gap: 16px; padding-bottom: 6px; }
   .mainNav { justify-content: center; flex-wrap: wrap; gap: 0 18px; }
   .navGroup summary, .navLink { white-space: nowrap; }
