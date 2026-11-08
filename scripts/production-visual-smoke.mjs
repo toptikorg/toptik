@@ -47,6 +47,23 @@ export function assertStoreBrandSeriesNavigation(html, brand, expectedSeries = [
   }
 }
 
+export function assertRelevantCategoryLinks(html, handle) {
+  const match = html.match(/<div\b[^>]*class="[^"]*\btt-side__list\b[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+  if (!match) throw new Error(`${handle}: category navigation missing`);
+  const links = extractAttributeValues(match[1], 'a', 'href').map((url) => decodeURI(url.split('?')[0]));
+  const rules = {
+    'all-bags': { required: ['/collections/fashion-bags', '/collections/backpacks', '/collections/תיקי-נסיעות', '/collections/תיקי-גב-למחשב'], forbidden: ['/collections/wallets', '/collections/מזוודות'] },
+    'wallets-and-accessories': { required: ['/collections/wallets', '/collections/toiletry-pouches'], forbidden: ['/collections/fashion-bags', '/collections/backpacks', '/collections/מזוודות'] },
+    'מזוודות': { required: ['/collections/מזוודות', '/collections/טרולי-carry-on'], forbidden: ['/collections/wallets', '/collections/fashion-bags', '/collections/backpacks'] },
+    'samsonite': { required: ['/collections/מזוודות-סמסונייט', '/collections/טרולי-carry-on/samsonite', '/collections/תיקי-נסיעות/samsonite', '/collections/תיקי-גב-למחשב/samsonite'], forbidden: [] },
+    'mandarina-duck-mellow-urban': { required: ['/collections/all-bags/mandarinaduck'], forbidden: ['/collections/wallets/mandarinaduck'] },
+  };
+  const rule = rules[handle];
+  if (!rule) return;
+  for (const expected of rule.required) if (!links.includes(expected)) throw new Error(`${handle}: relevant category link missing: ${expected}`);
+  for (const forbidden of rule.forbidden) if (links.includes(forbidden)) throw new Error(`${handle}: unrelated category link: ${forbidden}`);
+}
+
 export function assertCategorySeriesNavigation(html, handle, products, handles) {
   const known = new Set(handles);
   const series = new Set(products.flatMap((p) => Array.isArray(p.tags) ? p.tags : []).filter((t) => t.startsWith('tt-series:')).map((t) => t.slice(10)).filter((h) => known.has(h)));
@@ -366,6 +383,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const products = await fetchCollectionProducts(storeBase, handle);
+      assertRelevantCategoryLinks(page.value, handle);
       assertCategorySeriesNavigation(page.value, handle, products, collectionHandles);
     } catch (error) {
       categorySeriesErrors.push(error.message);
@@ -553,6 +571,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exitCode = 1;
   }
 }
+
 
 
 

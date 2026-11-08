@@ -22,9 +22,15 @@ class Page(HTMLParser):
         self.ids = set()
         self.images = 0
         self.in_series = False
+        self.side_depth = 0
+        self.side_links = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
+        if tag == 'div' and 'tt-side__list' in a.get('class', '').split():
+            self.side_depth = 1
+        elif tag == 'div' and self.side_depth:
+            self.side_depth += 1
         if a.get('id'):
             self.ids.add(a['id'])
         if tag == 'details' and 'tt-series-nav' in a.get('class', '').split():
@@ -32,12 +38,16 @@ class Page(HTMLParser):
         if tag == 'a' and a.get('href'):
             href = urllib.parse.urlsplit(a['href']).path
             self.links.append(href)
+            if self.side_depth:
+                self.side_links.append(urllib.parse.unquote(href))
             if self.in_series:
                 self.series_links.append(href)
         if tag == 'img' and (a.get('src') or a.get('data-src')):
             self.images += 1
 
     def handle_endtag(self, tag):
+        if tag == 'div' and self.side_depth:
+            self.side_depth -= 1
         if tag == 'details' and self.in_series:
             self.in_series = False
 
@@ -70,6 +80,14 @@ def validate_page(html, theme_id, brand, expected_series):
     return errors
 
 
+def validate_category_links(html, required, forbidden):
+    page = Page()
+    page.feed(html)
+    missing = set(required) - set(page.side_links)
+    unrelated = set(forbidden) & set(page.side_links)
+    return ([f'missing category links: {sorted(missing)}'] if missing else []) + ([f'unrelated category links: {sorted(unrelated)}'] if unrelated else [])
+
+
 def run(theme_id):
     jar = http.cookiejar.CookieJar()
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
@@ -97,6 +115,23 @@ def run(theme_id):
             failures.extend(brand + ': ' + error for error in errors)
         else:
             print(f'PASS {brand}: {len(expected)} series and filter structure')
+    category_rules = {
+        'all-bags': (['/collections/fashion-bags', '/collections/backpacks', '/collections/תיקי-נסיעות', '/collections/תיקי-גב-למחשב'], ['/collections/wallets', '/collections/מזוודות']),
+        'wallets-and-accessories': (['/collections/wallets', '/collections/toiletry-pouches'], ['/collections/backpacks', '/collections/fashion-bags', '/collections/מזוודות']),
+        'מזוודות': (['/collections/מזוודות', '/collections/טרולי-carry-on'], ['/collections/wallets', '/collections/fashion-bags', '/collections/backpacks']),
+        'samsonite': (['/collections/מזוודות-סמסונייט', '/collections/טרולי-carry-on/samsonite', '/collections/תיקי-נסיעות/samsonite', '/collections/תיקי-גב-למחשב/samsonite'], []),
+        'mandarina-duck-mellow-urban': (['/collections/all-bags/mandarinaduck'], ['/collections/wallets/mandarinaduck']),
+    }
+    for handle, (required, forbidden) in category_rules.items():
+        try:
+            url = f'{STORE}/collections/{urllib.parse.quote(handle)}?preview_theme_id={theme_id}'
+            errors = validate_category_links(get(url), required, forbidden)
+        except Exception as exc:
+            errors = [f'could not inspect category links: {exc}']
+        if errors:
+            failures.extend(handle + ': ' + error for error in errors)
+        else:
+            print(f'PASS {handle}: relevant category links')
     for failure in failures:
         print('FAIL ' + failure, file=sys.stderr)
     return 1 if failures else 0
@@ -110,4 +145,5 @@ if __name__ == '__main__':
     except Exception as exc:
         print('FAIL gate could not complete: ' + str(exc), file=sys.stderr)
         sys.exit(1)
+
 
