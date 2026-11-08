@@ -53,9 +53,13 @@
 .quickLinks a:hover, .mainNav a:hover { color: #74552e; }
 .mainNav { display: flex; justify-content: center; align-items: stretch; gap: clamp(12px, 2vw, 30px); padding: 0 20px; border-block: 1px solid #e8e0d4; background: #fff; }
 .navGroup { position: relative; }
+.navCategoryGroup { display: flex; align-items: center; position: relative; }
+.navCategoryGroup .navGroup { position: static; }
+.navCategoryGroup summary { min-width: 40px; justify-content: center; }
 .navGroup summary, .navLink { cursor: pointer; list-style: none; display: flex; align-items: center; min-height: 48px; font-size: 15px; font-weight: 600; }
 .navGroup summary::-webkit-details-marker { display: none; }
 .navGroup summary::after { content: '⌄'; margin-inline-start: 6px; }
+.navCategoryGroup summary::after { margin: 0; }
 .navDropdown { position: absolute; right: 0; top: 100%; min-width: 220px; padding: 8px; display: grid; background: #fffdf9; border: 1px solid #e4d7c2; box-shadow: 0 8px 22px rgb(58 42 22 / 12%); }
 .navDropdown a { display: block; padding: 10px 12px; border-radius: 6px; }
 .navDropdown a:hover { background: #f5efe3; }
@@ -110,3 +114,4 @@
 .grid .card { border-color: #e6dccd; border-radius: 12px; box-shadow: 0 8px 28px rgb(77 57 31 / 7%); }
 .grid .player, .grid .player video { background: #f4ede1; }
 .grid .buy { border-radius: 999px; }
+

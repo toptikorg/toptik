@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertVideoNavigation, assertVideoNavigationMatchesStore } from '../scripts/production-visual-smoke.mjs';
+import { assertDirectCategoryNavigation, assertVideoNavigation, assertVideoNavigationMatchesStore } from '../scripts/production-visual-smoke.mjs';
+
+test('top category links and their separate submenu controls are required', () => {
+  const nav = '<nav id="tt-main-nav"><a href="/collections/מזוודות-וטרולי">מזוודות וטרולי</a><summary aria-label="פתיחת תפריט מזוודות וטרולי"></summary><a href="/collections/all-bags">תיקים</a><summary aria-label="פתיחת תפריט תיקים"></summary><a href="/collections/wallets-and-accessories">ארנקים ואביזרים</a><summary aria-label="פתיחת תפריט ארנקים ואביזרים"></summary></nav>';
+  assert.doesNotThrow(() => assertDirectCategoryNavigation(nav));
+  assert.throws(() => assertDirectCategoryNavigation(nav.replace('/collections/all-bags', '/collections/fashion-bags')), /תיקים/);
+  assert.throws(() => assertDirectCategoryNavigation(nav.replace('aria-label="פתיחת תפריט תיקים"', '')), /תיקים/);
+});
 
 const valid = '<title>סרטוני TopTik</title><meta name="description" content="מדריכי וידאו לבחירת מזוודה"><a aria-label="טופ תיק, לדף הבית"><b>TOPTIK</b><i>Move in Style. Travel with Purpose.</i></a><nav>מזוודות וטרולי תיקים ארנקים ואביזרים מותגים מבצעים סרטוני מוצרים שירות ומידע</nav><h1>סרטוני מזוודות</h1><article><h2 data-video-live-title="true">טרולי Intuo 55</h2><p data-video-live-copy="true">איך בוחרים מזוודה?</p><video></video></article><link rel="canonical" href="https://landing.toptik.co.il/videos"><a href="https://www.toptik.co.il/products/example">קנייה</a>';
 test('monitor detects missing navigation, logo, indexing and purchase links', () => {
@@ -29,3 +36,4 @@ test('monitor detects additions and destination changes in live store navigation
   assert.throws(() => check(shop.replace('</nav>', '<a href="/pages/contact">צור קשר</a></nav>').replace('<div class="tt-mobile-groups">', '<div>'), video), /differ/);
   assert.throws(() => check('', video), /missing/);
 });
+

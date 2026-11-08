@@ -227,6 +227,18 @@ export function assertVideoNavigationMatchesStore(storeHtml, videoHtml, storeBas
   if (missing.length || extra.length) throw new Error(`Video and store navigation differ; missing: ${missing.join(', ') || 'none'}; extra: ${extra.join(', ') || 'none'}`);
 }
 
+export function assertDirectCategoryNavigation(html) {
+  const nav = html.match(/<nav\b(?=[^>]*(?:\bid="tt-main-nav"|\baria-label="תפריט ראשי"))[^>]*>[\s\S]*?<\/nav>/i)?.[0];
+  if (!nav) throw new Error('Main navigation is missing');
+  const categories = [['מזוודות וטרולי', '/collections/מזוודות-וטרולי'], ['תיקים', '/collections/all-bags'], ['ארנקים ואביזרים', '/collections/wallets-and-accessories']];
+  const anchors = [...nav.matchAll(/<a\b[^>]*\bhref="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)];
+  for (const [label, path] of categories) {
+    const found = anchors.some(([, href, text]) => text.replace(/<[^>]*>/g, '').trim() === label && decodeURI(new URL(decodeHtmlAttribute(href), 'https://www.toptik.co.il').pathname) === path);
+    if (!found) throw new Error(`Direct category link missing or incorrect: ${label}`);
+    if (!nav.includes(`aria-label="פתיחת תפריט ${label}"`)) throw new Error(`Category submenu control missing: ${label}`);
+  }
+}
+
 export function assertColorSelector(html, skus) {
   for (const sku of skus) {
     if (!html.includes(`data-color-sku="${sku}"`)) throw new Error(`Visible color selection missing for ${sku}`);
@@ -326,12 +338,12 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   }
   const checks = await Promise.allSettled([
     Promise.resolve().then(() => assertNoUnavailableVariants(storeCatalog)),
-    Promise.resolve().then(() => assertHomeGalleryLink(storeHomeHtml)),
+    Promise.resolve().then(() => { assertHomeGalleryLink(storeHomeHtml); assertDirectCategoryNavigation(storeHomeHtml); }),
     checkStoreColorSelectors(storeBase, storeCatalog),
     checkVideoMediaBaselines(normalizedBase),
     (async () => {
       for (const path of ['/videos', '/videos/intuo-upscape', '/videos/choosing-55cm-trolley', '/videos/samsonite-pro-dlx-6']) {
-        try { const html = await fetchText(`${normalizedBase}${path}`); assertVideoNavigation(html); assertVideoNavigationMatchesStore(storeHomeHtml, html, storeBase, normalizedBase); }
+        try { const html = await fetchText(`${normalizedBase}${path}`); assertVideoNavigation(html); assertDirectCategoryNavigation(html); assertVideoNavigationMatchesStore(storeHomeHtml, html, storeBase, normalizedBase); }
         catch (error) { throw new Error(`${path}: ${error.message}`); }
       }
     })(),
@@ -504,4 +516,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exitCode = 1;
   }
 }
+
 
