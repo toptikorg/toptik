@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { assertNoUnavailableVariants, assertHomeGalleryLink, assertColorSelector, productsWithMultipleColors } from "../scripts/production-visual-smoke.mjs";
+import { assertNoUnavailableVariants, assertHomeGalleryLink, assertColorSelector, productsWithMultipleColors, assertReadableSubcategoryHover } from "../scripts/production-visual-smoke.mjs";
 
 test("detects an unavailable variant without treating zero inventory as evidence", () => {
   assert.throws(() => assertNoUnavailableVariants([{ handle: "bag", variants: [{ sku: "BLUE", available: false }] }]), /bag \(BLUE\)/);
@@ -25,4 +25,11 @@ test("requires each color control on the representative product", () => {
 test("identifies all products with multiple color choices", () => {
   const products = [{ handle: "colors", options: [{ name: "צבע", values: ["שחור", "כחול"] }] }, { handle: "size", options: [{ name: "מידה", values: ["S", "L"] }] }, { handle: "single", options: [{ name: "Color", values: ["Red"] }] }];
   assert.deepEqual(productsWithMultipleColors(products).map((product) => product.handle), ["colors"]);
+});
+
+test("detects black category hover without flagging a light hover", () => {
+  const nav = '<nav class="tt-subcats"><a>מזוודות</a></nav>';
+  assert.throws(() => assertReadableSubcategoryHover(nav + '<style>.tt-subcats a:hover{background:#111;color:#fff}</style>'), /black background/);
+  assert.throws(() => assertReadableSubcategoryHover(nav), /style is missing/);
+  assert.doesNotThrow(() => assertReadableSubcategoryHover(nav + '<style>.tt-subcats a:hover{background:#F5EFE3;color:#2A2118}</style>'));
 });

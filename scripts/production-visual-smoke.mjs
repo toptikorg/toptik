@@ -178,6 +178,16 @@ export function assertColorSelector(html, skus) {
   }
 }
 
+export function assertReadableSubcategoryHover(html) {
+  const rules = [...html.matchAll(/\.tt-subcats\s+a:hover\s*\{([^}]*)\}/gi)];
+  if (html.includes('class="tt-subcats"') && rules.length === 0) throw new Error("Subcategory hover style is missing");
+  for (const [, declarations] of rules) {
+    if (/background(?:-color)?\s*:\s*(?:#(?:000|111)(?:000|111)?\b|black\b|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\))/i.test(declarations)) {
+      throw new Error("Subcategory hover uses a black background");
+    }
+  }
+}
+
 async function fetchStoreCatalog(storeBase) {
   const products = [];
   for (let page = 1; page <= 100; page += 1) {
@@ -322,6 +332,8 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
 
   const storeCollectionUrl = `${storeBase}/collections/samsonite`;
   const storeCollectionHtml = await fetchText(storeCollectionUrl);
+  assertReadableSubcategoryHover(storeCollectionHtml);
+  assertReadableSubcategoryHover(await fetchText(`${storeBase}/collections/${encodeURIComponent("מזוודות")}`));
   assertShippingPolicyConsistency(storeCollectionHtml, "Samsonite collection");
   const storeProductLinks = [...new Set(
     extractAttributeValues(storeCollectionHtml, "a", "href").filter((href) => href.startsWith("/products/")),
@@ -332,6 +344,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
 
   for (const brand of MONITORED_BRANDS) {
     const html = brand === "samsonite" ? storeCollectionHtml : await fetchText(`${storeBase}/collections/${brand}`);
+    assertReadableSubcategoryHover(html);
     const expected = [...new Set(carouselPayload.items
       .filter((item) => item?.isActive && item?.shopifyLink?.isPublished && item?.series?.brand === brand && item.series.key)
       .map((item) => item.series.key))];
