@@ -172,6 +172,16 @@ export function assertHomeGalleryLink(html) {
   }
 }
 
+export function assertVideoNavigation(html) {
+  if (!/(?:toptiklogo\.png|toptiklogo%2Epng|toptiklogo%2epng)/i.test(html)) throw new Error('Video page brand logo is missing');
+  for (const label of ['מזוודות וטרולי', 'תיקים', 'ארנקים ואביזרים', 'מותגים', 'מבצעים', 'סרטוני מוצרים', 'שירות ומידע']) {
+    if (!html.includes(label)) throw new Error(`Video navigation is missing ${label}`);
+  }
+  if (/name="robots"[^>]*content="[^"]*noindex/i.test(html)) throw new Error('Video page is noindex');
+  if (!/rel="canonical"/.test(html)) throw new Error('Video page canonical is missing');
+  if (!html.includes('https://www.toptik.co.il/products/')) throw new Error('Video page has no store purchase links');
+}
+
 export function assertColorSelector(html, skus) {
   for (const sku of skus) {
     if (!html.includes(`data-color-sku="${sku}"`)) throw new Error(`Visible color selection missing for ${sku}`);
@@ -273,6 +283,12 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     Promise.resolve().then(() => assertNoUnavailableVariants(storeCatalog)),
     Promise.resolve().then(() => assertHomeGalleryLink(storeHomeHtml)),
     checkStoreColorSelectors(storeBase, storeCatalog),
+    (async () => {
+      for (const path of ['/videos', '/videos/intuo-upscape', '/videos/choosing-55cm-trolley', '/videos/samsonite-pro-dlx-6']) {
+        try { assertVideoNavigation(await fetchText(`${normalizedBase}${path}`)); }
+        catch (error) { throw new Error(`${path}: ${error.message}`); }
+      }
+    })(),
     (async () => {
       const pages = [...collectionChecks.values()];
       const problems = [];
