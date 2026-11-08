@@ -241,10 +241,24 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   const storeBase = (process.env.MONITOR_STORE_URL || DEFAULT_STORE_URL).replace(/\/$/, "");
   const storeHomeHtml = await fetchText(storeBase);
   const storeCatalog = await fetchStoreCatalog(storeBase);
+  const collectionChecks = new Map([...MONITORED_BRANDS, encodeURIComponent("מזוודות")]
+    .map((handle) => [handle, fetchText(`${storeBase}/collections/${handle}`)]));
   const checks = await Promise.allSettled([
     Promise.resolve().then(() => assertNoUnavailableVariants(storeCatalog)),
     Promise.resolve().then(() => assertHomeGalleryLink(storeHomeHtml)),
     checkStoreColorSelectors(storeBase, storeCatalog),
+    (async () => {
+      const pages = await Promise.allSettled(collectionChecks.values());
+      const problems = [];
+      for (const page of pages) {
+        if (page.status === "rejected") problems.push(page.reason.message);
+        else {
+          try { assertReadableSubcategoryHover(page.value); }
+          catch (error) { problems.push(error.message); }
+        }
+      }
+      if (problems.length) throw new Error(problems.join("; "));
+    })(),
   ]);
   const problems = checks.filter((result) => result.status === "rejected").map((result) => result.reason.message);
   if (problems.length) throw new Error(problems.join("; "));
@@ -331,9 +345,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   }
 
   const storeCollectionUrl = `${storeBase}/collections/samsonite`;
-  const storeCollectionHtml = await fetchText(storeCollectionUrl);
-  assertReadableSubcategoryHover(storeCollectionHtml);
-  assertReadableSubcategoryHover(await fetchText(`${storeBase}/collections/${encodeURIComponent("מזוודות")}`));
+  const storeCollectionHtml = await collectionChecks.get("samsonite");
   assertShippingPolicyConsistency(storeCollectionHtml, "Samsonite collection");
   const storeProductLinks = [...new Set(
     extractAttributeValues(storeCollectionHtml, "a", "href").filter((href) => href.startsWith("/products/")),
@@ -343,8 +355,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
   }
 
   for (const brand of MONITORED_BRANDS) {
-    const html = brand === "samsonite" ? storeCollectionHtml : await fetchText(`${storeBase}/collections/${brand}`);
-    assertReadableSubcategoryHover(html);
+    const html = await collectionChecks.get(brand);
     const expected = [...new Set(carouselPayload.items
       .filter((item) => item?.isActive && item?.shopifyLink?.isPublished && item?.series?.brand === brand && item.series.key)
       .map((item) => item.series.key))];
