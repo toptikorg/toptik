@@ -1,0 +1,17 @@
+name: One-time Shopify preview WebKit verification
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - run: node scripts/mobile-logo-smoke.mjs --theme-id 188299051258
