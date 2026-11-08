@@ -172,6 +172,34 @@ export function assertHomeGalleryLink(html) {
   }
 }
 
+export function assertVideoNavigation(html) {
+  if (!/(?:toptiklogo\.png|toptiklogo%2Epng|toptiklogo%2epng)/i.test(html)) throw new Error('Video page brand logo is missing');
+  for (const label of ['מזוודות וטרולי', 'תיקים', 'ארנקים ואביזרים', 'מותגים', 'מבצעים', 'סרטוני מוצרים', 'שירות ומידע']) {
+    if (!html.includes(label)) throw new Error(`Video navigation is missing ${label}`);
+  }
+  if (/name="robots"[^>]*content="[^"]*noindex/i.test(html)) throw new Error('Video page is noindex');
+  if (!/rel="canonical"/.test(html)) throw new Error('Video page canonical is missing');
+  if (!html.includes('https://www.toptik.co.il/products/')) throw new Error('Video page has no store purchase links');
+}
+
+export function assertVideoNavigationMatchesStore(storeHtml, videoHtml, storeBase, videoBase) {
+  const storeNav = storeHtml.match(/<nav\b(?=[^>]*\bid="tt-main-nav")[^>]*>[\s\S]*?<\/nav>/i)?.[0];
+  const videoNav = videoHtml.match(/<nav\b(?=[^>]*\baria-label="תפריט ראשי")[^>]*>[\s\S]*?<\/nav>/i)?.[0];
+  if (!storeNav || !videoNav) throw new Error('Store or video main navigation is missing');
+  const storeDesktop = storeNav.split('<div class="tt-mobile-groups"')[0];
+  const normalize = (href, base) => { const url = new URL(href, base); return `${url.origin}${decodeURI(url.pathname)}${url.hash}`; };
+  const entries = (nav, base) => [...nav.matchAll(/<a\b[^>]*\bhref="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)].map(([, href, text]) => {
+    const label = decodeHtmlAttribute(text.replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim();
+    return `${normalize(decodeHtmlAttribute(href), base)} :: ${label}`;
+  });
+  const expected = new Set(entries(storeDesktop, storeBase));
+  const actual = new Set(entries(videoNav, videoBase));
+  if (!expected.size) throw new Error('Store navigation contains no links');
+  const missing = [...expected].filter(url => !actual.has(url));
+  const extra = [...actual].filter(url => !expected.has(url));
+  if (missing.length || extra.length) throw new Error(`Video and store navigation differ; missing: ${missing.join(', ') || 'none'}; extra: ${extra.join(', ') || 'none'}`);
+}
+
 export function assertColorSelector(html, skus) {
   for (const sku of skus) {
     if (!html.includes(`data-color-sku="${sku}"`)) throw new Error(`Visible color selection missing for ${sku}`);
@@ -273,6 +301,12 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
     Promise.resolve().then(() => assertNoUnavailableVariants(storeCatalog)),
     Promise.resolve().then(() => assertHomeGalleryLink(storeHomeHtml)),
     checkStoreColorSelectors(storeBase, storeCatalog),
+    (async () => {
+      for (const path of ['/videos', '/videos/intuo-upscape', '/videos/choosing-55cm-trolley', '/videos/samsonite-pro-dlx-6']) {
+        try { const html = await fetchText(`${normalizedBase}${path}`); assertVideoNavigation(html); assertVideoNavigationMatchesStore(storeHomeHtml, html, storeBase, normalizedBase); }
+        catch (error) { throw new Error(`${path}: ${error.message}`); }
+      }
+    })(),
     (async () => {
       const pages = [...collectionChecks.values()];
       const problems = [];

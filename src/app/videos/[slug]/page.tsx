@@ -5,6 +5,7 @@ import { findGalleryVideo, galleryVideos, videoStructuredData } from "@/lib/vide
 import { SITE_ORIGIN } from "@/lib/seo/site";
 import { jsonLdString } from "@/lib/seo/structured-data";
 import { VideoCard } from "@/components/video-gallery/VideoCard";
+import { VideoHeader } from "@/components/video-gallery/VideoHeader";
 import styles from "@/components/video-gallery/VideoGallery.module.css";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -37,14 +38,7 @@ export default async function VideoPage({ params }: PageProps) {
   return (
     <main className={styles.shell}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(videoStructuredData(video, SITE_ORIGIN)) }} />
-      <header className={styles.header}>
-        <Link className={styles.brand} href="/">TOPTIK</Link>
-        <nav className={styles.nav} aria-label="ניווט ראשי">
-          <Link href="/videos">כל הסרטונים</Link>
-          <Link href="/journal">המגזין</Link>
-          <a href="https://www.toptik.co.il/">לחנות</a>
-        </nav>
-      </header>
+      <VideoHeader />
       <div className={styles.detailWrap}>
         <Link href="/videos" className={styles.back}>חזרה לכל הסרטונים</Link>
         <VideoCard video={video} detail />

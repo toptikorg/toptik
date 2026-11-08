@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { galleryVideos } from "@/lib/video-gallery";
 import { VideoCard } from "@/components/video-gallery/VideoCard";
+import { VideoHeader } from "@/components/video-gallery/VideoHeader";
 import styles from "@/components/video-gallery/VideoGallery.module.css";
 
 export const metadata: Metadata = {
@@ -14,14 +14,7 @@ export const metadata: Metadata = {
 export default function VideosPage() {
   return (
     <main className={styles.shell}>
-      <header className={styles.header}>
-        <Link className={styles.brand} href="/">TOPTIK</Link>
-        <nav className={styles.nav} aria-label="ניווט ראשי">
-          <Link href="/carousel">גלריית המוצרים</Link>
-          <Link href="/journal">המגזין</Link>
-          <a href="https://www.toptik.co.il/">לחנות</a>
-        </nav>
-      </header>
+      <VideoHeader />
       <div className={styles.hero}>
         <p className={styles.eyebrow}>TOPTIK VIDEO</p>
         <h1>רואים מקרוב, בוחרים נכון</h1>
