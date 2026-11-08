@@ -20,10 +20,11 @@ export function VideoHeader() {
       <div className={styles.quickLinks}><Link href="/carousel">גלריית המוצרים</Link><Link href="/journal">המגזין</Link><a href={store}>לחנות</a></div>
     </div>
     <nav className={styles.mainNav} aria-label="תפריט ראשי">
-      {groups.slice(0, 4).map(group => <details key={group.title} className={styles.navGroup} name="video-nav"><summary>{group.title}</summary><div className={styles.navDropdown}>{group.links.map(([label, url]) => <a key={url} href={`${store}${url}`}>{label}</a>)}</div></details>)}
+      {groups.slice(0, 4).map((group, index) => index < 3 ? <div key={group.title} className={styles.navCategoryGroup}><a className={styles.navLink} href={`${store}${["/collections/מזוודות-וטרולי", "/collections/all-bags", "/collections/wallets-and-accessories"][index]}`}>{group.title}</a><details className={styles.navGroup} name="video-nav"><summary aria-label={`פתיחת תפריט ${group.title}`} /><div className={styles.navDropdown}>{group.links.map(([label, url]) => <a key={url} href={`${store}${url}`}>{label}</a>)}</div></details></div> : <details key={group.title} className={styles.navGroup} name="video-nav"><summary>{group.title}</summary><div className={styles.navDropdown}>{group.links.map(([label, url]) => <a key={url} href={`${store}${url}`}>{label}</a>)}</div></details>)}
       <a className={styles.navLink} href={`${store}/collections/toptik-promotions`}>מבצעים</a>
       <Link className={styles.navLink} href="/videos" aria-current="page">סרטוני מוצרים</Link>
       <details className={styles.navGroup} name="video-nav"><summary>{groups[4].title}</summary><div className={styles.navDropdown}>{groups[4].links.map(([label, url]) => <a key={url} href={`${store}${url}`}>{label}</a>)}</div></details>
     </nav>
   </header>;
 }
+

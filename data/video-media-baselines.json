@@ -1,11 +1,11 @@
 {
   "purpose": "Detect changes to the exact video and poster files reviewed for burned text. A matching hash is not an OCR, full visual review, or audio quality approval.",
   "assets": {
-    "01-intuo-vs-upscape.mp4": "a08ffb7c4c7bd9d42346dd9a6bfd39b1f6d978bcdb01fac3e3a7e489ff0d4922",
-    "01-intuo-vs-upscape.webp": "8f211247ae311b9302078cd2bd6ef8bb34269b94a67efe9b81968873956f2459",
-    "02-cabin-trolley.mp4": "b7c7e01663c175d51f4e060a378e581fa9c5758144fb46eaae0642c16b5217f0",
-    "02-cabin-trolley.webp": "a0ded4f49052e68fb3baea1bb8f8b136fd409eead866fff17f4971173c25d4e5",
-    "03-pro-dlx.mp4": "5e7e40b8f51a549fb9d04da05969e8df0a4f2a2f43670b9eae8af3fa7ac7e226",
-    "03-pro-dlx.webp": "cb6b8e9e95cc4913b0ab5c1e33b603a669b670303cd9c228136589e5a886c4d6"
+    "01-intuo-vs-upscape.mp4": "8c083cb19fb8d6c3bdaed941248c4d26c05a35e6f2f94c5a1907e7b218a225dc",
+    "01-intuo-vs-upscape.webp": "f7ee4416447ec1585f6495512b4c43b95957dfbfe272ffebf02b79a07a5b2192",
+    "02-cabin-trolley.mp4": "405113ad7e6e6715a75e10ee2455fc745b85f4c0ed5cf181dcb0a475a82a770b",
+    "02-cabin-trolley.webp": "4b04059d91d82fd8a687cffd139e4d374b1e61cd86ec7481f2e402f5b2581a1d",
+    "03-pro-dlx.mp4": "ba7bb0fc88a224fcbaa12ebd260fc771d5553bb3dc08352b2c26771e60310a7f",
+    "03-pro-dlx.webp": "9b05d68d7e5b2e473026e4c192f283295c1cc6ab4e7d83145d3eeb9907b7166a"
   }
 }
