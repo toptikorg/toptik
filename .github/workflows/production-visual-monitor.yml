@@ -14,6 +14,57 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  production-version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Compare deployed commit with current master
+        id: version_check
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p production-version-evidence
+          set -o pipefail
+          date --utc --iso-8601=seconds > production-version-evidence/detected-at-utc.txt
+          node scripts/production-version-smoke.mjs 2>&1 | tee production-version-evidence/version.log
+      - name: Preserve version check evidence
+        if: steps.version_check.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-version-failure-${{ github.run_id }}
+          path: production-version-evidence
+          retention-days: 30
+          if-no-files-found: error
+      - name: Open or update version incident
+        if: steps.version_check.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '[Production monitor] Gallery version mismatch or unavailable';
+            const body = `The live version could not be verified against current master. A mismatch can occur during a normal deployment; an unavailable endpoint or GitHub error is inconclusive. Review the exact result and 30-day evidence in ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}. This check detects drift; it does not block or change deployments.`;
+            const {data: issues} = await github.rest.issues.listForRepo({owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100});
+            const issue = issues.find(i => i.title === title && !i.pull_request);
+            if (issue) await github.rest.issues.update({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, body});
+            else await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title, body});
+      - name: Close version incident after verified match
+        if: steps.version_check.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '[Production monitor] Gallery version mismatch or unavailable';
+            const {data: issues} = await github.rest.issues.listForRepo({owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100});
+            for (const issue of issues.filter(i => i.title === title && !i.pull_request)) {
+              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, body: 'The production commit matches current master again.'});
+              await github.rest.issues.update({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, state: 'closed'});
+            }
+      - name: Mark check failed
+        if: steps.version_check.outcome == 'failure'
+        run: exit 1
+
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
