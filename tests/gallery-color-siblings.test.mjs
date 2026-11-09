@@ -20,6 +20,19 @@ const item = (sku, overrides = {}) => ({
   ...overrides,
 });
 
+test('verified Havana color never borrows a black illustration for its swatch', () => {
+  const members=[
+    item('P10QMT39209',{coverImagePath:'https://cdn.example.test/black-illustration.jpg',shopifyLink:{handle:'תיק-גב-mandarina-duck-md20-qmt39-בצבע-חמרה-havana',variantId:'68127817859322',isPublished:true}}),
+    item('P10QMT39B09',{coverImagePath:'https://cdn.example.test/cocoon.jpg',shopifyLink:{handle:'p10qmt39b09',variantId:'67616516079866',isPublished:true}}),
+  ];
+  const swatches=buildModelSiblingSwatches(members).get(members[0].id);
+  const havana=swatches.find(s=>s.name==='חמרה Havana');
+  assert.ok(havana);
+  assert.equal(havana.hex,null);
+  assert.equal(colorSwatchStyle(havana),undefined);
+  assert.equal('useProductImageAsSwatch' in havana,false);
+});
+
 test('four imported color names are readable while sibling identities and images stay exact', () => {
   const members = [['001','שחור'],['08Q','כחול'],['24B','תכלת'],['27D',"צ'אי הודי (חום)"]]
     .map(([code,color]) => item('P10FZT73'+code,{color,title:'FZT73'}));
@@ -99,13 +112,12 @@ test('verified Shopify color names replace raw codes only for the exact publishe
   ];
   const swatches=buildModelSiblingSwatches(matches).get(matches[0].id);
   assert.deepEqual(swatches.map(s=>s.name),['מנטה','ענבר']);
-  assert.ok(swatches.every(s=>s.hex===null && s.useProductImageAsSwatch===true));
-  assert.match(colorSwatchStyle(swatches[0]).backgroundImage,/mint\.jpg/);
+  assert.ok(swatches.every(s=>s.hex===null && colorSwatchStyle(s)===undefined));
   assert.equal(colorSwatchStyle({...swatches[0],imagePath:'http://insecure.test/image.jpg'}),undefined);
   const altered=structuredClone(matches);altered[0].shopifyLink.variantId='1';
   const result=buildModelSiblingSwatches(altered).get(altered[0].id);
   assert.notEqual(result[0].name,'מנטה');
-  assert.notEqual(result[0].useProductImageAsSwatch,true);
+  assert.equal('useProductImageAsSwatch' in result[0],false);
 });
 
 test('Porsche Roadster uses verified black and racing-yellow colors, not Mandarina color 024', () => {
@@ -127,8 +139,7 @@ test('verified additional Shopify color labels respect exact SKU, handle and var
  ];
  const group=buildModelSiblingSwatches(bags).get(bags[0].id);
  assert.deepEqual(group.map(s=>s.name),['בורדו','ענבר']);
- assert.ok(group.every(s=>s.useProductImageAsSwatch===true));
- assert.match(colorSwatchStyle(group[0]).backgroundImage,/bordeaux\.jpg/);
+ assert.ok(group.every(s=>s.hex===null && colorSwatchStyle(s)===undefined));
  assert.equal(colorSwatchStyle({...group[0],imagePath:'http://unsafe.test/x.jpg'}),undefined);
  const changed=structuredClone(bags); changed[0].shopifyLink.variantId='1';
  assert.notEqual(buildModelSiblingSwatches(changed).get(changed[0].id)[0].name,'בורדו');
@@ -152,4 +163,24 @@ test('all 130 additional color labels are pinned to exact published variant iden
   assert.equal(verifiedPublishedColorName({...row,shopifyLink:{...row.shopifyLink,isPublished:false}}),null,e.sku);
   assert.equal(verifiedPublishedColorName({...row,shopifyLink:{...row.shopifyLink,variantId:'1'}}),null,e.sku);
  }
+});
+
+test('all 209 verified color bindings use neutral text, never a potentially different product photo', () => {
+ const evidence=['docs/verified-store-color-names-20261109.json','docs/verified-other-store-color-names-20261109.json']
+   .flatMap(path=>JSON.parse(readFileSync(path,'utf8')).items);
+ assert.equal(evidence.length,209);
+ for(const e of evidence){
+   const row=item(e.sku,{coverImagePath:'https://cdn.example.test/black-placeholder.jpg',shopifyLink:{handle:e.handle,variantId:e.variantGid.split('/').at(-1),isPublished:true}});
+   const sibling=item(e.sku.slice(0,-3)+'ZZZ');
+   const swatches=buildModelSiblingSwatches([row,sibling]).get(row.id);
+   assert.ok(swatches,`model grouping ${e.sku}`);
+   const selected=swatches.find(s=>s.itemId===row.id);
+   assert.equal(selected.name,e.label,e.sku);
+   assert.equal(selected.hex,null,e.sku);
+   assert.equal(colorSwatchStyle(selected),undefined,e.sku);
+ }
+ const card=readFileSync('src/components/carousel/CarouselGrid.tsx','utf8');
+ const modal=readFileSync('src/components/carousel/ProductModal.tsx','utf8');
+ assert.match(card,/!swatch\.hex\s*\?\s*swatch\.name/);
+ assert.match(modal,/!c\.hex\s*\?\s*c\.name/);
 });

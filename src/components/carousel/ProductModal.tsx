@@ -241,7 +241,7 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
                         <button
                           key={c.key}
                           type="button"
-                          className={`product-modal-color-dot${selected ? " is-current" : ""} is-actionable`}
+                          className={`product-modal-color-dot${!c.hex ? " is-color-name" : ""}${selected ? " is-current" : ""} is-actionable`}
                           title={c.name}
                           style={colorSwatchStyle(c)}
                           aria-label={c.name}
@@ -254,7 +254,7 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
                             // Each swatch IS its own product — navigate to it.
                             if (!c.isCurrent && c.itemId) onNavigateToItem(c.itemId);
                           }}
-                        />
+                        >{!c.hex ? c.name : null}</button>
                       );
                     })}
                   </div>

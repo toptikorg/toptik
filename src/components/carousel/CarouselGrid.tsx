@@ -213,7 +213,7 @@ export function CatalogCard({
                     <button
                       key={swatch.key}
                       type="button"
-                      className={`catalog-card-color-dot${swatch.isCurrent ? " is-current" : ""}${actionable ? " is-actionable" : ""}`}
+                      className={`catalog-card-color-dot${!swatch.hex ? " is-color-name" : ""}${swatch.isCurrent ? " is-current" : ""}${actionable ? " is-actionable" : ""}`}
                       style={colorSwatchStyle(swatch)}
                       title={swatch.name}
                       aria-label={swatch.name}
@@ -228,7 +228,7 @@ export function CatalogCard({
                         if (!swatch.isCurrent && swatch.itemId) onNavigate(swatch.itemId, e.currentTarget);
                       }}
                       onKeyDown={(e) => e.stopPropagation()}
-                    />
+                    >{!swatch.hex ? swatch.name : null}</button>
                   );
                 })}
               </div>

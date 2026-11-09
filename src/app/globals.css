@@ -1105,6 +1105,34 @@ body:has(.carousel-page) {
   transform: scale(1.18);
 }
 
+.catalog-card-colors-dots:has(.is-color-name),
+.product-modal-colors-swatches:has(.is-color-name) {
+  flex-wrap: wrap;
+}
+
+.catalog-card-color-dot.is-color-name,
+.product-modal-color-dot.is-color-name {
+  width: auto;
+  height: auto;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid #b4a28d;
+  border-radius: 999px;
+  background: #fffaf3;
+  color: #513f32;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: normal;
+  box-shadow: none;
+}
+
+.catalog-card-color-dot.is-color-name.is-current,
+.product-modal-color-dot.is-color-name.is-current {
+  border: 2px solid #6f4f1f;
+  background: #f5e6cd;
+}
+
 .catalog-card-tech-btn {
   display: inline-flex;
   align-items: center;

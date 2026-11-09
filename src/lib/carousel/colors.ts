@@ -341,17 +341,11 @@ export interface ResolvedSwatch {
   imagePath: string | null; // cover (= angles[0])
   angles: string[]; // this colour's full gallery — drives rotation while selected
   isCurrent: boolean;
-  useProductImageAsSwatch?: boolean;
 }
 
-export function colorSwatchStyle(swatch: ResolvedSwatch): { background?: string; backgroundImage?: string; backgroundSize?: string; backgroundPosition?: string } | undefined {
+export function colorSwatchStyle(swatch: ResolvedSwatch): { background?: string } | undefined {
   if (swatch.hex) return { background: swatch.hex };
-  if (!swatch.useProductImageAsSwatch || !swatch.imagePath) return undefined;
-  try {
-    const url = new URL(swatch.imagePath);
-    if (url.protocol !== "https:" || url.username || url.password) return undefined;
-    return { backgroundImage: `url(${JSON.stringify(url.href)})`, backgroundSize: "cover", backgroundPosition: "center" };
-  } catch { return undefined; }
+  return undefined;
 }
 
 // Middle segment of a catalog number = the colour code. Handles both catalog
@@ -425,15 +419,17 @@ export function buildModelSiblingSwatches(items: CarouselItem[]): Map<string, Re
       );
       const verifiedName = verifiedStoreColorName(member) ?? verifiedPublishedColorName(member);
       const name = verifiedName ?? resolved.name;
-      const hex = resolved.hex;
+      // Shopify confirms the color's name, not that a product photo depicts it.
+      // A placeholder photo or a cross-brand color-code match must never be
+      // presented as the selected color. Render its verified name instead.
+      const hex = verifiedName ? null : resolved.hex;
       const angles =
         member.angles.length > 0
           ? [...member.angles].sort((a, b) => a.angleOrder - b.angleOrder).map((a) => a.imagePath)
           : [member.coverImagePath];
       base.push({
         code,
-        swatch: { key: code, itemId: member.id, name, hex, imagePath: member.coverImagePath, angles,
-          useProductImageAsSwatch: !!verifiedName && hex === null },
+        swatch: { key: code, itemId: member.id, name, hex, imagePath: member.coverImagePath, angles },
       });
     }
     if (base.length < 2) continue; // need 2+ colours to form a selector
