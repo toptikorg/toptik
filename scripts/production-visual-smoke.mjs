@@ -1,9 +1,14 @@
 import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { createMonitorTransport } from "./monitor-shopify-transport.mjs";
 
 const DEFAULT_BASE_URL = "https://landing.toptik.co.il";
 const DEFAULT_STORE_URL = "https://www.toptik.co.il";
+const monitorRequest = createMonitorTransport({
+  paced: process.env.MONITOR_SHOPIFY_SERIAL_30S === "1",
+  storeBase: process.env.MONITOR_STORE_URL || DEFAULT_STORE_URL,
+});
 const MIN_JOURNAL_IMAGES = 20;
 const MIN_CAROUSEL_ITEMS = 300;
 const MIN_CAROUSEL_PRODUCT_LINKS = 300;
@@ -156,13 +161,12 @@ function extractXmlLocations(xml) {
 async function monitoredFetch(url, options = {}) {
   let lastResponse;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    lastResponse = await fetch(url, {
+    lastResponse = await monitorRequest(url, {
       ...options,
       headers: {
         "user-agent": "TopTik-Production-Monitor/1.0",
         ...options.headers,
       },
-      signal: AbortSignal.timeout(20_000),
     });
     if (lastResponse.ok) return lastResponse;
     if (![429, 500, 502, 503, 504].includes(lastResponse.status) || attempt === 3) break;
@@ -175,11 +179,10 @@ async function monitoredFetch(url, options = {}) {
 async function fetchStoreProductStatus(url) {
   let lastResponse;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    lastResponse = await fetch(url, {
+    lastResponse = await monitorRequest(url, {
       method: "HEAD",
       redirect: "manual",
       headers: { "user-agent": "TopTik-Production-Monitor/1.0" },
-      signal: AbortSignal.timeout(20_000),
     });
     if (lastResponse.status === 200 || [301, 302, 303, 307, 308, 404, 410].includes(lastResponse.status)) {
       await lastResponse.body?.cancel();
