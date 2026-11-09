@@ -30,6 +30,14 @@ test('explicit review outcome continues independent pending but never claims rev
  f.state.pending=false;assert.equal((await f.api.drainMediaWork(Date.now()+30000,f.db)).continuationNeeded,false);
 });
 
+test('permanent cover alias and equivalent target conflicts stop retries for operator review without claiming sync',async()=>{
+ for(const code of ['MEDIA_GALLERY_COVER_ALIAS_CONFLICT','MEDIA_PLANNING_EQUIVALENT_TARGET_EXISTS']){
+  const f=fixture();f.state.error=Error(code);const r=await f.api.drainMediaWork(Date.now()+30000,f.db);
+  const finish=f.calls.find(c=>c.name==='finish_toptik_media_work');assert.equal(finish.args.p_status,'review');
+  assert.equal(finish.args.p_error,code);assert.equal(r.processed,0);assert.equal(r.reviewed,1);assert.equal(r.failed,0);
+ }
+});
+
 test('verified progress advances at most three phases in one claim with one deadline and finish',async()=>{
  const f=fixture(),runs=[],deadline=Date.now()+40000;
  const run=async(...a)=>{runs.push(a);return{status:'pending',progressed:true,executed:true,verifiedCheckpoint:'phase:'+runs.length};};

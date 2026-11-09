@@ -57,7 +57,7 @@ export type OwnedEditHelpers<S extends OwnedSource> = {
   titleSuffix: (variant: OwnedVariant) => string;
   seoSuffix: (variant: OwnedVariant) => string;
   /** Family rule for edited alt text; throws when the edit would break the image-to-color mapping. */
-  altGuard: (variant: OwnedVariant, currentAlt: string | null, desiredAlt: string) => void;
+  altGuard: (variant: OwnedVariant, currentAlt: string | null, desiredAlt: string, source: S) => void;
   descriptionPairsEquivalent: (left: DescriptionPair, right: DescriptionPair) => boolean;
   descriptionTextFromHtml: (html: string) => string;
   assertSafeDescriptionHtml: (html: string) => void;
@@ -222,7 +222,7 @@ export function planOwnedEdit<S extends OwnedSource>(
     if (!loadedAngle || !liveAngle) fail("SYNC_OWNED_ALT_IMAGE_UNKNOWN");
     if (decide(`alt:${imagePath}`, loadedAngle.image_alt, liveAngle.image_alt, desired, sameText) !== "write") continue;
     if (!desired || desired !== desired.trim() || desired.length > MAX_OWNED_ALT_LENGTH || CONTROL.test(desired)) fail("SYNC_OWNED_ALT_INVALID");
-    helpers.altGuard(variant, liveAngle.image_alt, desired);
+    helpers.altGuard(variant, liveAngle.image_alt, desired, source);
     const matches = patched.media.filter(entry => entry.image?.url === imagePath);
     if (matches.length !== 1) fail("SYNC_OWNED_ALT_IMAGE_UNKNOWN");
     matches[0].alt = desired;

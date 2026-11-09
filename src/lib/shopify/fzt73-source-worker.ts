@@ -1,11 +1,16 @@
 import "server-only";
+import type { OwnedCard } from "./owned-edit-plan";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { randomUUID } from "node:crypto";
+import { readOwnedMappedSource, ownedMappedMediaProjection, ownedSourceMediaContext, type OwnedMappedSource } from "./owned-media-projection";
+import { applyOwnedMediaSourceProjection } from "./owned-media-registry";
 import { configuredShopifyDomain, shopifyAdminGraphql, visibleCopyFromProduct, type ShopifyOnboardingSnapshot } from "./admin-api";
 import { assertSafeDescriptionHtml } from "./description-document";
 import { verifyOnboardingImage } from "./onboarding-worker";
 import { FZT73_PRODUCT_GID, FZT73_PRODUCT_HANDLE, FZT73_VARIANTS, exactFzt73Media, exactVariantSeo } from "./variant-source-policy";
 
-export async function readFzt73Snapshot(deadline: number): Promise<ShopifyOnboardingSnapshot | null> {
+export async function readFzt73Snapshot(deadline: number, db?: SupabaseClient): Promise<ShopifyOnboardingSnapshot | null> {
+  if (db) { const mapped=await readOwnedMappedSource(db,FZT73_PRODUCT_GID,deadline); if(mapped)return mapped; }
   const publicationId = process.env.SHOPIFY_ONLINE_STORE_PUBLICATION_ID?.trim();
   if (publicationId !== "gid://shopify/Publication/79538258170") throw new Error("SYNC_ONBOARDING_PUBLICATION_MISMATCH");
   type Product = Omit<ShopifyOnboardingSnapshot, "variants" | "media" | "seoTitle" | "seoDescription"> & {
@@ -51,22 +56,24 @@ export const sameFzt73Source = (left: ShopifyOnboardingSnapshot | null, right: S
   const a: Partial<ShopifyOnboardingSnapshot> = { ...left };
   const b: Partial<ShopifyOnboardingSnapshot> = { ...right };
   delete a.updatedAt; delete b.updatedAt;
+  for(const row of [a,b]){const map=(row as OwnedMappedSource).ownedMediaMap;if(map)(row as OwnedMappedSource).ownedMediaMap={...map,version:0};}
   return canonical(a) === canonical(b);
 };
-export function fzt73SourceProjection(source: ShopifyOnboardingSnapshot, v: typeof FZT73_VARIANTS[number]) {
-  const media = exactFzt73Media(source.media, v.sku);
+export function fzt73SourceProjection(source: ShopifyOnboardingSnapshot, v: typeof FZT73_VARIANTS[number]): OwnedCard {
+  const mapped=ownedMappedMediaProjection(source,v.itemId);
+  const media = mapped ? [] : exactFzt73Media(source.media, v.sku);
   const copy = visibleCopyFromProduct(source);
   const seo = exactVariantSeo(copy,v.sku);
   return {title:copy.title + ` בצבע ${v.color}`,description:copy.description || null,description_html:copy.descriptionHtml ?? null,
-    seo_title:seo.seoTitle,seo_description:seo.seoDescription,cover_image_path:media[0].image!.url,cover_image_alt:media[0].alt,
-    angles:media.map((m,i)=>({angle_key:String(i+1),angle_order:i+1,image_path:m.image!.url,image_alt:m.alt}))};
+    seo_title:seo.seoTitle,seo_description:seo.seoDescription,cover_image_path:mapped?.cover_image_path??media[0].image!.url,cover_image_alt:mapped?mapped.cover_image_alt:media[0].alt,
+    angles:media.map((m,i)=>({angle_key:String(i+1),angle_order:i+1,image_path:m.image!.url,image_alt:m.alt})),...(mapped??{})};
 }
 
 /** The normal webhook/recovery worker holds the product lease. Source-owned,
  * reviewed four-color intake only; no Shopify writes, binding changes or approvals. */
 export async function reconcileFzt73Variants(db: SupabaseClient, deadline: number, leaseOwner: string): Promise<void> {
   if (configuredShopifyDomain() !== "toptikcoil.myshopify.com") throw new Error("SYNC_ONBOARDING_SHOP_MISMATCH");
-  const source = await readFzt73Snapshot(deadline);
+  const source = await readFzt73Snapshot(deadline,db);
   const published = !!source && source.status === "ACTIVE" && source.publishedOnPublication;
   const ids = FZT73_VARIANTS.map(v => v.itemId);
   const [items, angles, bindings] = await Promise.all([
@@ -98,7 +105,8 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
   if (!published || !source || !items.data.length) return;
   if (items.data.some(row => typeof row.is_active !== "boolean")) throw new Error("SYNC_FZT73_INPUT_INVALID");
   const active = FZT73_VARIANTS.filter(v => items.data.some(row => row.id === v.itemId && row.is_active));
-  const mediaBySku = new Map(active.map(v => [v.sku, exactFzt73Media(source.media, v.sku)]));
+  const mappedContext=ownedSourceMediaContext(source);
+  const mediaBySku = new Map(active.map(v => [v.sku, mappedContext ? source.media.filter(m=>(source as OwnedMappedSource).ownedMediaMap!.manifest.variants.find(r=>r.itemId===v.itemId)!.orderedMediaIds.includes(m.id)) : exactFzt73Media(source.media, v.sku)]));
   const projected: Record<string, unknown>[] = [];
   const projectedAngles: Record<string, unknown>[] = [];
   for (const v of active) {
@@ -114,19 +122,16 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
     const media = [...mediaBySku.values()].flat();
     for (let i=0;i<media.length;i+=3) await Promise.all(media.slice(i,i+3).map(m => verifyOnboardingImage(m,deadline)));
   }
-  if (!sameFzt73Source(await readFzt73Snapshot(deadline), source)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
+  if (!sameFzt73Source(await readFzt73Snapshot(deadline,db), source)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
   const entries = active.map(v => {
     const old = items.data.find(r => r.id === v.itemId)!;
-    const projection = projected.find(p => p.id === v.itemId)!;
-    const copyProjection = { ...projection };
-    delete copyProjection.id;
-    const itemAngles = projectedAngles.filter(a => a.item_id === v.itemId).map(a => ({
-      angle_key:a.angle_key,angle_order:a.angle_order,image_path:a.image_path,image_alt:a.image_alt,
-    }));
     return {itemId:v.itemId,catalogKey:v.sku,variantGid:`gid://shopify/ProductVariant/${v.variantId}`,
-      expectedVersion:old.copy_updated_at,expectedRevision:old.editor_revision,projection:{...copyProjection,angles:itemAngles}};
+      expectedVersion:old.copy_updated_at,expectedRevision:old.editor_revision,projection:fzt73SourceProjection(source,v)};
   });
-  if (entries.length) {
+  if(entries.length && mappedContext) {
+    await applyOwnedMediaSourceProjection(db,{productGid:FZT73_PRODUCT_GID,owner:leaseOwner,requestId:randomUUID(),expectedMapVersion:mappedContext.registry.mapVersion,
+      source:mappedContext.graph,manifest:(source as OwnedMappedSource).ownedMediaMap!.manifest,entries},deadline);
+  } else if (entries.length) {
     const { data, error } = await db.rpc("apply_fzt73_owned_batch", {
       p_product_gid:FZT73_PRODUCT_GID,p_owner:leaseOwner,p_entries:entries,
     });
@@ -137,7 +142,7 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
   }
   // A source edit during the atomic batch must not be acknowledged as a
   // completed reconciliation. The committed batch remains CAS protected.
-  if (!sameFzt73Source(await readFzt73Snapshot(deadline), source)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
+  if (!sameFzt73Source(await readFzt73Snapshot(deadline,db), source)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
   const [readItems,readAngles] = await Promise.all([
     db.from("carousel_items").select("*").in("id",ids), db.from("carousel_item_angles").select("*").in("item_id",ids),
   ]);

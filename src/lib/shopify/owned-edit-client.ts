@@ -56,7 +56,7 @@ export function ownedCardChanges(saved: CarouselItem, current: CarouselItem): { 
 }
 
 export const OWNED_UNSUPPORTED_MESSAGES: Record<OwnedUnsupported, string> = {
-  images: "הוספה, הסרה, החלפה וסידור של תמונות עדיין נעשים בחנות (Shopify). אפשר לערוך כאן רק את תיאורי התמונות.",
+  images: "לשינוי תמונות של צבע משותף השתמשו באזור ניהול תמונות הצבע בחנות ובגלריה. השמירה הזאת מיועדת לטקסטים ולתיאורים נגישים בלבד.",
   catalog_number: "מספר קטלוגי של צבע בחנות לא משתנה מהגלריה.",
   visibility: "הסתרה והצגה של צבע אינן נשלחות לחנות מכאן.",
   empty_seo: "אי אפשר לרוקן כותרת או תיאור SEO של צבע מהגלריה. כדי להחזיר ברירת מחדל יש לערוך בחנות.",

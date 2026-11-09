@@ -163,3 +163,10 @@ test("ambiguous identity and concurrent update codes are reviewable; transient A
   assert.equal(isSyncReviewCode("SYNC_COPY_CONCURRENT_UPDATE"), true);
   assert.equal(isSyncReviewCode("SHOPIFY_API_HTTP_429"), false);
 });
+
+test("shared media identity and mapping holds are reviewable, while a live lease or processing wait can retry", () => {
+  for (const code of ["OWNED_MEDIA_UNASSIGNED_REVIEW_REQUIRED", "OWNED_MEDIA_OPERATION_REVIEW_REQUIRED", "OWNED_MEDIA_LAST_IMAGE_REQUIRED",
+    "OWNED_MEDIA_COPY_IDENTITY_INVALID", "GROUP_MEDIA_IDENTITY_CONFLICT", "GROUP_MEDIA_ASSOCIATION_INVALID",
+    "SYNC_VARIANT_PUBLICATION_BINDING_REQUIRED", "SYNC_VARIANT_GALLERY_VISIBILITY_INVALID"]) assert.equal(isSyncReviewCode(code), true, code);
+  for (const code of ["SYNC_RECONCILIATION_BUSY", "OWNED_MEDIA_TIME_BUDGET", "GROUP_MEDIA_NOT_READY", "SHOPIFY_API_HTTP_429"]) assert.equal(isSyncReviewCode(code), false, code);
+});

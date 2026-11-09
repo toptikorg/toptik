@@ -17,11 +17,13 @@ import ProductDescriptionEditor from "@/components/admin/ProductDescriptionEdito
 import CommerceExistingEditor from "@/components/admin/CommerceExistingEditor";
 import TypedSpecificationEditor from "@/components/admin/TypedSpecificationEditor";
 import NewProductEditor from "@/components/admin/NewProductEditor";
+import OwnedMediaEditor from "@/components/admin/OwnedMediaEditor";
 import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
 import { isShopifyOwnedVariant, shopifyOwnedProductId, SHOPIFY_OWNED_VARIANTS } from "@/lib/shopify/variant-source-policy";
 import { OWNED_SHARED_NOTE, OWNED_UNSUPPORTED_MESSAGES, ownedCardChanges, ownedEditErrorMessage, type OwnedUnsupported } from "@/lib/shopify/owned-edit-client";
 import { NO_CHANGES_MESSAGE, planChangedOnlySave } from "@/lib/carousel/editor-changes";
 import { mergeOwnedFamilyRefresh } from "@/lib/carousel/owned-editor-refresh";
+import { moveEditorAngle, promoteEditorAngle, removeEditorAngle } from "@/lib/carousel/editor-media-order";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -513,14 +515,23 @@ export default function AdminPage() {
   }
 
   function removeAngle(itemIndex: number, angleId: string) {
-    setPayload((current) => {
-      const next = structuredClone(current);
-      const target = next.items[itemIndex];
-      target.angles = target.angles
-        .filter((a) => a.id !== angleId)
-        .map((a, i) => ({ ...a, angleOrder: i + 1 }));
-      return next;
-    });
+    const item = payload.items[itemIndex];
+    if (!item || isShopifyOwnedVariant(item.id) || isCatalogBusy) return;
+    try {
+      // Validate outside React's state updater: a last-image refusal is UI feedback,
+      // never an exception from a render or a double-invoked updater.
+      removeEditorAngle(item, angleId);
+      setPayload(current => {
+        try { return { ...current, items: current.items.map(row => row.id === item.id ? removeEditorAngle(row, angleId) : row) }; }
+        catch { return current; /* a concurrent removal must never throw from React's updater */ }
+      });
+    } catch (error) { setStatus(resolveErrorMessage(error, "לא ניתן להסיר את התמונה.")); }
+  }
+
+  function moveAngle(itemId: string, angleId: string, direction: -1 | 1 | "cover") {
+    if (isCatalogBusy || isShopifyOwnedVariant(itemId)) return;
+    setPayload(current => ({ ...current, items: current.items.map(item => item.id !== itemId ? item :
+      direction === "cover" ? promoteEditorAngle(item, angleId) : moveEditorAngle(item, angleId, direction)) }));
   }
 
   // Catalog category (מזוודה / טרולי-Carry-on) is stored inside item.techSpecs
@@ -1533,6 +1544,14 @@ export default function AdminPage() {
                     );
                   })()}
 
+                  {sourceOwned && <OwnedMediaEditor itemId={item.id} token={token} disabled={isCatalogBusy && ownedSavingId !== item.id}
+                    onBusyChange={busy => setOwnedSavingId(busy ? item.id : null)}
+                    onDelivered={async () => {
+                      const before = savedSnapshotRef.current?.items.find(row => row.id === item.id);
+                      if (!before) throw new Error("גרסת המוצר חסרה. טענו מחדש.");
+                      await refreshOwnedFamily(item.id, before, catalogGenerationRef.current, true);
+                    }} />}
+
                   <div className="admin-item-angles" style={{ marginTop: 12 }}>
                     <div
                       style={{
@@ -1599,12 +1618,20 @@ export default function AdminPage() {
                                 onChange={e => setPayload(current => ({ ...current, items: current.items.map(row => row.id !== item.id ? row :
                                   { ...row, angles: row.angles.map(a => a.id !== angle.id ? a : { ...a, imageAlt: e.target.value }) }) }))} />
                             </label>
+                            {!sourceOwned && <div role="group" aria-label="סדר התמונות" style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
+                              <button type="button" disabled={isCatalogBusy || angle.id === item.angles[0]?.id}
+                                onClick={() => moveAngle(item.id, angle.id, -1)} aria-label="העבר תמונה למקום הקודם">הקדם</button>
+                              <button type="button" disabled={isCatalogBusy || angle.id === item.angles.at(-1)?.id}
+                                onClick={() => moveAngle(item.id, angle.id, 1)} aria-label="העבר תמונה למקום הבא">דחה</button>
+                              <button type="button" disabled={isCatalogBusy || angle.imagePath === item.coverImagePath}
+                                onClick={() => moveAngle(item.id, angle.id, "cover")}>תמונה ראשית</button>
+                            </div>}
                           </div>
                         ))}
                       </div>
                     )}
                     <p className="admin-import-note" style={{ marginTop: 8 }}>
-                      התמונה הראשונה משמשת כברירת מחדל לתצוגה. הזוויות מתעדכנות גם אוטומטית
+                      התמונה הראשונה משמשת כברירת מחדל לתצוגה. שינוי סדר או בחירת תמונה ראשית נשמרים עם שאר השינויים. הזוויות מתעדכנות גם אוטומטית
                       בייבוא לפי מק״ט.
                     </p>
                   </div>
