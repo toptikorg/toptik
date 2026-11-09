@@ -15,7 +15,7 @@ async function setup(){
  const db=new PGlite();
  await db.exec(`create role anon; create role authenticated; create role service_role;
  create table public.shopify_gallery_reconciliation_leases(product_gid text primary key,owner uuid,expires_at timestamptz);
- create table public.shopify_webhook_events(id uuid primary key,status text,topic text,payload jsonb,received_at timestamptz,processed_at timestamptz,last_error text,shop_domain text default 'toptikcoil.myshopify.com');
+ create table public.shopify_webhook_events(id uuid primary key,status text,topic text,payload jsonb,received_at timestamptz,processed_at timestamptz,last_error text,shop_domain text default 'toptikcoil.myshopify.com',delivery_id text default 'ordinary-webhook');
  create table public.carousel_items(id uuid primary key,editor_revision bigint,copy_updated_at timestamptz,catalog_number text,title text);
  create table public.shopify_gallery_bindings(catalog_key text primary key,carousel_item_id uuid,variant_gid text,product_gid text,is_published boolean,source_updated_at timestamptz);
  create table public.shopify_gallery_content_outbox(id uuid primary key,carousel_item_id uuid,status text,payload jsonb);`);
@@ -23,7 +23,7 @@ async function setup(){
  const rows=[['341df0c7-7a31-4e77-87c0-a683082c3cd7','P10FZT73001','42361904398586'],['78e341a9-90f8-4b5a-a215-8bdf5f4f5321','P10FZT7308Q','42449044799738'],['7bd35662-0989-4b96-aafd-f6a77ba6d72f','P10FZT7324B','42449044832506'],['8890d9f2-d927-42e2-9006-f287a46ef137','P10FZT7327D','42449044865274']];
  for(const [id,sku,variant] of rows){await db.query('insert into public.carousel_items values ($1,2,$2,$3,$4)',[id,'2026-11-01T00:00:00Z',sku,'editor copy']);await db.query('insert into public.shopify_gallery_bindings values ($1,$2,$3,$4,true,$5)',[sku,id,`gid://shopify/ProductVariant/${variant}`,product,'2026-11-03T00:00:00Z']);}
  await db.query('insert into public.shopify_gallery_reconciliation_leases values ($1,$2,now()+interval \'5 minutes\')',[product,owner]);
- await db.query('insert into public.shopify_webhook_events(id,status,topic,payload,received_at) values ($1,$2,$3,$4,$5)',[current,'processing','products/update',JSON.stringify({id:'7524873044218',publication_recovery:true}),'2026-11-05T00:00:00Z']);
+ await db.query('insert into public.shopify_webhook_events(id,status,topic,payload,received_at,delivery_id) values ($1,$2,$3,$4,$5,$6)',[current,'processing','products/update',JSON.stringify({id:'7524873044218',publication_recovery:true}),'2026-11-05T00:00:00Z','publication-recovery:2026-11-05:gid://shopify/Product/7524873044218']);
  await db.query('insert into public.shopify_webhook_events(id,status,topic,payload,received_at,processed_at,last_error) values ($1,$2,$3,$4,$5,now(),$6)',[old,'review','products/update',JSON.stringify({id:'7524873044218',updated_at:'2026-11-02T00:00:00Z'}),'2026-11-04T00:00:00Z','SYNC_FZT73_BASELINE_REQUIRED']);
  return db;
 }
@@ -60,4 +60,5 @@ for(const [name,change,code] of [
  ['stale binding',`update public.shopify_gallery_bindings set source_updated_at='2026-11-04T00:00:00Z' where catalog_key='P10FZT73001'`,'SYNC_COPY_CONCURRENT_UPDATE'],
  ['changed sku',`update public.carousel_items set catalog_number='OTHER' where id='341df0c7-7a31-4e77-87c0-a683082c3cd7'`,'SYNC_COPY_CONCURRENT_UPDATE'],
  ['not current event',`update public.shopify_webhook_events set status='review' where id='${current}'`,'SYNC_FZT73_RECOVERY_INVALID'],
+ ['not a scheduled recovery',`update public.shopify_webhook_events set delivery_id='ordinary-webhook' where id='${current}'`,'SYNC_FZT73_RECOVERY_INVALID'],
 ])test(name+' cannot close an older review',async()=>{const db=await setup();try{await db.exec(change);await assert.rejects(run(db),new RegExp(code));assert.equal((await db.query('select status from public.shopify_webhook_events where id=$1',[old])).rows[0].status,'review');}finally{await db.close()}});

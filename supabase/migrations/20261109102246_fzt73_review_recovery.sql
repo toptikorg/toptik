@@ -31,7 +31,8 @@ begin
   select received_at into current_received from public.shopify_webhook_events e
     where e.id=p_current_event and e.status='processing' and e.topic='products/update'
       and e.shop_domain='toptikcoil.myshopify.com' and e.payload->>'id'='7524873044218'
-      and e.payload->>'publication_recovery'='true' for update;
+      and e.payload->>'publication_recovery'='true'
+      and e.delivery_id ~ '^publication-recovery:[0-9]{4}-[0-9]{2}-[0-9]{2}:gid://shopify/Product/7524873044218$' for update;
   if current_received is null then raise exception 'SYNC_FZT73_RECOVERY_INVALID'; end if;
   for expected in select * from (values
     ('341df0c7-7a31-4e77-87c0-a683082c3cd7'::uuid,'P10FZT73001','gid://shopify/ProductVariant/42361904398586'),
@@ -70,7 +71,8 @@ begin
   where e.id<>p_current_event and e.status='review' and e.last_error='SYNC_FZT73_BASELINE_REQUIRED'
     and e.shop_domain='toptikcoil.myshopify.com' and e.payload->>'id'='7524873044218' and e.received_at<=current_received
     and e.topic='products/update'
-    and (e.payload->>'publication_recovery'='true' or
+    and ((e.payload->>'publication_recovery'='true' and
+      e.delivery_id ~ '^publication-recovery:[0-9]{4}-[0-9]{2}-[0-9]{2}:gid://shopify/Product/7524873044218$') or
       case when coalesce(e.payload->>'updated_at','') ~ '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$'
        and pg_input_is_valid(e.payload->>'updated_at','timestamp with time zone')
       then (e.payload->>'updated_at')::timestamptz<=p_source_updated_at else false end);
