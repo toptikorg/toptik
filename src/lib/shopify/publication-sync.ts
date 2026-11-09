@@ -10,7 +10,7 @@ import { FZT73_PRODUCT_GID, MD20_PRODUCT_GID } from "./variant-source-policy";
  */
 export async function refreshProductPublication(supabase: SupabaseClient, productGid: string, owner: string) {
   const product = await fetchProductSnapshot(productGid);
-  if (product && (product.id !== productGid || !["ACTIVE", "DRAFT", "ARCHIVED"].includes(product.status) ||
+  if (product && (product.id !== productGid || !["ACTIVE", "DRAFT", "ARCHIVED", "UNLISTED"].includes(product.status) ||
       typeof product.publishedOnPublication !== "boolean" || !Number.isFinite(Date.parse(product.updatedAt)) ||
       !isSafeShopifyProductHandle(product.handle))) throw new Error("SYNC_PUBLICATION_SNAPSHOT_INVALID");
   const published = !!product && product.status === "ACTIVE" && product.publishedOnPublication;
