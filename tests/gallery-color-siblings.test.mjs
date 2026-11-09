@@ -6,10 +6,12 @@ import {stripTypeScriptTypes} from 'node:module';
 const moduleUrl = source => `data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(source)).toString('base64')}`;
 const colorGroups = moduleUrl(readFileSync('src/lib/carousel/color-groups.ts', 'utf8'));
 const vendorDetect = moduleUrl(readFileSync('src/lib/catalog-source/vendor-detect.ts', 'utf8'));
+const brands = moduleUrl(readFileSync('src/lib/carousel/brands.ts', 'utf8'));
 const source = readFileSync('src/lib/carousel/colors.ts', 'utf8')
   .replace('"./color-groups"', JSON.stringify(colorGroups))
-  .replace('"@/lib/catalog-source/vendor-detect"', JSON.stringify(vendorDetect));
-const {modelCodeFromCatalog, colorCodeFromCatalog, buildModelSiblingSwatches, resolveItemSwatches} = await import(moduleUrl(source));
+  .replace('"@/lib/catalog-source/vendor-detect"', JSON.stringify(vendorDetect))
+  .replace('"./brands"', JSON.stringify(brands));
+const {modelCodeFromCatalog, colorCodeFromCatalog, buildModelSiblingSwatches, resolveItemSwatches, colorSwatchStyle} = await import(moduleUrl(source));
 
 const item = (sku, overrides = {}) => ({
   id: sku, catalogNumber: sku, title: sku, isActive: true,
@@ -88,4 +90,20 @@ test('compact and separated colors group together, deduplicate colors and preser
   assert.deepEqual(groups.get(members[0].id).map(s => s.itemId), members.slice(0, 2).map(m => m.id));
   assert.equal(groups.get(members[2].id).find(s => s.isCurrent).itemId, members[1].id);
   assert.equal(groups.has(members[3].id), false);
+});
+
+test('verified Shopify color names replace raw codes only for the exact published variant', () => {
+  const matches = [
+    item('P10QMT3901V',{coverImagePath:'https://cdn.example.test/mint.jpg',shopifyLink:{handle:'p10qmt3901v',variantId:'67616514310394',isPublished:true}}),
+    item('P10QMT39B06',{coverImagePath:'https://cdn.example.test/amber.jpg',shopifyLink:{handle:'p10qmt39b06',variantId:'67616515784954',isPublished:true}}),
+  ];
+  const swatches=buildModelSiblingSwatches(matches).get(matches[0].id);
+  assert.deepEqual(swatches.map(s=>s.name),['מנטה','ענבר']);
+  assert.ok(swatches.every(s=>s.hex===null && s.useProductImageAsSwatch===true));
+  assert.match(colorSwatchStyle(swatches[0]).backgroundImage,/mint\.jpg/);
+  assert.equal(colorSwatchStyle({...swatches[0],imagePath:'http://insecure.test/image.jpg'}),undefined);
+  const altered=structuredClone(matches);altered[0].shopifyLink.variantId='1';
+  const result=buildModelSiblingSwatches(altered).get(altered[0].id);
+  assert.notEqual(result[0].name,'מנטה');
+  assert.notEqual(result[0].useProductImageAsSwatch,true);
 });

@@ -2,6 +2,7 @@ import type { SourceColorVariant } from "@/lib/catalog-source/types";
 import type { CarouselColor, CarouselItem } from "./types";
 import { COLOR_HEX, COLOR_HEBREW, extractColorWord } from "./color-groups";
 import { detectVendorFromCatalog } from "@/lib/catalog-source/vendor-detect";
+import { verifiedStoreColorName } from "./brands";
 
 // Global Mandarina Duck colour codes — the middle segment of the catalog number
 // (P10·QMC01·`465`·TU). The code is stable across every model, so it's the most
@@ -191,6 +192,17 @@ export interface ResolvedSwatch {
   imagePath: string | null; // cover (= angles[0])
   angles: string[]; // this colour's full gallery — drives rotation while selected
   isCurrent: boolean;
+  useProductImageAsSwatch?: boolean;
+}
+
+export function colorSwatchStyle(swatch: ResolvedSwatch): { background?: string; backgroundImage?: string; backgroundSize?: string; backgroundPosition?: string } | undefined {
+  if (swatch.hex) return { background: swatch.hex };
+  if (!swatch.useProductImageAsSwatch || !swatch.imagePath) return undefined;
+  try {
+    const url = new URL(swatch.imagePath);
+    if (url.protocol !== "https:" || url.username || url.password) return undefined;
+    return { backgroundImage: `url(${JSON.stringify(url.href)})`, backgroundSize: "cover", backgroundPosition: "center" };
+  } catch { return undefined; }
 }
 
 // Middle segment of a catalog number = the colour code. Handles both catalog
@@ -257,17 +269,21 @@ export function buildModelSiblingSwatches(items: CarouselItem[]): Map<string, Re
       const code = (colorCodeFromCatalog(member.catalogNumber) ?? member.id).toUpperCase();
       if (seen.has(code)) continue;
       seen.add(code);
-      const { name, hex } = resolveColorMeta(
+      const resolved = resolveColorMeta(
         member.color?.trim() || extractColorWord(member.title),
         colorCodeFromCatalog(member.catalogNumber),
       );
+      const verifiedName = verifiedStoreColorName(member);
+      const name = verifiedName ?? resolved.name;
+      const hex = resolved.hex;
       const angles =
         member.angles.length > 0
           ? [...member.angles].sort((a, b) => a.angleOrder - b.angleOrder).map((a) => a.imagePath)
           : [member.coverImagePath];
       base.push({
         code,
-        swatch: { key: code, itemId: member.id, name, hex, imagePath: member.coverImagePath, angles },
+        swatch: { key: code, itemId: member.id, name, hex, imagePath: member.coverImagePath, angles,
+          useProductImageAsSwatch: !!verifiedName && hex === null },
       });
     }
     if (base.length < 2) continue; // need 2+ colours to form a selector

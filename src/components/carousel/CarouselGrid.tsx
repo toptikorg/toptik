@@ -5,7 +5,7 @@ import { A11y, Keyboard, Virtual } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import { CarouselItem } from "@/lib/carousel/types";
-import { buildModelSiblingSwatches, resolveItemSwatches, type ResolvedSwatch } from "@/lib/carousel/colors";
+import { buildModelSiblingSwatches, colorSwatchStyle, resolveItemSwatches, type ResolvedSwatch } from "@/lib/carousel/colors";
 import { trimmedProductSrc, CARD_IMG_WIDTH, MODAL_IMG_WIDTH } from "@/lib/carousel/trim-src";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
 import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
@@ -214,7 +214,7 @@ export function CatalogCard({
                       key={swatch.key}
                       type="button"
                       className={`catalog-card-color-dot${swatch.isCurrent ? " is-current" : ""}${actionable ? " is-actionable" : ""}`}
-                      style={swatch.hex ? { background: swatch.hex } : undefined}
+                      style={colorSwatchStyle(swatch)}
                       title={swatch.name}
                       aria-label={swatch.name}
                       aria-current={swatch.isCurrent || undefined}

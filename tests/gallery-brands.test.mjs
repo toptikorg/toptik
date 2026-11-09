@@ -73,12 +73,15 @@ test("previously unidentified store products gain brand identity only from exact
 
 test("all 79 restored brand identities match their captured exact Shopify bindings", async () => {
   const evidence = JSON.parse(await read("docs/verified-store-brand-bindings-20261109.json"));
+  const colors = JSON.parse(await read("docs/verified-store-color-names-20261109.json"));
   assert.equal(evidence.items.length, 79);
   assert.equal(new Set(evidence.items.map(i => i.sku)).size, 79);
   assert.deepEqual(Object.keys(VERIFIED_STORE_BRAND_BINDINGS_20261109).sort(), evidence.items.map(i => i.sku).sort());
   for (const { sku, handle, variantGid, brand } of evidence.items) {
     const variantId = variantGid.split('/').at(-1);
-    assert.deepEqual(VERIFIED_STORE_BRAND_BINDINGS_20261109[sku], { handle, variantId });
+    const color = colors.items.find(x => x.sku === sku);
+    assert.ok(color && color.variantGid === variantGid && color.handle === handle && color.label);
+    assert.deepEqual(VERIFIED_STORE_BRAND_BINDINGS_20261109[sku], { handle, variantId, name: color.label });
     const item = { ...items[0], catalogNumber: sku, techSpecs: null,
       shopifyLink: { handle, variantId, isPublished: true } };
     assert.equal(brandForItem(item)?.label, brand, sku);

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CarouselItem } from "@/lib/carousel/types";
-import type { ResolvedSwatch } from "@/lib/carousel/colors";
+import { colorSwatchStyle, type ResolvedSwatch } from "@/lib/carousel/colors";
 import { trimmedProductSrc, MODAL_IMG_WIDTH } from "@/lib/carousel/trim-src";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
 import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
@@ -243,7 +243,7 @@ export function ProductModal({ item, colors = [], onClose, onOpenTechSpecs, onNa
                           type="button"
                           className={`product-modal-color-dot${selected ? " is-current" : ""} is-actionable`}
                           title={c.name}
-                          style={c.hex ? { background: c.hex } : undefined}
+                          style={colorSwatchStyle(c)}
                           aria-label={c.name}
                           aria-current={selected || undefined}
                           onMouseEnter={() => warmColor(c)}
