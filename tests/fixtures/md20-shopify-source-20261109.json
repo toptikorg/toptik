@@ -1,0 +1,361 @@
+{
+  "id": "gid://shopify/Product/7512404951290",
+  "handle": "md-20-תיק-פאוץ-מבית-מנדרינה-דאק",
+  "title": "פאוץ׳ Mandarina Duck MD20 QMMM1",
+  "descriptionHtml": "<p>פאוץ׳ Mandarina Duck MD20 QMMM1.</p><p>פאוץ׳ עם רצועה מתכווננת, כיס קדמי ברוכסן וכיס פנימי ברוכסן לארגון החפצים הקטנים.</p><h2>פרטים עיקריים</h2><ul>\n<li>\n<strong>מק״ט:</strong> P10QMMM1651, P10QMMM1465, P10QMMM109K</li>\n<li>\n<strong>מידות:</strong> 15 × 20.5 × 2 ס״מ</li>\n<li>\n<strong>משקל:</strong> 0.2 ק״ג</li>\n<li>\n<strong>צבע:</strong> שחור, פלדה, טאופה</li>\n</ul><h2>בחירת הצבע</h2><p>הדגם מוצע בצבעים: שחור, פלדה, טאופה. כל צבע הוא גרסת מוצר נפרדת, ולכן יש לבחור את הגוון ולוודא שהמק״ט מתאים לפני ההזמנה.</p><h2>מה משמעות בחירת הצבע</h2><p>גוונים כהים נוטים להסתיר סימני שימוש, וגוונים בהירים או בולטים מקלים לזהות את המוצר. תמונות המוצר מציגות את הגוון בפועל, והוא עשוי להיראות מעט שונה בין מסכים.</p>",
+  "status": "ACTIVE",
+  "updatedAt": "2026-10-25T06:06:19Z",
+  "vendor": "Mandarina Duck",
+  "productType": "פאוץ׳",
+  "seo": {
+    "title": "פאוץ׳ MD20 QMMM1 מבית Mandarina Duck",
+    "description": "פאוץ׳ Mandarina Duck MD20 QMMM1. פאוץ׳ עם רצועה מתכווננת, כיס קדמי ברוכסן וכיס פנימי ברוכסן לארגון החפצים הקטנים."
+  },
+  "publishedOnPublication": true,
+  "variants": {
+    "nodes": [
+      {
+        "id": "gid://shopify/ProductVariant/42307603103994",
+        "sku": "P10QMMM1651",
+        "selectedOptions": [
+          {
+            "name": "צבע",
+            "value": "שחור"
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/ProductVariant/42307603136762",
+        "sku": "P10QMMM1465",
+        "selectedOptions": [
+          {
+            "name": "צבע",
+            "value": "פלדה"
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/ProductVariant/42307603169530",
+        "sku": "P10QMMM109K",
+        "selectedOptions": [
+          {
+            "name": "צבע",
+            "value": "טאופה"
+          }
+        ]
+      }
+    ],
+    "pageInfo": {
+      "hasNextPage": false,
+      "endCursor": "eyJsYXN0X2lkIjo0MjMwNzYwMzE2OTUzMCwibGFzdF92YWx1ZSI6M30="
+    }
+  },
+  "media": {
+    "nodes": [
+      {
+        "id": "gid://shopify/MediaImage/28993546911994",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון חום בהיר, מבט אלכסוני לחזית ולכיס הקדמי",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_09K_02.jpg?v=1641995738",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון חום בהיר, מבט אלכסוני לחזית ולכיס הקדמי",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993552711930",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון חום בהיר, מבט קדמי",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_09K_01.jpg?v=1641995852",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון חום בהיר, מבט קדמי",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993554645242",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון חום בהיר, גב התיק ורצועת המותן",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_09K_03.jpg?v=1641995880",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון חום בהיר, גב התיק ורצועת המותן",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993555792122",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון חום בהיר, התא הראשי פתוח",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_09K_04.jpg?v=1641995897",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון חום בהיר, התא הראשי פתוח",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993600979194",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון אפור כהה, מבט קדמי",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_465_01.jpg?v=1641996704",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון אפור כהה, מבט קדמי",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993602846970",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון אפור כהה, מבט אלכסוני לחזית",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_465_02.jpg?v=1641996739",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון אפור כהה, מבט אלכסוני לחזית",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993604747514",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון אפור כהה, התא הראשי פתוח",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_465_03.jpg?v=1641996764",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון אפור כהה, התא הראשי פתוח",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993606516986",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון אפור כהה, גב התיק ורצועת המותן",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_465_04.jpg?v=1641996789",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בגוון אפור כהה, גב התיק ורצועת המותן",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993608646906",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בצבע שחור, מבט קדמי",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_651_01.jpg?v=1641996837",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בצבע שחור, מבט קדמי",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993609924858",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בצבע שחור, מבט אלכסוני לחזית",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_651_02.jpg?v=1641996866",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בצבע שחור, מבט אלכסוני לחזית",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993610973434",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בצבע שחור, גב התיק ורצועת המותן",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_651_03.jpg?v=1641996886",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בצבע שחור, גב התיק ורצועת המותן",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/28993611596026",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 בצבע שחור, התא הראשי פתוח",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/products/QMMM1_651_04.jpg?v=1641996902",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 בצבע שחור, התא הראשי פתוח",
+          "width": 1000,
+          "height": 1500
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303297700090",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM109K | תמונה 1",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM109K-01.jpg?v=1790851105",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM109K | תמונה 1",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303297732858",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM109K | תמונה 2",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM109K-02.jpg?v=1790851105",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM109K | תמונה 2",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303297765626",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM109K | תמונה 3",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM109K-03.jpg?v=1790851105",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM109K | תמונה 3",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303297798394",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM109K | תמונה 4",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM109K-04.jpg?v=1790851105",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM109K | תמונה 4",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303299043578",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1465 | תמונה 1",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM1465-01.jpg?v=1790851120",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1465 | תמונה 1",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303299076346",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1465 | תמונה 2",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM1465-02.jpg?v=1790851120",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1465 | תמונה 2",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303299109114",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1465 | תמונה 3",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM1465-03.jpg?v=1790851120",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1465 | תמונה 3",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303299141882",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1465 | תמונה 4",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM1465-04.jpg?v=1790851120",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1465 | תמונה 4",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303301239034",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 1",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM1651-01.jpg?v=1790851135",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 1",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303301271802",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 2",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM1651-02.jpg?v=1790851135",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 2",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303301304570",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 3",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM1651-03.jpg?v=1790851135",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 3",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303301337338",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 4",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM1651-04.jpg?v=1790851135",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 4",
+          "width": 1698,
+          "height": 2000
+        }
+      },
+      {
+        "id": "gid://shopify/MediaImage/46303301370106",
+        "alt": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 5",
+        "status": "READY",
+        "mediaContentType": "IMAGE",
+        "image": {
+          "url": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10QMMM1651-05.jpg?v=1790851135",
+          "altText": "פאוץ׳ Mandarina Duck MD20 QMMM1 | P10QMMM1651 | תמונה 5",
+          "width": 1698,
+          "height": 2000
+        }
+      }
+    ],
+    "pageInfo": {
+      "hasNextPage": false,
+      "endCursor": "eyJsYXN0X2lkIjo0NjMwMzMwMTM3MDEwNiwibGFzdF92YWx1ZSI6IjI1In0="
+    }
+  }
+}

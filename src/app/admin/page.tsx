@@ -18,7 +18,7 @@ import CommerceExistingEditor from "@/components/admin/CommerceExistingEditor";
 import TypedSpecificationEditor from "@/components/admin/TypedSpecificationEditor";
 import NewProductEditor from "@/components/admin/NewProductEditor";
 import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
-import { isShopifyOwnedVariant, SHOPIFY_OWNED_MESSAGE } from "@/lib/shopify/variant-source-policy";
+import { isShopifyOwnedVariant, shopifyOwnedProductId, SHOPIFY_OWNED_MESSAGE } from "@/lib/shopify/variant-source-policy";
 import { NO_CHANGES_MESSAGE, planChangedOnlySave } from "@/lib/carousel/editor-changes";
 
 const STORAGE_KEY = "toptik_admin_token";
@@ -1262,6 +1262,7 @@ export default function AdminPage() {
             {sortedItems.filter(item => !catalogSearch.trim() || `${item.title} ${item.catalogNumber ?? ""}`.toLowerCase().includes(catalogSearch.trim().toLowerCase())
               || (normalizeCatalogKey(catalogSearch).length >= 2 && normalizeCatalogKey(item.catalogNumber ?? "").includes(normalizeCatalogKey(catalogSearch)))).map((item) => {
               const itemIndex = payload.items.findIndex((row) => row.id === item.id);
+              const sourceOwned = isShopifyOwnedVariant(item.id);
               return (
                 <article key={item.id} className="admin-item-card">
                   <div className="admin-item-head">
@@ -1284,16 +1285,17 @@ export default function AdminPage() {
                       הסתר מהגלריה
                     </button>
                   </div>
-                  {isShopifyOwnedVariant(item.id) && <p role="note">{SHOPIFY_OWNED_MESSAGE} <a href="https://admin.shopify.com/store/toptikcoil/products/7512404951290" target="_blank" rel="noopener noreferrer">עריכת המוצר בחנות</a></p>}
+                  {sourceOwned && <p role="note">{SHOPIFY_OWNED_MESSAGE} <a href={`https://admin.shopify.com/store/toptikcoil/products/${shopifyOwnedProductId(item.id)}`} target="_blank" rel="noopener noreferrer">עריכת המוצר בחנות</a></p>}
                   <div className="admin-item-grid">
                     <label>
                       כותרת
                       <input
                         value={item.title}
+                        readOnly={sourceOwned}
                         onChange={(e) => updateItemField(itemIndex, "title", e.target.value)}
                       />
                     </label>
-                    <ProductDescriptionEditor text={item.description ?? ""} html={item.descriptionHtml}
+                    <ProductDescriptionEditor text={item.description ?? ""} html={item.descriptionHtml} readOnly={sourceOwned}
                       onChange={({ text, html }) => setPayload(current => {
                         const next = structuredClone(current);
                         const changed = next.items.find(row => row.id === item.id);
@@ -1304,6 +1306,7 @@ export default function AdminPage() {
                       כותרת SEO לחנות
                       <input
                         value={item.seoTitle ?? ""}
+                        readOnly={sourceOwned}
                         onChange={(e) => updateItemField(itemIndex, "seoTitle", e.target.value)}
                         maxLength={512}
                         placeholder="ריק = ללא כותרת SEO נפרדת; מומלץ לשמור קצר"
@@ -1313,6 +1316,7 @@ export default function AdminPage() {
                       תיאור SEO לחנות
                       <textarea
                         value={item.seoDescription ?? ""}
+                        readOnly={sourceOwned}
                         onChange={(e) => updateItemField(itemIndex, "seoDescription", e.target.value)}
                         rows={2}
                         maxLength={5000}
@@ -1335,7 +1339,7 @@ export default function AdminPage() {
                       מספר קטלוגי
                       <input
                         value={item.catalogNumber ?? ""}
-                        readOnly={Boolean(item.shopifyLink)}
+                        readOnly={sourceOwned || Boolean(item.shopifyLink)}
                         title={item.shopifyLink ? "מזהה של מוצר מקושר נשמר כדי לא לשייך אותו למוצר אחר." : undefined}
                         onChange={(e) => updateItemField(itemIndex, "catalogNumber", e.target.value)}
                         placeholder="למשל: QMT32A74"
