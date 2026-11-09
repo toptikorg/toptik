@@ -11,13 +11,53 @@ function fixture(){
  const p={id:policy.FZT73_PRODUCT_GID,handle:policy.FZT73_PRODUCT_HANDLE,title:'פאוץ׳ FZT73',descriptionHtml:'<p>עור</p>',status:'ACTIVE',updatedAt:'2026-10-13T00:00:00Z',vendor:'mandarinaduck',productType:'bag',publishedOnPublication:true,seo:{title:'פאוץ׳ FZT73',description:'פאוץ׳ עור.'},
  variants:{nodes:policy.FZT73_VARIANTS.map(v=>({id:'gid://shopify/ProductVariant/'+v.variantId,sku:v.sku,selectedOptions:[{name:'צבע',value:v.color}]})),pageInfo:{hasNextPage:false}},
  media:{nodes:policy.FZT73_MEDIA.map(m=>({id:m.id,alt:'',status:'READY',mediaContentType:'IMAGE',image:{url:m.url,altText:null,width:1000,height:1500}})),pageInfo:{hasNextPage:false}}};
- const tables={carousel_items:[{id:'other',catalog_number:'OTHER',display_order:403,editor_revision:3}],carousel_item_angles:[],carousel_settings:{autoplay_ms:3000,transition_mode:'curtain-fade',editor_revision:1}};
+ const tables={carousel_items:[{id:'other',catalog_number:'OTHER',display_order:403,editor_revision:3}],carousel_item_angles:[],carousel_settings:{autoplay_ms:3000,transition_mode:'curtain-fade',editor_revision:1},
+ shopify_gallery_bindings:policy.FZT73_VARIANTS.map(v=>({catalog_key:v.sku,carousel_item_id:v.itemId,product_gid:policy.FZT73_PRODUCT_GID,variant_gid:'gid://shopify/ProductVariant/'+v.variantId,product_handle:policy.FZT73_PRODUCT_HANDLE,is_published:true,source_updated_at:'2026-10-13T00:00:00Z'})),
+ shopify_gallery_public_links:policy.FZT73_VARIANTS.map(v=>({catalog_key:v.sku,product_handle:policy.FZT73_PRODUCT_HANDLE,variant_id:v.variantId,is_published:true}))};
  const calls=[],verified=[];
  const db={from(table){let filters=[],slice,action='read',body;const q={select(){return q},in(k,v){filters.push(r=>v.includes(r[k]));return q},eq(){return q},single(){return q},order(){return q},range(a,b){slice=[a,b+1];return q},update(v){action='update';body=v;return q},then(resolve){calls.push({table,action,body});let data=structuredClone(tables[table]??[]);if(Array.isArray(data)){data=data.filter(r=>filters.every(f=>f(r)));if(slice)data=data.slice(...slice);}return Promise.resolve({data,error:null}).then(resolve)}};return q},
- async rpc(name,args){calls.push({name,args});for(const row of args.p_items){const old=tables.carousel_items.find(r=>r.id===row.id);if(old)Object.assign(old,row);else tables.carousel_items.push({...row,editor_revision:1,copy_updated_at:'created'});}const ids=args.p_items.map(r=>r.id);tables.carousel_item_angles=tables.carousel_item_angles.filter(r=>!ids.includes(r.item_id)).concat(structuredClone(args.p_angles));return{error:null}}};
+ async rpc(name,args){calls.push({name,args});for(const row of args.p_items){const old=tables.carousel_items.find(r=>r.id===row.id);if(old)Object.assign(old,row);else tables.carousel_items.push({...row,editor_revision:1,copy_updated_at:'2026-10-13T00:00:00Z'});}const ids=args.p_items.map(r=>r.id);tables.carousel_item_angles=tables.carousel_item_angles.filter(r=>!ids.includes(r.item_id)).concat(structuredClone(args.p_angles));return{error:null}}};
  const deps={...policy,randomUUID,configuredShopifyDomain:()=> 'toptikcoil.myshopify.com',process:{env:{SHOPIFY_ONLINE_STORE_PUBLICATION_ID:'gid://shopify/Publication/79538258170',SHOPIFY_SYNC_AUTOCREATE:'published_shopify'}},shopifyAdminGraphql:async()=>({product:structuredClone(p)}),visibleCopyFromProduct:s=>({title:s.title,description:'עור',descriptionHtml:s.descriptionHtml,seoTitle:s.seoTitle,seoDescription:s.seoDescription}),assertSafeDescriptionHtml:()=>{},verifyOnboardingImage:async m=>verified.push(m.id),upsertExactGalleryBindings:async(_db,input)=>calls.push({linkSync:input})};
- return{p,tables,calls,verified,db,deps,run:()=>make(deps)(db,Date.now()+45000)};
+ return{p,tables,calls,verified,db,deps,run:()=>make(deps)(db,Date.now()+45000),inspect:()=>make(deps)(db,Date.now()+45000,true)};
 }
+
+test('inspection acknowledges exact equality without writes and sends real copy/media divergence to review',async()=>{
+ const f=fixture();await f.run();const before=structuredClone(f.tables);f.calls.length=0;f.verified.length=0;
+ await f.inspect();assert.deepEqual(f.tables,before);assert.ok(!f.calls.some(c=>c.name||c.action==='update'||c.linkSync));
+ for(const mutate of [
+   row=>row.title='Editorial change that must survive',
+   row=>row.description='Independent description',
+   row=>row.seo_title='Different SEO',
+   row=>row.cover_image_path='https://example.test/another.png',
+ ]){
+   f.tables.carousel_items=structuredClone(before.carousel_items);mutate(f.tables.carousel_items.find(r=>r.id===policy.FZT73_VARIANTS[0].itemId));
+   const current=structuredClone(f.tables);f.calls.length=0;
+   await assert.rejects(f.inspect(),/SYNC_FZT73_BASELINE_REQUIRED/);
+   assert.deepEqual(f.tables,current);assert.ok(!f.calls.some(c=>c.name||c.action==='update'||c.linkSync));
+ }
+});
+test('inspection refuses a product withdrawn between the publication read and source read',async()=>{
+ const f=fixture();await f.run();f.p.publishedOnPublication=false;f.calls.length=0;
+ await assert.rejects(f.inspect(),/SYNC_COPY_CONCURRENT_UPDATE/);
+ assert.ok(!f.calls.some(c=>c.name||c.action==='update'||c.linkSync));
+});
+test('inspection rejects a wrong existing Gallery color even when copy and images match',async()=>{
+ const f=fixture();await f.run();f.tables.carousel_items.find(r=>r.id===policy.FZT73_VARIANTS[0].itemId).color='wrong';f.calls.length=0;
+ await assert.rejects(f.inspect(),/SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT/);
+ assert.ok(!f.calls.some(c=>c.name||c.action==='update'||c.linkSync));
+});
+test('inspection rejects an incorrect purchase link even when copy and images match',async()=>{
+ const f=fixture();await f.run();f.tables.shopify_gallery_public_links[0].variant_id='999';f.calls.length=0;
+ await assert.rejects(f.inspect(),/SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT/);
+ assert.ok(!f.calls.some(c=>c.name||c.action==='update'||c.linkSync));
+});
+test('inspection rejects a Gallery edit that races the second Shopify snapshot',async()=>{
+ const f=fixture();await f.run();let reads=0;const source=f.deps.shopifyAdminGraphql;
+ f.deps.shopifyAdminGraphql=async()=>{const value=await source();if(++reads===2){const row=f.tables.carousel_items.find(r=>r.id===policy.FZT73_VARIANTS[0].itemId);row.title='Concurrent edit';row.editor_revision++;}return value;};
+ f.calls.length=0;await assert.rejects(f.inspect(),/SYNC_COPY_CONCURRENT_UPDATE/);
+ assert.equal(f.tables.carousel_items.find(r=>r.id===policy.FZT73_VARIANTS[0].itemId).title,'Concurrent edit');
+ assert.ok(!f.calls.some(c=>c.name||c.action==='update'||c.linkSync));
+});
 test('creates four exact colors and fifteen decoded images atomically without touching unrelated rows',async()=>{
  const f=fixture(),other=structuredClone(f.tables.carousel_items[0]);await f.run();
  assert.deepEqual(f.tables.carousel_items[0],other);assert.equal(f.verified.length,15);assert.equal(f.tables.carousel_item_angles.length,15);

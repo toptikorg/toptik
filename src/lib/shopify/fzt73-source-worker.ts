@@ -46,13 +46,17 @@ const canonical = (value: unknown): string => {
 };
 const same = (row: Record<string, unknown> | undefined, patch: Record<string, unknown>) =>
   !!row && Object.entries(patch).every(([k,v]) => canonical(row[k]) === canonical(v));
+export type Fzt73InspectionWitness = { sourceUpdatedAt: string; versions: Record<string, {editorRevision: number; copyUpdatedAt: string}> };
 
 /** The normal webhook/recovery worker holds the product lease. Source-owned,
  * reviewed four-color intake only; no Shopify writes, binding changes or approvals. */
-export async function reconcileFzt73Variants(db: SupabaseClient, deadline: number): Promise<void> {
+export async function reconcileFzt73Variants(db: SupabaseClient, deadline: number, inspectOnly = false): Promise<Fzt73InspectionWitness | void> {
   if (configuredShopifyDomain() !== "toptikcoil.myshopify.com") throw new Error("SYNC_ONBOARDING_SHOP_MISMATCH");
   const source = await snapshot(deadline);
   const published = !!source && source.status === "ACTIVE" && source.publishedOnPublication;
+  // Inspection is only entered after a published read; a withdrawal between
+  // those reads must not be acknowledged against a stale publication result.
+  if (inspectOnly && !published) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
   const ids = FZT73_VARIANTS.map(v => v.itemId);
   const [items, angles, settings] = await Promise.all([
     db.from("carousel_items").select("*").in("id", ids),
@@ -60,6 +64,10 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
     db.from("carousel_settings").select("autoplay_ms,transition_mode,editor_revision").eq("id", 1).single(),
   ]);
   if (items.error || angles.error || settings.error || !settings.data || !items.data || !angles.data) throw new Error("SYNC_VARIANT_GALLERY_READ_FAILED");
+  if (inspectOnly && FZT73_VARIANTS.some(v => {
+    const row = items.data.find(item => item.id === v.itemId);
+    return row && row.color !== v.color;
+  })) throw new Error("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT");
   const identityRows: { id: string; catalog_number: string | null; display_order: number }[] = [];
   for (let offset = 0; ; offset += 1000) {
     if (Date.now() >= deadline - 3000) throw new Error("SYNC_ONBOARDING_TIME_BUDGET");
@@ -107,6 +115,53 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
   }
   const changed = projected.some(p => !same(items.data.find(r => r.id === p.id),p)) ||
     projectedAngles.length !== angles.data.length || projectedAngles.some(p => !same(angles.data.find(r => r.id === p.id),p));
+  // In inspection mode no source projection or outbox settlement is written.
+  // Exact equality can safely acknowledge a no-op. Divergence requires a
+  // per-variant baseline before any field or media is overwritten.
+  if (inspectOnly) {
+    if (JSON.stringify(await snapshot(deadline)) !== JSON.stringify(source)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
+    if (changed) throw new Error("SYNC_FZT73_BASELINE_REQUIRED");
+    // A Gallery edit may land while the second Shopify read is in flight.
+    // Re-read the projected fields, image order and editor revisions before
+    // acknowledging equality; editor saves also enqueue independent work.
+    const [verifiedItems, verifiedAngles] = await Promise.all([
+      db.from("carousel_items").select("*").in("id",ids),
+      db.from("carousel_item_angles").select("*").in("item_id",ids),
+    ]);
+    if (verifiedItems.error || verifiedAngles.error || !verifiedItems.data || !verifiedAngles.data ||
+        verifiedItems.data.length !== items.data.length || verifiedAngles.data.length !== projectedAngles.length ||
+        projected.some(p => {
+          const before = items.data.find(r => r.id === p.id);
+          const current = verifiedItems.data.find(r => r.id === p.id);
+          return !before || !current || current.editor_revision !== before.editor_revision ||
+            current.copy_updated_at !== before.copy_updated_at || !same(current,p);
+        }) || projectedAngles.some(p => !same(verifiedAngles.data.find(r => r.id === p.id),p))) {
+      throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
+    }
+    // Even when optional SQL recovery is disabled, do not acknowledge a no-op
+    // without checking the exact live binding and public purchase link for
+    // each color. A later edit still relies on the normal webhook/recovery flow.
+    const [bindings, links] = await Promise.all([
+      db.from("shopify_gallery_bindings").select("catalog_key,carousel_item_id,product_gid,variant_gid,product_handle,is_published,source_updated_at").eq("product_gid",FZT73_PRODUCT_GID),
+      db.from("shopify_gallery_public_links").select("catalog_key,product_handle,variant_id,is_published").in("catalog_key",FZT73_VARIANTS.map(v => v.sku)),
+    ]);
+    if (bindings.error || links.error || !bindings.data || !links.data || bindings.data.length !== 4 || links.data.length !== 4 ||
+      FZT73_VARIANTS.some(v => {
+        const binding = bindings.data.find(row => row.catalog_key === v.sku);
+        const link = links.data.find(row => row.catalog_key === v.sku);
+        return !binding || !link || binding.carousel_item_id !== v.itemId || binding.product_gid !== FZT73_PRODUCT_GID ||
+          binding.variant_gid !== `gid://shopify/ProductVariant/${v.variantId}` || binding.product_handle !== FZT73_PRODUCT_HANDLE ||
+          binding.is_published !== true || typeof binding.source_updated_at !== 'string' || !Number.isFinite(Date.parse(binding.source_updated_at)) ||
+          Date.parse(binding.source_updated_at) > Date.parse(source!.updatedAt) || link.product_handle !== FZT73_PRODUCT_HANDLE ||
+          link.variant_id !== v.variantId || link.is_published !== true;
+      })) throw new Error("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT");
+    if (!source || !Number.isFinite(Date.parse(source.updatedAt)) || verifiedItems.data.some(row => !Number.isSafeInteger(row.editor_revision) || row.editor_revision < 1 ||
+      typeof row.copy_updated_at !== 'string' || !Number.isFinite(Date.parse(row.copy_updated_at)))) {
+      throw new Error("SYNC_FZT73_RECOVERY_INVALID");
+    }
+    return { sourceUpdatedAt: source.updatedAt, versions: Object.fromEntries(verifiedItems.data.map(row => [row.id,
+      {editorRevision: row.editor_revision, copyUpdatedAt: row.copy_updated_at}])) };
+  }
   if (changed && published) {
     const media = [...mediaBySku.values()].flat();
     for (let i=0;i<media.length;i+=3) await Promise.all(media.slice(i,i+3).map(m => verifyOnboardingImage(m,deadline)));
