@@ -135,8 +135,7 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
     bindings:FZT73_VARIANTS.map(v=>({catalogKey:v.sku,itemId:v.itemId,
       variantGid:`gid://shopify/ProductVariant/${v.variantId}`})),
   });
-  const settled = await db.from("shopify_gallery_content_outbox").update({status:"synced",synced_at:new Date().toISOString(),last_error:null})
-    .in("carousel_item_id",ids).in("catalog_key",FZT73_VARIANTS.map(v=>v.sku)).in("status",["pending","processing","review","failed"]);
-  if (settled.error) throw new Error("SYNC_OUTBOX_FINALIZE_FAILED");
+  // Source reconciliation does not prove that individual Gallery edits were
+  // delivered to Shopify. Never settle historical or pending outbox records.
 }
 

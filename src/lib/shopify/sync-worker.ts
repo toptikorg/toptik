@@ -377,10 +377,10 @@ async function processOneOutboxRow(supabase: SupabaseClient, row: OutboxRow, can
   if (mode === "disabled") throw new Error("SYNC_MODE_NOT_CONFIGURED");
   if (mode !== "verified_catalog" && !isSyncCanarySku(row.catalog_key, canarySku)) throw new Error("SYNC_SKU_OUTSIDE_CANARY");
   if (mode === "verified_catalog" && FZT73_VARIANTS.some(v => v.sku === row.catalog_key && v.itemId === row.carousel_item_id)) {
-    return withProductReconciliationLease(supabase, FZT73_PRODUCT_GID, async () => {
-      await reconcileFzt73Variants(supabase, deadline);
-      return "synced";
-    });
+    // Replaying the Shopify source does not deliver this specific Gallery
+    // edit, and this multi-color product has no per-color copy baseline yet.
+    // Keep it visible for review rather than falsely recording a successful sync.
+    throw new Error("SYNC_FZT73_BASELINE_REQUIRED");
   }
   if (mode === "verified_catalog" && MD20_VARIANTS.some(v => v.sku === row.catalog_key && v.itemId === row.carousel_item_id)) {
     return withProductReconciliationLease(supabase, MD20_PRODUCT_GID, async () => {

@@ -28,6 +28,11 @@ test('creates four exact colors and fifteen decoded images atomically without to
 test('replay preserves revisions and angle identities with no RPC or repeated image download',async()=>{
  const f=fixture();await f.run();const before=structuredClone(f.tables);f.calls.length=0;f.verified.length=0;await f.run();assert.deepEqual(f.tables,before);assert.equal(f.verified.length,0);assert.ok(!f.calls.some(c=>c.name));
 });
+test('source replay cannot mark unrelated or superseded FZT73 outbox edits as synced',async()=>{
+ const f=fixture();await f.run();f.calls.length=0;await f.run();
+ assert.ok(!f.calls.some(c=>c.table==='shopify_gallery_content_outbox' && c.action==='update'),
+   'matching the current snapshot does not prove every queued edit was applied to Shopify');
+});
 for(const mode of ['DRAFT','ARCHIVED','unpublished','deleted'])test(mode+' hides all four and preserves files, then republishing restores them',async()=>{
  const f=fixture();await f.run();const images=structuredClone(f.tables.carousel_item_angles);
  if(mode==='unpublished')f.p.publishedOnPublication=false;else if(mode==='deleted')f.deps.shopifyAdminGraphql=async()=>({product:null});else f.p.status=mode;
