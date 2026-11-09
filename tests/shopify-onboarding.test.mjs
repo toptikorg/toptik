@@ -13,6 +13,16 @@ const rulesUrl=moduleUrl(readFileSync("src/lib/shopify/sync-rules.ts","utf8").re
 const policyUrl=moduleUrl(readFileSync("src/lib/shopify/onboarding-policy.ts","utf8")
   .replace('"./description-document"',JSON.stringify(descriptionModuleUrl)).replace('"./sync-rules"',JSON.stringify(rulesUrl)));
 const policy=await import(policyUrl);
+const galleryBrandsUrl=moduleUrl(readFileSync('src/lib/carousel/brands.ts','utf8'));
+const gallerySeriesMap=JSON.parse(readFileSync('src/lib/carousel/series-reviewed.json','utf8'));
+const gallerySeriesUrl=moduleUrl(readFileSync('src/lib/carousel/series.ts','utf8')
+ .replace('import reviewed from "./series-reviewed.json";',`const reviewed = ${JSON.stringify(gallerySeriesMap)};`)
+ .replace('"./brands"',JSON.stringify(galleryBrandsUrl)));
+const {seriesForItem}=await import(gallerySeriesUrl);
+const {publicCollectionItems}=await import(galleryBrandsUrl);
+const galleryClassificationUrl=moduleUrl(readFileSync('src/lib/carousel/store-classification.ts','utf8')
+ .replace('import "server-only";','').replace('"./brands"',JSON.stringify(galleryBrandsUrl)).replace('"./series"',JSON.stringify(gallerySeriesUrl)));
+const {classificationIndex,applyStoreClassification}=await import(galleryClassificationUrl);
 const guardsUrl=moduleUrl(readFileSync("src/lib/catalog-source/source-allowlist.ts","utf8"));
 const workerSource=stripTypeScriptTypes(resolveImageLimits(readFileSync("src/lib/shopify/onboarding-worker.ts","utf8"))).replace(/^import[\s\S]*?;\r?\n/gm,"").replace(/^export /gm,"");
 const {makeWorker}=await import(moduleUrl(`
@@ -49,7 +59,7 @@ function fixture(options={}){
     select(fields){query.fields=fields;return builder;},order(){return builder;},range(a,b){start=a;end=b;return builder;},
     eq(){return builder;},async maybeSingle(){return {data:options.receipt??null,error:null};},
     async abortSignal(){return {data:rows.slice(start,end+1),error:null};}};return builder;},
-    async rpc(name,args){rpcCalls.push({name,args});return {data:name==="upsert_shopify_gallery_binding"?true:{changed:true,itemId:"new-item",catalogKey:"NEW001",approvalId:"new-approval"},error:null};}};
+    async rpc(name,args){rpcCalls.push({name,args});return {data:name==="upsert_shopify_gallery_binding"?true:{changed:true,itemId:"new-item",catalogKey:options.expectedCatalogKey??"NEW001",approvalId:"new-approval"},error:null};}};
   const worker=makeWorker({process:{env:{SHOPIFY_SYNC_AUTOCREATE:options.enabled===false?undefined:"published_shopify"}},configuredShopifyDomain:()=>"toptikcoil.myshopify.com",
     fetchPublicOnboardingProductSnapshot:async()=>{snapshots++;const result=structuredClone(product);if(snapshots>1)options.late?.(result);return result;},
     fetchAllOnboardingVariantIdentities:async()=>{variantReads++;return options.variants??[{id:variantId,sku:product.variants[0].sku,product:{id:productId}}];},
@@ -69,6 +79,22 @@ test("published product creates exact raw pair and decoded-image evidence throug
   assert.deepEqual(e.media,[{mediaGid:"gid://shopify/MediaImage/77",url:f.product.media[0].image.url,width:40,height:60,mime:"image/png",byteLength:bytes.length,sha256:createHash("sha256").update(bytes).digest("hex")}]);
   assert.deepEqual(f.counts(),{snapshots:2,variantReads:2});
   assert.ok(!("price" in e)&&!("sourceUrl" in e));
+});
+
+test("SJT03 onboarding evidence and the gallery series contract keep MD Urban distinct",async()=>{
+ for(const sku of ['P10SJT0306I','P10SJT0318O','P10SJT03651']){
+  const product=snapshot();product.vendor='Mandarina Duck';product.productType='תיק צד';product.variants[0].sku=sku;
+  const f=fixture({product,expectedCatalogKey:sku});assert.equal(await f.run(),true);
+  const evidence=f.rpcCalls[0].args.p_evidence;
+  assert.equal(evidence.brandLabel,'Mandarina Duck');assert.equal(evidence.exactSku,sku);assert.equal(evidence.category,'fashion-bags');
+  // The production onboarding RPC writes brandLabel as this explicit tech-spec.
+  const projected={id:sku,catalogNumber:sku,isActive:true,techSpecs:{specs:[{heading:'פרטי מוצר',items:[{label:'מותג',value:evidence.brandLabel}]}],colors:[],category:evidence.category}};
+  const index=classificationIndex([{vendor:product.vendor,product_type:product.productType,tags:['tt-series:mandarina-duck-md-urban'],variants:[{sku}]}]);
+  const [classified]=applyStoreClassification([projected],index);
+  assert.equal(publicCollectionItems([classified]).length,1);
+  assert.equal(seriesForItem(classified)?.key,'mandarina-duck-md-urban');
+  assert.notEqual(seriesForItem(classified)?.key,'mandarina-duck-mellow-urban');
+ }
 });
 
 test("draft/unpublished/other-brand and both held SKUs never create or fetch media",async()=>{

@@ -74,3 +74,19 @@ test('verified WEEK-END medium suitcase has a separate series and never enters M
  assert.deepEqual(filterBySeries([p],'mandarina-duck-mellow-leather'),[]);
  assert.deepEqual(filterBySeries([p],'mandarina-duck-weekend'),[p]);
 });
+
+test('three SJT03 colors belong to MD Urban, never Mellow Urban, and unknown colors are not inferred',()=>{
+ const skus=['P10SJT0306I','P10SJT0318O','P10SJT03651'];
+ const expected={key:'mandarina-duck-md-urban',label:'MD URBAN',brand:'mandarina-duck'};
+ const items=skus.map(sku=>item(sku,'mandarina-duck'));
+ for(const p of items) assert.deepEqual(seriesForItem(p),expected);
+ assert.deepEqual(filterBySeries(items,'mandarina-duck-md-urban'),items);
+ assert.deepEqual(filterBySeries(items,'mandarina-duck-mellow-urban'),[]);
+ assert.equal(seriesForItem(item('P10SJT03UNKNOWN','mandarina-duck')),null);
+ assert.equal(seriesForItem(item(skus[0],"brics")),null);
+ const index=classificationIndex(skus.map(sku=>({vendor:'Mandarina Duck',product_type:'תיק צד',tags:['tt-series:mandarina-duck-md-urban'],variants:[{sku}]})));
+ for(const p of applyStoreClassification(items,index)) assert.deepEqual(seriesForItem(p),expected);
+ const unbranded={id:skus[0],catalogNumber:skus[0],isActive:true,techSpecs:{specs:[],colors:[]}};
+ assert.equal(seriesForItem(unbranded),null,'series mapping must not invent a gallery brand');
+ assert.deepEqual(publicCollectionItems(applyStoreClassification([unbranded],index)),[]);
+});
