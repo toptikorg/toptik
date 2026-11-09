@@ -1129,6 +1129,8 @@ body:has(.carousel-page) {
 
 .catalog-card-color-dot.is-color-name.is-current,
 .product-modal-color-dot.is-color-name.is-current {
+  width: auto;
+  height: auto;
   border: 2px solid #6f4f1f;
   background: #f5e6cd;
 }

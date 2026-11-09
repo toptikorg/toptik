@@ -183,4 +183,6 @@ test('all 209 verified color bindings use neutral text, never a potentially diff
  const modal=readFileSync('src/components/carousel/ProductModal.tsx','utf8');
  assert.match(card,/!swatch\.hex\s*\?\s*swatch\.name/);
  assert.match(modal,/!c\.hex\s*\?\s*c\.name/);
+ const css=readFileSync('src/app/globals.css','utf8');
+ assert.match(css,/\.catalog-card-color-dot\.is-color-name\.is-current,[\s\S]*?\.product-modal-color-dot\.is-color-name\.is-current\s*\{\s*width:\s*auto;\s*height:\s*auto;/);
 });
