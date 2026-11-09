@@ -3,8 +3,8 @@ import type { CarouselItem } from "./types";
 export type BrandKey = string;
 export interface GalleryBrand { key: BrandKey; label: string }
 
-// Public collection selection approved by the owner on 2026-09-29.
-// This is a presentation policy, not a deletion or a brand-identity rewrite.
+// Legacy approved brands remain visible as before. Tal's 2026-11-09 request
+// also includes other brands when their exact shop listing is published.
 const PUBLIC_BRAND_KEYS = new Set(["mandarina-duck", "brics", "samsonite", "american-tourister"]);
 
 const NAMED_BRANDS: Record<string, GalleryBrand> = {
@@ -92,12 +92,23 @@ export function brandForItem(item: CarouselItem): GalleryBrand | null {
     ? brandFromName(REVIEWED_BRAND_BY_SKU[sku]) : null;
 }
 
+function visibleStoreBrandItem(item: CarouselItem, brand: GalleryBrand): boolean {
+  if (!item.isActive || item.shopifyLink?.isPublished === false) return false;
+  if (PUBLIC_BRAND_KEYS.has(brand.key)) return true;
+  const link = item.shopifyLink;
+  // New brands are opt-in through an exact public Shopify binding, not a
+  // guessed SKU or image. Match purchase-links' handle and variant guards.
+  return !!link && link.isPublished === true && typeof link.handle === "string" &&
+    typeof link.variantId === "string" && link.handle.length <= 255 &&
+    /^[A-Za-z0-9א-ת][A-Za-z0-9א-ת-]*$/.test(link.handle) && /^\d+$/.test(link.variantId);
+}
+
 export function availableBrands(items: CarouselItem[]): GalleryBrand[] {
   const brands = new Map<BrandKey, GalleryBrand>();
   for (const item of items) {
     if (!item.isActive) continue;
     const brand = brandForItem(item);
-    if (brand && PUBLIC_BRAND_KEYS.has(brand.key) && !brands.has(brand.key)) brands.set(brand.key, brand);
+    if (brand && visibleStoreBrandItem(item, brand) && !brands.has(brand.key)) brands.set(brand.key, brand);
   }
   return [...brands.values()];
 }
@@ -105,7 +116,7 @@ export function availableBrands(items: CarouselItem[]): GalleryBrand[] {
 export function publicCollectionItems(items: CarouselItem[]): CarouselItem[] {
   return items.filter(item => {
     const brand = brandForItem(item);
-    return item.isActive && brand !== null && PUBLIC_BRAND_KEYS.has(brand.key);
+    return brand !== null && visibleStoreBrandItem(item, brand);
   });
 }
 
