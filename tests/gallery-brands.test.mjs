@@ -53,6 +53,28 @@ test("unknown and conflicting identities never silently become Mandarina product
   assert.equal(availableBrands([{ ...explicit("Samsonite"), isActive: false }]).length, 0);
 });
 
+test("published store products outside the curated four brands are visible without exposing unpublished or unidentified records", () => {
+  const porsche = { ...items.find(item => item.catalogNumber === "ORI05500.909"),
+    shopifyLink: { handle: "ori05500-909", variantId: "50083959832826", isPublished: true } };
+  const newBrand = { ...items[0], id: "future", catalogNumber: "NEW1234", shopifyLink: { handle: "other-bag", variantId: "999", isPublished: true },
+    techSpecs: { specs: [{ items: [{ label: "מותג", value: "Delsey" }] }], colors: [] } };
+  const blocked = [
+    { ...porsche, id: "draft", shopifyLink: { ...porsche.shopifyLink, isPublished: false } },
+    { ...porsche, id: "unlinked", shopifyLink: null },
+    { ...porsche, id: "inactive", isActive: false },
+    { ...porsche, id: "bad-handle", shopifyLink: { ...porsche.shopifyLink, handle: "https://elsewhere.invalid" } },
+    { ...porsche, id: "bad-variant", shopifyLink: { ...porsche.shopifyLink, variantId: "garbage" } },
+    { ...porsche, id: "bad-data", shopifyLink: { isPublished: true } },
+    { ...items[0], id: "curated-unpublished", shopifyLink: { isPublished: false } },
+    { ...newBrand, id: "unidentified", techSpecs: null },
+    { ...newBrand, id: "ambiguous", techSpecs: { specs: [{ items: [{ label: "מותג", value: "Delsey" }, { label: "brand", value: "Samsonite" }] }] } },
+  ];
+  assert.deepEqual(publicCollectionItems([porsche, newBrand, ...blocked]).map(item => item.id), [porsche.id, newBrand.id]);
+  assert.deepEqual(availableBrands([porsche, newBrand, ...blocked]).map(brand => brand.key), ["porsche-design", "brand:delsey"]);
+  assert.deepEqual(filterByBrand([porsche, newBrand], "porsche-design"), [porsche]);
+  assert.equal(parseBrandParam("porsche-design", availableBrands([porsche, newBrand])), "porsche-design");
+});
+
 test("default and URL selections use only available brands", () => {
   const brands = availableBrands(items);
   for (const raw of [null, undefined, "", "unknown", "samsonite", "__proto__"]) {
