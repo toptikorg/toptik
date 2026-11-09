@@ -1,0 +1,796 @@
+{
+  "verifiedAt": "2026-11-09",
+  "source": "Shopify Admin exact variant and product title; Gallery cover compared to exact Shopify variant image",
+  "items": [
+    {
+      "sku": "P10OSN0105J",
+      "productGid": "gid://shopify/Product/15402534895866",
+      "variantGid": "gid://shopify/ProductVariant/67616503202042",
+      "handle": "p10osn0105j",
+      "label": "צהוב",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק רחצה Mandarina Duck Eco Coated OSN01 בצבע צהוב",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OSN0205J",
+      "productGid": "gid://shopify/Product/15402535190778",
+      "variantGid": "gid://shopify/ProductVariant/67616503759098",
+      "handle": "p10osn0205j",
+      "label": "צהוב",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק רחצה Mandarina Duck Eco Coated OSN02 בצבע צהוב",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10TKTV8001",
+      "productGid": "gid://shopify/Product/15402536370426",
+      "variantGid": "gid://shopify/ProductVariant/67616507822330",
+      "handle": "p10tktv8001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 Leather TKTV8 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMMM301V",
+      "productGid": "gid://shopify/Product/15402537451770",
+      "variantGid": "gid://shopify/ProductVariant/67616509526266",
+      "handle": "p10qmmm301v",
+      "label": "מנטה",
+      "source": "product_title",
+      "shopifyProductTitle": "פאוץ׳ Mandarina Duck MD20 QMMM3 בצבע מנטה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMMM3B10",
+      "productGid": "gid://shopify/Product/15402538041594",
+      "variantGid": "gid://shopify/ProductVariant/67616510542074",
+      "handle": "p10qmmm3b10",
+      "label": "Cosmic",
+      "source": "product_title",
+      "shopifyProductTitle": "פאוץ׳ Mandarina Duck MD20 QMMM3 בצבע Cosmic",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMMO1B10",
+      "productGid": "gid://shopify/Product/15402538500346",
+      "variantGid": "gid://shopify/ProductVariant/67616511394042",
+      "handle": "p10qmmo1b10",
+      "label": "Cosmic",
+      "source": "product_title",
+      "shopifyProductTitle": "נרתיק Mandarina Duck MD20 QMMO1 בצבע Cosmic",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT2809K",
+      "productGid": "gid://shopify/Product/15402539778298",
+      "variantGid": "gid://shopify/ProductVariant/67616513065210",
+      "handle": "p10qmt2809k",
+      "label": "טאופ",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 QMT28 בצבע טאופ",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT28651",
+      "productGid": "gid://shopify/Product/15402539909370",
+      "variantGid": "gid://shopify/ProductVariant/67616513261818",
+      "handle": "p10qmt28651",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 QMT28 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT3901V",
+      "productGid": "gid://shopify/Product/15402540531962",
+      "variantGid": "gid://shopify/ProductVariant/67616514310394",
+      "handle": "p10qmt3901v",
+      "label": "מנטה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMT39 בצבע מנטה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT3909K",
+      "productGid": "gid://shopify/Product/15402540663034",
+      "variantGid": "gid://shopify/ProductVariant/67616514736378",
+      "handle": "p10qmt3909k",
+      "label": "טאופ",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMT39 בצבע טאופ",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT39465",
+      "productGid": "gid://shopify/Product/15402540859642",
+      "variantGid": "gid://shopify/ProductVariant/67616515129594",
+      "handle": "p10qmt39465",
+      "label": "אפור פלדה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMT39 בצבע אפור פלדה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT39B06",
+      "productGid": "gid://shopify/Product/15402541187322",
+      "variantGid": "gid://shopify/ProductVariant/67616515784954",
+      "handle": "p10qmt39b06",
+      "label": "ענבר",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMT39 בצבע ענבר",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT49651",
+      "productGid": "gid://shopify/Product/15402541515002",
+      "variantGid": "gid://shopify/ProductVariant/67616516309242",
+      "handle": "p10qmt49651",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMT49 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT58465",
+      "productGid": "gid://shopify/Product/15402541875450",
+      "variantGid": "gid://shopify/ProductVariant/67616517030138",
+      "handle": "p10qmt58465",
+      "label": "אפור פלדה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 QMT58 בצבע אפור פלדה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT71B09",
+      "productGid": "gid://shopify/Product/15402543382778",
+      "variantGid": "gid://shopify/ProductVariant/67616586793210",
+      "handle": "p10qmt71b09",
+      "label": "Cocoon",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMT71 בצבע Cocoon",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMTT101V",
+      "productGid": "gid://shopify/Product/15402543415546",
+      "variantGid": "gid://shopify/ProductVariant/67616586825978",
+      "handle": "p10qmtt101v",
+      "label": "מנטה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMTT1 בצבע מנטה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMTT1B03",
+      "productGid": "gid://shopify/Product/15402543481082",
+      "variantGid": "gid://shopify/ProductVariant/67616586989818",
+      "handle": "p10qmtt1b03",
+      "label": "בורדו",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMTT1 בצבע בורדו",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMTT1B06",
+      "productGid": "gid://shopify/Product/15402543546618",
+      "variantGid": "gid://shopify/ProductVariant/67616587088122",
+      "handle": "p10qmtt1b06",
+      "label": "ענבר",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMTT1 בצבע ענבר",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMTT2B03",
+      "productGid": "gid://shopify/Product/15402544005370",
+      "variantGid": "gid://shopify/ProductVariant/67616588005626",
+      "handle": "p10qmtt2b03",
+      "label": "בורדו",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMTT2 בצבע בורדו",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMTV109K",
+      "productGid": "gid://shopify/Product/15402552426746",
+      "variantGid": "gid://shopify/ProductVariant/67616598130938",
+      "handle": "p10qmtv109k",
+      "label": "טאופ",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 QMTV1 בצבע טאופ",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMTV8B03",
+      "productGid": "gid://shopify/Product/15402559439098",
+      "variantGid": "gid://shopify/ProductVariant/67616605929722",
+      "handle": "p10qmtv8b03",
+      "label": "בורדו",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 QMTV8 בצבע בורדו",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMTV8B09",
+      "productGid": "gid://shopify/Product/15402559799546",
+      "variantGid": "gid://shopify/ProductVariant/67616606585082",
+      "handle": "p10qmtv8b09",
+      "label": "Cocoon",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 QMTV8 בצבע Cocoon",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMTZ4B06",
+      "productGid": "gid://shopify/Product/15402562257146",
+      "variantGid": "gid://shopify/ProductVariant/67616611893498",
+      "handle": "p10qmtz4b06",
+      "label": "ענבר",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 QMTZ4 בצבע ענבר",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10TKTZ4001",
+      "productGid": "gid://shopify/Product/15402563109114",
+      "variantGid": "gid://shopify/ProductVariant/67616613531898",
+      "handle": "p10tktz4001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 Leather TKTZ4 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UYT32466",
+      "productGid": "gid://shopify/Product/15402563895546",
+      "variantGid": "gid://shopify/ProductVariant/67616615006458",
+      "handle": "p10uyt32466",
+      "label": "כסוף",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 Lux 2.0 UYT32 בצבע כסוף",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UYTT1466",
+      "productGid": "gid://shopify/Product/15402564714746",
+      "variantGid": "gid://shopify/ProductVariant/67616631488762",
+      "handle": "p10uytt1466",
+      "label": "כסוף",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 Lux 2.0 UYTT1 בצבע כסוף",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UYTT1B04",
+      "productGid": "gid://shopify/Product/15402564845818",
+      "variantGid": "gid://shopify/ProductVariant/67616631783674",
+      "handle": "p10uytt1b04",
+      "label": "Rich Coco",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck MD20 Lux 2.0 UYTT1 בצבע Rich Coco",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UYTV1B04",
+      "productGid": "gid://shopify/Product/15402565009658",
+      "variantGid": "gid://shopify/ProductVariant/67616632307962",
+      "handle": "p10uytv1b04",
+      "label": "Rich Coco",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 Lux 2.0 UYTV1 בצבע Rich Coco",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UYTX5466",
+      "productGid": "gid://shopify/Product/15402565304570",
+      "variantGid": "gid://shopify/ProductVariant/67616633979130",
+      "handle": "p10uytx5466",
+      "label": "כסוף",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 Lux 2.0 UYTX5 בצבע כסוף",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UYTX5B04",
+      "productGid": "gid://shopify/Product/15402565402874",
+      "variantGid": "gid://shopify/ProductVariant/67616634110202",
+      "handle": "p10uytx5b04",
+      "label": "Rich Coco",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 Lux 2.0 UYTX5 בצבע Rich Coco",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZP61A28",
+      "productGid": "gid://shopify/Product/15402565665018",
+      "variantGid": "gid://shopify/ProductVariant/67616634798330",
+      "handle": "p10fzp61a28",
+      "label": "טאופ חם",
+      "source": "product_title",
+      "shopifyProductTitle": "ארנק עור Mandarina Duck Mellow Leather FZP61 בצבע טאופ חם",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZP61B09",
+      "productGid": "gid://shopify/Product/15402565763322",
+      "variantGid": "gid://shopify/ProductVariant/67616635027706",
+      "handle": "p10fzp61b09",
+      "label": "Cocoon",
+      "source": "product_title",
+      "shopifyProductTitle": "ארנק עור Mandarina Duck Mellow Leather FZP61 בצבע Cocoon",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT13001",
+      "productGid": "gid://shopify/Product/15402565894394",
+      "variantGid": "gid://shopify/ProductVariant/67616635158778",
+      "handle": "p10fzt13001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT13 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT46A28",
+      "productGid": "gid://shopify/Product/15402565992698",
+      "variantGid": "gid://shopify/ProductVariant/67616635289850",
+      "handle": "p10fzt46a28",
+      "label": "טאופ חם",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck Mellow Leather FZT46 בצבע טאופ חם",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT69001",
+      "productGid": "gid://shopify/Product/15402566123770",
+      "variantGid": "gid://shopify/ProductVariant/67616635453690",
+      "handle": "p10fzt69001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT69 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT79B01",
+      "productGid": "gid://shopify/Product/15402566287610",
+      "variantGid": "gid://shopify/ProductVariant/67616635814138",
+      "handle": "p10fzt79b01",
+      "label": "אספרסו",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק כתף Mandarina Duck Mellow Leather FZT79 בצבע אספרסו",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT82001",
+      "productGid": "gid://shopify/Product/15402566320378",
+      "variantGid": "gid://shopify/ProductVariant/67616635846906",
+      "handle": "p10fzt82001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT82 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT82B09",
+      "productGid": "gid://shopify/Product/15402566353146",
+      "variantGid": "gid://shopify/ProductVariant/67616635879674",
+      "handle": "p10fzt82b09",
+      "label": "Cocoon",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT82 בצבע Cocoon",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZTA8001",
+      "productGid": "gid://shopify/Product/15402566418682",
+      "variantGid": "gid://shopify/ProductVariant/67616635945210",
+      "handle": "p10fzta8001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZTA8 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXB01645",
+      "productGid": "gid://shopify/Product/15402566811898",
+      "variantGid": "gid://shopify/ProductVariant/67616636600570",
+      "handle": "p10oxb01645",
+      "label": "אדום",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק נסיעות Mandarina Duck Revival 2.0 OXB01 בצבע אדום",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXB01B11",
+      "productGid": "gid://shopify/Product/15402566942970",
+      "variantGid": "gid://shopify/ProductVariant/67616636797178",
+      "handle": "p10oxb01b11",
+      "label": "כחול",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק נסיעות Mandarina Duck Revival 2.0 OXB01 בצבע כחול",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXM02001",
+      "productGid": "gid://shopify/Product/15402566975738",
+      "variantGid": "gid://shopify/ProductVariant/67616636829946",
+      "handle": "p10oxm02001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "נרתיק Mandarina Duck Revival 2.0 OXM02 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXM02B11",
+      "productGid": "gid://shopify/Product/15402567205114",
+      "variantGid": "gid://shopify/ProductVariant/67616637124858",
+      "handle": "p10oxm02b11",
+      "label": "כחול",
+      "source": "product_title",
+      "shopifyProductTitle": "נרתיק Mandarina Duck Revival 2.0 OXM02 בצבע כחול",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXM04645",
+      "productGid": "gid://shopify/Product/15402567368954",
+      "variantGid": "gid://shopify/ProductVariant/67616638337274",
+      "handle": "p10oxm04645",
+      "label": "אדום",
+      "source": "product_title",
+      "shopifyProductTitle": "נרתיק Mandarina Duck Revival 2.0 OXM04 בצבע אדום",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXM04A96",
+      "productGid": "gid://shopify/Product/15402567467258",
+      "variantGid": "gid://shopify/ProductVariant/67616638435578",
+      "handle": "p10oxm04a96",
+      "label": "לילך",
+      "source": "product_title",
+      "shopifyProductTitle": "נרתיק Mandarina Duck Revival 2.0 OXM04 בצבע לילך",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT01001",
+      "productGid": "gid://shopify/Product/15402567631098",
+      "variantGid": "gid://shopify/ProductVariant/67616638599418",
+      "handle": "p10oxt01001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Revival 2.0 OXT01 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT0129O",
+      "productGid": "gid://shopify/Product/15402567762170",
+      "variantGid": "gid://shopify/ProductVariant/67616638730490",
+      "handle": "p10oxt0129o",
+      "label": "ירוק עלווה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Revival 2.0 OXT01 בצבע ירוק עלווה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT01A96",
+      "productGid": "gid://shopify/Product/15402567958778",
+      "variantGid": "gid://shopify/ProductVariant/67616639156474",
+      "handle": "p10oxt01a96",
+      "label": "לילך",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Revival 2.0 OXT01 בצבע לילך",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT01B11",
+      "productGid": "gid://shopify/Product/15402568057082",
+      "variantGid": "gid://shopify/ProductVariant/67616639287546",
+      "handle": "p10oxt01b11",
+      "label": "כחול",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Revival 2.0 OXT01 בצבע כחול",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10TKT34A28",
+      "productGid": "gid://shopify/Product/15402568155386",
+      "variantGid": "gid://shopify/ProductVariant/67616639418618",
+      "handle": "p10tkt34a28",
+      "label": "טאופ חם",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 Leather TKT34 בצבע טאופ חם",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT03645",
+      "productGid": "gid://shopify/Product/15402568351994",
+      "variantGid": "gid://shopify/ProductVariant/67616639615226",
+      "handle": "p10oxt03645",
+      "label": "אדום",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק כתף Mandarina Duck Revival 2.0 OXT03 בצבע אדום",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT04001",
+      "productGid": "gid://shopify/Product/15402568548602",
+      "variantGid": "gid://shopify/ProductVariant/67616640073978",
+      "handle": "p10oxt04001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק כתף Mandarina Duck Revival 2.0 OXT04 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT04B11",
+      "productGid": "gid://shopify/Product/15402568581370",
+      "variantGid": "gid://shopify/ProductVariant/67616640106746",
+      "handle": "p10oxt04b11",
+      "label": "כחול",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק כתף Mandarina Duck Revival 2.0 OXT04 בצבע כחול",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT05645",
+      "productGid": "gid://shopify/Product/15402568614138",
+      "variantGid": "gid://shopify/ProductVariant/67616640139514",
+      "handle": "p10oxt05645",
+      "label": "אדום",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק יד Mandarina Duck Revival 2.0 OXT05 בצבע אדום",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT08001",
+      "productGid": "gid://shopify/Product/15402568810746",
+      "variantGid": "gid://shopify/ProductVariant/67616640532730",
+      "handle": "p10oxt08001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck Revival 2.0 OXT08 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT0829O",
+      "productGid": "gid://shopify/Product/15402568843514",
+      "variantGid": "gid://shopify/ProductVariant/67616640565498",
+      "handle": "p10oxt0829o",
+      "label": "ירוק עלווה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck Revival 2.0 OXT08 בצבע ירוק עלווה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OXT08A96",
+      "productGid": "gid://shopify/Product/15402568941818",
+      "variantGid": "gid://shopify/ProductVariant/67616640762106",
+      "handle": "p10oxt08a96",
+      "label": "לילך",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck Revival 2.0 OXT08 בצבע לילך",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OTN01651",
+      "productGid": "gid://shopify/Product/15402569040122",
+      "variantGid": "gid://shopify/ProductVariant/67616640860410",
+      "handle": "p10otn01651",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק רחצה Mandarina Duck Zephyr OTN01 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OTN02651",
+      "productGid": "gid://shopify/Product/15402569138426",
+      "variantGid": "gid://shopify/ProductVariant/67616641024250",
+      "handle": "p10otn02651",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק רחצה Mandarina Duck Zephyr OTN02 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OTV0508Q",
+      "productGid": "gid://shopify/Product/15402569629946",
+      "variantGid": "gid://shopify/ProductVariant/67616641908986",
+      "handle": "p10otv0508q",
+      "label": "כחול כהה",
+      "source": "product_title",
+      "shopifyProductTitle": "מזוודה גדולה במיוחד מתרחבת Mandarina Duck Zephyr OTV05 בצבע כחול כהה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10OTV05651",
+      "productGid": "gid://shopify/Product/15402569695482",
+      "variantGid": "gid://shopify/ProductVariant/67616641974522",
+      "handle": "p10otv05651",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "מזוודה גדולה במיוחד מתרחבת Mandarina Duck Zephyr OTV05 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UKT01A28",
+      "productGid": "gid://shopify/Product/15402569826554",
+      "variantGid": "gid://shopify/ProductVariant/67616643121402",
+      "handle": "p10ukt01a28",
+      "label": "טאופ חם",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Daisy UKT01 בצבע טאופ חם",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UKT03001",
+      "productGid": "gid://shopify/Product/15402569892090",
+      "variantGid": "gid://shopify/ProductVariant/67616643219706",
+      "handle": "p10ukt03001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Daisy UKT03 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UKT07001",
+      "productGid": "gid://shopify/Product/15402570055930",
+      "variantGid": "gid://shopify/ProductVariant/67616643481850",
+      "handle": "p10ukt07001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Daisy UKT07 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10UKT07A28",
+      "productGid": "gid://shopify/Product/15402570121466",
+      "variantGid": "gid://shopify/ProductVariant/67616643580154",
+      "handle": "p10ukt07a28",
+      "label": "טאופ חם",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Daisy UKT07 בצבע טאופ חם",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10QMT58651",
+      "productGid": "gid://shopify/Product/15404125487354",
+      "variantGid": "gid://shopify/ProductVariant/67621581717754",
+      "handle": "p10qmt58651",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck MD20 QMT58 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT73B07",
+      "productGid": "gid://shopify/Product/15404125749498",
+      "variantGid": "gid://shopify/ProductVariant/67621582602490",
+      "handle": "p10fzt73b07",
+      "label": "קפוצ׳ינו",
+      "source": "product_title",
+      "shopifyProductTitle": "פאוץ׳ Mandarina Duck Mellow Leather FZT73 בצבע קפוצ׳ינו",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT03001",
+      "productGid": "gid://shopify/Product/15407006449914",
+      "variantGid": "gid://shopify/ProductVariant/67636163641594",
+      "handle": "p10fzt03001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT03 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT0308Q",
+      "productGid": "gid://shopify/Product/15407012413690",
+      "variantGid": "gid://shopify/ProductVariant/67636209713402",
+      "handle": "p10fzt0308q",
+      "label": "כחול כהה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT03 בצבע כחול כהה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT03A28",
+      "productGid": "gid://shopify/Product/15407012446458",
+      "variantGid": "gid://shopify/ProductVariant/67636209746170",
+      "handle": "p10fzt03a28",
+      "label": "טאופ חם",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT03 בצבע טאופ חם",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT10001",
+      "productGid": "gid://shopify/Product/15407012544762",
+      "variantGid": "gid://shopify/ProductVariant/67636209844474",
+      "handle": "p10fzt10001",
+      "label": "שחור",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT10 בצבע שחור",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT1008Q",
+      "productGid": "gid://shopify/Product/15407012610298",
+      "variantGid": "gid://shopify/ProductVariant/67636209910010",
+      "handle": "p10fzt1008q",
+      "label": "כחול כהה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT10 בצבע כחול כהה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT1327O",
+      "productGid": "gid://shopify/Product/15407012741370",
+      "variantGid": "gid://shopify/ProductVariant/67636210335994",
+      "handle": "p10fzt1327o",
+      "label": "לבן",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT13 בצבע לבן",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT4608Q",
+      "productGid": "gid://shopify/Product/15407012839674",
+      "variantGid": "gid://shopify/ProductVariant/67636210434298",
+      "handle": "p10fzt4608q",
+      "label": "כחול כהה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק גב Mandarina Duck Mellow Leather FZT46 בצבע כחול כהה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT6908Q",
+      "productGid": "gid://shopify/Product/15407012872442",
+      "variantGid": "gid://shopify/ProductVariant/67636210467066",
+      "handle": "p10fzt6908q",
+      "label": "כחול כהה",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק צד Mandarina Duck Mellow Leather FZT69 בצבע כחול כהה",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT72A28",
+      "productGid": "gid://shopify/Product/15407012937978",
+      "variantGid": "gid://shopify/ProductVariant/67636210532602",
+      "handle": "p10fzt72a28",
+      "label": "טאופ חם",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק כתף וגב Mandarina Duck Mellow Leather FZT72 בצבע טאופ חם",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT79A82",
+      "productGid": "gid://shopify/Product/15407013036282",
+      "variantGid": "gid://shopify/ProductVariant/67636210630906",
+      "handle": "p10fzt79a82",
+      "label": "חום פקאן",
+      "source": "product_title",
+      "shopifyProductTitle": "תיק כתף Mandarina Duck Mellow Leather FZT79 בצבע חום פקאן",
+      "shopifyVariantTitle": "Default Title"
+    },
+    {
+      "sku": "P10FZT73001",
+      "productGid": "gid://shopify/Product/7524873044218",
+      "variantGid": "gid://shopify/ProductVariant/42361904398586",
+      "handle": "תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק",
+      "label": "שחור",
+      "source": "selected_color_option",
+      "shopifyProductTitle": "פאוץ׳ עור Mandarina Duck Mellow Leather FZT73",
+      "shopifyVariantTitle": "שחור"
+    },
+    {
+      "sku": "P10FZT7308Q",
+      "productGid": "gid://shopify/Product/7524873044218",
+      "variantGid": "gid://shopify/ProductVariant/42449044799738",
+      "handle": "תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק",
+      "label": "כחול",
+      "source": "selected_color_option",
+      "shopifyProductTitle": "פאוץ׳ עור Mandarina Duck Mellow Leather FZT73",
+      "shopifyVariantTitle": "כחול"
+    }
+  ]
+}

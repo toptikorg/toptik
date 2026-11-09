@@ -5,7 +5,7 @@ import { A11y, Keyboard, Virtual } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
 import { CarouselItem } from "@/lib/carousel/types";
-import { buildModelSiblingSwatches, resolveItemSwatches, type ResolvedSwatch } from "@/lib/carousel/colors";
+import { buildModelSiblingSwatches, colorSwatchStyle, resolveItemSwatches, type ResolvedSwatch } from "@/lib/carousel/colors";
 import { trimmedProductSrc, CARD_IMG_WIDTH, MODAL_IMG_WIDTH } from "@/lib/carousel/trim-src";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
 import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
@@ -213,8 +213,8 @@ export function CatalogCard({
                     <button
                       key={swatch.key}
                       type="button"
-                      className={`catalog-card-color-dot${swatch.isCurrent ? " is-current" : ""}${actionable ? " is-actionable" : ""}`}
-                      style={swatch.hex ? { background: swatch.hex } : undefined}
+                      className={`catalog-card-color-dot${!swatch.hex ? " is-color-name" : ""}${swatch.isCurrent ? " is-current" : ""}${actionable ? " is-actionable" : ""}`}
+                      style={colorSwatchStyle(swatch)}
                       title={swatch.name}
                       aria-label={swatch.name}
                       aria-current={swatch.isCurrent || undefined}
@@ -228,7 +228,7 @@ export function CatalogCard({
                         if (!swatch.isCurrent && swatch.itemId) onNavigate(swatch.itemId, e.currentTarget);
                       }}
                       onKeyDown={(e) => e.stopPropagation()}
-                    />
+                    >{!swatch.hex ? swatch.name : null}</button>
                   );
                 })}
               </div>

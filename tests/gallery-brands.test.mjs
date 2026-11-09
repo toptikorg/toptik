@@ -8,7 +8,7 @@ const read = path => readFile(new URL(path, root), "utf8");
 const load = async path => import(`data:text/javascript;base64,${Buffer.from(
   stripTypeScriptTypes(await read(path)),
 ).toString("base64")}`);
-const { brandForItem, availableBrands, publicCollectionItems, defaultBrand, parseBrandParam, filterByBrand, urlWithBrand } =
+const { brandForItem, availableBrands, publicCollectionItems, defaultBrand, parseBrandParam, filterByBrand, urlWithBrand, VERIFIED_STORE_BRAND_BINDINGS_20261109 } =
   await load("src/lib/carousel/brands.ts");
 const { filterByCategory } = await load("src/lib/carousel/categories.ts");
 const copy = JSON.parse(await read("src/lib/carousel/reviewed-copy.json"));
@@ -51,6 +51,43 @@ test("unknown and conflicting identities never silently become Mandarina product
   conflict.techSpecs.specs[0].items.push({ label: "Brand", value: "Bric's" });
   assert.equal(brandForItem(conflict), null);
   assert.equal(availableBrands([{ ...explicit("Samsonite"), isActive: false }]).length, 0);
+});
+
+test("previously unidentified store products gain brand identity only from exact verified published bindings", () => {
+  const identity = { ...items[0], catalogNumber: "P10OSN0105J", techSpecs: null,
+    shopifyLink: { handle: "p10osn0105j", variantId: "67616503202042", isPublished: true } };
+  assert.equal(brandForItem(identity)?.label, "Mandarina Duck");
+  assert.deepEqual(publicCollectionItems([identity]), [identity]);
+  for (const link of [null, { ...identity.shopifyLink, isPublished: false },
+    { ...identity.shopifyLink, variantId: "999999999" },
+    { ...identity.shopifyLink, handle: "different" }]) {
+    assert.equal(brandForItem({ ...identity, shopifyLink: link }), null);
+    assert.equal(publicCollectionItems([{ ...identity, shopifyLink: link }]).length, 0);
+  }
+  const ambiguous = { ...identity, techSpecs: { specs: [{ items: [
+    {label:"מותג",value:"Bric's"}, {label:"brand",value:"Mandarina Duck"},
+  ] }] } };
+  assert.equal(brandForItem(ambiguous), null, "conflicting explicit brands do not fall back");
+  assert.equal(brandForItem({ ...identity, catalogNumber: identity.catalogNumber + "OTHER" }), null);
+});
+
+test("all 79 restored brand identities match their captured exact Shopify bindings", async () => {
+  const evidence = JSON.parse(await read("docs/verified-store-brand-bindings-20261109.json"));
+  const colors = JSON.parse(await read("docs/verified-store-color-names-20261109.json"));
+  assert.equal(evidence.items.length, 79);
+  assert.equal(new Set(evidence.items.map(i => i.sku)).size, 79);
+  assert.deepEqual(Object.keys(VERIFIED_STORE_BRAND_BINDINGS_20261109).sort(), evidence.items.map(i => i.sku).sort());
+  for (const { sku, handle, variantGid, brand } of evidence.items) {
+    const variantId = variantGid.split('/').at(-1);
+    const color = colors.items.find(x => x.sku === sku);
+    assert.ok(color && color.variantGid === variantGid && color.handle === handle && color.label);
+    assert.deepEqual(VERIFIED_STORE_BRAND_BINDINGS_20261109[sku], { handle, variantId, name: color.label });
+    const item = { ...items[0], catalogNumber: sku, techSpecs: null,
+      shopifyLink: { handle, variantId, isPublished: true } };
+    assert.equal(brandForItem(item)?.label, brand, sku);
+    assert.equal(publicCollectionItems([item]).length, 1, sku);
+    assert.equal(publicCollectionItems([{ ...item, shopifyLink: { ...item.shopifyLink, variantId: '1' } }]).length, 0, sku);
+  }
 });
 
 test("published store products outside the curated four brands are visible without exposing unpublished or unidentified records", () => {
