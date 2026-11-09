@@ -127,6 +127,8 @@ test("rich Shopify readback accepts equivalent serialization and baselines retur
 
 for (const scenario of [
   { rpc: "claim_shopify_gallery_outbox", table: "shopify_gallery_content_outbox", code: "SYNC_BINDING_MISSING_OR_CONFLICTED", status: "review" },
+  { rpc: "claim_shopify_gallery_outbox", table: "shopify_gallery_content_outbox", code: "SYNC_FZT73_BASELINE_REQUIRED", status: "review" },
+  { rpc: "claim_shopify_webhook_events", table: "shopify_webhook_events", code: "SYNC_FZT73_BASELINE_REQUIRED", status: "review" },
   { rpc: "claim_shopify_gallery_outbox", table: "shopify_gallery_content_outbox", code: "SHOPIFY_API_HTTP_429", status: "failed" },
   { rpc: "claim_shopify_webhook_events", table: "shopify_webhook_events", code: "SYNC_CANARY_DELETE_DISABLED", status: "review" },
   { rpc: "claim_shopify_gallery_outbox", table: "shopify_gallery_content_outbox", code: "SYNC_RECONCILIATION_BUSY", status: "pending" },

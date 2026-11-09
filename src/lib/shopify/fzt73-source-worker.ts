@@ -49,10 +49,13 @@ const same = (row: Record<string, unknown> | undefined, patch: Record<string, un
 
 /** The normal webhook/recovery worker holds the product lease. Source-owned,
  * reviewed four-color intake only; no Shopify writes, binding changes or approvals. */
-export async function reconcileFzt73Variants(db: SupabaseClient, deadline: number): Promise<void> {
+export async function reconcileFzt73Variants(db: SupabaseClient, deadline: number, inspectOnly = false): Promise<void> {
   if (configuredShopifyDomain() !== "toptikcoil.myshopify.com") throw new Error("SYNC_ONBOARDING_SHOP_MISMATCH");
   const source = await snapshot(deadline);
   const published = !!source && source.status === "ACTIVE" && source.publishedOnPublication;
+  // Inspection is only entered after a published read; a withdrawal between
+  // those reads must not be acknowledged against a stale publication result.
+  if (inspectOnly && !published) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
   const ids = FZT73_VARIANTS.map(v => v.itemId);
   const [items, angles, settings] = await Promise.all([
     db.from("carousel_items").select("*").in("id", ids),
@@ -107,6 +110,31 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
   }
   const changed = projected.some(p => !same(items.data.find(r => r.id === p.id),p)) ||
     projectedAngles.length !== angles.data.length || projectedAngles.some(p => !same(angles.data.find(r => r.id === p.id),p));
+  // In inspection mode no source projection or outbox settlement is written.
+  // Exact equality can safely acknowledge a no-op. Divergence requires a
+  // per-variant baseline before any field or media is overwritten.
+  if (inspectOnly) {
+    if (JSON.stringify(await snapshot(deadline)) !== JSON.stringify(source)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
+    if (changed) throw new Error("SYNC_FZT73_BASELINE_REQUIRED");
+    // A Gallery edit may land while the second Shopify read is in flight.
+    // Re-read the projected fields, image order and editor revisions before
+    // acknowledging equality; editor saves also enqueue independent work.
+    const [verifiedItems, verifiedAngles] = await Promise.all([
+      db.from("carousel_items").select("*").in("id",ids),
+      db.from("carousel_item_angles").select("*").in("item_id",ids),
+    ]);
+    if (verifiedItems.error || verifiedAngles.error || !verifiedItems.data || !verifiedAngles.data ||
+        verifiedItems.data.length !== items.data.length || verifiedAngles.data.length !== projectedAngles.length ||
+        projected.some(p => {
+          const before = items.data.find(r => r.id === p.id);
+          const current = verifiedItems.data.find(r => r.id === p.id);
+          return !before || !current || current.editor_revision !== before.editor_revision ||
+            current.copy_updated_at !== before.copy_updated_at || !same(current,p);
+        }) || projectedAngles.some(p => !same(verifiedAngles.data.find(r => r.id === p.id),p))) {
+      throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
+    }
+    return;
+  }
   if (changed && published) {
     const media = [...mediaBySku.values()].flat();
     for (let i=0;i<media.length;i+=3) await Promise.all(media.slice(i,i+3).map(m => verifyOnboardingImage(m,deadline)));

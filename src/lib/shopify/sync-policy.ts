@@ -202,6 +202,7 @@ const REVIEW_CODES = new Set([
   "SYNC_DESCRIPTION_HTML_UNSAFE",
   "SYNC_DESCRIPTION_PAIR_MISMATCH",
   "SYNC_DESCRIPTION_RICH_EDITOR_REQUIRED",
+  "SYNC_FZT73_BASELINE_REQUIRED",
 ]);
 
 export function isSyncReviewCode(code: string): boolean {
