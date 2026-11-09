@@ -8,11 +8,13 @@ lease, copy/editor CAS, exact media assignments and an atomic color batch.
 ## Ownership and truthful queue results
 
 Ordinary approved one-product/one-color bindings retain the existing bidirectional
-copy merge. FZT73 and QMMM1 are shared Shopify products with per-color Gallery
-projections. Their shared copy/media are Shopify-owned; editing those fields in
-the Gallery is not a supported outbound write. The editor marks copy read-only
-and links each family to its own Shopify product. No price, inventory, product
-status or new catalog admission is changed by this patch.
+copy merge. FZT73 and QMMM1/MD20 are shared Shopify products with per-color Gallery
+projections. Their shared copy/media are Shopify-owned. At the time of this release a
+Gallery edit was not a supported outbound write; the later change described in
+`docs/shopify-owned-gallery-edit.md` adds a Shopify-first edit path for title,
+description, SEO and image alt text (image add/remove/reorder remain Shopify-only).
+The outbox worker still never delivers queue rows for these products.
+No price, inventory, product status or new catalog admission is changed by this patch.
 
 Source-owned outbox edits go to review, never `synced` merely because an inbound
 projection was rebuilt. A normal inbound projection needs an identical initial

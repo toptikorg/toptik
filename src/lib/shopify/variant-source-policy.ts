@@ -33,7 +33,7 @@ export function exactVariantSeo(copy: { title: string; seoTitle?: string | null;
   }
   return { seoTitle, seoDescription };
 }
-export const SHOPIFY_OWNED_MESSAGE = "צבעי המוצר הזה מתעדכנים אוטומטית מהחנות. יש לערוך את המוצר ב-Shopify ואז לרענן את הגלריה.";
+export const SHOPIFY_OWNED_MESSAGE = "שינוי בטקסט או בתיאורי התמונות של צבע ממוצר מהחנות נשמר בכפתור \"שמור בחנות\" שבכרטיס הצבע. תמונות (הוספה, הסרה, סדר) ומספר קטלוגי נערכים ב-Shopify, והגלריה מתעדכנת ממנו.";
 export function isShopifyOwnedVariant(itemId: string): boolean {
   return SHOPIFY_OWNED_VARIANTS.some(variant => variant.itemId === itemId);
 }

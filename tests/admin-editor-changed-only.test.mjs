@@ -53,12 +53,16 @@ const { createRoute } = await moduleFrom(`export function createRoute(deps) {
 }`);
 const admin = read("src/app/admin/page.tsx");
 const persistSource = admin.slice(admin.indexOf("async function persistPayload"), admin.indexOf("const loadData = useCallback"));
+// persistPayload refuses a pending edit on a Shopify-owned color: those are delivered by their own button.
+const ownedClientSource = withoutImports(read("src/lib/shopify/owned-edit-client.ts"));
 const { makePersist } = await moduleFrom(`export function makePersist(deps) {
   const { fetch, savedSnapshotRef, planChangedOnlySave } = deps;
   const authReady = true, token = "test-token";
   const isUnavailableCarouselPayload = () => false;
   const CAROUSEL_UNAVAILABLE_MESSAGE = "unavailable";
   const pendingUploadsRef = { current: 0 }, catalogGenerationRef = { current: 0 };
+  ${variantPolicySource}
+  ${ownedClientSource}
   ${persistSource}
   return persistPayload;
 }`);
@@ -505,4 +509,174 @@ test("(viii) several selected products in one save write exactly those rows; a f
   const next = structuredClone(fresh); next.items[3].title = "T3 edited twice";
   await f.persist(next);
   assert.deepEqual(f.calls.puts[1].items.map(i => i.id), [ids[0]]);
+});
+
+// Shopify-owned colors (FZT73, QMMM1) are delivered to the store by their own button. The catalog-wide
+// save must neither drop nor half-save a pending edit there, and must keep saving everything else.
+const ownedPolicy = await moduleFrom(read("src/lib/shopify/variant-source-policy.ts"));
+function ownedCatalog() {
+  const item = (id, order, extra = {}) => ({
+    id, title: `Title ${order}`, description: "d", descriptionHtml: "<p>d</p>", seoTitle: null, seoDescription: null, copyUpdatedAt: stamp,
+    editorRevision: 1, catalogNumber: `SKU-${order}`, coverImagePath: `https://example.com/${order}-1.jpg`, coverImageAlt: "alt", displayOrder: order,
+    isActive: true, angles: [{ id: angleId(order, 1), itemId: id, angleKey: "1", angleOrder: 1, imagePath: `https://example.com/${order}-1.jpg`, imageAlt: "alt" }], ...extra,
+  });
+  const snapshot = { settings: { editorRevision: 1, autoplayMs: 4000, transitionMode: "curtain-fade" },
+    items: [item(ownedPolicy.FZT73_VARIANTS[0].itemId, 1), item(uuid(1), 2)] };
+  const calls = [];
+  const fetch = async (_url, init = {}) => { calls.push(init.method ?? "GET"); return { ok: true, status: 200, json: async () => structuredClone(snapshot) }; };
+  const persist = makePersist({ fetch, savedSnapshotRef: { current: structuredClone(snapshot) }, planChangedOnlySave });
+  return { snapshot, calls, persist, edit: change => { const next = structuredClone(snapshot); change(next); return next; } };
+}
+
+test("a pending text, SEO or alt edit on an owned color is refused by the catalog-wide save and points to its own button", async () => {
+  for (const change of [
+    next => { next.items[0].title = "changed"; },
+    next => { next.items[0].descriptionHtml = "<p>changed</p>"; next.items[0].description = "changed"; },
+    next => { next.items[0].seoTitle = "changed"; },
+    next => { next.items[0].coverImageAlt = "changed"; },
+    next => { next.items[0].angles[0].imageAlt = "changed"; },
+  ]) {
+    const f = ownedCatalog();
+    await assert.rejects(f.persist(f.edit(change)), /בכפתור "שמור בחנות"/);
+    assert.deepEqual(f.calls, [], "nothing is sent when an owned color has an unsent edit");
+  }
+});
+
+test("an image or visibility edit on an owned color is refused with the reason, and nothing is sent", async () => {
+  for (const [change, reason] of [
+    [next => { next.items[0].angles = []; }, /תמונות עדיין נעשים בחנות/],
+    [next => { next.items[0].coverImagePath = "https://example.com/other.jpg"; }, /תמונות עדיין נעשים בחנות/],
+    [next => { next.items[0].isActive = false; }, /הסתרה והצגה של צבע/],
+    [next => { next.items[0].catalogNumber = "OTHER"; }, /מספר קטלוגי/],
+  ]) {
+    const f = ownedCatalog();
+    await assert.rejects(f.persist(f.edit(change)), reason);
+    assert.deepEqual(f.calls, []);
+  }
+});
+test("everything else still saves: display order of an owned color and any edit to an ordinary product", async () => {
+  const order = ownedCatalog();
+  await order.persist(order.edit(next => { next.items[0].displayOrder = 7; }));
+  assert.deepEqual(order.calls, ["PUT", "GET"]);
+  const ordinary = ownedCatalog();
+  await ordinary.persist(ordinary.edit(next => { next.items[1].title = "ordinary edit"; }));
+  assert.deepEqual(ordinary.calls, ["PUT", "GET"]);
+});
+
+// Run the real asynchronous refresh handler with a delayed local GET, so input typed after submit
+// is present before the server reply arrives. This is not a duplicate of the merge implementation.
+const { makeOwnedMerge } = await moduleFrom(`export function makeOwnedMerge(deps) {
+  const { canonicalJson } = deps;
+  ${withoutImports(read("src/lib/carousel/owned-editor-refresh.ts"))}
+  return mergeOwnedFamilyRefresh;
+}`);
+const mergeOwnedFamilyRefresh = makeOwnedMerge(planner);
+const { makeOwnedChanges } = await moduleFrom(`export function makeOwnedChanges() {
+  ${ownedClientSource}
+  return ownedCardChanges;
+}`);
+const ownedCardChanges = makeOwnedChanges();
+const ownedRefreshSource = admin.slice(admin.indexOf("async function refreshOwnedFamily"), admin.indexOf("async function saveOwnedCard"));
+const { makeOwnedRefresh } = await moduleFrom(`export function makeOwnedRefresh(deps) {
+  const { fetch, savedSnapshotRef, payloadRef, catalogGenerationRef, setPayload, mergeOwnedFamilyRefresh, ownedCardChanges,
+    shopifyOwnedProductId, SHOPIFY_OWNED_VARIANTS } = deps;
+  const token = "fixture-token", CAROUSEL_UNAVAILABLE_MESSAGE = "unavailable";
+  const isUnavailableCarouselPayload = () => false;
+  ${ownedRefreshSource}
+  return refreshOwnedFamily;
+}`);
+
+function delayedOwnedRefresh() {
+  const snapshot = structuredClone(ownedCatalog().snapshot);
+  const sibling = structuredClone(snapshot.items[0]);
+  sibling.id = ownedPolicy.FZT73_VARIANTS[1].itemId;
+  sibling.title = "Sibling"; sibling.displayOrder = 3;
+  snapshot.items.push(sibling);
+  const savedSnapshotRef = { current: structuredClone(snapshot) };
+  const payloadRef = { current: structuredClone(snapshot) }, catalogGenerationRef = { current: 7 };
+  let resolve;
+  const pending = new Promise(done => { resolve = done; });
+  const fresh = structuredClone(snapshot);
+  const refresh = makeOwnedRefresh({ ...ownedPolicy, mergeOwnedFamilyRefresh, ownedCardChanges, savedSnapshotRef, payloadRef, catalogGenerationRef,
+    fetch: async () => { await pending; return { ok: true, json: async () => structuredClone(fresh) }; },
+    setPayload: next => { payloadRef.current = typeof next === "function" ? next(payloadRef.current) : next; },
+  });
+  return { snapshot, fresh, savedSnapshotRef, payloadRef, catalogGenerationRef, resolve, refresh };
+}
+
+test("owned refresh preserves input typed after submit and a dirty sibling, with a fresh target baseline", async () => {
+  const f = delayedOwnedRefresh(), target = f.payloadRef.current.items[0];
+  target.title = "Submitted title";
+  const submitted = structuredClone(target);
+  f.fresh.items[0].title = "Submitted title";
+  f.fresh.items[0].descriptionHtml = "<p>Server normalized</p>";
+  f.fresh.items[0].description = "Server normalized";
+  f.fresh.items[0].copyUpdatedAt = "2026-11-09T12:00:00.000Z";
+  f.fresh.items[0].editorRevision = 8;
+  f.fresh.items[2].title = "New shared title on sibling";
+  const request = f.refresh(target.id, submitted, 7);
+  target.title = "Typed while waiting";
+  f.payloadRef.current.items[2].title = "Unsent sibling edit";
+  f.resolve(); assert.equal(await request, true, "late edits remain visibly unsent");
+  assert.equal(f.payloadRef.current.items[0].title, "Typed while waiting");
+  assert.equal(f.payloadRef.current.items[0].descriptionHtml, "<p>Server normalized</p>", "unchanged fields follow the server");
+  assert.equal(f.payloadRef.current.items[0].editorRevision, 8);
+  assert.equal(f.payloadRef.current.items[0].copyUpdatedAt, f.fresh.items[0].copyUpdatedAt);
+  assert.deepEqual(f.savedSnapshotRef.current.items[0], f.fresh.items[0]);
+  assert.equal(f.payloadRef.current.items[2].title, "Unsent sibling edit");
+  assert.deepEqual(f.savedSnapshotRef.current.items[2], f.snapshot.items[2], "dirty sibling retains its old CAS baseline");
+  const calls = [];
+  const persist = makePersist({ fetch: async () => { calls.push("unexpected"); }, savedSnapshotRef: f.savedSnapshotRef, planChangedOnlySave });
+  await assert.rejects(persist(f.payloadRef.current), /בכפתור "שמור בחנות"/);
+  assert.deepEqual(calls, []);
+});
+
+test("owned partial refresh preserves intended and later edits but adopts fresh version metadata", async () => {
+  const f = delayedOwnedRefresh(), target = f.payloadRef.current.items[0];
+  target.title = "Still unsent title";
+  const submitted = structuredClone(target);
+  f.fresh.items[0].coverImageAlt = "Delivered alt";
+  f.fresh.items[0].copyUpdatedAt = "2026-11-09T12:10:00.000Z";
+  f.fresh.items[0].editorRevision = 9;
+  const request = f.refresh(target.id, submitted, 7, true);
+  target.description = "Late description"; target.descriptionHtml = "<p>Late description</p>";
+  f.resolve(); await request;
+  assert.equal(f.payloadRef.current.items[0].title, "Still unsent title");
+  assert.equal(f.payloadRef.current.items[0].description, "Late description");
+  assert.equal(f.payloadRef.current.items[0].coverImageAlt, "Delivered alt");
+  assert.equal(f.payloadRef.current.items[0].editorRevision, 9);
+  assert.deepEqual(f.savedSnapshotRef.current.items[0], f.fresh.items[0]);
+});
+
+test("owned refresh with no later edit is clean for save all, including after a partial readback", async () => {
+  for (const partial of [false, true]) {
+    const f = delayedOwnedRefresh(), submitted = structuredClone(f.payloadRef.current.items[0]);
+    f.fresh.items[0].editorRevision = 2;
+    f.fresh.items[0].copyUpdatedAt = "2026-11-09T13:00:00.000Z";
+    const request = f.refresh(submitted.id, submitted, 7, partial);
+    f.resolve(); await request;
+    assert.equal(planChangedOnlySave(f.savedSnapshotRef.current, f.payloadRef.current).hasChanges, false);
+  }
+});
+
+test("late image-alt edits keep the current server angle ID after reconciliation", async () => {
+  const f = delayedOwnedRefresh(), target = f.payloadRef.current.items[0], submitted = structuredClone(target);
+  const nextId = angleId(50, 1);
+  f.fresh.items[0].angles[0].id = nextId;
+  const request = f.refresh(target.id, submitted, 7);
+  target.angles[0].imageAlt = "Late image text";
+  f.resolve(); await request;
+  assert.equal(f.payloadRef.current.items[0].angles[0].imageAlt, "Late image text");
+  assert.equal(f.payloadRef.current.items[0].angles[0].id, nextId);
+  assert.equal(f.savedSnapshotRef.current.items[0].angles[0].imageAlt, "alt");
+});
+
+test("an owned reply cannot replace a catalog that was reloaded while its readback was pending", async () => {
+  const f = delayedOwnedRefresh(), submitted = structuredClone(f.payloadRef.current.items[0]);
+  const request = f.refresh(submitted.id, submitted, 7);
+  f.catalogGenerationRef.current++;
+  f.fresh.items[0].title = "Old response";
+  f.resolve(); await assert.rejects(request, /הנתונים נטענו מחדש/);
+  assert.deepEqual(f.savedSnapshotRef.current, f.snapshot);
+  assert.deepEqual(f.payloadRef.current, f.snapshot);
 });
