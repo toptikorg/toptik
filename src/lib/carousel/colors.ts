@@ -42,6 +42,13 @@ export const BRICS_COLOR_CODES: Record<string, { he: string; hex: string }> = {
   "254": { he: "ורוד", hex: "#d98ba6" },
 };
 
+// Exact Roadster SKU colors verified against the current store and Bric's
+// Porsche Carry-On. Code 024 belongs to a different color in Mandarina's map.
+const REVIEWED_ITEM_SWATCHES: Record<string, { name: string; hex: string }> = {
+  "ORI05500.909": { name: "שחור מבריק", hex: "#1a1a1a" },
+  "ORI05500.024": { name: "צהוב רייסינג", hex: "#f0c040" },
+};
+
 // Resolve a Hebrew name + swatch hex from the colour code (preferred, global)
 // or the colour word parsed from the title (fallback).
 export function resolveColorMeta(
@@ -257,7 +264,8 @@ export function buildModelSiblingSwatches(items: CarouselItem[]): Map<string, Re
       const code = (colorCodeFromCatalog(member.catalogNumber) ?? member.id).toUpperCase();
       if (seen.has(code)) continue;
       seen.add(code);
-      const { name, hex } = resolveColorMeta(
+      const reviewed = member.catalogNumber ? REVIEWED_ITEM_SWATCHES[member.catalogNumber.trim().toUpperCase()] : undefined;
+      const { name, hex } = reviewed ?? resolveColorMeta(
         member.color?.trim() || extractColorWord(member.title),
         colorCodeFromCatalog(member.catalogNumber),
       );

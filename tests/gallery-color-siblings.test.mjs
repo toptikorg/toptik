@@ -89,3 +89,15 @@ test('compact and separated colors group together, deduplicate colors and preser
   assert.equal(groups.get(members[2].id).find(s => s.isCurrent).itemId, members[1].id);
   assert.equal(groups.has(members[3].id), false);
 });
+
+test('Porsche Roadster uses verified black and racing-yellow colors, not Mandarina color 024', () => {
+  const members = [item('ORI05500.909', { title: 'טרולי Porsche Design Roadster בגודל 55 ס״מ בשחור מבריק' }),
+    item('ORI05500.024', { title: 'טרולי Porsche Design Roadster בגודל 55 ס״מ בצהוב רייסינג' })];
+  const swatches = buildModelSiblingSwatches(members).get(members[0].id);
+  assert.deepEqual(swatches.map(s => ({name:s.name,hex:s.hex,itemId:s.itemId})), [
+    {name:'שחור מבריק',hex:'#1a1a1a',itemId:'ORI05500.909'},
+    {name:'צהוב רייסינג',hex:'#f0c040',itemId:'ORI05500.024'},
+  ]);
+  const mandarina = [item('P10FZT73024'),item('P10FZT73001')];
+  assert.equal(buildModelSiblingSwatches(mandarina).get(mandarina[0].id)[0].name,'פיריט');
+});
