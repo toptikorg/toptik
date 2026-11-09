@@ -38,6 +38,13 @@ export function isShopifyOwnedVariant(itemId: string): boolean {
   return SHOPIFY_OWNED_VARIANTS.some(variant => variant.itemId === itemId);
 }
 
+/** The shared copy belongs to the parent product, never another color family. */
+export function shopifyOwnedProductId(itemId: string): string | null {
+  if (MD20_VARIANTS.some(variant => variant.itemId === itemId)) return MD20_PRODUCT_GID.split("/").at(-1)!;
+  if (FZT73_VARIANTS.some(variant => variant.itemId === itemId)) return FZT73_PRODUCT_GID.split("/").at(-1)!;
+  return null;
+}
+
 type Media = { id: string; alt: string | null; status: string; mediaContentType: string;
   image?: { url: string; altText: string | null; width: number; height: number } | null };
 export function exactVariantMedia(media: Media[], sku: string): Media[] {

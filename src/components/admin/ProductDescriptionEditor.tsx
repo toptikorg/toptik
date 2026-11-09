@@ -6,6 +6,7 @@ import { assertSafeDescriptionHtml, descriptionTextFromHtml, plainDescriptionToH
 type Props = {
   text: string;
   html: string | null | undefined;
+  readOnly?: boolean;
   onChange: (description: { text: string; html: string }) => void;
 };
 
@@ -25,7 +26,7 @@ function setEditorHtml(editor: HTMLElement, nextHtml: string): boolean {
   return true;
 }
 
-export default function ProductDescriptionEditor({ text, html, onChange }: Props) {
+export default function ProductDescriptionEditor({ text, html, onChange, readOnly = false }: Props) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"visual" | "source">("visual");
   const [notice, setNotice] = useState("");
@@ -149,6 +150,15 @@ export default function ProductDescriptionEditor({ text, html, onChange }: Props
     if (open) { cleanupRef.current?.(); cleanupRef.current = null; }
     setOpen(!open);
   }
+
+  if (readOnly) return (
+    <div style={{ gridColumn: "1 / -1" }}>
+      <span>תיאור, לקריאה בלבד מהחנות</span>
+      <div style={{ whiteSpace: "pre-wrap", marginTop: 8, maxHeight: 160, overflow: "auto", padding: 12, border: "1px solid #d6cdbb", borderRadius: 6 }}>
+        {text || "עדיין אין תיאור"}
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ gridColumn: "1 / -1" }}>

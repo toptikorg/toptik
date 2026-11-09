@@ -1,13 +1,11 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { configuredShopifyDomain, shopifyAdminGraphql, visibleCopyFromProduct, type ShopifyOnboardingSnapshot } from "./admin-api";
 import { assertSafeDescriptionHtml } from "./description-document";
 import { verifyOnboardingImage } from "./onboarding-worker";
 import { FZT73_PRODUCT_GID, FZT73_PRODUCT_HANDLE, FZT73_VARIANTS, exactFzt73Media, exactVariantSeo } from "./variant-source-policy";
-import { upsertExactGalleryBindings } from "./publication-sync";
 
-async function snapshot(deadline: number): Promise<ShopifyOnboardingSnapshot | null> {
+export async function readFzt73Snapshot(deadline: number): Promise<ShopifyOnboardingSnapshot | null> {
   const publicationId = process.env.SHOPIFY_ONLINE_STORE_PUBLICATION_ID?.trim();
   if (publicationId !== "gid://shopify/Publication/79538258170") throw new Error("SYNC_ONBOARDING_PUBLICATION_MISMATCH");
   type Product = Omit<ShopifyOnboardingSnapshot, "variants" | "media" | "seoTitle" | "seoDescription"> & {
@@ -25,7 +23,7 @@ async function snapshot(deadline: number): Promise<ShopifyOnboardingSnapshot | n
   const p = result.product;
   if (p === null) return null; // Only a successful authenticated null read means removed.
   if (!p || p.id !== FZT73_PRODUCT_GID || p.handle !== FZT73_PRODUCT_HANDLE ||
-      !["ACTIVE", "DRAFT", "ARCHIVED"].includes(p.status) || typeof p.publishedOnPublication !== "boolean" ||
+      !["ACTIVE", "DRAFT", "ARCHIVED", "UNLISTED"].includes(p.status) || typeof p.publishedOnPublication !== "boolean" ||
       p.variants.pageInfo.hasNextPage || p.variants.nodes.length !== 4 ||
       FZT73_VARIANTS.some(v => !p.variants.nodes.some(row => row.id === `gid://shopify/ProductVariant/${v.variantId}` && row.sku === v.sku &&
         row.selectedOptions.some(option => option.name === "צבע" && option.value === v.color)))) {
@@ -46,20 +44,42 @@ const canonical = (value: unknown): string => {
 };
 const same = (row: Record<string, unknown> | undefined, patch: Record<string, unknown>) =>
   !!row && Object.entries(patch).every(([k,v]) => canonical(row[k]) === canonical(v));
+export const sameFzt73Source = (left: ShopifyOnboardingSnapshot | null, right: ShopifyOnboardingSnapshot | null) => {
+  if (!left || !right) return left === right;
+  // A timestamp-only change is not a content or identity change. All actual
+  // source fields, publication and color/media identity remain compared.
+  const a: Partial<ShopifyOnboardingSnapshot> = { ...left };
+  const b: Partial<ShopifyOnboardingSnapshot> = { ...right };
+  delete a.updatedAt; delete b.updatedAt;
+  return canonical(a) === canonical(b);
+};
+export function fzt73SourceProjection(source: ShopifyOnboardingSnapshot, v: typeof FZT73_VARIANTS[number]) {
+  const media = exactFzt73Media(source.media, v.sku);
+  const copy = visibleCopyFromProduct(source);
+  const seo = exactVariantSeo(copy,v.sku);
+  return {title:copy.title + ` בצבע ${v.color}`,description:copy.description || null,description_html:copy.descriptionHtml ?? null,
+    seo_title:seo.seoTitle,seo_description:seo.seoDescription,cover_image_path:media[0].image!.url,cover_image_alt:media[0].alt,
+    angles:media.map((m,i)=>({angle_key:String(i+1),angle_order:i+1,image_path:m.image!.url,image_alt:m.alt}))};
+}
 
 /** The normal webhook/recovery worker holds the product lease. Source-owned,
  * reviewed four-color intake only; no Shopify writes, binding changes or approvals. */
-export async function reconcileFzt73Variants(db: SupabaseClient, deadline: number): Promise<void> {
+export async function reconcileFzt73Variants(db: SupabaseClient, deadline: number, leaseOwner: string): Promise<void> {
   if (configuredShopifyDomain() !== "toptikcoil.myshopify.com") throw new Error("SYNC_ONBOARDING_SHOP_MISMATCH");
-  const source = await snapshot(deadline);
+  const source = await readFzt73Snapshot(deadline);
   const published = !!source && source.status === "ACTIVE" && source.publishedOnPublication;
   const ids = FZT73_VARIANTS.map(v => v.itemId);
-  const [items, angles, settings] = await Promise.all([
+  const [items, angles, bindings] = await Promise.all([
     db.from("carousel_items").select("*").in("id", ids),
     db.from("carousel_item_angles").select("*").in("item_id", ids),
-    db.from("carousel_settings").select("autoplay_ms,transition_mode,editor_revision").eq("id", 1).single(),
+    db.from("shopify_gallery_bindings").select("catalog_key,carousel_item_id,product_gid,variant_gid").in("carousel_item_id", ids),
   ]);
-  if (items.error || angles.error || settings.error || !settings.data || !items.data || !angles.data) throw new Error("SYNC_VARIANT_GALLERY_READ_FAILED");
+  if (items.error || angles.error || bindings.error || !items.data || !angles.data || !bindings.data) throw new Error("SYNC_VARIANT_GALLERY_READ_FAILED");
+  for (const v of FZT73_VARIANTS.filter(v => items.data.some(row => row.id === v.itemId))) {
+    const matches = bindings.data.filter(b => b.carousel_item_id === v.itemId);
+    if (matches.length !== 1 || matches[0].catalog_key !== v.sku || matches[0].product_gid !== FZT73_PRODUCT_GID ||
+        matches[0].variant_gid !== `gid://shopify/ProductVariant/${v.variantId}`) throw new Error("SYNC_FZT73_IDENTITY_CONFLICT");
+  }
   const identityRows: { id: string; catalog_number: string | null; display_order: number }[] = [];
   for (let offset = 0; ; offset += 1000) {
     if (Date.now() >= deadline - 3000) throw new Error("SYNC_ONBOARDING_TIME_BUDGET");
@@ -73,70 +93,59 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
     (row.id === v.itemId && row.catalog_number !== v.sku) || (key(row.catalog_number) === key(v.sku) && row.id !== v.itemId)))) {
     throw new Error("SYNC_SHOPIFY_VARIANT_IDENTITY_CONFLICT");
   }
-  if (!published && !items.data.length) return; // Never create a hidden product with no image.
-  if (published && items.data.length < 4 && process.env.SHOPIFY_SYNC_AUTOCREATE !== "published_shopify") throw new Error("SYNC_ONBOARDING_NOT_ENABLED");
-  const maxOrder = Math.max(0, ...identityRows.map(r => r.display_order));
-  const mediaBySku = new Map(FZT73_VARIANTS.map(v => [v.sku, published ? exactFzt73Media(source!.media, v.sku) : []]));
-  const copy = source ? visibleCopyFromProduct(source) : null;
+  // Visibility is managed by the publication projection. Missing rows and
+  // editorial hides are never created or switched back on by this worker.
+  if (!published || !source || !items.data.length) return;
+  if (items.data.some(row => typeof row.is_active !== "boolean")) throw new Error("SYNC_FZT73_INPUT_INVALID");
+  const active = FZT73_VARIANTS.filter(v => items.data.some(row => row.id === v.itemId && row.is_active));
+  const mediaBySku = new Map(active.map(v => [v.sku, exactFzt73Media(source.media, v.sku)]));
   const projected: Record<string, unknown>[] = [];
   const projectedAngles: Record<string, unknown>[] = [];
-  for (const [index,v] of FZT73_VARIANTS.entries()) {
-    const old = items.data.find(r => r.id === v.itemId);
-    if (!published && !old) continue;
-    if (!published) {
-      projected.push({id:v.itemId,is_active:false});
-      projectedAngles.push(...angles.data.filter(a => a.item_id === v.itemId).map(a => ({
-        id:a.id,item_id:a.item_id,angle_key:a.angle_key,angle_order:a.angle_order,image_path:a.image_path,image_alt:a.image_alt,
-      })));
-      continue;
-    }
-    const media = mediaBySku.get(v.sku)!;
-    const seo = exactVariantSeo(copy!,v.sku);
-    projected.push({
-      id:v.itemId,title:copy!.title + ` בצבע ${v.color}`,description:copy!.description,description_html:copy!.descriptionHtml,
-      seo_title:seo.seoTitle,seo_description:seo.seoDescription,is_active:true,
-      cover_image_path:media[0].image!.url,cover_image_alt:media[0].alt,
-      ...(!old ? {catalog_number:v.sku,display_order:maxOrder + index + 1,color:v.color,
-        tech_specs:{category:"fashion-bags",colors:[],specs:[{heading:"פרטי מוצר",items:[{label:"מותג",value:"Mandarina Duck"}]}]},
-      } : {}),
-    });
-    projectedAngles.push(...media.map((m,i) => ({
-      id:angles.data.find(a => a.item_id === v.itemId && a.image_path === m.image!.url)?.id ?? randomUUID(),
-      item_id:v.itemId,angle_key:String(i+1),angle_order:i+1,image_path:m.image!.url,image_alt:m.alt,
-    })));
+  for (const v of active) {
+    const projection = fzt73SourceProjection(source,v);
+    const {angles:sourceAngles,...copyProjection}=projection;
+    projected.push({id:v.itemId,...copyProjection});
+    projectedAngles.push(...sourceAngles.map(a=>({item_id:v.itemId,...a})));
   }
   const changed = projected.some(p => !same(items.data.find(r => r.id === p.id),p)) ||
-    projectedAngles.length !== angles.data.length || projectedAngles.some(p => !same(angles.data.find(r => r.id === p.id),p));
-  if (changed && published) {
+    projectedAngles.length !== angles.data.filter(a => active.some(v => v.itemId === a.item_id)).length ||
+    projectedAngles.some(p => !angles.data.some(a => same(a,p)));
+  if (changed) {
     const media = [...mediaBySku.values()].flat();
     for (let i=0;i<media.length;i+=3) await Promise.all(media.slice(i,i+3).map(m => verifyOnboardingImage(m,deadline)));
   }
-  if (JSON.stringify(await snapshot(deadline)) !== JSON.stringify(source)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
-  if (changed) {
-    const result = await db.rpc("save_gallery_catalog_atomic",{
-      p_items:projected,p_angles:projectedAngles,
-      p_expected_versions:Object.fromEntries(projected.map(p=>[p.id,items.data.find(r=>r.id===p.id)?.copy_updated_at ?? null])),
-      p_expected_editor_revisions:Object.fromEntries(projected.map(p=>[p.id,items.data.find(r=>r.id===p.id)?.editor_revision ?? null])),
-      p_settings:{autoplay_ms:settings.data.autoplay_ms,transition_mode:settings.data.transition_mode},
-      p_expected_settings_revision:settings.data.editor_revision,
+  if (!sameFzt73Source(await readFzt73Snapshot(deadline), source)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
+  const entries = active.map(v => {
+    const old = items.data.find(r => r.id === v.itemId)!;
+    const projection = projected.find(p => p.id === v.itemId)!;
+    const copyProjection = { ...projection };
+    delete copyProjection.id;
+    const itemAngles = projectedAngles.filter(a => a.item_id === v.itemId).map(a => ({
+      angle_key:a.angle_key,angle_order:a.angle_order,image_path:a.image_path,image_alt:a.image_alt,
+    }));
+    return {itemId:v.itemId,catalogKey:v.sku,variantGid:`gid://shopify/ProductVariant/${v.variantId}`,
+      expectedVersion:old.copy_updated_at,expectedRevision:old.editor_revision,projection:{...copyProjection,angles:itemAngles}};
+  });
+  if (entries.length) {
+    const { data, error } = await db.rpc("apply_fzt73_owned_batch", {
+      p_product_gid:FZT73_PRODUCT_GID,p_owner:leaseOwner,p_entries:entries,
     });
-    if (result.error) throw new Error("SYNC_VARIANT_GALLERY_SAVE_FAILED");
+    if (error) throw new Error(/^[A-Z0-9_]{1,80}$/.test(error.message) ? error.message : "SYNC_VARIANT_GALLERY_SAVE_FAILED");
+    if (!Array.isArray(data?.items) || data.items.length !== entries.length ||
+        entries.some(e => data.items.filter((r: {itemId:string;result:{status:string}}) => r.itemId === e.itemId &&
+          ["baseline_recorded","updated","unchanged"].includes(r.result?.status)).length !== 1)) throw new Error("SYNC_VARIANT_GALLERY_SAVE_FAILED");
   }
+  // A source edit during the atomic batch must not be acknowledged as a
+  // completed reconciliation. The committed batch remains CAS protected.
+  if (!sameFzt73Source(await readFzt73Snapshot(deadline), source)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
   const [readItems,readAngles] = await Promise.all([
     db.from("carousel_items").select("*").in("id",ids), db.from("carousel_item_angles").select("*").in("item_id",ids),
   ]);
   if (readItems.error || readAngles.error || projected.some(p=>!same(readItems.data?.find(r=>r.id===p.id),p)) ||
-      readAngles.data?.length !== projectedAngles.length || projectedAngles.some(p=>!same(readAngles.data?.find(r=>r.id===p.id),p))) {
+      readAngles.data?.filter(a => active.some(v => v.itemId === a.item_id)).length !== projectedAngles.length ||
+      projectedAngles.some(p=>!readAngles.data?.some(a=>same(a,p)))) {
     throw new Error("SYNC_COPY_READBACK_MISMATCH");
   }
-  if (source) await upsertExactGalleryBindings(db, {
-    productGid:FZT73_PRODUCT_GID,handle:FZT73_PRODUCT_HANDLE,
-    sourceUpdatedAt:source.updatedAt,published,
-    bindings:FZT73_VARIANTS.map(v=>({catalogKey:v.sku,itemId:v.itemId,
-      variantGid:`gid://shopify/ProductVariant/${v.variantId}`})),
-  });
-  const settled = await db.from("shopify_gallery_content_outbox").update({status:"synced",synced_at:new Date().toISOString(),last_error:null})
-    .in("carousel_item_id",ids).in("catalog_key",FZT73_VARIANTS.map(v=>v.sku)).in("status",["pending","processing","review","failed"]);
-  if (settled.error) throw new Error("SYNC_OUTBOX_FINALIZE_FAILED");
+  // The source projection never proves that a Gallery edit reached Shopify.
 }
 
