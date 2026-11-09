@@ -12,7 +12,7 @@ export type ShopifyProductSnapshot = {
   descriptionHtml: string;
   seoTitle: string | null;
   seoDescription: string | null;
-  status: "ACTIVE" | "DRAFT" | "ARCHIVED";
+  status: "ACTIVE" | "DRAFT" | "ARCHIVED" | "UNLISTED";
   updatedAt: string;
   publishedOnPublication: boolean;
   variants: ShopifyVariant[];

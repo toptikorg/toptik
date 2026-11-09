@@ -28,7 +28,7 @@ test('exact existing Gallery binding validates identity and writes only through 
   {productGid:gid,handle:'bag',sourceUpdatedAt:product.updatedAt,published:true,
    bindings:[{catalogKey:'BAG-',itemId:'bad',variantGid:variant}]}),/BINDING_INVALID/);
 });
-for (const [name,value,published] of [ ['draft',{...product,status:'DRAFT'},false],['archived',{...product,status:'ARCHIVED'},false],
+for (const [name,value,published] of [ ['draft',{...product,status:'DRAFT'},false],['archived',{...product,status:'ARCHIVED'},false],['unlisted',{...product,status:'UNLISTED'},false],
  ['unpublished',{...product,publishedOnPublication:false},false],['confirmed missing',null,false],['active',product,true]]) {
  test(`publication snapshot: ${name}`,async()=>{
   let args; const api=make(async()=>value);
