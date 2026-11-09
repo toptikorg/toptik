@@ -335,14 +335,17 @@ export function productsWithMultipleColors(products) {
     ["צבע", "color", "colour"].includes(String(option.name).trim().toLowerCase()) && Array.isArray(option.values) && option.values.length > 1));
 }
 
-async function checkStoreColorSelectors(storeBase, products) {
+export async function checkStoreColorSelectors(storeBase, products, fetchProduct = fetchText) {
       const failures = [];
       for (const product of productsWithMultipleColors(products)) {
         try {
           const expected = product.variants.map((variant) => variant.sku);
           if (expected.some((sku) => !sku)) throw new Error(`Missing variant SKU on ${product.handle}`);
-          assertColorSelector(await fetchText(`${storeBase}/products/${encodeURIComponent(product.handle)}?monitor_check=${Date.now()}`), expected);
-        } catch (error) { failures.push(`${product.handle}: ${error.message}`); }
+          assertColorSelector(await fetchProduct(`${storeBase}/products/${encodeURIComponent(product.handle)}?monitor_check=${Date.now()}`), expected);
+        } catch (error) {
+          if (/HTTP 429/.test(error.message)) throw error;
+          failures.push(`${product.handle}: ${error.message}`);
+        }
       }
       if (failures.length) throw new Error(`Color selection errors: ${failures.join("; ")}`);
 }

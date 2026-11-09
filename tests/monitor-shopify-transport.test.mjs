@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMonitorTransport } from '../scripts/monitor-shopify-transport.mjs';
+import { checkStoreColorSelectors } from '../scripts/production-visual-smoke.mjs';
 
 function harness(handler, paced = true) {
   let time = 0;
@@ -63,6 +64,16 @@ test('a 429 still closes the gate if response-body cancellation fails', async ()
   await assert.rejects(transport('https://www.toptik.co.il/a'), /HTTP 429/);
   await assert.rejects(transport('https://www.toptik.co.il/b'), /HTTP 429/);
   assert.equal(calls.length, 1);
+});
+
+test('color selector checks stop immediately on 429 instead of iterating over remaining products', async () => {
+  const product = (handle) => ({ handle, options: [{ name: 'color', values: ['a', 'b'] }], variants: [{ sku: 'a' }, { sku: 'b' }] });
+  let attempted = 0;
+  await assert.rejects(checkStoreColorSelectors('https://www.toptik.co.il', [product('one'), product('two')], async () => {
+    attempted += 1;
+    throw new Error('HTTP 429');
+  }), /HTTP 429/);
+  assert.equal(attempted, 1);
 });
 
 test('manual redirect requests preserve HEAD publication status', async () => {
