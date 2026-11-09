@@ -459,3 +459,36 @@ export async function writeShopifyVisibleCopy(productGid: string, copy: ShopifyV
   if (errors.length) throw new Error("SHOPIFY_PRODUCT_COPY_WRITE_REJECTED");
   if (result.productUpdate?.product?.id !== productGid) throw new Error("SHOPIFY_PRODUCT_COPY_WRITE_MISSING");
 }
+
+const UPDATE_OWNED_MEDIA_ALT_MUTATION = `
+  mutation GallerySyncOwnedMediaAlt($files: [FileUpdateInput!]!) {
+    fileUpdate(files: $files) {
+      files { id alt }
+      userErrors { code field message }
+    }
+  }
+`;
+
+/**
+ * Alt text of exact images that are already attached to a reviewed product. It never changes a
+ * file's source, filename, product reference or order, so it cannot add, move or detach an image.
+ */
+export async function writeShopifyOwnedMediaAlt(updates: Array<{ mediaId: string; alt: string }>, deadline?: number): Promise<void> {
+  if (!updates.length || updates.length > 20 || new Set(updates.map(update => update.mediaId)).size !== updates.length ||
+      updates.some(update => !/^gid:\/\/shopify\/MediaImage\/\d+$/.test(update.mediaId) || !update.alt ||
+        update.alt !== update.alt.trim() || update.alt.length > 512)) {
+    throw new Error("SHOPIFY_MEDIA_ALT_INPUT_INVALID");
+  }
+  const result = await graphql<{
+    fileUpdate: null | {
+      files: null | Array<{ id: string; alt: string | null }>;
+      userErrors: Array<{ code?: string | null; field: string[] | null; message: string }>;
+    };
+  }>(UPDATE_OWNED_MEDIA_ALT_MUTATION, { files: updates.map(update => ({ id: update.mediaId, alt: update.alt })) }, 15_000, deadline);
+  if (result.fileUpdate?.userErrors?.length) throw new Error("SHOPIFY_MEDIA_ALT_WRITE_REJECTED");
+  const files = result.fileUpdate?.files ?? [];
+  if (files.length !== updates.length ||
+      updates.some(update => files.filter(file => file.id === update.mediaId && file.alt === update.alt).length !== 1)) {
+    throw new Error("SHOPIFY_MEDIA_ALT_WRITE_MISSING");
+  }
+}

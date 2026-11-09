@@ -18,8 +18,9 @@ import CommerceExistingEditor from "@/components/admin/CommerceExistingEditor";
 import TypedSpecificationEditor from "@/components/admin/TypedSpecificationEditor";
 import NewProductEditor from "@/components/admin/NewProductEditor";
 import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
-import { isShopifyOwnedVariant, shopifyOwnedProductId, SHOPIFY_OWNED_MESSAGE } from "@/lib/shopify/variant-source-policy";
-import { NO_CHANGES_MESSAGE, planChangedOnlySave } from "@/lib/carousel/editor-changes";
+import { isShopifyOwnedVariant, shopifyOwnedProductId, SHOPIFY_OWNED_VARIANTS } from "@/lib/shopify/variant-source-policy";
+import { OWNED_SHARED_NOTE, OWNED_UNSUPPORTED_MESSAGES, ownedCardChanges, ownedEditErrorMessage, type OwnedUnsupported } from "@/lib/shopify/owned-edit-client";
+import { NO_CHANGES_MESSAGE, canonicalJson, planChangedOnlySave } from "@/lib/carousel/editor-changes";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -69,6 +70,9 @@ export default function AdminPage() {
   const [loginUrl, setLoginUrl] = useState(`https://${ADMIN_HOST}/login?next=/admin`);
   const [authReady, setAuthReady] = useState(false);
   const [payload, setPayload] = useState<CarouselPayload>(fallbackCarouselPayload);
+  // Latest payload for async handlers that finish after further edits (see refreshOwnedFamily).
+  const payloadRef = useRef<CarouselPayload>(payload);
+  useEffect(() => { payloadRef.current = payload; }, [payload]);
   const [catalogSearch, setCatalogSearch] = useState("");
   const [status, setStatus] = useState<string>("טוען...");
   const [isSaving, setIsSaving] = useState(false);
@@ -104,8 +108,10 @@ export default function AdminPage() {
   const [failedImports, setFailedImports] = useState<Array<{ catalog: string; reason: string }>>([]);
   const [showFailedModal, setShowFailedModal] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  // The color card whose edit is being delivered to Shopify (source-owned families only).
+  const [ownedSavingId, setOwnedSavingId] = useState<string | null>(null);
   const isCatalogBusy = isSaving || isBatchImporting || isUrlImporting || isWarming
-    || pendingUploads > 0 || Object.values(itemImportingMap).some(Boolean);
+    || pendingUploads > 0 || Object.values(itemImportingMap).some(Boolean) || ownedSavingId !== null;
   // Persist the failed list across page reloads (until every catalog is imported
   // OK — which empties + clears it — or the admin clears it manually). State
   // starts empty to match SSR; localStorage is read after mount to avoid a
@@ -277,6 +283,64 @@ export default function AdminPage() {
     return (await res.json()) as ImportedItemData;
   }
 
+  // After Shopify accepted an edit, every color of that product was rebuilt from it. Replace those cards
+  // with the server's version, but never overwrite a sibling the merchant is still editing: its stored
+  // snapshot stays at the version the edit started from, so a later save is refused as stale.
+  async function refreshOwnedFamily(itemId: string, keepLocalEdit = false) {
+    const productId = shopifyOwnedProductId(itemId);
+    const snapshot = savedSnapshotRef.current;
+    if (!productId || !snapshot) return;
+    const response = await fetch("/api/admin/carousel", { cache: "no-store", headers: { "x-admin-token": token } });
+    if (!response.ok) throw new Error("השינוי נשלח לחנות, אבל טעינת הגרסה העדכנית נכשלה. טענו מחדש לפני עריכה נוספת.");
+    const fresh: CarouselPayload = await response.json();
+    if (isUnavailableCarouselPayload(fresh)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
+    const family = new Set<string>(SHOPIFY_OWNED_VARIANTS.filter(variant => shopifyOwnedProductId(variant.itemId) === productId).map(variant => variant.itemId));
+    const untouched = new Set(payloadRef.current.items.filter(item => family.has(item.id) &&
+      canonicalJson(snapshot.items.find(row => row.id === item.id)) === canonicalJson(item)).map(item => item.id));
+    untouched.add(itemId);
+    const replace = (items: CarouselPayload["items"], ids: Set<string>) =>
+      items.map(item => ids.has(item.id) ? fresh.items.find(row => row.id === item.id) ?? item : item);
+    // The saved card keeps the merchant's unsent remainder when asked to, but always gets the new version.
+    const shown = new Set(untouched);
+    if (keepLocalEdit) shown.delete(itemId);
+    savedSnapshotRef.current = { ...snapshot, items: replace(snapshot.items, untouched) };
+    setPayload(current => ({ ...current, items: replace(current.items, shown) }));
+  }
+
+  async function saveOwnedCard(itemId: string) {
+    if (isCatalogBusy || !authReady) return;
+    const saved = savedSnapshotRef.current?.items.find(row => row.id === itemId);
+    const current = payload.items.find(row => row.id === itemId);
+    if (!saved || !current || !isShopifyOwnedVariant(itemId)) return;
+    const { patch, unsupported } = ownedCardChanges(saved, current);
+    if (unsupported.length) { setStatus(unsupported.map(code => OWNED_UNSUPPORTED_MESSAGES[code]).join(" ")); return; }
+    if (!Object.keys(patch).length) { setStatus(NO_CHANGES_MESSAGE); return; }
+    if (typeof saved.copyUpdatedAt !== "string" || typeof saved.editorRevision !== "number") { setStatus("גרסת הכרטיס חסרה. טענו מחדש."); return; }
+    setOwnedSavingId(itemId);
+    setStatus("שולח את השינוי לחנות ומעדכן את כל הצבעים. זה יכול לקחת עד דקה...");
+    try {
+      const response = await fetch("/api/admin/shopify/owned/edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-token": token },
+        body: JSON.stringify({ itemId, expectedVersion: saved.copyUpdatedAt, expectedRevision: saved.editorRevision, patch }),
+      });
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        // The Gallery may already follow Shopify (partial or readback cases): show it, then explain.
+        if (data?.error === "SYNC_OWNED_EDIT_PARTIAL" || data?.error === "SYNC_COPY_READBACK_MISMATCH") await refreshOwnedFamily(itemId, true).catch(() => undefined);
+        throw new Error(ownedEditErrorMessage(data?.error));
+      }
+      await refreshOwnedFamily(itemId);
+      setStatus("נשמר בחנות. כל הצבעים של המוצר עודכנו מהחנות.");
+      setImportFeedback({ tone: "success", message: "השינוי נשלח לחנות וכל הצבעים עודכנו ממנה." });
+    } catch (error) {
+      setStatus(resolveErrorMessage(error, "השמירה בחנות נכשלה"));
+      setImportFeedback({ tone: "error", message: resolveErrorMessage(error, "השמירה בחנות נכשלה") });
+    } finally {
+      setOwnedSavingId(null);
+    }
+  }
+
   async function persistPayload(nextPayload: CarouselPayload) {
     if (pendingUploadsRef.current) throw new Error("יש להמתין לסיום העלאת התמונה לפני שמירה.");
     const generation = ++catalogGenerationRef.current;
@@ -290,6 +354,18 @@ export default function AdminPage() {
     // moved to a position the merchant did not choose.
     const snapshot = savedSnapshotRef.current;
     if (!snapshot) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
+    // Colors of the Shopify-owned products are delivered to the store by their own button. A pending
+    // edit there is never dropped silently and never sent through the catalog-wide save.
+    for (const item of nextPayload.items) {
+      if (!isShopifyOwnedVariant(item.id)) continue;
+      const saved = snapshot.items.find(row => row.id === item.id);
+      if (!saved) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
+      const changes = ownedCardChanges(saved, item);
+      if (changes.unsupported.length) throw new Error(`${changes.unsupported.map(code => OWNED_UNSUPPORTED_MESSAGES[code]).join(" ")} לא נשמר דבר.`);
+      if (Object.keys(changes.patch).length) {
+        throw new Error("יש שינויים שלא נשלחו בכרטיס צבע של מוצר שנערך דרך החנות. שמרו אותם בכפתור \"שמור בחנות\" שבכרטיס הצבע, או טענו מחדש. לא נשמר דבר.");
+      }
+    }
     const plan = planChangedOnlySave(snapshot, nextPayload);
     // Nothing to write: return the input itself (callers compare identity).
     if (!plan.hasChanges) return nextPayload;
@@ -1285,17 +1361,16 @@ export default function AdminPage() {
                       הסתר מהגלריה
                     </button>
                   </div>
-                  {sourceOwned && <p role="note">{SHOPIFY_OWNED_MESSAGE} <a href={`https://admin.shopify.com/store/toptikcoil/products/${shopifyOwnedProductId(item.id)}`} target="_blank" rel="noopener noreferrer">עריכת המוצר בחנות</a></p>}
+                  {sourceOwned && <p role="note">{OWNED_SHARED_NOTE} <a href={`https://admin.shopify.com/store/toptikcoil/products/${shopifyOwnedProductId(item.id)}`} target="_blank" rel="noopener noreferrer">עריכת המוצר בחנות</a></p>}
                   <div className="admin-item-grid">
                     <label>
                       כותרת
                       <input
                         value={item.title}
-                        readOnly={sourceOwned}
                         onChange={(e) => updateItemField(itemIndex, "title", e.target.value)}
                       />
                     </label>
-                    <ProductDescriptionEditor text={item.description ?? ""} html={item.descriptionHtml} readOnly={sourceOwned}
+                    <ProductDescriptionEditor text={item.description ?? ""} html={item.descriptionHtml}
                       onChange={({ text, html }) => setPayload(current => {
                         const next = structuredClone(current);
                         const changed = next.items.find(row => row.id === item.id);
@@ -1306,7 +1381,6 @@ export default function AdminPage() {
                       כותרת SEO לחנות
                       <input
                         value={item.seoTitle ?? ""}
-                        readOnly={sourceOwned}
                         onChange={(e) => updateItemField(itemIndex, "seoTitle", e.target.value)}
                         maxLength={512}
                         placeholder="ריק = ללא כותרת SEO נפרדת; מומלץ לשמור קצר"
@@ -1316,7 +1390,6 @@ export default function AdminPage() {
                       תיאור SEO לחנות
                       <textarea
                         value={item.seoDescription ?? ""}
-                        readOnly={sourceOwned}
                         onChange={(e) => updateItemField(itemIndex, "seoDescription", e.target.value)}
                         rows={2}
                         maxLength={5000}
@@ -1354,7 +1427,7 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => onImportIntoItem(item.id)}
                         disabled={
-                          Boolean(itemImportingMap[item.id] || isSaving || isBatchImporting) ||
+                          Boolean(itemImportingMap[item.id] || isSaving || isBatchImporting) || sourceOwned ||
                           !(item.catalogNumber ?? "").trim()
                         }
                       >
@@ -1389,6 +1462,7 @@ export default function AdminPage() {
                       <input
                         type="file"
                         accept="image/png,image/jpeg,image/webp"
+                        disabled={sourceOwned}
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) void onImageUpload(item.id, file, "cover");
@@ -1434,6 +1508,21 @@ export default function AdminPage() {
                     </label>
                   </div>
 
+                  {sourceOwned && (() => {
+                    const saved = savedSnapshotRef.current?.items.find(row => row.id === item.id);
+                    const changes = saved ? ownedCardChanges(saved, item) : { patch: {}, unsupported: [] as OwnedUnsupported[] };
+                    const dirty = Object.keys(changes.patch).length > 0;
+                    return (
+                      <div role="group" aria-label="שמירה בחנות" style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                        <button type="button" onClick={() => void saveOwnedCard(item.id)}
+                          disabled={isCatalogBusy || !dirty || changes.unsupported.length > 0}>
+                          {ownedSavingId === item.id ? "שומר בחנות..." : "שמור בחנות (כל הצבעים)"}
+                        </button>
+                        {changes.unsupported.map(code => <p key={code} role="alert" style={{ margin: 0 }}>{OWNED_UNSUPPORTED_MESSAGES[code]}</p>)}
+                      </div>
+                    );
+                  })()}
+
                   <div className="admin-item-angles" style={{ marginTop: 12 }}>
                     <div
                       style={{
@@ -1451,6 +1540,7 @@ export default function AdminPage() {
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
                           style={{ display: "none" }}
+                          disabled={sourceOwned}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) void onImageUpload(item.id, file, "angle");
@@ -1474,6 +1564,7 @@ export default function AdminPage() {
                             <button
                               type="button"
                               onClick={() => removeAngle(itemIndex, angle.id)}
+                              disabled={sourceOwned}
                               aria-label="הסר תמונה"
                               style={{
                                 position: "absolute",

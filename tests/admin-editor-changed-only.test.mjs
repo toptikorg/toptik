@@ -53,12 +53,16 @@ const { createRoute } = await moduleFrom(`export function createRoute(deps) {
 }`);
 const admin = read("src/app/admin/page.tsx");
 const persistSource = admin.slice(admin.indexOf("async function persistPayload"), admin.indexOf("const loadData = useCallback"));
+// persistPayload refuses a pending edit on a Shopify-owned color: those are delivered by their own button.
+const ownedClientSource = withoutImports(read("src/lib/shopify/owned-edit-client.ts"));
 const { makePersist } = await moduleFrom(`export function makePersist(deps) {
   const { fetch, savedSnapshotRef, planChangedOnlySave } = deps;
   const authReady = true, token = "test-token";
   const isUnavailableCarouselPayload = () => false;
   const CAROUSEL_UNAVAILABLE_MESSAGE = "unavailable";
   const pendingUploadsRef = { current: 0 }, catalogGenerationRef = { current: 0 };
+  ${variantPolicySource}
+  ${ownedClientSource}
   ${persistSource}
   return persistPayload;
 }`);
@@ -505,4 +509,56 @@ test("(viii) several selected products in one save write exactly those rows; a f
   const next = structuredClone(fresh); next.items[3].title = "T3 edited twice";
   await f.persist(next);
   assert.deepEqual(f.calls.puts[1].items.map(i => i.id), [ids[0]]);
+});
+
+// Shopify-owned colors (FZT73, QMMM1) are delivered to the store by their own button. The catalog-wide
+// save must neither drop nor half-save a pending edit there, and must keep saving everything else.
+const ownedPolicy = await moduleFrom(read("src/lib/shopify/variant-source-policy.ts"));
+function ownedCatalog() {
+  const item = (id, order, extra = {}) => ({
+    id, title: `Title ${order}`, description: "d", descriptionHtml: "<p>d</p>", seoTitle: null, seoDescription: null, copyUpdatedAt: stamp,
+    editorRevision: 1, catalogNumber: `SKU-${order}`, coverImagePath: `https://example.com/${order}-1.jpg`, coverImageAlt: "alt", displayOrder: order,
+    isActive: true, angles: [{ id: angleId(order, 1), itemId: id, angleKey: "1", angleOrder: 1, imagePath: `https://example.com/${order}-1.jpg`, imageAlt: "alt" }], ...extra,
+  });
+  const snapshot = { settings: { editorRevision: 1, autoplayMs: 4000, transitionMode: "curtain-fade" },
+    items: [item(ownedPolicy.FZT73_VARIANTS[0].itemId, 1), item(uuid(1), 2)] };
+  const calls = [];
+  const fetch = async (_url, init = {}) => { calls.push(init.method ?? "GET"); return { ok: true, status: 200, json: async () => structuredClone(snapshot) }; };
+  const persist = makePersist({ fetch, savedSnapshotRef: { current: structuredClone(snapshot) }, planChangedOnlySave });
+  return { snapshot, calls, persist, edit: change => { const next = structuredClone(snapshot); change(next); return next; } };
+}
+
+test("a pending text, SEO or alt edit on an owned color is refused by the catalog-wide save and points to its own button", async () => {
+  for (const change of [
+    next => { next.items[0].title = "changed"; },
+    next => { next.items[0].descriptionHtml = "<p>changed</p>"; next.items[0].description = "changed"; },
+    next => { next.items[0].seoTitle = "changed"; },
+    next => { next.items[0].coverImageAlt = "changed"; },
+    next => { next.items[0].angles[0].imageAlt = "changed"; },
+  ]) {
+    const f = ownedCatalog();
+    await assert.rejects(f.persist(f.edit(change)), /בכפתור "שמור בחנות"/);
+    assert.deepEqual(f.calls, [], "nothing is sent when an owned color has an unsent edit");
+  }
+});
+
+test("an image or visibility edit on an owned color is refused with the reason, and nothing is sent", async () => {
+  for (const [change, reason] of [
+    [next => { next.items[0].angles = []; }, /תמונות עדיין נעשים בחנות/],
+    [next => { next.items[0].coverImagePath = "https://example.com/other.jpg"; }, /תמונות עדיין נעשים בחנות/],
+    [next => { next.items[0].isActive = false; }, /הסתרה והצגה של צבע/],
+    [next => { next.items[0].catalogNumber = "OTHER"; }, /מספר קטלוגי/],
+  ]) {
+    const f = ownedCatalog();
+    await assert.rejects(f.persist(f.edit(change)), reason);
+    assert.deepEqual(f.calls, []);
+  }
+});
+test("everything else still saves: display order of an owned color and any edit to an ordinary product", async () => {
+  const order = ownedCatalog();
+  await order.persist(order.edit(next => { next.items[0].displayOrder = 7; }));
+  assert.deepEqual(order.calls, ["PUT", "GET"]);
+  const ordinary = ownedCatalog();
+  await ordinary.persist(ordinary.edit(next => { next.items[1].title = "ordinary edit"; }));
+  assert.deepEqual(ordinary.calls, ["PUT", "GET"]);
 });
