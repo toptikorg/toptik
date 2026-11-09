@@ -65,7 +65,7 @@ export const OWNED_UNSUPPORTED_MESSAGES: Record<OwnedUnsupported, string> = {
 };
 
 export const OWNED_SHARED_NOTE =
-  "המוצר הזה בחנות הוא מוצר אחד עם כמה צבעים. שינוי בכותרת, בתיאור ובשדות ה-SEO נשלח לחנות ומשפיע על כל הצבעים. תיאור תמונה משפיע רק על התמונה שלו. הגלריה מתעדכנת מהחנות רק אחרי שהחנות אישרה את השינוי.";
+  "המוצר הזה בחנות הוא מוצר אחד עם כמה צבעים. שינוי בכותרת, בתיאור ובשדות ה-SEO נשלח לחנות ומשפיע על כל הצבעים. תיאור תמונה נשמר בקובץ התמונה בחנות, כולל במוצרים אחרים שמשתמשים באותו קובץ. הגלריה מתעדכנת לאחר קריאה חוזרת מהחנות.";
 
 const MESSAGES: Record<string, string> = {
   SYNC_COPY_STALE_EDIT_RELOAD: "המוצר עודכן (בחנות או בגלריה) מאז שנטען. טענו מחדש ושמרו שוב. השינויים שלכם לא נשלחו ולא נדרסו.",
@@ -93,8 +93,9 @@ const MESSAGES: Record<string, string> = {
   SYNC_MD20_BASELINE_REQUIRED: "הצבעים בגלריה לא מסונכרנים עם החנות (יש שינוי שלא נשלח וממתין לבדיקה). לא נשלח דבר.",
   SYNC_FZT73_EDITORIAL_CHANGED: "כרטיס צבע בגלריה שונה ידנית ולא תואם את החנות. הסנכרון נעצר לבדיקה. לא נשלח דבר.",
   SYNC_MD20_EDITORIAL_CHANGED: "כרטיס צבע בגלריה שונה ידנית ולא תואם את החנות. הסנכרון נעצר לבדיקה. לא נשלח דבר.",
-  SYNC_OWNED_EDIT_PARTIAL: "חלק מהשינויים (תיאורי תמונה) נשלחו לחנות והשאר לא. הגלריה עודכנה למה שבחנות. בדקו ושמרו שוב את השאר.",
-  SYNC_OWNED_EDIT_DELIVERED_PROJECTION_PENDING: "השינוי נשלח לחנות. הגלריה תתעדכן ממנה אוטומטית בדקות הקרובות. טענו מחדש בעוד רגע.",
+  SYNC_OWNED_EDIT_PARTIAL: "בקריאה חוזרת נמצאו רק חלק מהשינויים בחנות. הגלריה עודכנה לפי החנות, והעריכה שלכם נשמרה לבדיקה. בדקו לפני ניסיון נוסף.",
+  SYNC_OWNED_EDIT_UNCERTAIN: "נשלחה בקשת שינוי לחנות, אך לא הצלחנו לאמת את כל התוצאה. ייתכן שחלק מהשינוי כבר נשמר. העריכה שלכם נשמרה לבדיקה. טענו מחדש ובדקו את החנות לפני ניסיון נוסף.",
+  SYNC_OWNED_EDIT_DELIVERED_PROJECTION_PENDING: "השינוי אומת בחנות, אך עדכון הגלריה לא הושלם. העריכה שלכם נשמרה לבדיקה. נדרשת בדיקה חוזרת של הסנכרון לפני ניסיון נוסף.",
   SYNC_COPY_READBACK_MISMATCH: "לא הצלחנו לאמת שהחנות קיבלה את השינוי בדיוק כפי שנכתב. הגלריה עודכנה למה שמופיע בחנות. בדקו.",
   // Raised while the store and the Gallery are still being checked, before anything is written.
   SYNC_VARIANT_MEDIA_ASSIGNMENT_REQUIRED: "בחנות יש תמונה שלא משויכת לאחד הצבעים, או שהרכב התמונות של הצבעים השתנה. הסנכרון נעצר לבדיקה. לא נשלח דבר.",
@@ -112,8 +113,8 @@ const MESSAGES: Record<string, string> = {
   SYNC_OWNED_REQUEST_INVALID: "הבקשה לא תקינה. טענו מחדש ונסו שוב.",
   SYNC_OWNED_REQUEST_TOO_LARGE: "התיאור גדול מדי לשמירה.",
   SYNC_OWNED_ITEM_UNKNOWN: "הכרטיס הזה אינו אחד מצבעי המוצר שנערכים דרך החנות.",
-  SHOPIFY_MEDIA_ALT_WRITE_REJECTED: "החנות דחתה את עדכון תיאור התמונה. לא שונה דבר.",
-  SHOPIFY_PRODUCT_COPY_WRITE_REJECTED: "החנות דחתה את עדכון הטקסט. לא שונה דבר.",
+  SHOPIFY_MEDIA_ALT_WRITE_REJECTED: "החנות החזירה שגיאה בעדכון תיאור התמונה. בדקו בקריאה חוזרת מה נשמר לפני ניסיון נוסף.",
+  SHOPIFY_PRODUCT_COPY_WRITE_REJECTED: "החנות החזירה שגיאה בעדכון הטקסט. בדקו בקריאה חוזרת מה נשמר לפני ניסיון נוסף.",
 };
 
 /** Plain-Hebrew explanation for a code returned by the owned-edit route. */

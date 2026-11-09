@@ -62,7 +62,8 @@ function shopifyWrites(f) {
   const writes = { copy: [], alt: [] };
   return {
     writes,
-    writeShopifyVisibleCopy: async (productGid, copy, current) => {
+    writeShopifyVisibleCopy: async (productGid, copy, current, deadline) => {
+      if (deadline !== undefined && Date.now() >= deadline) throw new Error('SPEC_TIME_BUDGET');
       if (f.state.failCopyWrite) throw new Error(f.state.failCopyWrite);
       if (productGid !== f.productGid || current.id !== f.productGid) throw new Error('SYNC_SHOPIFY_PRODUCT_IDENTITY_CONFLICT');
       writes.copy.push(structuredClone(copy));
@@ -71,6 +72,7 @@ function shopifyWrites(f) {
       f.state.product.descriptionHtml = copy.descriptionHtml;
       f.state.product.seo = { title: copy.seoTitle, description: copy.seoDescription };
       f.state.product.updatedAt = '2026-11-09T11:00:00Z';
+      if (f.state.copyResponseLost) throw new Error('SHOPIFY_API_RESPONSE_LOST');
     },
     writeShopifyOwnedMediaAlt: async updates => {
       if (f.state.failAltWrite) throw new Error(f.state.failAltWrite);
@@ -79,8 +81,11 @@ function shopifyWrites(f) {
         const media = f.state.product.media.nodes.find(node => node.id === update.mediaId);
         if (!media) throw new Error('SHOPIFY_MEDIA_ALT_WRITE_MISSING');
         media.alt = update.alt;
+        if (f.state.partialAltWrite) throw new Error('SHOPIFY_MEDIA_ALT_WRITE_REJECTED');
       }
       f.state.product.updatedAt = '2026-11-09T11:00:00Z';
+      f.state.afterAlt?.();
+      if (f.state.altResponseLost) throw new Error('SHOPIFY_API_RESPONSE_LOST');
     },
   };
 }

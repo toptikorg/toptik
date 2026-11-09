@@ -447,14 +447,14 @@ export function buildShopifyVisibleCopyInput(productGid: string, copy: ShopifyVi
   return patch;
 }
 
-export async function writeShopifyVisibleCopy(productGid: string, copy: ShopifyVisibleCopy, current: ShopifyCopySnapshot): Promise<void> {
+export async function writeShopifyVisibleCopy(productGid: string, copy: ShopifyVisibleCopy, current: ShopifyCopySnapshot, deadline?: number): Promise<void> {
   const product = buildShopifyVisibleCopyInput(productGid, copy, current);
   if (Object.keys(product).length === 1) return;
   const result = await graphql<{
     productUpdate: { product: null | { id: string }; userErrors: Array<{ field: string[] | null; message: string }> };
   }>(UPDATE_PRODUCT_COPY_MUTATION, {
     product,
-  });
+  }, 15_000, deadline);
   const errors = result.productUpdate?.userErrors ?? [];
   if (errors.length) throw new Error("SHOPIFY_PRODUCT_COPY_WRITE_REJECTED");
   if (result.productUpdate?.product?.id !== productGid) throw new Error("SHOPIFY_PRODUCT_COPY_WRITE_MISSING");

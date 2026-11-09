@@ -12,9 +12,9 @@ import { md20SourceProjection, readMd20Snapshot, reconcileApprovedVariants, same
 //
 // The color cards are projections of one Shopify product, so an edit is delivered to Shopify FIRST and
 // the cards are rebuilt from Shopify afterwards, by the same projection the webhook worker uses. The
-// edit never lands in a card before Shopify has accepted it, which means a refused or conflicting
-// edit leaves the Gallery exactly as it was, and no unsent Gallery edit can exist for the projection
-// to trip over. The caller holds the product reconciliation lease for the whole call.
+// edit never lands in a card before a Shopify readback. Even a failed first mutation may have changed
+// Shopify partially, so recovery reads the actual source and attempts a rebuild. The caller holds
+// the product reconciliation lease, which coordinates our workers, not Shopify's own admin UI.
 
 type Variant = { sku: string; variantId: string; itemId: string; color: string };
 type Family = {
@@ -106,6 +106,24 @@ async function readCard(db: SupabaseClient, family: Family, variant: Variant) {
   return { row, angles: angles.data as AngleRow[] };
 }
 
+function requireTime(deadline: number): void {
+  if (Date.now() >= deadline) throw new Error("SYNC_ONBOARDING_TIME_BUDGET");
+}
+
+/** Only the requested ALT values (and their image.altText mirror) may move between our two writes. */
+function sameAfterOwnAlt(family: Family, before: ShopifyOnboardingSnapshot, after: ShopifyOnboardingSnapshot,
+  updates: { mediaId: string; alt: string }[]): boolean {
+  const restored = { ...after, media: after.media.map(media => {
+    const update = updates.find(row => row.mediaId === media.id);
+    const old = before.media.find(row => row.id === media.id);
+    if (!update || !old || media.alt !== update.alt) return media;
+    const image = media.image && old.image && (media.image.altText === old.image.altText || media.image.altText === update.alt)
+      ? { ...media.image, altText: old.image.altText } : media.image;
+    return { ...media, alt: old.alt, image };
+  }) };
+  return family.same(before, restored);
+}
+
 export async function applyOwnedGalleryEdit(db: SupabaseClient, request: OwnedEditRequest, owner: string, deadline: number): Promise<OwnedEditResult> {
   const family = ownedFamilyForItem(request.itemId);
   if (!family) throw new Error("SYNC_OWNED_ITEM_UNKNOWN");
@@ -146,44 +164,78 @@ export async function applyOwnedGalleryEdit(db: SupabaseClient, request: OwnedEd
   const fresh = await family.read(deadline);
   if (!fresh || !family.same(source, fresh)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
 
-  // 5. Write. Image alt text goes first because the file scope is the likelier to be refused, and a
-  // refusal then leaves Shopify untouched. A failure after something landed is reported as partial.
-  let landed = false;
+  const desiredCopy = plan.copy ? {
+    title: plan.copy.title, description: descriptionTextFromHtml(plan.copy.descriptionHtml), descriptionHtml: plan.copy.descriptionHtml,
+    seoTitle: plan.copy.seoTitle, seoDescription: plan.copy.seoDescription,
+  } : null;
+
+  // 5. Mark the attempt BEFORE awaiting: fileUpdate can partially apply, and either mutation can
+  // land even when its response is lost. Never retry the mutation blindly after an ambiguous reply.
+  let attempted = false;
+  let mutationFailed = false;
   try {
-    if (plan.mediaAlt.length) { await writeShopifyOwnedMediaAlt(plan.mediaAlt, deadline); landed = true; }
-    if (plan.copy) {
-      await writeShopifyVisibleCopy(family.productGid, {
-        title: plan.copy.title, description: descriptionTextFromHtml(plan.copy.descriptionHtml), descriptionHtml: plan.copy.descriptionHtml,
-        seoTitle: plan.copy.seoTitle, seoDescription: plan.copy.seoDescription,
-      }, fresh);
-      landed = true;
+    if (plan.mediaAlt.length) {
+      requireTime(deadline);
+      attempted = true;
+      await writeShopifyOwnedMediaAlt(plan.mediaAlt, deadline);
+    }
+    if (desiredCopy) {
+      let copySource = fresh;
+      if (plan.mediaAlt.length) {
+        requireTime(deadline);
+        const afterAlt = await family.read(deadline);
+        if (!afterAlt || !sameAfterOwnAlt(family, fresh, afterAlt, plan.mediaAlt)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
+        copySource = afterAlt;
+      }
+      requireTime(deadline);
+      attempted = true;
+      // The writer sends changed fields only and rechecks the deadline after token acquisition.
+      await writeShopifyVisibleCopy(family.productGid, desiredCopy, copySource, deadline);
     }
   } catch (error) {
-    if (!landed) throw error;
-    await family.reconcile(db, deadline, owner).catch(() => undefined);
-    throw new Error("SYNC_OWNED_EDIT_PARTIAL");
+    if (!attempted) throw error;
+    mutationFailed = true;
   }
 
-  // 6. Read back what Shopify now holds, then rebuild every color from it. The rebuild runs even when
-  // the readback disagrees, so the Gallery always shows what Shopify really holds.
+  // 6. Recover by reading, never by repeating a mutation. A failed read or expired budget cannot
+  // establish that nothing landed. A verified source does not imply the Gallery rebuild succeeded.
   let verified = false;
+  let readbackKnown = false;
+  let someApplied = false;
+  let readbackCard: OwnedCard | null = null;
   try {
+    requireTime(deadline);
     const after = await family.read(deadline);
-    const copyLanded = !plan.copy || (!!after && visibleCopiesEquivalent(visibleCopyFromProduct(after), {
-      title: plan.copy.title, description: descriptionTextFromHtml(plan.copy.descriptionHtml), descriptionHtml: plan.copy.descriptionHtml,
-      seoTitle: plan.copy.seoTitle, seoDescription: plan.copy.seoDescription }));
+    readbackKnown = !!after;
+    const copyLanded = !desiredCopy || (!!after && visibleCopiesEquivalent(visibleCopyFromProduct(after), desiredCopy));
     const altLanded = plan.mediaAlt.every(update => after?.media.find(media => media.id === update.mediaId)?.alt?.trim() === update.alt);
-    verified = copyLanded && altLanded;
+    verified = !!after && after.status === "ACTIVE" && after.publishedOnPublication && copyLanded && altLanded;
+    if (verified) readbackCard = family.helpers.project(after!, variant);
+    someApplied = plan.mediaAlt.some(update => after?.media.find(media => media.id === update.mediaId)?.alt?.trim() === update.alt) ||
+      (!!after && !!desiredCopy && plan.written.some(field =>
+        field === "title" ? after.title === desiredCopy.title :
+        field === "description" ? descriptionPairsEquivalent(visibleCopyFromProduct(after), desiredCopy) :
+        field === "seoTitle" ? after.seoTitle === desiredCopy.seoTitle :
+        field === "seoDescription" ? after.seoDescription === desiredCopy.seoDescription : false));
   } catch {
     verified = false;
   }
   try {
+    requireTime(deadline);
     await family.reconcile(db, deadline, owner);
   } catch {
-    // Shopify already holds the change. The webhook it triggers rebuilds the cards on its own.
-    throw new Error("SYNC_OWNED_EDIT_DELIVERED_PROJECTION_PENDING");
+    // ALT-only fileUpdate has no proven products/update delivery or durable retry here.
+    throw new Error(verified ? "SYNC_OWNED_EDIT_DELIVERED_PROJECTION_PENDING" : "SYNC_OWNED_EDIT_UNCERTAIN");
   }
+  if (!readbackKnown) throw new Error("SYNC_OWNED_EDIT_UNCERTAIN");
+  if (mutationFailed && !verified) throw new Error(someApplied ? "SYNC_OWNED_EDIT_PARTIAL" : "SYNC_OWNED_EDIT_UNCERTAIN");
   if (!verified) throw new Error("SYNC_COPY_READBACK_MISMATCH");
+  let finalCard: Awaited<ReturnType<typeof readCard>>;
+  try { requireTime(deadline); finalCard = await readCard(db, family, variant); }
+  catch { throw new Error("SYNC_OWNED_EDIT_UNCERTAIN"); }
+  if (JSON.stringify(cardFromRows(finalCard.row, finalCard.angles)) !== JSON.stringify(readbackCard)) {
+    throw new Error("SYNC_COPY_READBACK_MISMATCH");
+  }
   console.info("Owned gallery edit delivered to Shopify", { family: family.key, itemId: request.itemId, written: plan.written.length });
-  return done(true, (await readCard(db, family, variant)).row);
+  return done(true, finalCard.row);
 }

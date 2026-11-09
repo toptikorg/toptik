@@ -210,6 +210,93 @@ test('requireVariantMediaToken accepts only the same SKU and order with some tex
   assert.throws(() => plan.requireVariantMediaToken(variant, 'ישן בלי אסימון', 'חדש | P10QMMM1651 | 3'), /SYNC_OWNED_ALT_TOKEN_REQUIRED/);
 });
 
+test('requireVariantMediaToken preserves the literal live Hebrew suffix, without numeric normalization', () => {
+  const variant = { sku: 'P10QMMM1651', color: 'שחור' };
+  const suffix = ' | P10QMMM1651 | תמונה 3';
+  plan.requireVariantMediaToken(variant, 'ישן' + suffix, 'חדש' + suffix);
+  for (const bad of ['חדש | P10QMMM1651 | 3', 'חדש | P10QMMM1651 | תמונה 4',
+    'חדש | P10QMMM1465 | תמונה 3', 'חדש | P10QMMM1651 | תמונה 03',
+    'חדש | P10QMMM1651 | תמונה3', 'חדש | P10QMMM1651 | תמונות 3', suffix]) {
+    assert.throws(() => plan.requireVariantMediaToken(variant, 'ישן' + suffix, bad), /SYNC_OWNED_ALT_TOKEN_REQUIRED/, bad);
+  }
+  for (const malformed of ['ישן | P10QMMM1651 | תמונה 0', 'ישן | P10QMMM1651 | תמונה NaN',
+    'ישן | P10QMMM1651 | תמונה 9007199254740993', 'ישן | P10QMMM1465 | תמונה 3',
+    'ישן | P10QMMM1465 | תמונה 1' + suffix, 'ישן' + suffix + suffix]) {
+    assert.throws(() => plan.requireVariantMediaToken(variant, malformed, 'חדש' + suffix), /SYNC_OWNED_ALT_TOKEN_REQUIRED/, malformed);
+  }
+});
+
+test('the 13 QMMM1 ALT strings captured in the live preflight retain their exact technical suffix', () => {
+  // Snapshot from the owner's 2026-11-09 read-only preflight, not a network dependency.
+  let checked = 0;
+  for (const [sku, count] of [['P10QMMM109K', 4], ['P10QMMM1465', 4], ['P10QMMM1651', 5]]) {
+    const variant = policy.MD20_VARIANTS.find(row => row.sku === sku);
+    assert.ok(variant);
+    for (let order = 1; order <= count; order++) {
+      const suffix = ` | ${sku} | תמונה ${order}`;
+      const liveAlt = 'פאוץ׳ Mandarina Duck MD20 QMMM1' + suffix;
+      plan.requireVariantMediaToken(variant, liveAlt, 'תיאור נגיש מעודכן' + suffix);
+      assert.throws(() => plan.requireVariantMediaToken(variant, liveAlt, `תיאור נגיש מעודכן | ${sku} | ${order}`), /SYNC_OWNED_ALT_TOKEN_REQUIRED/);
+      checked++;
+    }
+  }
+  assert.equal(checked, 13);
+});
+
+test('md20: real Hebrew ALT suffixes pass source read, projection, edit planning and another source read for every color', async () => {
+  const f = await family('md20');
+  // The live source uses this exact label. Keep the fixture's legacy numeric form covered above.
+  for (const media of f.state.product.media.nodes) media.alt = media.alt.replace(/ \| (\d+)$/, ' | תמונה $1');
+  for (const variant of f.variants) {
+    const source = await f.read(Date.now() + 45000);
+    const before = f.project(source, variant);
+    const suffix = angle => angle.image_alt.match(/ \| [^|]+ \| תמונה \d+$/)[0];
+    const coverAlt = 'תיאור ראשי מדויק' + suffix(before.angles[0]);
+    const angleAlt = 'תיאור תמונה שנייה מדויק' + suffix(before.angles[1]);
+    const result = plan.planOwnedEdit({ source, variant, before, edit: {
+      coverImageAlt: coverAlt, angleAlts: [{ imagePath: before.angles[1].image_path, imageAlt: angleAlt }],
+    } }, f.helpers);
+    assert.equal(result.copy, null);
+    assert.equal(result.mediaAlt.length, 2);
+    for (const update of result.mediaAlt) f.state.product.media.nodes.find(media => media.id === update.mediaId).alt = update.alt;
+    const readback = await f.read(Date.now() + 45000);
+    const after = f.project(readback, variant);
+    assert.equal(after.cover_image_alt, coverAlt);
+    assert.equal(after.angles[1].image_alt, angleAlt);
+    assert.deepEqual(after.angles.map(angle => angle.image_path), before.angles.map(angle => angle.image_path));
+    for (const other of f.variants.filter(row => row !== variant)) assert.deepEqual(f.project(readback, other).angles, f.project(source, other).angles);
+    assert.ok(result.mediaAlt.every(update => update.alt.includes(' | ' + variant.sku + ' | תמונה ')));
+  }
+});
+
+test('md20: Hebrew suffix edits still reject foreign, duplicate, malformed and overlapping markers', async () => {
+  const f = await family('md20');
+  for (const media of f.state.product.media.nodes) media.alt = media.alt.replace(/ \| (\d+)$/, ' | תמונה $1');
+  const source = await f.read(Date.now() + 45000), variant = f.variants[0], before = f.project(source, variant);
+  const own = ' | ' + variant.sku + ' | תמונה 1';
+  const foreign = ' | ' + f.variants[1].sku + ' | תמונה 1';
+  const invalid = ['תיאור' + foreign, 'תיאור | ' + variant.sku + ' | 1',
+    'תיאור' + foreign + own, 'תיאור' + own + own,
+    'תיאור | UNKNOWN | malformed' + own,
+    'תיאור | ' + f.variants[1].sku + own, 'תיאור | ' + variant.sku + own,
+    'תיאור | ' + variant.sku + ' | תמונה 2'];
+  for (const desired of invalid) {
+    assert.throws(() => plan.planOwnedEdit({ source, variant, before, edit: { coverImageAlt: desired } }, f.helpers), /SYNC_OWNED_ALT_TOKEN_REQUIRED/, desired);
+  }
+  assert.ok(f.state.product.media.nodes.every(media => !media.alt.includes('UNKNOWN')), 'planning refusals never change source data');
+});
+
+test('md20: a foreign or duplicate token before the own suffix is refused before delivery', async () => {
+  const { run, before } = await setup('md20');
+  const own = ' | ' + policy.MD20_VARIANTS[0].sku + ' | 1';
+  const foreign = ' | ' + policy.MD20_VARIANTS[1].sku + ' | 1';
+  for (const prefix of [foreign, own, ' | UNKNOWN | 4', ' | ' + policy.MD20_VARIANTS[1].sku + ' | malformed']) {
+    assert.throws(() => run({ coverImageAlt: 'תיאור' + prefix + own }), /SYNC_OWNED_ALT_TOKEN_REQUIRED/);
+  }
+  assert.throws(() => run({ coverImageAlt: 'תיאור | ' + policy.MD20_VARIANTS[0].sku + own }), /SYNC_OWNED_ALT_TOKEN_REQUIRED/);
+  assert.ok(before.cover_image_path);
+});
+
 test('invertSeoDescription mirrors the forward projection shape', () => {
   const suffix = ' בצבע שחור';
   assert.equal(plan.invertSeoDescription('א' + suffix + '.', suffix), 'א.');

@@ -20,7 +20,8 @@ import NewProductEditor from "@/components/admin/NewProductEditor";
 import { plainDescriptionToHtml } from "@/lib/shopify/description-document";
 import { isShopifyOwnedVariant, shopifyOwnedProductId, SHOPIFY_OWNED_VARIANTS } from "@/lib/shopify/variant-source-policy";
 import { OWNED_SHARED_NOTE, OWNED_UNSUPPORTED_MESSAGES, ownedCardChanges, ownedEditErrorMessage, type OwnedUnsupported } from "@/lib/shopify/owned-edit-client";
-import { NO_CHANGES_MESSAGE, canonicalJson, planChangedOnlySave } from "@/lib/carousel/editor-changes";
+import { NO_CHANGES_MESSAGE, planChangedOnlySave } from "@/lib/carousel/editor-changes";
+import { mergeOwnedFamilyRefresh } from "@/lib/carousel/owned-editor-refresh";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -286,7 +287,7 @@ export default function AdminPage() {
   // After Shopify accepted an edit, every color of that product was rebuilt from it. Replace those cards
   // with the server's version, but never overwrite a sibling the merchant is still editing: its stored
   // snapshot stays at the version the edit started from, so a later save is refused as stale.
-  async function refreshOwnedFamily(itemId: string, keepLocalEdit = false) {
+  async function refreshOwnedFamily(itemId: string, submitted: CarouselPayload["items"][number], generation: number, keepLocalEdit = false) {
     const productId = shopifyOwnedProductId(itemId);
     const snapshot = savedSnapshotRef.current;
     if (!productId || !snapshot) return;
@@ -294,17 +295,17 @@ export default function AdminPage() {
     if (!response.ok) throw new Error("השינוי נשלח לחנות, אבל טעינת הגרסה העדכנית נכשלה. טענו מחדש לפני עריכה נוספת.");
     const fresh: CarouselPayload = await response.json();
     if (isUnavailableCarouselPayload(fresh)) throw new Error(CAROUSEL_UNAVAILABLE_MESSAGE);
+    if (generation !== catalogGenerationRef.current) throw new Error("הנתונים נטענו מחדש במהלך השמירה. יש לרענן לפני עריכה נוספת.");
     const family = new Set<string>(SHOPIFY_OWNED_VARIANTS.filter(variant => shopifyOwnedProductId(variant.itemId) === productId).map(variant => variant.itemId));
-    const untouched = new Set(payloadRef.current.items.filter(item => family.has(item.id) &&
-      canonicalJson(snapshot.items.find(row => row.id === item.id)) === canonicalJson(item)).map(item => item.id));
-    untouched.add(itemId);
-    const replace = (items: CarouselPayload["items"], ids: Set<string>) =>
-      items.map(item => ids.has(item.id) ? fresh.items.find(row => row.id === item.id) ?? item : item);
-    // The saved card keeps the merchant's unsent remainder when asked to, but always gets the new version.
-    const shown = new Set(untouched);
-    if (keepLocalEdit) shown.delete(itemId);
-    savedSnapshotRef.current = { ...snapshot, items: replace(snapshot.items, untouched) };
-    setPayload(current => ({ ...current, items: replace(current.items, shown) }));
+    const merged = mergeOwnedFamilyRefresh({ snapshot, current: payloadRef.current, fresh, itemId, submitted, family, keepLocalEdit });
+    savedSnapshotRef.current = merged.snapshot;
+    payloadRef.current = merged.payload;
+    setPayload(merged.payload);
+    const updatedBaseline = merged.snapshot.items.find(item => item.id === itemId);
+    const shown = merged.payload.items.find(item => item.id === itemId);
+    if (!updatedBaseline || !shown) return false;
+    const remaining = ownedCardChanges(updatedBaseline, shown);
+    return Object.keys(remaining.patch).length > 0 || remaining.unsupported.length > 0;
   }
 
   async function saveOwnedCard(itemId: string) {
@@ -316,6 +317,8 @@ export default function AdminPage() {
     if (unsupported.length) { setStatus(unsupported.map(code => OWNED_UNSUPPORTED_MESSAGES[code]).join(" ")); return; }
     if (!Object.keys(patch).length) { setStatus(NO_CHANGES_MESSAGE); return; }
     if (typeof saved.copyUpdatedAt !== "string" || typeof saved.editorRevision !== "number") { setStatus("גרסת הכרטיס חסרה. טענו מחדש."); return; }
+    const submitted = structuredClone(current);
+    const generation = catalogGenerationRef.current;
     setOwnedSavingId(itemId);
     setStatus("שולח את השינוי לחנות ומעדכן את כל הצבעים. זה יכול לקחת עד דקה...");
     try {
@@ -327,12 +330,17 @@ export default function AdminPage() {
       const data = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) {
         // The Gallery may already follow Shopify (partial or readback cases): show it, then explain.
-        if (data?.error === "SYNC_OWNED_EDIT_PARTIAL" || data?.error === "SYNC_COPY_READBACK_MISMATCH") await refreshOwnedFamily(itemId, true).catch(() => undefined);
+        if (["SYNC_OWNED_EDIT_PARTIAL", "SYNC_COPY_READBACK_MISMATCH", "SYNC_OWNED_EDIT_UNCERTAIN", "SYNC_OWNED_EDIT_DELIVERED_PROJECTION_PENDING"].includes(data?.error ?? "")) {
+          await refreshOwnedFamily(itemId, submitted, generation, true).catch(() => undefined);
+        }
         throw new Error(ownedEditErrorMessage(data?.error));
       }
-      await refreshOwnedFamily(itemId);
-      setStatus("נשמר בחנות. כל הצבעים של המוצר עודכנו מהחנות.");
-      setImportFeedback({ tone: "success", message: "השינוי נשלח לחנות וכל הצבעים עודכנו ממנה." });
+      const hasLaterEdit = await refreshOwnedFamily(itemId, submitted, generation);
+      const message = hasLaterEdit
+        ? "השינוי שנשלח נשמר בחנות. העריכה הנוספת שהקלדתם נשמרה במסך ועדיין לא נשלחה. אפשר לשמור אותה בנפרד."
+        : "נשמר בחנות. כל הצבעים של המוצר עודכנו מהחנות.";
+      setStatus(message);
+      setImportFeedback({ tone: "success", message });
     } catch (error) {
       setStatus(resolveErrorMessage(error, "השמירה בחנות נכשלה"));
       setImportFeedback({ tone: "error", message: resolveErrorMessage(error, "השמירה בחנות נכשלה") });
@@ -419,6 +427,7 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
+    const generationRef = catalogGenerationRef;
     const host = window.location.hostname;
     if (host === ADMIN_HOST || host === "localhost" || host.startsWith("127.") || host.endsWith(".vercel.app")) {
       setLoginUrl("/login?next=/admin");
@@ -426,6 +435,7 @@ export default function AdminPage() {
     const savedToken = window.localStorage.getItem(STORAGE_KEY) || "";
     setToken(savedToken);
     void loadData(savedToken);
+    return () => { generationRef.current++; };
   }, [loadData]);
 
   function updateItemField(

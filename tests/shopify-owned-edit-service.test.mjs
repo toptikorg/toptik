@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { family, service } from './helpers/owned-edit-harness.mjs';
+import { family, service, loadWrapped, description } from './helpers/owned-edit-harness.mjs';
+
+const makeAdmin = await loadWrapped('src/lib/shopify/admin-api.ts', [
+  'createShopifyClientCredentialsProvider', 'plainDescriptionToHtml', 'descriptionTextFromHtml',
+  'descriptionPairsEquivalent', 'assertSafeDescriptionHtml', 'process',
+], ['writeShopifyVisibleCopy', 'visibleCopyFromProduct']);
 
 const owner = '11111111-1111-4111-8111-111111111111';
 async function setup(key, index = 0) {
@@ -160,12 +165,78 @@ for (const key of ['fzt73', 'md20']) {
     assert.equal(s.writes.copy.length, 0);
   });
 
-  test(`${key}: a rejected Shopify write leaves Shopify and the Gallery untouched`, async () => {
+  test(`${key}: a first rejected response is reconciled without claiming that nothing was sent`, async () => {
     const { f, apply } = await setup(key);
     const before = structuredClone(f.tables);
     f.state.failCopyWrite = 'SHOPIFY_PRODUCT_COPY_WRITE_REJECTED';
-    await assert.rejects(apply({ description: 'שלי', descriptionHtml: '<p>שלי</p>' }), /SHOPIFY_PRODUCT_COPY_WRITE_REJECTED/);
+    await assert.rejects(apply({ description: 'שלי', descriptionHtml: '<p>שלי</p>' }), /SYNC_OWNED_EDIT_UNCERTAIN/);
     assert.deepEqual(f.tables, before);
+  });
+
+  test(`${key}: a partially applied first ALT mutation is read back and projected even when it rejects`, async () => {
+    const { f, apply, variant, angle, token } = await setup(key);
+    f.state.partialAltWrite = true;
+    const first = 'ראשון נשלח' + token(1), second = 'שני לא נשלח' + token(2);
+    await assert.rejects(apply({ angles: [{ id: angle(1).id, imageAlt: first }, { id: angle(2).id, imageAlt: second }] }), /SYNC_OWNED_EDIT_PARTIAL/);
+    assert.equal(f.cardOf(variant.itemId).angles[0].image_alt, first);
+    assert.notEqual(f.cardOf(variant.itemId).angles[1].image_alt, second);
+  });
+
+  test(`${key}: a lost first copy response can succeed only after source and Gallery readback prove delivery`, async () => {
+    const { f, apply, variant } = await setup(key);
+    f.state.copyResponseLost = true;
+    const result = await apply({ description: 'הגיע למרות תשובה אבודה', descriptionHtml: '<p>הגיע למרות תשובה אבודה</p>' });
+    assert.equal(result.ok, true);
+    assert.equal(f.cardOf(variant.itemId).description_html, '<p>הגיע למרות תשובה אבודה</p>');
+  });
+
+  test(`${key}: ALT followed by an external copy change refuses the second mutation and preserves the external text`, async () => {
+    const { f, s, apply, variant, angle, token } = await setup(key);
+    f.state.afterAlt = () => { f.state.product.descriptionHtml = '<p>external during alt</p>'; };
+    await assert.rejects(apply({ description: 'my edit', descriptionHtml: '<p>my edit</p>',
+      angles: [{ id: angle(1).id, imageAlt: 'האלט שלנו' + token(1) }] }), /SYNC_OWNED_EDIT_PARTIAL/);
+    assert.equal(s.writes.copy.length, 0);
+    assert.equal(f.state.product.descriptionHtml, '<p>external during alt</p>');
+    assert.equal(f.cardOf(variant.itemId).description_html, '<p>external during alt</p>');
+  });
+
+  test(`${key}: Shopify mirroring our ALT into image.altText does not create a false conflict`, async () => {
+    const { f, apply, angle, token } = await setup(key);
+    f.state.afterAlt = () => { for (const media of f.state.product.media.nodes) {
+      if (media.alt === 'האלט שלנו' + token(1)) media.image.altText = media.alt;
+    } };
+    const result = await apply({ description: 'my edit', descriptionHtml: '<p>my edit</p>',
+      angles: [{ id: angle(1).id, imageAlt: 'האלט שלנו' + token(1) }] });
+    assert.equal(result.ok, true);
+    assert.equal(f.state.product.descriptionHtml, '<p>my edit</p>');
+  });
+
+  test(`${key}: an unrelated ALT mirror change during our ALT write still blocks copy`, async () => {
+    const { f, s, apply, angle, token } = await setup(key);
+    f.state.afterAlt = () => { f.state.product.media.nodes[1].image.altText = 'external mirror'; };
+    await assert.rejects(apply({ description: 'my edit', descriptionHtml: '<p>my edit</p>',
+      angles: [{ id: angle(1).id, imageAlt: 'האלט שלנו' + token(1) }] }), /SYNC_OWNED_EDIT_PARTIAL/);
+    assert.equal(s.writes.copy.length, 0);
+  });
+
+  test(`${key}: an expired deadline after ALT prevents starting copy and returns uncertainty`, async () => {
+    const { f, s, request, lease, angle, token } = await setup(key);
+    await lease();
+    const end = Date.now() + 45000;
+    const realNow = Date.now;
+    f.state.afterAlt = () => { Date.now = () => end; };
+    try {
+      await assert.rejects(s.applyOwnedGalleryEdit(f.db, request({ description: 'my edit', descriptionHtml: '<p>my edit</p>',
+        angles: [{ id: angle(1).id, imageAlt: 'האלט שלנו' + token(1) }] }), owner, end), /SYNC_OWNED_EDIT_UNCERTAIN/);
+      assert.equal(s.writes.copy.length, 0);
+    } finally { Date.now = realNow; }
+  });
+
+  test(`${key}: readback failure after an ambiguous first mutation never becomes a no-change rejection`, async () => {
+    const { f, apply } = await setup(key);
+    f.state.afterAlt = () => { f.state.failRead = 'SHOPIFY_API_HTTP_503'; };
+    f.state.altResponseLost = true;
+    await assert.rejects(apply({ coverImageAlt: 'תשובה לא ידועה' + (key === 'md20' ? ' | ' + f.variants[0].sku + ' | 1' : '') }), /SYNC_OWNED_EDIT_UNCERTAIN/);
   });
 
   test(`${key}: alt text that landed before a failed copy write is reported as partial and the Gallery follows Shopify`, async () => {
@@ -190,6 +261,19 @@ for (const key of ['fzt73', 'md20']) {
     assert.equal(f.state.product.descriptionHtml, '<p>שלי</p>');
   });
 
+  test(`${key}: losing the lease after a verified ALT write is projection pending, never a success`, async () => {
+    const { f, apply, angle, token } = await setup(key);
+    f.state.afterAlt = () => { f.state.leaseOwner = 'other-owner'; };
+    await assert.rejects(apply({ angles: [{ id: angle(1).id, imageAlt: 'האלט שלנו' + token(1) }] }), /SYNC_OWNED_EDIT_DELIVERED_PROJECTION_PENDING/);
+  });
+
+  test(`${key}: a source change during the final rebuild cannot be reported as our verified card`, async () => {
+    const { f, apply } = await setup(key);
+    // Our first readback is 6; the reconciliation starts with a newer source at 7.
+    f.state.onRead = n => { if (n === 7) f.state.product.descriptionHtml = '<p>external after readback</p>'; };
+    await assert.rejects(apply({ description: 'my edit', descriptionHtml: '<p>my edit</p>' }), /SYNC_COPY_READBACK_MISMATCH/);
+  });
+
   test(`${key}: a hidden sibling color is neither projected nor reactivated`, async () => {
     const { f, apply } = await setup(key, 0);
     const hidden = f.variants[1];
@@ -208,4 +292,23 @@ test('only the two reviewed families are owned', async () => {
   assert.equal(s.ownedFamilyForItem('660aea87-5082-438d-86f0-bd982ac43a68'), null);
   const m = await family('md20');
   for (const v of m.variants) assert.equal(service(m).ownedFamilyForItem(v.itemId).key, 'md20');
+});
+
+test('the real copy transport honors the owned deadline before network, including time consumed acquiring a token', async t => {
+  // Only synthetic process/config/token values are supplied; no environment secrets or network are read.
+  const current = { id: 'gid://shopify/Product/123', title: 'old', descriptionHtml: '<p>old</p>', seoTitle: 'old', seoDescription: 'old' };
+  let calls = 0, now = 1000;
+  t.mock.method(Date, 'now', () => now);
+  t.mock.method(globalThis, 'fetch', async () => { calls++; throw new Error('NETWORK_MUST_NOT_START'); });
+  for (const expireDuringToken of [false, true]) {
+    now = 1000;
+    const api = makeAdmin({ ...description,
+      process: { env: { SHOPIFY_SHOP_DOMAIN: 'fixture.myshopify.com', SHOPIFY_CLIENT_ID: 'fixture', SHOPIFY_CLIENT_SECRET: 'fixture',
+        SHOPIFY_ONLINE_STORE_PUBLICATION_ID: 'gid://shopify/Publication/1' } },
+      createShopifyClientCredentialsProvider: () => async () => { if (expireDuringToken) now = 2000; return 'synthetic-token'; },
+    });
+    await assert.rejects(api.writeShopifyVisibleCopy(current.id, { ...api.visibleCopyFromProduct(current), title: 'new' }, current,
+      expireDuringToken ? 1500 : 1000), /SPEC_TIME_BUDGET/);
+  }
+  assert.equal(calls, 0);
 });

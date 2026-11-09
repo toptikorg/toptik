@@ -83,10 +83,16 @@ function fail(code: string): never {
 }
 const sameText = (left: string | null | undefined, right: string | null | undefined) => (left ?? "") === (right ?? "");
 
-/** QMMM1 identifies an image's color and order by the trailing " | SKU | n" of its alt text. */
+/** Preserve QMMM1's exact existing suffix, either " | SKU | n" or " | SKU | תמונה n". */
 export function requireVariantMediaToken(variant: OwnedVariant, currentAlt: string | null, desiredAlt: string): void {
-  const token = /( \| ([^|]+) \| (\d+))$/.exec(currentAlt ?? "");
-  if (!token || token[2] !== variant.sku || !desiredAlt.endsWith(token[1]) || desiredAlt.length === token[1].length) {
+  const token = /( \| ([^|]+) \| (?:תמונה )?(\d+))$/.exec(currentAlt ?? "");
+  // A valid own suffix is not enough: a second token can assign this image to two colors.
+  // Look ahead so adjacent/overlapping markers cannot hide a second assignment.
+  const tokens = [...desiredAlt.matchAll(/ (?=\| ([^|]+) \| )/g)];
+  const currentTokens = [...(currentAlt ?? "").matchAll(/ (?=\| ([^|]+) \| )/g)];
+  if (!token || token[2] !== variant.sku || !Number.isSafeInteger(Number(token[3])) || Number(token[3]) < 1 ||
+      currentTokens.length !== 1 || !desiredAlt.endsWith(token[1]) || desiredAlt.length === token[1].length ||
+      tokens.length !== 1 || tokens[0][1] !== variant.sku) {
     fail("SYNC_OWNED_ALT_TOKEN_REQUIRED");
   }
 }
