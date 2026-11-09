@@ -315,7 +315,21 @@ async function reconcileInboxEvent(supabase: SupabaseClient, event: InboxEvent, 
     // inspect the exact source projection without writing. A real divergence
     // requires review; a verified exact no-op need not accumulate daily reviews.
     if (productGid === FZT73_PRODUCT_GID) {
-      if (publication.published) await reconcileFzt73Variants(supabase, deadline, true);
+      if (publication.published) {
+        const witness = await reconcileFzt73Variants(supabase, deadline, true);
+        if (!witness) throw new Error("SYNC_FZT73_RECOVERY_INVALID");
+        // Default off until the service-only recovery migration is explicitly
+        // deployed. The daily recovery event may retire only older verified
+        // webhook reviews, never the Gallery outbox or product content.
+        if (event.topic === "products/update" && event.payload.publication_recovery === true &&
+            process.env.SHOPIFY_FZT73_REVIEW_RECOVERY === "1") {
+          const {error} = await supabase.rpc("close_verified_fzt73_webhook_reviews", {
+            p_current_event:event.id, p_owner:leaseOwner, p_source_updated_at:witness.sourceUpdatedAt,
+            p_versions:witness.versions,
+          });
+          if (error) throw new Error("SYNC_FZT73_RECOVERY_WRITE_FAILED");
+        }
+      }
       const { error } = await supabase.from("shopify_webhook_events").update({ status: "processed", processed_at: new Date().toISOString(), last_error: null }).eq("id", event.id);
       if (error) throw new Error("SYNC_EVENT_FINALIZE_FAILED");
       return "processed";

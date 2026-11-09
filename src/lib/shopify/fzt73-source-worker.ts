@@ -46,10 +46,11 @@ const canonical = (value: unknown): string => {
 };
 const same = (row: Record<string, unknown> | undefined, patch: Record<string, unknown>) =>
   !!row && Object.entries(patch).every(([k,v]) => canonical(row[k]) === canonical(v));
+export type Fzt73InspectionWitness = { sourceUpdatedAt: string; versions: Record<string, {editorRevision: number; copyUpdatedAt: string}> };
 
 /** The normal webhook/recovery worker holds the product lease. Source-owned,
  * reviewed four-color intake only; no Shopify writes, binding changes or approvals. */
-export async function reconcileFzt73Variants(db: SupabaseClient, deadline: number, inspectOnly = false): Promise<void> {
+export async function reconcileFzt73Variants(db: SupabaseClient, deadline: number, inspectOnly = false): Promise<Fzt73InspectionWitness | void> {
   if (configuredShopifyDomain() !== "toptikcoil.myshopify.com") throw new Error("SYNC_ONBOARDING_SHOP_MISMATCH");
   const source = await snapshot(deadline);
   const published = !!source && source.status === "ACTIVE" && source.publishedOnPublication;
@@ -133,7 +134,12 @@ export async function reconcileFzt73Variants(db: SupabaseClient, deadline: numbe
         }) || projectedAngles.some(p => !same(verifiedAngles.data.find(r => r.id === p.id),p))) {
       throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
     }
-    return;
+    if (!source || !Number.isFinite(Date.parse(source.updatedAt)) || verifiedItems.data.some(row => !Number.isSafeInteger(row.editor_revision) || row.editor_revision < 1 ||
+      typeof row.copy_updated_at !== 'string' || !Number.isFinite(Date.parse(row.copy_updated_at)))) {
+      throw new Error("SYNC_FZT73_RECOVERY_INVALID");
+    }
+    return { sourceUpdatedAt: source.updatedAt, versions: Object.fromEntries(verifiedItems.data.map(row => [row.id,
+      {editorRevision: row.editor_revision, copyUpdatedAt: row.copy_updated_at}])) };
   }
   if (changed && published) {
     const media = [...mediaBySku.values()].flat();
