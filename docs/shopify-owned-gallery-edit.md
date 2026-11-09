@@ -23,7 +23,14 @@ images, catalog number, hiding or showing a color. Those stay in Shopify. See "W
 
 ## Flow
 
-`POST /api/admin/shopify/owned/edit` (admin token), implemented by `applyOwnedGalleryEdit`:
+`POST /api/admin/shopify/owned/edit`, implemented by `applyOwnedGalleryEdit`:
+
+The route uses the same `authorizeGalleryAdmin` gate as the interactive catalog, with
+`sessionMutation: true`, before reading the body or creating a service-role client. An existing
+automation token remains supported. A browser session requires a verified owner/admin role,
+same-origin Origin/Sec-Fetch-Site and JSON content. An ordinary signed-in account is not sufficient.
+The earlier token-only route was not compatible with password login and was corrected before release.
+No global authentication policy, role or credential was changed by this code fix.
 
 1. Take the same product reconciliation lease the webhook worker uses. Busy means 409, nothing happens.
 2. Refuse a stale form: the card version (`copy_updated_at`, `editor_revision`) must be the one the editor loaded.
@@ -120,11 +127,16 @@ No DDL. Code deploy only, after CI, `npm test`, `npm run lint`, `npm run build`.
 
 ### Local validation, 9 November 2026
 
-- Full `npm test`: 1,966 tests, 1,900 passed, 66 skipped, zero failures.
+- Full `npm test` after the session-auth fix: 1,973 tests, 1,907 passed, 66 skipped, zero failures.
 - Full lint: exit 0; two pre-existing unused-variable warnings in
   `scripts/verify-existing-media-25mp-sql.mjs`, outside this change.
 - Independent cold review rechecked the late-input merge, ambiguous first mutation recovery,
   the ALT-to-copy concurrent-edit check and unambiguous QMMM1 technical markers.
+- Auth integration tests execute the real authorization, role and session-origin policies with only
+  the user provider and external IO replaced. They prove privileged session saves for both families,
+  anonymous/unauthorized/forged/unconfirmed refusals, CSRF and non-JSON refusals before body/service-role
+  access, and token compatibility. The first UI fixture bypassed authentication and did not prove
+  this boundary; its successful dummy saves must not be cited as session-authentication evidence.
 - CUA in-app Chromium exercised the real editor and route/service with an isolated loopback fixture.
   All API requests were intercepted, dummy images were local, and the Next process had no production
   credentials. This was not a production or Vercel Preview test.
@@ -134,6 +146,11 @@ No DDL. Code deploy only, after CI, `npm test`, `npm run lint`, `npm run build`.
   local text. No form inputs or buttons extended beyond either viewport; no browser error log appeared.
 - Other injected failure variants and late input were covered by unit tests, not all repeated
   interactively. Real iPhone, Safari and production writes were not tested in this local session.
+- A second CUA pass used the real authorization chain and the production build, replacing only
+  verified-user lookup with a local synthetic provider. With no token, an anonymous user and an
+  unprivileged member were refused; an admin saved both families at desktop/mobile widths. Removing
+  the synthetic session while editing refused the next save and retained the typed title. This
+  proves the UI-to-route session-policy boundary, not real Supabase JWT or cookie verification.
 - Read-only live preflight at 18:51 to 18:53 UTC found all seven owned cards matching their Shopify
   source, approved identities, private baselines and published bindings. There was no open owned-card
   outbox or active product lease. The final planner accepted all 13 real QMMM1 ALT suffixes locally.
@@ -141,10 +158,21 @@ No DDL. Code deploy only, after CI, `npm test`, `npm run lint`, `npm run build`.
   for the two families still exist; the grouped codes alone do not establish their underlying cause.
 
 Local evidence stays in the workspace `work/` directory and is not application code:
-`final-suffix-test-20261109.log`, `final-suffix-lint-20261109.log`,
+`final-session-auth-test-20261109.log`, `final-session-auth-lint-20261109.log`,
 `owned-edit-ui-browser-evidence-20261109.json`, `owned-edit-live-preflight-20261109.json`
 and `owned-edit-hardening-20261109.json`. The earlier hardening manifest predates the Hebrew ALT fix;
 use the release commit/tree and final test logs to identify the released candidate.
+
+### Preview acceptance limitation
+
+The first Preview of this PR built successfully, and a real administrator sign-in reached
+`GET /api/admin/carousel`. Vercel runtime logs on 9 November at 19:22 UTC showed that data loading
+failed because admin environment variables were absent. A metadata-only check confirmed that
+`SUPABASE_SERVICE_ROLE_KEY` and `ADMIN_PANEL_TOKEN` target production only; the public Supabase
+settings also target Preview. No secret was decrypted or copied and no target was expanded.
+This is a Preview configuration limitation, not a bad password. Full authenticated data acceptance
+on Preview remains unverified. Local fixture acceptance and CI must not be reported as that proof.
+Production release still requires an explicit owner decision and a reversible live canary.
 
 1. Confirm production state first: the adoption `prepare` endpoints show each color's baseline and any unresolved outbox
    row. The preflight rebuild in step 3 refuses to write while any exist.

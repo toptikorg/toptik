@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { requireAdminToken } from "@/lib/admin/admin-token";
+import { authorizeGalleryAdmin } from "@/lib/admin/gallery-access";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { applyOwnedGalleryEdit, ownedFamilyForItem } from "@/lib/shopify/owned-edit-service";
 
@@ -36,8 +36,13 @@ async function rpc(db: SupabaseClient, name: string, args: Record<string, unknow
 }
 
 export async function POST(request: NextRequest) {
-  const denied = requireAdminToken(request);
-  if (denied) return denied;
+  const auth = await authorizeGalleryAdmin(request, { sessionMutation: true });
+  if (!auth.ok) return auth.response;
+  // Cookie-authenticated editor writes must be same-origin JSON. The central gate checks the
+  // verified admin role and Origin/Sec-Fetch-Site first. Preserve the existing token-only transport.
+  if (auth.authMethod === "session" && request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() !== "application/json") {
+    return reply({ error: "SYNC_OWNED_REQUEST_INVALID" }, 415);
+  }
   try {
     const raw = await request.text();
     if (Buffer.byteLength(raw, "utf8") > 600_000) return reply({ error: "SYNC_OWNED_REQUEST_TOO_LARGE" }, 413);

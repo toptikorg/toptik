@@ -4,14 +4,14 @@ import { z } from 'zod';
 import { loadWrapped, policy } from './helpers/owned-edit-harness.mjs';
 
 const makeRoute = await loadWrapped('src/app/api/admin/shopify/owned/edit/route.ts',
-  ['randomUUID', 'NextResponse', 'z', 'requireAdminToken', 'createSupabaseServiceRoleClient', 'applyOwnedGalleryEdit', 'ownedFamilyForItem', 'Buffer', 'console'],
+  ['randomUUID', 'NextResponse', 'z', 'authorizeGalleryAdmin', 'createSupabaseServiceRoleClient', 'applyOwnedGalleryEdit', 'ownedFamilyForItem', 'Buffer', 'console'],
   ['POST']);
 const fzt73 = policy.FZT73_VARIANTS[0], md20 = policy.MD20_VARIANTS[1];
 const owner = '11111111-1111-4111-8111-111111111111';
 const valid = (itemId = fzt73.itemId) => ({ itemId, expectedVersion: '2026-11-09T10:00:00.000Z', expectedRevision: 1, patch: { title: 'שם' } });
 
 function fixture() {
-  const state = { denied: false, busy: false, releaseFails: false, serviceError: null, serviceCalls: [], rpcCalls: [], errors: [] };
+  const state = { denied: false, busy: false, releaseFails: false, serviceError: null, serviceCalls: [], rpcCalls: [], errors: [], bodyReads: 0, clientCreations: 0, authOptions: [] };
   const db = {
     async rpc(name, args) {
       state.rpcCalls.push({ name, args });
@@ -25,8 +25,11 @@ function fixture() {
   const deps = {
     randomUUID: () => owner, z, Buffer, console: { error: (...a) => state.errors.push(a) },
     NextResponse: { json: (body, options = {}) => ({ body, status: options.status ?? 200 }) },
-    requireAdminToken: () => state.denied ? { body: { error: 'Unauthorized' }, status: 401 } : null,
-    createSupabaseServiceRoleClient: () => db, ownedFamilyForItem: familyOf,
+    authorizeGalleryAdmin: async (_request, options) => {
+      state.authOptions.push(options);
+      return state.denied ? { ok: false, response: { body: { error: 'Unauthorized' }, status: 401 } } : { ok: true, authMethod: 'token', actorId: owner };
+    },
+    createSupabaseServiceRoleClient: () => { state.clientCreations++; return db; }, ownedFamilyForItem: familyOf,
     applyOwnedGalleryEdit: async (client, input, leaseOwner, deadline) => {
       state.serviceCalls.push({ client, input, leaseOwner, deadline });
       if (state.serviceError) throw new Error(state.serviceError);
@@ -34,15 +37,17 @@ function fixture() {
     },
   };
   const { POST } = makeRoute(deps);
-  return { state, post: body => POST({ text: async () => typeof body === 'string' ? body : JSON.stringify(body) }) };
+  return { state, post: body => POST({ text: async () => { state.bodyReads++; return typeof body === 'string' ? body : JSON.stringify(body); } }) };
 }
 
-test('requires the administrator token before reading the body or touching anything', async () => {
+test('awaits gallery administrator authorization before reading the body or touching anything', async () => {
   const f = fixture();
   f.state.denied = true;
   const response = await f.post(valid());
   assert.equal(response.status, 401);
   assert.equal(f.state.rpcCalls.length + f.state.serviceCalls.length, 0);
+  assert.equal(f.state.bodyReads + f.state.clientCreations, 0);
+  assert.deepEqual(f.state.authOptions, [{ sessionMutation: true }]);
 });
 
 test('rejects malformed, oversized, unknown-field and empty requests without taking the lease', async () => {
