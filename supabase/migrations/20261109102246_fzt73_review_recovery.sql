@@ -35,23 +35,29 @@ begin
       and e.delivery_id ~ '^publication-recovery:[0-9]{4}-[0-9]{2}-[0-9]{2}:gid://shopify/Product/7524873044218$' for update;
   if current_received is null then raise exception 'SYNC_FZT73_RECOVERY_INVALID'; end if;
   for expected in select * from (values
-    ('341df0c7-7a31-4e77-87c0-a683082c3cd7'::uuid,'P10FZT73001','gid://shopify/ProductVariant/42361904398586'),
-    ('78e341a9-90f8-4b5a-a215-8bdf5f4f5321'::uuid,'P10FZT7308Q','gid://shopify/ProductVariant/42449044799738'),
-    ('7bd35662-0989-4b96-aafd-f6a77ba6d72f'::uuid,'P10FZT7324B','gid://shopify/ProductVariant/42449044832506'),
-    ('8890d9f2-d927-42e2-9006-f287a46ef137'::uuid,'P10FZT7327D','gid://shopify/ProductVariant/42449044865274')
-  ) v(item_id,sku,variant_gid) order by item_id loop
+    ('341df0c7-7a31-4e77-87c0-a683082c3cd7'::uuid,'P10FZT73001','gid://shopify/ProductVariant/42361904398586','שחור'),
+    ('78e341a9-90f8-4b5a-a215-8bdf5f4f5321'::uuid,'P10FZT7308Q','gid://shopify/ProductVariant/42449044799738','כחול'),
+    ('7bd35662-0989-4b96-aafd-f6a77ba6d72f'::uuid,'P10FZT7324B','gid://shopify/ProductVariant/42449044832506','תכלת'),
+    ('8890d9f2-d927-42e2-9006-f287a46ef137'::uuid,'P10FZT7327D','gid://shopify/ProductVariant/42449044865274','צ''אי הודי (חום)')
+  ) v(item_id,sku,variant_gid,color) order by item_id loop
     if not (p_versions ? expected.item_id::text) or
       coalesce(p_versions->expected.item_id::text->>'editorRevision','') !~ '^[1-9][0-9]*$' or
       coalesce(p_versions->expected.item_id::text->>'copyUpdatedAt','') = '' then
       raise exception 'SYNC_FZT73_RECOVERY_INVALID';
     end if;
-    select i.id, i.editor_revision, i.copy_updated_at, i.catalog_number, b.variant_gid,
-      b.product_gid, b.is_published, b.source_updated_at
+    select i.id, i.editor_revision, i.copy_updated_at, i.catalog_number, i.color, i.is_active,
+      b.variant_gid, b.product_gid, b.product_handle, b.is_published, b.source_updated_at,
+      l.product_handle link_handle,l.variant_id link_variant,l.is_published link_published
       into actual from public.carousel_items i join public.shopify_gallery_bindings b on b.carousel_item_id=i.id
-      where i.id=expected.item_id and b.catalog_key=expected.sku for update of i,b;
+      join public.shopify_gallery_public_links l on l.catalog_key=b.catalog_key
+      where i.id=expected.item_id and b.catalog_key=expected.sku for update of i,b,l;
     if not found or actual.catalog_number is distinct from expected.sku or actual.variant_gid is distinct from expected.variant_gid or
       actual.product_gid is distinct from 'gid://shopify/Product/7524873044218' or actual.is_published is distinct from true or
-      actual.source_updated_at is distinct from p_source_updated_at or
+      actual.color is distinct from expected.color or actual.is_active is distinct from true or
+      actual.product_handle is distinct from 'תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק' or
+      actual.link_handle is distinct from actual.product_handle or actual.link_published is distinct from true or
+      actual.link_variant is distinct from split_part(expected.variant_gid,'/',5) or
+      actual.source_updated_at is null or actual.source_updated_at>p_source_updated_at or
       actual.editor_revision<>(p_versions->expected.item_id::text->>'editorRevision')::bigint or
       actual.copy_updated_at is distinct from (p_versions->expected.item_id::text->>'copyUpdatedAt')::timestamptz then
       raise exception 'SYNC_COPY_CONCURRENT_UPDATE';
@@ -66,8 +72,7 @@ begin
       and o.status in ('pending','processing','review','failed')) then return 0; end if;
   -- Keep each original payload. A marker records that this was superseded by
   -- a later verified equality, not a replay of the original webhook.
-  update public.shopify_webhook_events e set status='processed', processed_at=now(),
-    last_error='SYNC_FZT73_REVIEW_SUPERSEDED_VERIFIED'
+  with candidates as (select e.id from public.shopify_webhook_events e
   where e.id<>p_current_event and e.status='review' and e.last_error='SYNC_FZT73_BASELINE_REQUIRED'
     and e.shop_domain='toptikcoil.myshopify.com' and e.payload->>'id'='7524873044218' and e.received_at<=current_received
     and e.topic='products/update'
@@ -75,7 +80,13 @@ begin
       e.delivery_id ~ '^publication-recovery:[0-9]{4}-[0-9]{2}-[0-9]{2}:gid://shopify/Product/7524873044218$') or
       case when coalesce(e.payload->>'updated_at','') ~ '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$'
        and pg_input_is_valid(e.payload->>'updated_at','timestamp with time zone')
-      then (e.payload->>'updated_at')::timestamptz<=p_source_updated_at else false end);
+      then (e.payload->>'updated_at')::timestamptz<=p_source_updated_at else false end)
+  order by e.received_at,e.id limit 20 for update skip locked)
+  update public.shopify_webhook_events e set status='processed', processed_at=now(),
+    last_error='SYNC_FZT73_REVIEW_SUPERSEDED_VERIFIED:' || p_current_event::text || ':' ||
+      to_char(p_source_updated_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') || ':' ||
+      coalesce(to_char(e.processed_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),'NO_PRIOR_REVIEW_TIME')
+  from candidates where e.id=candidates.id;
   get diagnostics closed_count = row_count;
   return closed_count;
 end $$;
