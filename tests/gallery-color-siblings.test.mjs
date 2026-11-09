@@ -11,7 +11,7 @@ const source = readFileSync('src/lib/carousel/colors.ts', 'utf8')
   .replace('"./color-groups"', JSON.stringify(colorGroups))
   .replace('"@/lib/catalog-source/vendor-detect"', JSON.stringify(vendorDetect))
   .replace('"./brands"', JSON.stringify(brands));
-const {modelCodeFromCatalog, colorCodeFromCatalog, buildModelSiblingSwatches, resolveItemSwatches, colorSwatchStyle} = await import(moduleUrl(source));
+const {modelCodeFromCatalog, colorCodeFromCatalog, buildModelSiblingSwatches, resolveItemSwatches, colorSwatchStyle, verifiedPublishedColorName, VERIFIED_PUBLISHED_COLOR_BINDINGS_20261109} = await import(moduleUrl(source));
 
 const item = (sku, overrides = {}) => ({
   id: sku, catalogNumber: sku, title: sku, isActive: true,
@@ -118,4 +118,38 @@ test('Porsche Roadster uses verified black and racing-yellow colors, not Mandari
   ]);
   const mandarina = [item('P10FZT73024'),item('P10FZT73001')];
   assert.equal(buildModelSiblingSwatches(mandarina).get(mandarina[0].id)[0].name,'פיריט');
+});
+
+test('verified additional Shopify color labels respect exact SKU, handle and variant', () => {
+ const bags=[
+  item('P10QMMM3B03',{coverImagePath:'https://cdn.example.test/bordeaux.jpg',shopifyLink:{handle:'p10qmmm3b03',variantId:'67616509690106',isPublished:true}}),
+  item('P10QMMM3B06',{coverImagePath:'https://cdn.example.test/amber.jpg',shopifyLink:{handle:'p10qmmm3b06',variantId:'67616510017786',isPublished:true}}),
+ ];
+ const group=buildModelSiblingSwatches(bags).get(bags[0].id);
+ assert.deepEqual(group.map(s=>s.name),['בורדו','ענבר']);
+ assert.ok(group.every(s=>s.useProductImageAsSwatch===true));
+ assert.match(colorSwatchStyle(group[0]).backgroundImage,/bordeaux\.jpg/);
+ assert.equal(colorSwatchStyle({...group[0],imagePath:'http://unsafe.test/x.jpg'}),undefined);
+ const changed=structuredClone(bags); changed[0].shopifyLink.variantId='1';
+ assert.notEqual(buildModelSiblingSwatches(changed).get(changed[0].id)[0].name,'בורדו');
+ const brics=[
+  item('BAH08453.001',{shopifyLink:{handle:'bah08453-001',variantId:'50083958980858',isPublished:true}}),
+  item('BAH08453.006',{shopifyLink:{handle:'bah08453-006',variantId:'50083959046394',isPublished:true}}),
+ ];
+ assert.deepEqual(buildModelSiblingSwatches(brics).get(brics[0].id).map(s=>s.name),['שחור','כחול']);
+});
+
+test('all 130 additional color labels are pinned to exact published variant identities', () => {
+ const evidence=JSON.parse(readFileSync('docs/verified-other-store-color-names-20261109.json','utf8')).items;
+ assert.equal(evidence.length,130);
+ assert.equal(new Set(evidence.map(x=>x.sku)).size,130);
+ assert.deepEqual(Object.keys(VERIFIED_PUBLISHED_COLOR_BINDINGS_20261109).sort(),evidence.map(x=>x.sku).sort());
+ for(const e of evidence){
+  const variantId=e.variantGid.split('/').at(-1);
+  assert.deepEqual(VERIFIED_PUBLISHED_COLOR_BINDINGS_20261109[e.sku],{handle:e.handle,variantId,name:e.label});
+  const row=item(e.sku,{shopifyLink:{handle:e.handle,variantId,isPublished:true}});
+  assert.equal(verifiedPublishedColorName(row),e.label,e.sku);
+  assert.equal(verifiedPublishedColorName({...row,shopifyLink:{...row.shopifyLink,isPublished:false}}),null,e.sku);
+  assert.equal(verifiedPublishedColorName({...row,shopifyLink:{...row.shopifyLink,variantId:'1'}}),null,e.sku);
+ }
 });
