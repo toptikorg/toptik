@@ -95,6 +95,25 @@ test('duplicate current Shopify URL is ambiguous even with equal bytes',async()=
 test('exact source already represented by another Gallery identity is held',async()=>{
  const x=f();x.raw.angles.push({...x.raw.angles[0],id:'a0000000-0000-4000-8000-000000000007',angle_order:2});await assert.rejects(x.run(),/EQUIVALENT_TARGET_EXISTS/);
 });
+
+function recreatedAngle(){const x=f();x.raw.angles[0].id='a0000000-0000-4000-8000-000000000007';return x;}
+test('recreated physical angle reuses its orphaned exact baseline identity without transport',async()=>{
+ const x=recreatedAngle(),out=await x.run();assert.equal(out.refs[1].angleId,x.raw.angles[0].id);assert.equal(out.refs[1].key,'existing');
+ assert.deepEqual(out.pair.gallery.assets,x.pair.gallery.assets);assert.deepEqual(out.pair.shopify.assets,x.pair.shopify.assets);
+ const plan=core.reconcileMedia(x.context.baselines,out.pair,[],[]);assert.deepEqual(plan.conflicts,[]);assert.deepEqual(plan.patches,[]);
+ x.context.galleryRefs=out.refs;x.context.baselines=out.pair;const next=await x.run();assert.deepEqual(next.refs,out.refs);
+});
+for(const [name,change] of [
+ ['old angle still exists',x=>x.raw.angles.push({...x.raw.angles[0],id:x.refs[1].angleId,angle_order:2})],
+ ['two replacements claim one source',x=>x.raw.angles.push({...x.raw.angles[0],id:'a0000000-0000-4000-8000-000000000008',angle_order:2})],
+ ['baseline proof is missing',x=>x.context.provenance=x.context.provenance.filter(p=>p.side!=='gallery')],
+ ['old source URL differs',x=>x.context.provenance[0].proof.url=url+'?other=1'],
+ ['old physical reference differs',x=>x.context.provenance[0].proof.platformRef='angle:a0000000-0000-4000-8000-000000000009'],
+ ['proof belongs to another product',x=>x.context.provenance[0].product_gid='gid://shopify/Product/999'],
+ ['baseline evidence differs',x=>x.context.baselines.gallery.assets[0].evidenceId='unrelated'],
+ ['baseline content differs',x=>x.context.baselines.gallery.assets[0].contentId='f'.repeat(64)],
+ ['two old physical references claim the key',x=>x.context.galleryRefs.push({...x.refs[1],angleId:'a0000000-0000-4000-8000-000000000009'})],
+])test('orphan rebinding refuses '+name,async()=>{const x=recreatedAngle();change(x);await assert.rejects(x.run(),/EQUIVALENT_TARGET_EXISTS/);});
 test('new modal angle for independent cover preserves cover identity and does not synthesize removal',async()=>{
  const x=f(),coverUrl=url+'?cover=1';x.raw.item.cover_image_path=coverUrl;
  const oldCover={...x.context.galleryRefs[0],key:'independent-cover',evidenceId:'g-cover'};x.context.galleryRefs[0]=oldCover;

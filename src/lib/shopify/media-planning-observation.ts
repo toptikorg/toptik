@@ -23,6 +23,22 @@ function stable(v: unknown): string { return Array.isArray(v) ? `[${v.map(stable
 function same(a: unknown, b: unknown) { return stable(a) === stable(b); }
 function registered(p: MediaProofRow): MediaRegisteredProof { return { evidenceId: p.evidence_id, key: p.asset_key, side: p.side, contentId: p.content_id, proof: structuredClone(p.proof) }; }
 
+/** A deleted physical row may be recreated without changing its exact image.
+ * Preserve its already approved logical identity only when the old row is gone
+ * and one current row uniquely claims the same immutable baseline source. */
+function isOrphanedAngleReplacement(c: MediaPlanningContext, key: string, url: string): boolean {
+  const refs = c.galleryRefs.filter(r => r.key === key && r.role === "angle");
+  const baseline = c.baselines.gallery.assets.filter(a => a.key === key);
+  if (refs.length !== 1 || !refs[0].angleId || baseline.length !== 1 ||
+      c.galleryRaw.angles.some(a => a.id === refs[0].angleId) ||
+      c.galleryRaw.angles.filter(a => a.image_path === url).length !== 1 ||
+      refs[0].evidenceId !== baseline[0].evidenceId) return false;
+  const proofs = c.provenance.filter(p => p.product_gid === c.identity.productId && p.side === "gallery" &&
+    p.asset_key === key && p.evidence_id === baseline[0].evidenceId && p.content_id === baseline[0].contentId &&
+    p.proof.url === url && p.proof.platformRef === `angle:${refs[0].angleId}`);
+  return proofs.length === 1;
+}
+
 /** Only independent byte reads run in parallel. Every started read settles
  * before returning or throwing, so callers can safely release their lease.
  * Retain metadata only; three decoders is a hard resource bound, not a retry. */
@@ -147,9 +163,11 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
         const known = [...new Set(c.provenance.filter(p => p.side === "shopify" && p.proof.platformRef === image.mediaId).map(p => p.asset_key))];
         if (known.length > 1) fail("MEDIA_PLANNING_AMBIGUOUS_LINEAGE");
         const sourceKey = known[0] ?? `s-media:${image.mediaId.split("/").at(-1)}`;
-        // Never rebind a known Gallery identity or collapse two Gallery angles.
-        if (c.baselines.gallery.assets.some(a => a.key === sourceKey) ||
-            c.galleryRefs.some(r => r.key === sourceKey) || angleRefs.some(r => r.key === sourceKey)) {
+        // Never collapse live Gallery angles. Recreated physical rows may retain
+        // a uniquely proven orphaned logical identity, without attaching media.
+        const knownTarget = c.baselines.gallery.assets.some(a => a.key === sourceKey) || c.galleryRefs.some(r => r.key === sourceKey);
+        if (angleRefs.some(r => r.key === sourceKey) ||
+            (knownTarget && !isOrphanedAngleReplacement(c, sourceKey, angle.image_path))) {
           fail("MEDIA_PLANNING_EQUIVALENT_TARGET_EXISTS");
         }
         if (bytes.width !== image.width || bytes.height !== image.height) fail("MEDIA_PLANNING_IMAGE_DIMENSIONS_CHANGED");
