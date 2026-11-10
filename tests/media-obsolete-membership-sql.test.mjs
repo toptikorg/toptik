@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto';
 import {createVerifiedImportDatabase} from './helpers/verified-native-import-sql-fixture.mjs';
 import {fixture,core} from './helpers/media-planning-fixture.mjs';
 
-test('real removal RPC appends an idempotent explicit Gallery-only decision without changing any baseline or media',async()=>{
+for (const principal of ['admin_panel_token','supabase_user']) test(`real removal RPC appends an idempotent ${principal} Gallery-only decision without changing baseline or media`,async()=>{
  const f=await createVerifiedImportDatabase(),{db,rpc}=f;
  try{
   const b=fixture(),identity=b.context.identity,owner=randomUUID(),requestId=randomUUID(),key='g-angle:'+randomUUID();
@@ -17,7 +17,7 @@ test('real removal RPC appends an idempotent explicit Gallery-only decision with
   const approval=randomUUID();await rpc('bootstrap_toptik_media',[identity.productId,owner,approval,baseline,proofs,{evidenceId:'independent-reviewed-bootstrap'}]);
   await rpc('set_toptik_media_enabled',[identity.productId,owner,randomUUID(),true,approval]);
   const before=(await db.query('select version,baselines from toptik_media_private.state where product_gid=$1',[identity.productId])).rows[0];
-  const fingerprint=core.mediaSnapshotFingerprint(baseline.gallery),actor={kind:'authenticated_editor',actorType:'admin_panel_token',actorId:'configured-admin-panel',requestId,origin:'https://landing.toptik.co.il'};
+  const fingerprint=core.mediaSnapshotFingerprint(baseline.gallery),actor={kind:'authenticated_editor',actorType:principal,actorId:principal==='admin_panel_token'?'configured-admin-panel':randomUUID(),requestId,origin:'https://landing.toptik.co.il'};
   const args=[identity.productId,owner,requestId,'gallery',key,fingerprint,actor];
   const first=await rpc('record_toptik_media_removal',args),again=await rpc('record_toptik_media_removal',args);
   assert.deepEqual(first,again);assert.equal(first.key,key);assert.equal(first.kind,'authenticated_editor');

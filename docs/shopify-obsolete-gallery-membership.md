@@ -61,6 +61,15 @@ reported as success. Preserve the response and inspect the journal; an identical
 retry may complete only that identical proposal. Never invent a new hash or request
 to get around a refusal. No retry loop is provided.
 
+Existing intents for these keys must carry the deterministic request UUIDs of
+that identical proposal. If a partial decision exists and the capture changes,
+preflight refuses the changed proposal rather than appending a second intent for
+the same key. The RPC's evidence schema has a strict allowlist, so no new `reason`
+or `proposalHash` field is injected into it. Preserve the full proposal and returned
+deterministic request UUIDs together in the governing audit record. SQL trusts the
+service caller's actor UUID format; administrator role verification is performed by
+the real authorization layer before that service caller is created.
+
 After all acknowledgments, only the existing product reconciliation queue is
 notified, with a null Shopify event. No signed event is fabricated and no blanket
 Gallery editor deletion authority is added. The response is `decisionRecorded: true`,

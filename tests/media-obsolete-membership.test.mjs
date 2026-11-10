@@ -91,6 +91,13 @@ test('partial acknowledgment can repeat only the identical deterministic request
  f.context.removals=[{side:'gallery',key:oldKey,kind:'authenticated_editor',requestId:decisions[0][7],expectedBaselineFingerprint:core.mediaSnapshotFingerprint(f.context.baselines.gallery)}];
  assert.equal(f.confirm().proposalHash,command.proposalHash);await f.run(command);
 });
+test('a changed proposal after partial acknowledgment cannot record a second intent for the same key',()=>{
+ const f=fixture(),p=f.preview();
+ f.context.removals=[{side:'gallery',key:oldKey,kind:'authenticated_editor',requestId:api.obsoleteMembershipRequestId(p.proposalHash,oldKey),expectedBaselineFingerprint:core.mediaSnapshotFingerprint(f.context.baselines.gallery)}];
+ assert.equal(f.preview().proposalHash,p.proposalHash);
+ f.context.galleryRaw.revision='e'.repeat(64);
+ assert.throws(f.preview,/MEDIA_OBSOLETE_EXISTING_DECISION_DIFFERS/);
+});
 test('RPC failure does not enqueue or claim verified; queue ambiguity is not success',async()=>{
  const f=fixture();f.state.removalFail=1;await assert.rejects(f.run(f.confirm()),/REMOVAL_FAILED/);assert(!f.calls.some(c=>c[0]==='queue'));assert.equal(f.calls.at(-1)[0],'release');
  const q=fixture();q.state.queueError={message:'private'};await assert.rejects(q.run(q.confirm()),/QUEUE_UNCONFIRMED/);assert.equal(q.calls.at(-1)[0],'release');

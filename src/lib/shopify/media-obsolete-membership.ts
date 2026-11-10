@@ -82,7 +82,15 @@ export function obsoleteMembershipProposal(context: MediaPlanningContext, observ
     shopifyBaselineFingerprint: mediaSnapshotFingerprint(baselines.shopify), galleryRawRevision: context.galleryRaw.revision,
     currentFingerprints: { gallery: mediaSnapshotFingerprint(current.gallery), shopify: mediaSnapshotFingerprint(current.shopify) },
     historicalJournalFingerprint: hash([context.operations, context.steps]), missingGalleryKeys: missing, sources };
-  return { ...decision, proposalHash: hash(decision), mediaChanges: 0, syncVerified: false };
+  const proposalHash = hash(decision), seen = new Set<string>();
+  for (const r of context.removals) {
+    // An earlier partial decision must belong to THIS exact proposal. A new
+    // capture/hash must never create duplicate intent rows for the same key.
+    if (seen.has(r.key) || r.kind !== "authenticated_editor" || r.expectedBaselineFingerprint !== fingerprint ||
+        r.requestId !== obsoleteMembershipRequestId(proposalHash, r.key)) fail("MEDIA_OBSOLETE_EXISTING_DECISION_DIFFERS");
+    seen.add(r.key);
+  }
+  return { ...decision, proposalHash, mediaChanges: 0, syncVerified: false };
 }
 
 /** Preview is read-only apart from a temporary lease. Confirm records ONLY
