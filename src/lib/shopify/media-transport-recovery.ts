@@ -6,7 +6,7 @@ import type { MediaTransportContext, StagedMediaSource } from "./media-transport
 import { ownedMediaFilename, buildOwnedMediaCreate, buildOwnedMediaAssociate, buildMediaVariantReassign,
   buildMediaReferenceDetach, buildMediaReorder } from "./media-transport-requests";
 import { buildMediaJournalIntent, mediaJournalPhase } from "./media-transport-journal-intent";
-import { assertMediaTransportRead, parseTransportMedia } from "./media-transport-read";
+import { assertMediaTransportRead, parseTransportMedia, matchesMediaReorderReadback } from "./media-transport-read";
 
 type Result = { status: "pending" | "conflict" | "verified" };
 type Row = Record<string, unknown>;
@@ -123,5 +123,10 @@ export async function recoverShopifyMediaPhase(reference: MediaTransportReferenc
   }
   const result = await bounded(() => deps.accept(ref, owner, randomUUID(), String(attempt.request_hash), fresh, artifact, deadline), deadline, deps.now);
   if (result.mayExecute !== false || !["verified", "conflict"].includes(String(result.status))) fail("MEDIA_RECOVERY_ACCEPT_INVALID");
+  // SQL records concurrent changes durably. A second local post-readback check
+  // prevents a mismatched SQL/transport contract from being reported as verified.
+  if (proof.phase === "reorder" && result.status === "verified" && !matchesMediaReorderReadback(saved.before, fresh.target, proof.desiredIds)) {
+    fail("MEDIA_RECOVERY_REORDER_READBACK_MISMATCH");
+  }
   return { status: result.status as Result["status"] };
 }

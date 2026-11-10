@@ -1,0 +1,13 @@
+# Verified ordinary media import lineage
+
+A reviewed staged upload approves the source URL, exact product/variant/card/SKUs and decoded source SHA. Shopify can recompress that photograph. A successful `fileCreate` acknowledgement or its CDN filename does not approve a new photograph and does not prove synchronization.
+
+After a private transport chain has been verified, the ordinary product worker reads its service-owned discovery before final capture. `verifiedNativeImportProofs` accepts only an ordinary Shopify `attach`, `replace_reference` or `alt` clone with verified create and association receipts for the same operation, step, identity, logical key, source evidence and semantic content. A fresh native read and decode must exactly match the recorded MediaImage ID, URL, hash, MIME, dimensions and byte length. Denied media still stops the operation. Attach/replace parents must belong to the Gallery. ALT plans may retain the existing native evidence: the parent must then be an exact member of `observed_pair.shopify`, including identity/key/evidence/content, even though `body.source` says Gallery.
+
+The returned proof uses `ownership: reference_only`, the original logical key/contentId and explicit `operationId`/`sourceEvidenceId`. The existing review guard follows that parent to the original exact-image review. The existing lease-guarded register RPC independently verifies the private create/associate receipts in SQL. It allows both recompressed and equal-byte receipted imports. Neither helper nor migration resets a baseline, changes approval, republishes a hidden product or repeats a native mutation. Baselines advance only through final readback and commit.
+
+The local roundtrip now uses a real codec to change native bytes, starts without native provenance, demonstrates the pre-fix review failure, and exercises the production bridge plus real SQL register, final accept and commit. It also checks rejected lineage, fresh-byte drift, denylist precedence, immutable evidence reuse and no duplicate create. Storage, DNS and Shopify provider I/O remain local fixtures. These checks are not live provider acceptance or visual browser QA.
+
+The earlier roundtrip manually inserted native provenance, used `owned_clone` (not an accepted SQL ownership value), and kept provider bytes unchanged. That test proved consumption of assumed lineage, not creation/validation of the artifact-to-provenance bridge. Its replacement removes that assumption.
+
+This bridge covers ordinary attach, replace and ALT clone lineage. Generic reorder timestamp handling is a separate change. Local verification is not evidence that the production canary has resumed or that all catalog holds have been resolved.

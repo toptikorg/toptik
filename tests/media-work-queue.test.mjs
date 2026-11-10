@@ -135,6 +135,62 @@ test('pending transport diagnostic is recorded as last_error while the row stays
 });
 
 const capture=async(fn)=>{const logs=[];const orig=console.error;console.error=(...a)=>logs.push(a);try{await fn();}finally{console.error=orig;}return logs;};
+test('exact copy approval loss from Error or plain RPC object parks the product for review without another run',async()=>{
+ const code='SYNC_COPY_APPROVAL_MISSING_OR_CHANGED';
+ for(const error of [Error(code),{message:code},Object.assign(Object.create(null),{message:code})]){
+  const f=fixture();f.state.pending=false;let runs=0;
+  const logs=await capture(async()=>{
+   const result=await f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{runs++;throw error;});
+   assert.equal(result.processed,0);assert.equal(result.reviewed,1);assert.equal(result.failed,0);assert.equal(result.continuationNeeded,false);
+  });
+  assert.equal(runs,1,'approval failure cannot continue the product or perform another phase');
+  const finish=f.calls.find(c=>c.name==='finish_toptik_media_work').args;
+  assert.equal(finish.p_status,'review');assert.equal(finish.p_error,'MEDIA_COPY_APPROVAL_MISSING_OR_CHANGED');
+  assert.deepEqual(f.calls.map(c=>c.name),['claim_toptik_media_work','finish_toptik_media_work','toptik_media_work_pending']);
+  assert.equal(logs.length,0,'recognized safe approval loss is no longer an uncoded failure');
+ }
+});
+test('approval review still permits continuation for independent pending products',async()=>{
+ const f=fixture();const result=await f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw Error('SYNC_COPY_APPROVAL_MISSING_OR_CHANGED');});
+ assert.equal(result.continuationNeeded,true);assert.equal(result.reviewed,1);assert.equal(result.failed,0);
+ assert.equal(f.calls.filter(c=>c.name==='claim_toptik_media_work').length,1);
+ assert.equal(f.calls.find(c=>c.name==='finish_toptik_media_work').args.p_status,'review');
+});
+test('approval mapping is exact and does not broaden SYNC_COPY or plain-object MEDIA handling or leak unknown errors',async()=>{
+ const code='SYNC_COPY_APPROVAL_MISSING_OR_CHANGED',secret='shpat_fixture_secret_do_not_log';
+ const custom=Object.create({message:code});
+ for(const error of [code,Error(' '+code),Error(code+' '),Error(code+'_EXTRA'),Error('SYNC_COPY_IDENTITY_CONFLICT'),
+  {message:'MEDIA_SOURCE_READ_FAILED'},custom,Error(code+' '+secret),{message:code+' '+secret},Error(code+'\n'+secret)]){
+  const f=fixture();f.state.pending=false;let runs=0;
+  const logs=await capture(async()=>{
+   const result=await f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{runs++;throw error;});
+   assert.equal(result.failed,1);assert.equal(result.reviewed,0);assert.equal(result.continuationNeeded,false);
+  });
+  const finish=f.calls.find(c=>c.name==='finish_toptik_media_work').args;
+  assert.equal(finish.p_status,'failed');assert.equal(finish.p_error,'MEDIA_WORK_FAILED');assert.equal(runs,1);
+  assert.equal(logs.filter(l=>l[0]==='toptik.media.work_failed').length,1);
+  assert.equal(JSON.stringify({finish,logs}).includes(secret),false);
+ }
+});
+test('hostile plain RPC accessors and proxy traps cannot bypass generic queue finish or expose their errors',async()=>{
+ const secret='shpat_hostile_fixture_do_not_log';let getters=0;
+ const accessor={get message(){getters++;throw Error(secret);}};
+ const nullAccessor=Object.create(null,{message:{get(){getters++;throw Error(secret);}}});
+ const prototypeTrap=new Proxy({},{getPrototypeOf(){throw Error(secret);}});
+ const descriptorTrap=new Proxy({},{getOwnPropertyDescriptor(){throw Error(secret);}});
+ const revoked=Proxy.revocable({},{});revoked.revoke();
+ for(const error of [accessor,nullAccessor,prototypeTrap,descriptorTrap,revoked.proxy]){
+  const f=fixture();f.state.pending=false;let runs=0;
+  const logs=await capture(async()=>{
+   const result=await f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{runs++;throw error;});
+   assert.equal(result.failed,1);assert.equal(result.reviewed,0);assert.equal(result.continuationNeeded,false);
+  });
+  const finish=f.calls.find(c=>c.name==='finish_toptik_media_work').args;
+  assert.equal(finish.p_status,'failed');assert.equal(finish.p_error,'MEDIA_WORK_FAILED');assert.equal(runs,1);
+  assert.equal(JSON.stringify({finish,logs}).includes(secret),false);
+ }
+ assert.equal(getters,0,'recognition must inspect data descriptors without executing plain RPC getters');
+});
 test('an uncoded failure logs only its kind and an allowlisted message; finish is unchanged',async()=>{
  const f=fixture();const logs=await capture(()=>f.api.drainMediaWork(Date.now()+40000,f.db,async()=>{throw new TypeError("Cannot read properties of undefined (reading 'x')");}));
  const fin=f.calls.find(c=>c.name==='finish_toptik_media_work').args;assert.equal(fin.p_error,'MEDIA_WORK_FAILED');assert.equal(fin.p_status,'failed');

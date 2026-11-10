@@ -10,9 +10,13 @@ import type { MediaPlanningContext, MediaRegisteredProof, MediaProofRow } from "
 import { assertNotDeniedMedia, requireReviewedMedia, isReviewedMediaProof, reviewedMediaRegistry } from "./reviewed-media-guard";
 
 import { loadReviewedMedia } from "./reviewed-media-store";
+import { verifiedNativeImportProofs } from "./media-import-lineage";
+import type { MediaOperationDiscovery } from "./media-transport-rpc";
 
 type CapturedMediaMetadata = Omit<CapturedMediaBytes, "bytes">;
-type Dependencies = { capture?: typeof captureMediaSourceBytes; shopify?: typeof readReadyShopifyMedia; gallery?: typeof createGalleryMediaTransport; now?: () => number; reviewLoader?: typeof loadReviewedMedia; observationOnlyBootstrap?: boolean };
+type Dependencies = { capture?: typeof captureMediaSourceBytes; shopify?: typeof readReadyShopifyMedia; gallery?: typeof createGalleryMediaTransport; now?: () => number; reviewLoader?: typeof loadReviewedMedia; observationOnlyBootstrap?: boolean;
+  /** Service-owned discovery only, read under this worker's lease after verified transport. */
+  verifiedTransport?: MediaOperationDiscovery };
 function fail(code: string): never { throw new Error(code); }
 function stable(v: unknown): string { return Array.isArray(v) ? `[${v.map(stable).join(",")}]` : v && typeof v === "object" ?
   `{${Object.entries(v).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, x]) => `${JSON.stringify(k)}:${stable(x)}`).join(",")}}` : JSON.stringify(v); }
@@ -73,9 +77,29 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
     }
   };
   const proofs: MediaRegisteredProof[] = [];
+  const inheritedAltReviews = new Set<string>();
   const captured = await captureMediaMetadataSources([
     ...c.galleryRaw.angles.map(angle => angle.image_path), c.galleryRaw.item.cover_image_path, ...shop.images.map(image => image.url),
   ], url => (dependencies.capture ?? captureMediaSourceBytes)(id, url, deadline), check);
+  if (dependencies.verifiedTransport) {
+    for (const p of verifiedNativeImportProofs(dependencies.verifiedTransport, id, shop, captured, now(),
+      { stateVersion: c.stateVersion, baselines: c.baselines })) {
+      // ALT clones preserve an already accepted exact image. Match the immutable parent to
+      // its approved baseline, rather than requiring a second manual review of recompressed bytes.
+      if ((dependencies.verifiedTransport.step.body as { kind?: string })?.kind === "alt") {
+        const parents = c.provenance.filter(old => old.evidence_id === p.proof.sourceEvidenceId && old.product_gid === id.productId &&
+          old.asset_key === p.key && old.content_id === p.contentId);
+        const parent = parents.length === 1 ? parents[0] : undefined;
+        const baseline = parent && c.baselines[parent.side].assets.filter(a => a.key === p.key);
+        if (parent && baseline?.length === 1 && baseline[0].evidenceId === parent.evidence_id && baseline[0].contentId === p.contentId) {
+          assertNotDeniedMedia(String(parent.proof.url), String(parent.proof.decodedSha256));
+          inheritedAltReviews.add(p.evidenceId);
+        }
+      }
+      if (!c.provenance.some(old => old.evidence_id === p.evidenceId)) c.provenance.push({ product_gid: id.productId,
+        evidence_id: p.evidenceId, asset_key: p.key, side: p.side, content_id: p.contentId, proof: p.proof });
+    }
+  }
   const capture = async (url: string) => { check(); const value = captured.get(url);
     if (!value) fail("MEDIA_PLANNING_CAPTURE_MISSING"); return value; };
   const choose = async (side: MediaSide, key: string, url: string, platformRef: string, bytes: CapturedMediaMetadata): Promise<MediaRegisteredProof> => {
@@ -84,7 +108,8 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
       p.proof.decodedSha256 === bytes.sha256 && p.proof.width === bytes.width && p.proof.height === bytes.height &&
       p.proof.mime === bytes.mime && p.proof.byteLength === bytes.byteLength && (side === "gallery" || p.proof.platformRef === platformRef));
     const unchanged = matches.some(p => c.baselines[side].assets.some(a => a.key === key && a.evidenceId === p.evidence_id && a.contentId === p.content_id));
-    if (!unchanged && !bootstrapObservation) await checkReview(url, bytes, matches);
+    const inheritedAlt = side === "shopify" && matches.some(p => inheritedAltReviews.has(p.evidence_id));
+    if (!unchanged && !bootstrapObservation && !inheritedAlt) await checkReview(url, bytes, matches);
     let result: MediaRegisteredProof;
     if (matches.length) {
       if (new Set(matches.map(p => p.content_id)).size !== 1) fail("MEDIA_PLANNING_AMBIGUOUS_LINEAGE");

@@ -23,6 +23,16 @@ test('missing asset without authenticated side evidence cannot authorize deletio
 test('explicit Gallery deletion records exact independent baseline fingerprint',async()=>{const x=f();x.state.current.gallery.assets=[];const e={gallery:{actorType:'admin_panel_token',actorId:'configured-admin-panel'}};await x.run(e);const c=x.calls.find(c=>c.name==='removal');assert.equal(c.args[1],'gallery');assert.equal(c.args[2],'existing');assert.equal(c.args[3],core.mediaSnapshotFingerprint(x.v.pair.gallery));assert.deepEqual(c.args[4],e.gallery);});
 test('revision-only metadata changes can acknowledge baseline with zero external mutation',async()=>{const x=f();x.state.current.shopify.revision='updated';const r=await x.run();assert.equal(r.status,'done');assert.equal(r.executed,false);assert.ok(x.calls.some(c=>c.name==='commit'));assert.equal(x.calls.some(c=>c.name==='phase'),false);});
 test('verified transport accepts logical step on a fresh complete observation followed by a fresh raw guard',async()=>{const x=f();active(x);x.state.chain={status:'verified',next_phase:5};const r=await x.run();assert.equal(r.progressed,true);assert.ok(x.calls.some(c=>c.name==='capture'));assert.ok(x.calls.some(c=>c.name==='acceptFinal'));assert.equal(x.calls.some(c=>c.name==='phase'||c.name==='accept'),false);assert.ok(x.calls.findIndex(c=>c.name==='capture')<x.calls.findIndex(c=>c.name==='guard'));assert.ok(x.calls.findIndex(c=>c.name==='guard')<x.calls.findIndex(c=>c.name==='acceptFinal'));});
+test('verified transport discovery reaches final capture before proof registration, without another native phase',async()=>{
+ const x=f();active(x,'attach');x.state.chain={status:'verified',next_phase:4};
+ const originalCapture=x.deps.capture,discovery={identity:id,operation:x.state.context.operations[0],step:x.state.context.steps[0],provenance:x.state.context.provenance};
+ x.deps.discover=async()=>{x.calls.push({name:'discover'});return discovery;};
+ x.deps.capture=async(...args)=>{assert.equal(args[3].verifiedTransport,discovery);return originalCapture(...args);};
+ const result=await x.run();assert.equal(result.status,'pending');
+ assert.ok(x.calls.findIndex(c=>c.name==='discover')<x.calls.findIndex(c=>c.name==='capture'));
+ assert.ok(x.calls.findIndex(c=>c.name==='capture')<x.calls.findIndex(c=>c.name==='register'));
+ assert.equal(x.calls.some(c=>c.name==='phase'||c.name==='prepare'||c.name==='begin'),false);
+});
 
 test('a fresh final media conflict is durable review and never repeats the completed external detach',async()=>{const x=f();active(x,'detach_reference');x.state.chain={status:'verified',next_phase:1};x.planning.acceptFinal=async(...a)=>{x.calls.push({name:'acceptFinal',args:a});return{status:'conflict',detachAcknowledged:true};};const r=await x.run();assert.equal(r.status,'review');assert.equal(r.executed,false);assert.equal(x.calls.some(c=>c.name==='phase'||c.name==='prepare'||c.name==='begin'),false);assert.equal(x.calls.at(-1).name,'release');});
 
