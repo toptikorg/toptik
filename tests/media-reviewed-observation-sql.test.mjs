@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRestoredRetirementDatabase } from './helpers/media-restored-retirement-sql-fixture.mjs';
-import {mod,stripped,coreUrl,galleryUrl,readyUrl,ready,visualOf} from './helpers/media-planning-fixture.mjs';
+import {mod,stripped,core,coreUrl,galleryUrl,readyUrl,ready,visualOf} from './helpers/media-planning-fixture.mjs';
 const f=await createRestoredRetirementDatabase(),{db,rpc}=f;
 await db.exec(await readFile('supabase/migrations/20261110191500_reviewed_gallery_observation_refresh.sql','utf8'));
 let serial=19000;
@@ -37,9 +37,11 @@ test('real SQL reproduces reused observation and appends a reviewed epoch withou
  assert.deepEqual((await db.query('select baselines,version from toptik_media_private.state where product_gid=$1',[x.product])).rows[0],before);
  assert.deepEqual((await db.query('select raw,refs,snapshot from toptik_media_private.gallery_observations where product_gid=$1 and revision=$2',[x.product,x.raw.revision])).rows[0],x.old);
  assert.equal((await db.query('select count(*)::int n from toptik_media_private.observation_refreshes where product_gid=$1',[x.product])).rows[0].n,1);
+ const receipt=(await db.query('select lease_owner,refs_sha256 from toptik_media_private.observation_refreshes where product_gid=$1',[x.product])).rows[0];assert.equal(receipt.lease_owner,x.owner);assert.match(receipt.refs_sha256,/^[a-f0-9]{64}$/);
  assert.deepEqual(await rpc('observe_toptik_gallery_media',[x.product,x.owner,after.raw.revision,x.next]),after);
  await assert.rejects(db.query('delete from toptik_media_private.observation_refreshes where product_gid=$1',[x.product]),/IMMUTABLE/);
 });
+test('a unilateral reviewed byte change remains an ordinary planned replacement, never a silent baseline adoption',async()=>{const x=await seed();const after=await rpc('refresh_toptik_reviewed_gallery_observation',x.args),current={gallery:after.snapshot,shopify:x.pair.shopify};const plan=core.reconcileMedia(x.pair,current,[],[],{gallery:{existing:visualOf('changed')},shopify:{existing:visualOf('original')}});assert.deepEqual(plan.conflicts,[]);assert.equal(plan.patches.length,1);assert.equal(plan.patches[0].source,'gallery');assert.equal(plan.patches[0].target,'shopify');assert.equal(plan.patches[0].kind,'replace_reference');assert.equal(plan.patches[0].value.contentId,'b'.repeat(64));assert.deepEqual((await db.query('select baselines from toptik_media_private.state where product_gid=$1',[x.product])).rows[0].baselines,x.pair);});
 for(const [name,edit,expected]of[
  ['missing reviews',x=>x.args[4]=[],/REVIEW_REQUIRED/],
  ['foreign review',x=>x.args[4]=['another-proof'],/REVIEW_REQUIRED/],

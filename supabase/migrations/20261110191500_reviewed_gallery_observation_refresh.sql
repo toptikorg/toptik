@@ -4,6 +4,7 @@ begin;
 create table toptik_media_private.observation_refreshes (
  product_gid text not null references toptik_media_private.products(product_gid),
  old_revision text not null, new_revision text not null,
+ lease_owner uuid not null, refs_sha256 text not null check(refs_sha256~'^[a-f0-9]{64}$'),
  reviewed_evidence_ids jsonb not null check(jsonb_typeof(reviewed_evidence_ids)='array'),
  old_snapshot jsonb not null, new_snapshot jsonb not null,
  created_at timestamptz not null default clock_timestamp(),
@@ -67,8 +68,8 @@ begin
  if (raw1-'version'-'revision') is distinct from (raw0-'version'-'revision') or raw1->>'revision'=raw0->>'revision'
   then raise exception 'MEDIA_GALLERY_CAS_CHANGED';end if;
  newobs:=public.observe_toptik_gallery_media(p_product_gid,p_lease_owner,raw1->>'revision',p_refs);
- insert into toptik_media_private.observation_refreshes(product_gid,old_revision,new_revision,reviewed_evidence_ids,old_snapshot,new_snapshot)
- values(p_product_gid,p_expected_revision,raw1->>'revision',authorized,old.snapshot,newobs->'snapshot');
+ insert into toptik_media_private.observation_refreshes(product_gid,old_revision,new_revision,lease_owner,refs_sha256,reviewed_evidence_ids,old_snapshot,new_snapshot)
+ values(p_product_gid,p_expected_revision,raw1->>'revision',p_lease_owner,toptik_media_private.digest(p_refs),authorized,old.snapshot,newobs->'snapshot');
  return newobs;
 end $$;
 revoke all on function public.refresh_toptik_reviewed_gallery_observation(text,uuid,text,jsonb,jsonb) from public,anon,authenticated;

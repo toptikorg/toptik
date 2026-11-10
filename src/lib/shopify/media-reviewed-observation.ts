@@ -26,6 +26,11 @@ export async function reviewedObservationEvidenceIds(context: MediaPlanningConte
   }
   if (!changed.size) fail();
   const reviews = reviewedMediaRegistry(await loader(context.identity, deadline));
-  for (const p of changed.values()) requireReviewedMedia(context.identity, String(p.proof.url), String(p.proof.decodedSha256), reviews);
+  for (const p of changed.values()) {
+    const sha = String(p.proof.decodedSha256);
+    // Legacy URL-only entries must never authorize a new byte fingerprint.
+    requireReviewedMedia(context.identity, String(p.proof.url), sha,
+      { ...reviews, items: reviews.items.filter(entry => entry.decodedSha256 === sha) });
+  }
   return [...changed.keys()].sort();
 }

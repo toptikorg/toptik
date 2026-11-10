@@ -9,6 +9,7 @@ for(const [name,change]of[
  ['no review',()=>[]],['wrong SKU',x=>[{...x.entry,sku:'WRONG'}]],['wrong product',x=>[{...x.entry,productId:'gid://shopify/Product/999'}]],
  ['wrong variant',x=>[{...x.entry,variantId:'gid://shopify/ProductVariant/999'}]],['old bytes',x=>[{...x.entry,decodedSha256:'a'.repeat(64)}]],
  ['different URL',x=>[{...x.entry,imageUrl:url+'?other=1'}]],
+ ['legacy URL-only approval',x=>{const entry={...x.entry};delete entry.decodedSha256;return[entry];}],
 ])test('real review guard rejects '+name,async()=>{const x=f();await assert.rejects(x.run(change(x)),/MEDIA_REVIEW_REQUIRED/);});
 for(const [name,edit]of[
  ['new identity',x=>x.refs[1].angleId='new-angle'],['new logical key',x=>x.refs[1].key='other'],['missing ref',x=>x.refs.pop()],
