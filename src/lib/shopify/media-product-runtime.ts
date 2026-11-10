@@ -5,6 +5,7 @@ import { createMediaPlanningRpc, type MediaPlanningContext } from "./media-plann
 import { createMediaTransportRpc, discoverMediaTransportOperation, type MediaRpcGuard, type MediaOperationDiscovery } from "./media-transport-rpc";
 import { createGalleryMediaTransport } from "./media-gallery-transport";
 import { captureMediaPlanningPair } from "./media-planning-observation";
+import { reviewedObservationEvidenceIds } from "./media-reviewed-observation";
 import { createMediaRuntimeObserver } from "./media-runtime-observation";
 import { runPersistedMediaPhase } from "./media-phase-runtime";
 import type { MediaTransportReference } from "./media-transport-worker";
@@ -15,7 +16,7 @@ export type MediaWorkEvidence = { gallery?: { actorType: "supabase_user" | "admi
 export type MediaProductRun = { status: "disabled" | "done" | "pending" | "review" | "busy"; progressed: boolean; executed: boolean;
   /** Durable verified cursor only, never a capture, preparation or uncertain write. */
   verifiedCheckpoint?: string;
-  /** Allowlisted reason for a durable pending wait (transport phase), recorded as last_error. */
+  /** Allowlisted reason for a durable pending wait or review, recorded as last_error. */
   diagnostic?: string;
   /** Planning finished but too little budget remained to run the prepared phase. */
   deferred?: true };
@@ -69,8 +70,17 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
       visuals = observed.visuals;
       await planning.register(lease.owner, observed.proofs, work);
       const gallery = (dependencies.gallery ?? createGalleryMediaTransport)(c.identity);
-      const registered = await gallery.observe(lease.owner, c.galleryRaw, observed.refs, work);
-      if (!same(registered.snapshot, observed.pair.gallery)) fail("MEDIA_PLANNING_OBSERVATION_CHANGED");
+      let registered, refreshed = false;
+      try { registered = await gallery.observe(lease.owner, c.galleryRaw, observed.refs, work); }
+      catch (error) {
+        if (!(error instanceof Error) || error.message !== "MEDIA_GALLERY_OBSERVATION_REUSED" || verifiedTransport) throw error;
+        const ids = await reviewedObservationEvidenceIds(c, observed.refs, observed.proofs, work);
+        registered = await gallery.refreshReviewedObservation(lease.owner, c.galleryRaw, observed.refs, ids, work);
+        refreshed = true;
+      }
+      const expected = refreshed ? { ...observed.pair.gallery, revision: registered.snapshot.revision } : observed.pair.gallery;
+      if (!same(registered.snapshot, expected)) fail("MEDIA_PLANNING_OBSERVATION_CHANGED");
+      observed.pair.gallery = registered.snapshot;
       return observed.pair;
     };
     let operation = context.operations.find(o => ["reserved", "running", "uncertain"].includes(String(o.status)));
@@ -87,7 +97,8 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
       const plan = reconcileMedia(context.baselines, current, removals, journal.detached as typeof context.detached, visuals ?? fail("MEDIA_VISUAL_IDENTITY_MISSING"));
       if (plan.conflicts.length) {
         await rpc.recordPlannerConflict(lease.owner, randomUUID(), context.stateVersion, current, plan.conflicts, work);
-        return result("review");
+        const code = plan.conflicts[0].code;
+        return { ...result("review"), diagnostic: /^MEDIA_[A-Z0-9_]{1,90}$/.test(code) ? code : "MEDIA_PLANNER_CONFLICT" };
       }
       if (!plan.patches.length && !plan.orders.length && same(current, context.baselines)) return result("done");
       const reserved = await planning.reserve(lease.owner, context.stateVersion, current, plan, work); progressed = true;

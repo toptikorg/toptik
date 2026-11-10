@@ -150,6 +150,18 @@ export function createGalleryMediaTransport(expected: MediaIdentity, options: Op
       const value = observation(await call("observe_toptik_gallery_media", { ...args(owner), p_expected_revision: checked.revision, p_refs: refs }, deadline), id);
       if (!same(value.raw, checked) || !same(value.refs, refs)) fail("MEDIA_GALLERY_OBSERVATION_INVALID"); return value;
     },
+    async refreshReviewedObservation(owner: string, raw: GalleryMediaRaw, refs: GalleryMediaRef[], evidenceIds: string[], deadline: number) {
+      const checked = parseGalleryMediaRaw(raw, id); refsFor(checked, refs);
+      if (!Array.isArray(evidenceIds) || evidenceIds.length < 1 || evidenceIds.length > 31 ||
+          evidenceIds.some(e => typeof e !== "string" || !KEY.test(e)) || new Set(evidenceIds).size !== evidenceIds.length)
+        fail("MEDIA_OBSERVATION_REFRESH_REVIEW_REQUIRED");
+      const value = observation(await call("refresh_toptik_reviewed_gallery_observation", { ...args(owner),
+        p_expected_revision: checked.revision, p_refs: refs, p_reviewed_evidence_ids: evidenceIds }, deadline), id);
+      if (!same(value.raw.item, checked.item) || !same(value.raw.angles, checked.angles) || !same(value.refs, refs) ||
+          value.raw.version !== checked.version + 1 || value.raw.revision === checked.revision)
+        fail("MEDIA_GALLERY_OBSERVATION_INVALID");
+      return value;
+    },
     async apply(ref: MediaTransportReference, owner: string, attemptId: string, requestId: string, requestHash: string, guard: MediaRpcGuard, deadline: number) {
       uuid(attemptId); uuid(requestId); if (!HASH.test(requestHash) || !guard || !HASH.test(guard.sourceFingerprint) || guard.target.side !== "gallery" ||
           !same(guard.target.identity, id) || !Number.isFinite(Date.parse(guard.observedAt)) || Date.parse(guard.observedAt) < now() - 30_000 || Date.parse(guard.observedAt) > now() + 5000) fail("MEDIA_GALLERY_GUARD_INVALID");
