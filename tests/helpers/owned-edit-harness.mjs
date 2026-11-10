@@ -28,6 +28,11 @@ export const visibleCopyFromProduct = product => ({
 });
 const publication = 'gid://shopify/Publication/79538258170';
 const sourceDeps = state => ({
+  readOwnedMappedSource:async(...args)=>state.mappedIO?state.mappedIO.read(...args):null,
+  ownedMappedMediaProjection:(...args)=>state.mappedIO?.project(...args)??null,
+  ownedSourceMediaContext:(...args)=>state.mappedIO?.context(...args),randomUUID:()=>"11111111-1111-4111-8111-111111111111",
+  applyOwnedMediaSourceProjection:async(...args)=>{if(!state.mappedIO)throw new Error("UNEXPECTED_MAPPED_WRITE");return state.mappedIO.apply(...args);},
+  assertOwnedMappedAlt:(source,v,current,desired)=>state.mappedIO?state.mappedIO.alt(source,v,current,desired):plan.requireVariantMediaToken(v,current,desired),
   ...policy, process: { env: { SHOPIFY_ONLINE_STORE_PUBLICATION_ID: publication } },
   configuredShopifyDomain: () => 'toptikcoil.myshopify.com', visibleCopyFromProduct,
   assertSafeDescriptionHtml: description.assertSafeDescriptionHtml,
@@ -40,22 +45,24 @@ const sourceDeps = state => ({
   verifyOnboardingImage: async image => { state.verified.push(image.id); },
 });
 
-const fzt73Names = ['configuredShopifyDomain', 'shopifyAdminGraphql', 'visibleCopyFromProduct', 'assertSafeDescriptionHtml', 'verifyOnboardingImage',
+const mappedNames=['readOwnedMappedSource','ownedMappedMediaProjection','ownedSourceMediaContext','randomUUID','applyOwnedMediaSourceProjection'];
+const fzt73Names = [...mappedNames,'configuredShopifyDomain', 'shopifyAdminGraphql', 'visibleCopyFromProduct', 'assertSafeDescriptionHtml', 'verifyOnboardingImage',
   'FZT73_PRODUCT_GID', 'FZT73_PRODUCT_HANDLE', 'FZT73_VARIANTS', 'exactFzt73Media', 'exactVariantSeo', 'process'];
-const md20Names = ['configuredShopifyDomain', 'shopifyAdminGraphql', 'visibleCopyFromProduct', 'assertSafeDescriptionHtml', 'verifyOnboardingImage',
+const md20Names = [...mappedNames,'configuredShopifyDomain', 'shopifyAdminGraphql', 'visibleCopyFromProduct', 'assertSafeDescriptionHtml', 'verifyOnboardingImage',
   'MD20_PRODUCT_GID', 'MD20_PRODUCT_HANDLE', 'MD20_VARIANTS', 'MD20_LEGACY_UNASSIGNED_MEDIA', 'exactVariantMedia', 'exactVariantSeo', 'process'];
 export const makeFzt73 = await loadWrapped('src/lib/shopify/fzt73-source-worker.ts', fzt73Names,
   ['readFzt73Snapshot', 'sameFzt73Source', 'fzt73SourceProjection', 'reconcileFzt73Variants']);
 export const makeMd20 = await loadWrapped('src/lib/shopify/variant-source-worker.ts', md20Names,
   ['readMd20Snapshot', 'sameMd20Source', 'md20SourceProjection', 'reconcileApprovedVariants']);
 
-const serviceNames = ['configuredShopifyDomain', 'visibleCopyFromProduct', 'writeShopifyOwnedMediaAlt', 'writeShopifyVisibleCopy',
+const serviceNames = ['assertOwnedMappedAlt','configuredShopifyDomain', 'visibleCopyFromProduct', 'writeShopifyOwnedMediaAlt', 'writeShopifyVisibleCopy',
   'assertSafeDescriptionHtml', 'descriptionPairsEquivalent', 'descriptionTextFromHtml',
   'fzt73SourceProjection', 'readFzt73Snapshot', 'reconcileFzt73Variants', 'sameFzt73Source',
   'md20SourceProjection', 'readMd20Snapshot', 'reconcileApprovedVariants', 'sameMd20Source',
   'planOwnedEdit', 'requireVariantMediaToken', 'visibleCopiesEquivalent',
   'FZT73_PRODUCT_GID', 'FZT73_VARIANTS', 'MD20_PRODUCT_GID', 'MD20_VARIANTS'];
-export const makeService = await loadWrapped('src/lib/shopify/owned-edit-service.ts', serviceNames, ['applyOwnedGalleryEdit', 'ownedFamilyForItem']);
+const makeServiceRaw=await loadWrapped('src/lib/shopify/owned-edit-service.ts',serviceNames,['applyOwnedGalleryEdit','ownedFamilyForItem']);
+export const makeService=deps=>makeServiceRaw({assertOwnedMappedAlt:(_source,v,current,desired)=>plan.requireVariantMediaToken(v,current,desired),...deps});
 
 /** Fake Shopify writes that mutate the in-memory product the way productUpdate / fileUpdate do. */
 function shopifyWrites(f) {

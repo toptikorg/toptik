@@ -5,7 +5,7 @@ import { stripTypeScriptTypes } from 'node:module';
 const url = s => 'data:text/javascript;base64,' + Buffer.from(stripTypeScriptTypes(s)).toString('base64');
 const policy = await import(url(readFileSync('src/lib/shopify/variant-source-policy.ts', 'utf8')));
 const worker = stripTypeScriptTypes(readFileSync('src/lib/shopify/variant-source-worker.ts', 'utf8')).replace(/^import[\s\S]*?;\r?\n/gm, '').replace(/^export /gm, '');
-const { make } = await import(url(`export function make(deps){const {configuredShopifyDomain,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,MD20_PRODUCT_GID,MD20_PRODUCT_HANDLE,MD20_VARIANTS,MD20_LEGACY_UNASSIGNED_MEDIA,exactVariantMedia,exactVariantSeo,process}=deps; ${worker};return reconcileApprovedVariants;}`));
+const { make } = await import(url(`export function make(deps){const {readOwnedMappedSource,ownedMappedMediaProjection,ownedSourceMediaContext,applyOwnedMediaSourceProjection,randomUUID,configuredShopifyDomain,shopifyAdminGraphql,visibleCopyFromProduct,assertSafeDescriptionHtml,verifyOnboardingImage,MD20_PRODUCT_GID,MD20_PRODUCT_HANDLE,MD20_VARIANTS,MD20_LEGACY_UNASSIGNED_MEDIA,exactVariantMedia,exactVariantSeo,process}=deps; ${worker};return reconcileApprovedVariants;}`));
 const sourceCapture=JSON.parse(readFileSync('tests/fixtures/md20-shopify-source-20261109.json','utf8'));
 const owner = '11111111-1111-4111-8111-111111111111';
 function fixture() {
@@ -25,7 +25,7 @@ function fixture() {
   const calls=[],verified=[];
   const db={from(table){let filters=[],slice,action='read',body;const q={select(){return q},in(k,v){filters.push(r=>v.includes(r[k]));return q},eq(){return q},single(){return q},order(){return q},range(a,b){slice=[a,b+1];return q},update(v){action='update';body=v;return q},then(resolve){calls.push({table,action,body});let data=structuredClone(tables[table]??[]);if(Array.isArray(data)){data=data.filter(r=>filters.every(f=>f(r)));if(slice)data=data.slice(...slice);}return Promise.resolve({data,error:null}).then(resolve)}};return q},
     async rpc(name,args){calls.push({name,args});if(name!=='apply_md20_owned_batch') throw Error('unexpected RPC');for(const entry of args.p_entries){const row=tables.carousel_items.find(r=>r.id===entry.itemId);const {angles,...copy}=structuredClone(entry.projection);Object.assign(row,copy);tables.carousel_item_angles=tables.carousel_item_angles.filter(a=>a.item_id!==row.id).concat(angles.map((a,i)=>({...a,item_id:row.id,id:row.id+'-'+i})));}return {data:{items:args.p_entries.map(e=>({itemId:e.itemId,result:{status:'updated'}}))},error:null};}};
-  const deps={...policy,configuredShopifyDomain:()=> 'toptikcoil.myshopify.com',process:{env:{SHOPIFY_ONLINE_STORE_PUBLICATION_ID:'gid://shopify/Publication/79538258170'}},
+  const deps={...policy,readOwnedMappedSource:async()=>null,ownedMappedMediaProjection:()=>null,ownedSourceMediaContext:()=>undefined,applyOwnedMediaSourceProjection:async()=>{throw Error("UNEXPECTED_REGISTERED_PROJECTION")},randomUUID:()=>owner,configuredShopifyDomain:()=> 'toptikcoil.myshopify.com',process:{env:{SHOPIFY_ONLINE_STORE_PUBLICATION_ID:'gid://shopify/Publication/79538258170'}},
     shopifyAdminGraphql:async()=>({product:structuredClone(p)}),visibleCopyFromProduct:s=>({title:s.title,description:'עור',descriptionHtml:s.descriptionHtml,seoTitle:s.seoTitle,seoDescription:s.seoDescription}),assertSafeDescriptionHtml:()=>{},verifyOnboardingImage:async m=>verified.push(m.id)};
   return {p,tables,calls,verified,db,deps,run:()=>make(deps)(db,Date.now()+45000,owner)};
 }

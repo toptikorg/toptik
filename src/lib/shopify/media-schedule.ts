@@ -1,6 +1,7 @@
 import "server-only";
 import { after } from "next/server";
 import { drainMediaWork, mediaSyncEnabled } from "./media-work-queue";
+import { drainOwnedMediaWork } from "./owned-media-work-queue";
 
 const URL = "https://landing.toptik.co.il/api/admin/shopify/media/worker";
 export const MAX_MEDIA_HOPS = 250;
@@ -13,7 +14,7 @@ export async function dispatchMediaSync(hop = 0): Promise<void> {
   try { if (response.status !== 202 || response.redirected) throw new Error(`MEDIA_CONTINUATION_NOT_ACCEPTED_HTTP_${response.status}`); }
   finally { await response.body?.cancel(); }
 }
-function report(error: unknown) { console.error("Media synchronization pending", { code: error instanceof Error && /^MEDIA_[A-Z0-9_]{1,90}$/.test(error.message) ? error.message : "MEDIA_BACKGROUND_FAILED" }); }
+function report(error: unknown) { console.error("Media synchronization pending", { code: error instanceof Error && /^(MEDIA_|OWNED_MEDIA_|GROUP_MEDIA_)[A-Z0-9_]{1,90}$/.test(error.message) ? error.message : "MEDIA_BACKGROUND_FAILED" }); }
 /** Short wakeup only; never adds a second long worker to an existing request. */
 export function scheduleMediaSyncWakeup(): void { if (mediaSyncEnabled()) after(async () => { try { await dispatchMediaSync(); } catch (e) { report(e); } }); }
 export function scheduleMediaSync(hop = 0): void {
@@ -29,13 +30,20 @@ export function scheduleMediaSync(hop = 0): void {
     const visited = new Set<string>();
     let processed = 0, morePending = false;
     for (let round = 0; round < 10 && Date.now() + 12000 < deadline; round++) {
-      const result = await drainMediaWork(deadline, undefined, undefined, undefined, [...visited]);
-      if (!result.claimedProductId) { morePending = false; break; }
+      // Shared groups have their own identity/journal, never the single-variant classification.
+      // A broken shared claim cannot block independent generic products.
+      const owned = await drainOwnedMediaWork(deadline, [...visited]).catch(error => {
+        report(error); return { processed: 0, continuationNeeded: false, claimedProductId: undefined };
+      });
+      const result = owned.claimedProductId ? owned : await drainMediaWork(deadline, undefined, undefined, undefined, [...visited]);
+      if (!result.claimedProductId) { morePending = owned.continuationNeeded; break; }
       if (visited.has(result.claimedProductId)) throw new Error("MEDIA_QUEUE_BATCH_REPEATED");
       visited.add(result.claimedProductId);
       processed += result.processed;
-      morePending = result.continuationNeeded;
-      if (!result.continuationNeeded) break;
+      morePending = result.continuationNeeded || owned.continuationNeeded;
+      // After the last shared claim, give ordinary products a turn as well.
+      // An empty shared claim on the next round falls through to the generic queue.
+      if (!morePending && !owned.claimedProductId) break;
     }
     // A deep backlog continues in a FRESH invocation (its own budget) instead of
     // waiting for the next cron tick. Strictly bounded: it chains only while this

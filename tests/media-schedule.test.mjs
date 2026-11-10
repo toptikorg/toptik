@@ -1,8 +1,8 @@
 import test from'node:test';import assert from'node:assert/strict';import{readFileSync}from'node:fs';import{stripTypeScriptTypes}from'node:module';
 Error.stackTraceLimit=0;const mod=s=>'data:text/javascript;base64,'+Buffer.from(stripTypeScriptTypes(s)).toString('base64');
 const source=readFileSync('src/lib/shopify/media-schedule.ts','utf8'),body=stripTypeScriptTypes(source).replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'');
-const{make}=await import(mod(`export function make(deps){const{after,drainMediaWork,mediaSyncEnabled,fetch,process,console}=deps;${body}return{dispatchMediaSync,scheduleMediaSync,scheduleMediaSyncWakeup,validMediaHop};}`));
-function fixture(){const calls=[],jobs=[],errors=[],state={enabled:true,status:202,redirected:false,continuation:true},deps={after:fn=>jobs.push(fn),drainMediaWork:async(d,_db,_run,_initialize,excluded)=>{calls.push(['drain',d,excluded]);return{continuationNeeded:state.continuation,claimedProductId:'gid://shopify/Product/'+calls.length};},mediaSyncEnabled:()=>state.enabled,fetch:async(...a)=>{calls.push(['fetch',...a]);return{status:state.status,redirected:state.redirected,body:{cancel:async()=>calls.push(['cancel'])}};},process:{env:{ADMIN_PANEL_TOKEN:'private-test-token'}},console:{error:(...a)=>errors.push(a)}};return{calls,jobs,errors,state,deps,api:make(deps)};}
+const{make}=await import(mod(`export function make(deps){const{after,drainMediaWork,drainOwnedMediaWork,mediaSyncEnabled,fetch,process,console}=deps;${body}return{dispatchMediaSync,scheduleMediaSync,scheduleMediaSyncWakeup,validMediaHop};}`));
+function fixture(){const calls=[],jobs=[],errors=[],state={enabled:true,status:202,redirected:false,continuation:true},deps={after:fn=>jobs.push(fn),drainOwnedMediaWork:async()=>({processed:0,continuationNeeded:false}),drainMediaWork:async(d,_db,_run,_initialize,excluded)=>{calls.push(['drain',d,excluded]);return{continuationNeeded:state.continuation,claimedProductId:'gid://shopify/Product/'+calls.length};},mediaSyncEnabled:()=>state.enabled,fetch:async(...a)=>{calls.push(['fetch',...a]);return{status:state.status,redirected:state.redirected,body:{cancel:async()=>calls.push(['cancel'])}};},process:{env:{ADMIN_PANEL_TOKEN:'private-test-token'}},console:{error:(...a)=>errors.push(a)}};return{calls,jobs,errors,state,deps,api:make(deps)};}
 test('disabled creates no background work or network',async()=>{const x=fixture();x.state.enabled=false;x.api.scheduleMediaSync();x.api.scheduleMediaSyncWakeup();await x.api.dispatchMediaSync();assert.deepEqual(x.calls,[]);assert.deepEqual(x.jobs,[]);});
 test('authenticated fixed URL, no redirects, 202 acknowledgment required',async()=>{const x=fixture();await x.api.dispatchMediaSync(2);const c=x.calls[0];assert.equal(c[1],'https://landing.toptik.co.il/api/admin/shopify/media/worker?hop=2');assert.equal(c[2].redirect,'error');assert.equal(c[2].headers['x-admin-token'],'private-test-token');assert.equal(c[2].method,'POST');});
 test('wake up dispatches only, never adds a long worker to shared request',async()=>{const x=fixture();x.api.scheduleMediaSyncWakeup();assert.equal(x.calls.length,0);await x.jobs[0]();assert.equal(x.calls.some(c=>c[0]==='drain'),false);assert.equal(x.calls[0][0],'fetch');});
@@ -48,4 +48,26 @@ test('a repeated product from drain ends the invocation and does not recurse',as
 test('empty claim stops even if a malformed drain result asks to continue',async()=>{
  const x=fixture();x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return{continuationNeeded:true};};
  make(x.deps).scheduleMediaSync();await x.jobs[0]();assert.equal(x.calls.length,1);
+});
+
+test('last shared completion still gives ordinary pending products a turn, with shared identity excluded',async()=>{
+ const x=fixture();let ownedCalls=0;
+ x.deps.drainOwnedMediaWork=async(d,excluded)=>{x.calls.push(['owned',d,excluded]);return ++ownedCalls===1
+  ?{processed:1,continuationNeeded:false,claimedProductId:'gid://shopify/Product/900'}:{processed:0,continuationNeeded:false};};
+ x.deps.drainMediaWork=async(d,_db,_r,_i,excluded)=>{x.calls.push(['drain',d,excluded]);return{processed:1,continuationNeeded:false,claimedProductId:'gid://shopify/Product/901'};};
+ make(x.deps).scheduleMediaSync();await x.jobs[0]();assert.equal(x.errors.length,0);
+ const generic=x.calls.find(c=>c[0]==='drain');assert.deepEqual(generic[2],['gid://shopify/Product/900']);
+ assert.equal(x.calls.filter(c=>c[0]==='owned').length,2);assert.equal(x.calls.filter(c=>c[0]==='fetch').length,0);
+});
+
+test('shared backoff remains durable but does not spin or block the ordinary queue',async()=>{
+ const x=fixture();x.deps.drainOwnedMediaWork=async()=>({processed:0,continuationNeeded:true});
+ x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return{processed:0,continuationNeeded:false};};
+ make(x.deps).scheduleMediaSync();await x.jobs[0]();assert.deepEqual(x.calls,[['drain']]);assert.equal(x.errors.length,0);
+});
+
+test('shared dispatcher failure is diagnosed while an independent ordinary product still runs',async()=>{
+ const x=fixture();x.deps.drainOwnedMediaWork=async()=>{throw Error('OWNED_MEDIA_QUEUE_INVALID');};
+ x.deps.drainMediaWork=async()=>{x.calls.push(['drain']);return{processed:1,continuationNeeded:false,claimedProductId:'gid://shopify/Product/901'};};
+ make(x.deps).scheduleMediaSync();await x.jobs[0]();assert.deepEqual(x.calls,[['drain']]);assert.equal(x.errors[0][1].code,'OWNED_MEDIA_QUEUE_INVALID');
 });

@@ -544,8 +544,8 @@ test("a pending text, SEO or alt edit on an owned color is refused by the catalo
 
 test("an image or visibility edit on an owned color is refused with the reason, and nothing is sent", async () => {
   for (const [change, reason] of [
-    [next => { next.items[0].angles = []; }, /תמונות עדיין נעשים בחנות/],
-    [next => { next.items[0].coverImagePath = "https://example.com/other.jpg"; }, /תמונות עדיין נעשים בחנות/],
+    [next => { next.items[0].angles = []; }, /ניהול תמונות הצבע בחנות ובגלריה/],
+    [next => { next.items[0].coverImagePath = "https://example.com/other.jpg"; }, /ניהול תמונות הצבע בחנות ובגלריה/],
     [next => { next.items[0].isActive = false; }, /הסתרה והצגה של צבע/],
     [next => { next.items[0].catalogNumber = "OTHER"; }, /מספר קטלוגי/],
   ]) {

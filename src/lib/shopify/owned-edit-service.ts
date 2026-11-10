@@ -1,9 +1,10 @@
 import "server-only";
+import { assertOwnedMappedAlt } from "./owned-media-projection";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { configuredShopifyDomain, visibleCopyFromProduct, writeShopifyOwnedMediaAlt, writeShopifyVisibleCopy, type ShopifyOnboardingSnapshot } from "./admin-api";
 import { assertSafeDescriptionHtml, descriptionPairsEquivalent, descriptionTextFromHtml } from "./description-document";
 import { fzt73SourceProjection, readFzt73Snapshot, reconcileFzt73Variants, sameFzt73Source } from "./fzt73-source-worker";
-import { planOwnedEdit, requireVariantMediaToken, type OwnedCard, type OwnedEditHelpers, type OwnedVariant } from "./owned-edit-plan";
+import { planOwnedEdit, type OwnedCard, type OwnedEditHelpers, type OwnedVariant } from "./owned-edit-plan";
 import { visibleCopiesEquivalent } from "./sync-policy";
 import { FZT73_PRODUCT_GID, FZT73_VARIANTS, MD20_PRODUCT_GID, MD20_VARIANTS } from "./variant-source-policy";
 import { md20SourceProjection, readMd20Snapshot, reconcileApprovedVariants, sameMd20Source } from "./variant-source-worker";
@@ -21,7 +22,7 @@ type Family = {
   key: "fzt73" | "md20";
   productGid: string;
   variants: readonly Variant[];
-  read: (deadline: number) => Promise<ShopifyOnboardingSnapshot | null>;
+  read: (deadline: number, db?: SupabaseClient) => Promise<ShopifyOnboardingSnapshot | null>;
   same: (left: ShopifyOnboardingSnapshot | null, right: ShopifyOnboardingSnapshot | null) => boolean;
   reconcile: (db: SupabaseClient, deadline: number, owner: string) => Promise<void>;
   helpers: OwnedEditHelpers<ShopifyOnboardingSnapshot>;
@@ -42,7 +43,7 @@ const FAMILIES: readonly Family[] = [
     key: "md20", productGid: MD20_PRODUCT_GID, variants: MD20_VARIANTS,
     read: readMd20Snapshot, same: sameMd20Source, reconcile: reconcileApprovedVariants,
     helpers: { ...shared, variants: MD20_VARIANTS, project: (source, variant) => md20SourceProjection(source, variant as (typeof MD20_VARIANTS)[number]),
-      titleSuffix: () => "", altGuard: requireVariantMediaToken },
+      titleSuffix: () => "", altGuard: (variant,currentAlt,desiredAlt,source)=>assertOwnedMappedAlt(source,variant,currentAlt,desiredAlt) },
   },
 ];
 
@@ -143,7 +144,7 @@ export async function applyOwnedGalleryEdit(db: SupabaseClient, request: OwnedEd
   if (stale(loaded.row)) throw new Error("SYNC_COPY_STALE_EDIT_RELOAD");
 
   // 3. Plan against the live product. Nothing here writes.
-  const source = await family.read(deadline);
+  const source = await family.read(deadline,db);
   if (!source || source.status !== "ACTIVE" || !source.publishedOnPublication) throw new Error("SYNC_OWNED_SOURCE_UNPUBLISHED");
   const before = cardFromRows(loaded.row, loaded.angles);
   const angleAlts = (request.patch.angles ?? []).map(entry => {
@@ -161,7 +162,7 @@ export async function applyOwnedGalleryEdit(db: SupabaseClient, request: OwnedEd
   if (plan.noop) return done(false, loaded.row);
 
   // 4. Shopify has no compare-and-swap: re-read immediately before writing and stop if it moved.
-  const fresh = await family.read(deadline);
+  const fresh = await family.read(deadline,db);
   if (!fresh || !family.same(source, fresh)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
 
   const desiredCopy = plan.copy ? {
@@ -183,7 +184,7 @@ export async function applyOwnedGalleryEdit(db: SupabaseClient, request: OwnedEd
       let copySource = fresh;
       if (plan.mediaAlt.length) {
         requireTime(deadline);
-        const afterAlt = await family.read(deadline);
+        const afterAlt = await family.read(deadline,db);
         if (!afterAlt || !sameAfterOwnAlt(family, fresh, afterAlt, plan.mediaAlt)) throw new Error("SYNC_COPY_CONCURRENT_UPDATE");
         copySource = afterAlt;
       }
@@ -205,7 +206,7 @@ export async function applyOwnedGalleryEdit(db: SupabaseClient, request: OwnedEd
   let readbackCard: OwnedCard | null = null;
   try {
     requireTime(deadline);
-    const after = await family.read(deadline);
+    const after = await family.read(deadline,db);
     readbackKnown = !!after;
     const copyLanded = !desiredCopy || (!!after && visibleCopiesEquivalent(visibleCopyFromProduct(after), desiredCopy));
     const altLanded = plan.mediaAlt.every(update => after?.media.find(media => media.id === update.mediaId)?.alt?.trim() === update.alt);
