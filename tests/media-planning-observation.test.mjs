@@ -99,7 +99,7 @@ test('exact source already represented by another Gallery identity is held',asyn
 function recreatedAngle(){const x=f();x.raw.angles[0].id='a0000000-0000-4000-8000-000000000007';return x;}
 test('orphan with relocated source retains its paired byte-identical baseline key',async()=>{
  const x=recreatedAngle();x.context.provenance[0].proof.url='https://ekgpaoavsavrtbhlbwdg.supabase.co/storage/v1/object/public/carousel-media/imports/prior.png';
- const out=await x.run();assert.equal(out.refs[1].key,'existing');
+ const before=structuredClone(x.context),out=await x.run();assert.equal(out.refs[1].key,'existing');assert.deepEqual(x.context,before);
  const plan=core.reconcileMedia(x.context.baselines,out.pair,[],[]);assert.deepEqual(plan.conflicts,[]);assert.deepEqual(plan.patches,[]);
  assert.equal(out.pair.gallery.assets[0].contentId,x.pair.gallery.assets[0].contentId);
  assert.notEqual(out.pair.gallery.assets[0].evidenceId,x.pair.gallery.assets[0].evidenceId);
@@ -130,11 +130,22 @@ for(const [name,change] of [
  ['native proof belongs to another product',x=>x.context.provenance[1].product_gid='gid://shopify/Product/999'],
  ['native URL changed',x=>x.context.provenance[1].proof.url=url+'?different=1'],
  ['native metadata changed',x=>x.context.provenance[1].proof.width=41],
+ ['native decoded checksum differs',x=>x.context.provenance[1].proof.decodedSha256='e'.repeat(64)],
+ ['native MIME differs',x=>x.context.provenance[1].proof.mime='image/jpeg'],
+ ['native byte length differs',x=>x.context.provenance[1].proof.byteLength=101],
+ ['native height differs',x=>x.context.provenance[1].proof.height=61],
+ ['duplicate native proof',x=>x.context.provenance.push(structuredClone(x.context.provenance[1]))],
+ ['duplicate gallery proof',x=>x.context.provenance.push(structuredClone(x.context.provenance[0]))],
  ['gallery transformed receipt',x=>x.context.provenance[0].proof.operationId='receipt'],
  ['native transformed receipt',x=>x.context.provenance[1].proof.sourceEvidenceId='parent'],
  ['duplicate bytes under another gallery key',x=>x.context.baselines.gallery.assets.push({...x.context.baselines.gallery.assets[0],key:'duplicate'})],
  ['duplicate bytes under another native key',x=>x.context.baselines.shopify.assets.push({...x.context.baselines.shopify.assets[0],key:'duplicate'})],
 ])test('relocated orphan refuses '+name,async()=>{const x=recreatedAngle();x.context.provenance[0].proof.url=url+'?prior=1';change(x);await assert.rejects(x.run(),/EQUIVALENT_TARGET_EXISTS/);});
+test('a relocated cover-only key with a separate cover URL stays held',async()=>{
+ const x=recreatedAngle();x.context.provenance[0].proof.url=url+'?prior=1';
+ x.raw.item.cover_image_path=url+'?cover=1';x.context.galleryRefs=x.context.galleryRefs.filter(r=>r.role==='cover');
+ await assert.rejects(x.run(),/EQUIVALENT_TARGET_EXISTS|COVER_AMBIGUOUS/);
+});
 for(const [name,change] of [
  ['native baseline is absent',x=>x.context.baselines.shopify.assets=[]],
  ['native platform changed',x=>x.context.provenance[1].proof.platformRef='gid://shopify/MediaImage/9'],
