@@ -25,6 +25,14 @@ const MEDIA = /^gid:\/\/shopify\/MediaImage\/[1-9]\d*$/;
 const EXT = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } as const;
 const FILE_FIELDS = "id fileStatus alt ... on MediaImage { mediaContentType status updatedAt image { id url width height } }";
 function fail(code: string): never { throw new Error(code); }
+function timestampMicros(value: string): bigint | null {
+  // Shopify DateTime is ISO 8601. Preserve fractions through PostgreSQL's
+  // microsecond resolution instead of truncating a backward step with Date.parse.
+  const parts = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!parts) return null;
+  const wholeMillis = Date.parse(parts[1] + parts[3]);
+  return Number.isFinite(wholeMillis) ? BigInt(wholeMillis) * BigInt(1000) + BigInt((parts[2] ?? "").padEnd(6, "0")) : null;
+}
 function stable(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
   if (value && typeof value === "object") return `{${Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${JSON.stringify(k)}:${stable(v)}`).join(",")}}`;
@@ -151,6 +159,21 @@ export function verifyGroupMediaPhase(request: GroupMediaPhaseRequest, before: G
       // The other per-color angles remain in the explicit private registry.
       expected.mediaIds = [phase.mediaId];
     }
+  }
+  if (phase.kind === "reorder") {
+    // Shopify advances updatedAt on photos whose positions moved or shifted.
+    // This is a phase-local comparison, not a weaker source fingerprint. Every
+    // other field and every unchanged-position photo remain byte-for-byte strict.
+    const oldPositions = new Map(before.media.map((media, position) => [media.mediaId, position]));
+    const mediaMatch = expectedMedia.length === observed.media.length && expectedMedia.every((media, position) => {
+      const actual = observed.media[position];
+      if (!actual || media.mediaId !== actual.mediaId) return false;
+      if (oldPositions.get(media.mediaId) === position) return same(media, actual);
+      const oldTime = timestampMicros(media.updatedAt), actualTime = timestampMicros(actual.updatedAt);
+      return oldTime !== null && actualTime !== null && actualTime >= oldTime &&
+        same({ ...media, updatedAt: "" }, { ...actual, updatedAt: "" });
+    });
+    return mediaMatch && same(expectedVariants, observed.variants) ? "verified" : "review";
   }
   return same(expectedMedia, observed.media) && same(expectedVariants, observed.variants) ? "verified" : "review";
 }

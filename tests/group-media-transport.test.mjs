@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {binding,product,operationId,owner,staged,receipt,snapshot,restamp,image,transport} from './helpers/group-media-fixture.mjs';
+import {binding,product,operationId,owner,staged,receipt,snapshot,restamp,image,transport,legacy} from './helpers/group-media-fixture.mjs';
 const build=(phase,before=snapshot(),phaseIndex=1)=>transport.buildGroupMediaPhase({operationId,phaseIndex,before,phase});
 test('group attach uses a verified created file and never updates global contents or alt',()=>{
  const r=build({kind:'product_attach',owned:receipt()});assert.deepEqual(r.variables.files,[{id:receipt().media.mediaId,referencesToAdd:[product]}]);assert.doesNotMatch(r.query,/fileDelete|originalSource| alt:/);
@@ -58,4 +58,57 @@ test('a READY attachment with different content identity or alt is review, while
  const before=snapshot(),owned=receipt(),r=build({kind:'product_attach',owned},before),after=structuredClone(before);after.media.push(structuredClone(owned.media));restamp(after);
  assert.equal(transport.verifyGroupMediaPhase(r,before,after),'verified');after.media.at(-1).alt='unexpected';restamp(after);assert.equal(transport.verifyGroupMediaPhase(r,before,after),'review');
  after.media.at(-1).status='PROCESSING';restamp(after);assert.equal(transport.verifyGroupMediaPhase(r,before,after),'pending');after.media[0].alt='other changed';restamp(after);assert.equal(transport.verifyGroupMediaPhase(r,before,after),'review');
+});
+
+function reorderedWithPositionTimestamps(){
+ const before=snapshot();before.media=Array.from({length:16},(_,i)=>legacy.parseTransportMedia(image(i+1)));restamp(before);
+ const order=[...before.media.slice(0,4),before.media[15],...before.media.slice(4,15)].map(m=>m.mediaId);
+ const request=build({kind:'reorder',mediaIds:order,protectedMediaIds:[]},before),after=structuredClone(before);
+ after.media=order.map(id=>structuredClone(before.media.find(m=>m.mediaId===id)));
+ after.media.forEach((m,i)=>{if(before.media[i].mediaId!==m.mediaId)m.updatedAt='2026-11-10T05:56:50Z';});
+ after.product.updatedAt='2026-11-10T05:56:50Z';restamp(after);
+ return{before,request,after};
+}
+test('reorder accepts advanced timestamps only for the moved photo and its shifted neighbors',()=>{
+ const{before,request,after}=reorderedWithPositionTimestamps(),original=structuredClone(before);
+ assert.equal(after.media.filter((m,i)=>m.updatedAt!==before.media.find(b=>b.mediaId===m.mediaId).updatedAt&&i>=4).length,12);
+ assert.notEqual(after.fingerprint,before.fingerprint,'global source fingerprint is deliberately still strict');
+ assert.equal(transport.verifyGroupMediaPhase(request,before,after),'verified');assert.deepEqual(before,original);
+ const equalTimes=structuredClone(after);equalTimes.media.forEach(m=>m.updatedAt=before.media.find(b=>b.mediaId===m.mediaId).updatedAt);restamp(equalTimes);
+ assert.equal(transport.verifyGroupMediaPhase(request,before,equalTimes),'verified');
+});
+test('reorder rejects timestamp drift on unchanged-position media and decreasing or invalid moved timestamps',()=>{
+ for(const mutate of[
+  graph=>graph.media[0].updatedAt='2026-11-10T05:56:50Z',
+  graph=>graph.media[4].updatedAt='2020-01-01T00:00:00Z',
+  graph=>graph.media[4].updatedAt='not-a-timestamp',
+ ]){const{before,request,after}=reorderedWithPositionTimestamps();mutate(after);restamp(after);assert.equal(transport.verifyGroupMediaPhase(request,before,after),'review');}
+});
+test('reorder rejects a backward microsecond step that Date.parse would truncate',()=>{
+ const before=snapshot();before.media[0].updatedAt='2026-11-10T05:56:50.123999Z';restamp(before);
+ const order=[before.media[1].mediaId,before.media[0].mediaId,...before.media.slice(2).map(m=>m.mediaId)];
+ const request=build({kind:'reorder',mediaIds:order,protectedMediaIds:[]},before);
+ const after=structuredClone(before);after.media=order.map(id=>structuredClone(before.media.find(m=>m.mediaId===id)));
+ after.media[1].updatedAt='2026-11-10T05:56:50.123001Z';restamp(after);
+ assert.equal(Date.parse(after.media[1].updatedAt),Date.parse(before.media[0].updatedAt));
+ assert.equal(transport.verifyGroupMediaPhase(request,before,after),'review');
+ after.media[1].updatedAt='2026-11-10T05:56:50.124000Z';restamp(after);
+ assert.equal(transport.verifyGroupMediaPhase(request,before,after),'verified');
+});
+test('reorder timestamp tolerance does not permit any other media or native-variant change',()=>{
+ for(const mutate of[
+  graph=>graph.media[4].alt='concurrent ALT',graph=>graph.media[4].image.url+='&other=1',graph=>graph.media[4].image.id='gid://shopify/ImageSource/999',
+  graph=>graph.media[4].image.width++,graph=>graph.media[4].image.height++,graph=>graph.media[4].status='PROCESSING',graph=>graph.media[4].fileStatus='FAILED',
+  graph=>graph.media[4].mediaContentType='VIDEO',graph=>graph.media.splice(4,1),graph=>graph.media.push(structuredClone(graph.media[4])),
+  graph=>graph.variants[0].mediaIds.pop(),graph=>graph.variants[1].image.url+='?other=1',
+  graph=>{[graph.media[4],graph.media[5]]=[graph.media[5],graph.media[4]];},
+ ]){const{before,request,after}=reorderedWithPositionTimestamps();mutate(after);restamp(after);assert.equal(transport.verifyGroupMediaPhase(request,before,after),'review');}
+});
+test('no-op reorder and other phases retain their original strict media timestamp comparison',()=>{
+ const before=snapshot(),noop=build({kind:'reorder',mediaIds:before.media.map(m=>m.mediaId),protectedMediaIds:[]},before),changed=structuredClone(before);
+ changed.media[0].updatedAt='2026-11-10T05:56:50Z';restamp(changed);
+ assert.equal(transport.verifyGroupMediaPhase(noop,before,changed),'review');
+ const owned=receipt(),attach=build({kind:'product_attach',owned},before),after=structuredClone(before);after.media.push(structuredClone(owned.media));
+ after.media[0].updatedAt='2026-11-10T05:56:50Z';restamp(after);
+ assert.equal(transport.verifyGroupMediaPhase(attach,before,after),'review');
 });
