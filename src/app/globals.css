@@ -3647,3 +3647,39 @@ html.a11y-big-cursor * {
 .carousel-whatsapp-contact { text-align: center; margin: 12px 16px; }
 .carousel-whatsapp-contact a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 16px; border-radius: 8px; background: #075e45; color: #fff; font-weight: 700; text-decoration: none; }
 .carousel-whatsapp-contact a:focus-visible { outline: 3px solid #1969bd; outline-offset: 3px; }
+
+/* ==========================================================================
+   Mobile touch targets and readable text (QA at 390 and 360 px, 2026-11-10).
+   <=767px only. The locked carousel image rules above are untouched: the image
+   wrap padding, the image box and the pill heights stay as they are. The colour
+   dots gain their hit area through ::after (no layout change) and the dot row
+   only spreads out, and the label keeps the same line box as before.
+   ========================================================================== */
+@media (max-width: 767px) {
+  /* Colour dots (not name chips): 9-12px visible, tappable area about 21-24px wide and 25-28px tall. */
+  .catalog-card-color-dot.is-actionable:not(.is-color-name) { position: relative; }
+  .catalog-card-color-dot.is-actionable:not(.is-color-name)::after {
+    content: "";
+    position: absolute;
+    inset-block: -9px;
+    inset-inline: -7px;
+  }
+  /* Up to five dots fit with a 24px pitch (9px dot + 15px gap) and six with 18px; rows
+     of seven or more keep the original 3px gap and behave as before at 360px. */
+  .catalog-card-colors-dots:not(:has(.is-color-name)) { gap: 15px; }
+  .catalog-card-colors-dots:not(:has(.is-color-name)):has(> :nth-child(6)) { gap: 9px; }
+  .catalog-card-colors-dots:not(:has(.is-color-name)):has(> :nth-child(7)) { gap: 3px; }
+  .catalog-card-colors:not(:has(.is-color-name)) .catalog-card-colors-label { font-size: 11px; line-height: 11px; }
+
+  /* Product code and the two card buttons were 9-10px. Buttons grow downward only. */
+  .catalog-card-catalog { font-size: 12px; }
+  .catalog-card-tech-btn,
+  .catalog-card-buy-btn {
+    font-size: 12px;
+    line-height: 1.2;
+    height: auto;
+    min-height: 36px;
+    padding: 4px 8px;
+  }
+  .catalog-card-tech-btn { white-space: normal; }
+}

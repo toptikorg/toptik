@@ -162,3 +162,9 @@
 .magazineHomeLink { display: inline-flex; align-items: center; min-height: 44px; color: inherit; font: inherit; letter-spacing: inherit; text-decoration: none; }
 .magazineHomeLink:hover { text-decoration: underline; text-underline-offset: 4px; }
 .magazineHomeLink:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 2px; }
+
+/* Phone: the store link list and the page-level text links get a comfortable tap height. */
+@media (max-width: 767px) {
+  .storeGuides ul { gap: 0; }
+  .storeGuides a { display: inline-flex; align-items: center; min-height: 40px; }
+}
