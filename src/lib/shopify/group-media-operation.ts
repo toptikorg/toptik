@@ -90,7 +90,9 @@ export async function runGroupMediaPhase(ref: GroupMediaPhaseRef, proposed: Grou
             // A userError can accompany a partial native write. Preserve actual readback for
             // review; never retry it and never leave an explicitly rejected command as success.
             const rejected = await read(proposed.binding, stop - 2000); check();
-            await record("review", rejected, { reason: code });
+            const providerCodes = error && typeof error === "object" && "providerCodes" in error && Array.isArray(error.providerCodes)
+              ? error.providerCodes.filter((value: unknown): value is string => typeof value === "string" && /^[A-Z][A-Z0-9_]{0,79}$/.test(value)).slice(0, 10) : [];
+            await record("review", rejected, { reason: code, ...(providerCodes.length ? { providerCodes } : {}) });
             return result("review", rejected);
           }
           await record("uncertain", undefined, { ...saved.ack, reason: code });

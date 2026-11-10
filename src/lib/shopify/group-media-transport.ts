@@ -77,14 +77,16 @@ export function buildGroupMediaPhase(input: { operationId: string; phaseIndex: n
     const variant = before.variants.find(v => v.variantGid === phase.variantId);
     if (!variant) fail("GROUP_MEDIA_IDENTITY_CONFLICT");
     if (phase.kind === "variant_cover") {
-      if (!variant.mediaIds.includes(phase.mediaId)) fail("GROUP_MEDIA_COVER_NOT_ASSIGNED");
+      if (!before.media.some(m => m.mediaId === phase.mediaId && m.image)) fail("GROUP_MEDIA_COVER_NOT_ON_PRODUCT");
       readOnlyNoop = variant.image?.url === before.media.find(m => m.mediaId === phase.mediaId)?.image?.url;
+      if (!readOnlyNoop && variant.mediaIds.length > 1) fail("GROUP_MEDIA_VARIANT_MEMBERSHIP_REVIEW");
       query = `mutation TopTikGroupVariantCover($productId: ID!, $variants: [ProductVariantsBulkInput!]!) { productVariantsBulkUpdate(productId: $productId, variants: $variants, allowPartialUpdates: false) { productVariants { id image { id url } } userErrors { code field message } } }`;
       variables = { productId: before.binding.productGid, variants: [{ id: phase.variantId, mediaId: phase.mediaId }] };
     } else {
       ids(phase.mediaIds);
       if (phase.mediaIds.some(id => !before.media.some(m => m.mediaId === id))) fail("GROUP_MEDIA_MEMBERSHIP_CHANGED");
       if (phase.kind === "variant_append" && phase.mediaIds.some(id => variant.mediaIds.includes(id))) fail("GROUP_MEDIA_ALREADY_ASSIGNED");
+      if (phase.kind === "variant_append" && (phase.mediaIds.length !== 1 || variant.mediaIds.length !== 0)) fail("GROUP_MEDIA_VARIANT_SINGLE_IMAGE_REQUIRED");
       if (phase.kind === "variant_detach" && (!UUID.test(phase.removalIntentId) || phase.mediaIds.some(id => !variant.mediaIds.includes(id)) ||
           phase.mediaIds.some(id => before.media.find(m => m.mediaId === id)?.image?.url === variant.image?.url))) fail("GROUP_MEDIA_VARIANT_IMAGE_PROTECTED");
       const suffix = phase.kind === "variant_append" ? "Append" : "Detach";
@@ -145,6 +147,9 @@ export function verifyGroupMediaPhase(request: GroupMediaPhaseRequest, before: G
       const actual = observed.variants.find(v => v.variantGid === phase.variantId)?.image;
       if (!actual || actual.url !== image.url) return "review";
       expected.image = actual;
+      // productVariantsBulkUpdate(mediaId) replaces the one native association.
+      // The other per-color angles remain in the explicit private registry.
+      expected.mediaIds = [phase.mediaId];
     }
   }
   return same(expectedMedia, observed.media) && same(expectedVariants, observed.variants) ? "verified" : "review";

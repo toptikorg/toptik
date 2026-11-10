@@ -30,7 +30,11 @@ export async function sendGroupMediaMutation(request: GroupMediaPhaseRequest, de
       request.input.kind === "variant_cover" ? "productVariantsBulkUpdate" : "fileUpdate";
   const payload = object(data[field]), errors = payload[request.input.kind === "reorder" ? "mediaUserErrors" : "userErrors"];
   if (!Array.isArray(errors)) fail("GROUP_MEDIA_ACK_INVALID");
-  if (errors.length) fail("GROUP_MEDIA_WRITE_REJECTED");
+  if (errors.length) {
+    const providerCodes = errors.map(error => error && typeof error === "object" && "code" in error ? String(error.code) : "")
+      .filter(code => /^[A-Z][A-Z0-9_]{0,79}$/.test(code)).slice(0, 10);
+    throw Object.assign(new Error("GROUP_MEDIA_WRITE_REJECTED"), { providerCodes });
+  }
   if (request.input.kind === "reorder") {
     const job = object(payload.job); if (typeof job.id !== "string" || !/^gid:\/\/shopify\/Job\/[1-9]\d*$/.test(job.id)) fail("GROUP_MEDIA_ACK_INVALID");
     return { jobId: job.id };
