@@ -145,3 +145,27 @@ test('lost SQL acceptance reply propagates; later invocation reads verified rece
 test('invalid SQL acceptance response cannot be reported verified',async()=>{
   const f=fixture('reorder');f.deps.accept=async()=>({status:'verified',mayExecute:true});await assert.rejects(f.run(),/ACCEPT_INVALID/);
 });
+
+test('actual reorder recovery accepts moved-image timestamp advances without another native dispatch',async()=>{
+  const f=fixture('reorder'),a=image(2),b=image(1);
+  a.updatedAt='2026-09-30T17:01:00.000001Z';b.updatedAt='2026-09-30T17:01:00.000002Z';
+  f.setAfter(parse(raw([a,b])));
+  assert.deepEqual(await f.run(null),{status:'verified'});
+  assert.deepEqual(f.calls.map(x=>Array.isArray(x)?x[0]:x),['journal','observe','accept']);
+});
+
+for(const[name,edit]of[
+  ['moved timestamp backwards by one microsecond',(a)=>{a.updatedAt='2026-09-30T16:59:59.999999Z';}],
+  ['changed moved-image ALT',(a)=>{a.alt='different color';}],
+  ['changed moved-image URL',(a)=>{a.image.url+='&changed=1';}],
+])test(`reorder recovery cannot report a false verified SQL reply for ${name}`,async()=>{
+  const f=fixture('reorder'),a=image(2),b=image(1);edit(a,b);f.setAfter(parse(raw([a,b])));
+  await assert.rejects(f.run(null),/MEDIA_RECOVERY_REORDER_READBACK_MISMATCH/);
+  assert.deepEqual(f.calls.map(x=>Array.isArray(x)?x[0]:x),['journal','observe','accept']);
+});
+
+test('reorder recovery retains the durable SQL conflict on a changed image',async()=>{
+  const f=fixture('reorder'),a=image(2);a.alt='external edit';f.setAfter(parse(raw([a,image(1)])));
+  f.deps.accept=async(...args)=>{f.calls.push(['accept',...args]);return{status:'conflict',mayExecute:false};};
+  assert.deepEqual(await f.run(null),{status:'conflict'});
+});

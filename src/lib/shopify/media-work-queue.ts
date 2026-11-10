@@ -11,6 +11,13 @@ export type MediaEditorActor = { actorType: "supabase_user" | "admin_panel_token
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export function mediaSyncEnabled() { return process.env.VERCEL_ENV === "production" && process.env.SHOPIFY_MEDIA_SYNC === "enabled_v1"; }
 function fail(code: string): never { throw new Error(code); }
+function isCopyApprovalLoss(error: unknown): boolean {
+  try {
+    if (!(error instanceof Error) && (error === null || typeof error !== "object" ||
+        (Object.getPrototypeOf(error) !== Object.prototype && Object.getPrototypeOf(error) !== null))) return false;
+    return Object.getOwnPropertyDescriptor(error, "message")?.value === "SYNC_COPY_APPROVAL_MISSING_OR_CHANGED";
+  } catch { return false; } // A hostile thrown value is never evidence of approval loss.
+}
 async function call(db: Db, name: string, args: Row, deadline: number): Promise<unknown> {
   const ms = Math.min(5000, deadline - Date.now()); if (!Number.isFinite(deadline) || ms <= 0) fail("MEDIA_QUEUE_TIME_BUDGET");
   const abort = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined;
@@ -133,7 +140,12 @@ export async function drainMediaWork(deadline: number, client?: Db,
       outcome.verifiedCheckpoint.length > 0);
     inFlight = status === "pending" && error === null && newlyVerified;
   } catch (e) {
-    const code = e instanceof Error && typeof e.message === "string" && /^MEDIA_[A-Z0-9_]{1,90}$/.test(e.message) ? e.message : "MEDIA_WORK_FAILED";
+    // Approval loss from the shared lease/context RPC is a permanent hold, not a retryable media failure.
+    let code = "MEDIA_WORK_FAILED";
+    try {
+      code = isCopyApprovalLoss(e) ? "MEDIA_COPY_APPROVAL_MISSING_OR_CHANGED" :
+        e instanceof Error && typeof e.message === "string" && /^MEDIA_[A-Z0-9_]{1,90}$/.test(e.message) ? e.message : "MEDIA_WORK_FAILED";
+    } catch { /* Even revoked proxies must reach durable finish with the safe generic code. */ }
     // An uncoded failure is otherwise undiagnosable: log its kind and an allowlisted message only.
     if (code === "MEDIA_WORK_FAILED") { try { console.error("toptik.media.work_failed", describeUncodedFailure(e)); } catch { /* never affects finish */ } }
     error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE|MEDIA_SOURCE_BYTE_LIMIT|MEDIA_GALLERY_COVER_ALIAS_CONFLICT|MEDIA_PLANNING_EQUIVALENT_TARGET_EXISTS/.test(code) ? "review" : "failed";

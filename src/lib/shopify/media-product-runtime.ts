@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { reconcileMedia, mediaSnapshotFingerprint, type MediaPair, type MediaVisuals, type RemovalEvidence } from "./media-sync-core";
 import { createMediaPlanningRpc, type MediaPlanningContext } from "./media-planning-rpc";
-import { createMediaTransportRpc, discoverMediaTransportOperation, type MediaRpcGuard } from "./media-transport-rpc";
+import { createMediaTransportRpc, discoverMediaTransportOperation, type MediaRpcGuard, type MediaOperationDiscovery } from "./media-transport-rpc";
 import { createGalleryMediaTransport } from "./media-gallery-transport";
 import { captureMediaPlanningPair } from "./media-planning-observation";
 import { createMediaRuntimeObserver } from "./media-runtime-observation";
@@ -61,8 +61,9 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
     if (lease.expiresAt < stop + 5000) fail("MEDIA_PLANNING_LEASE_TOO_SHORT");
     let context = await planning.context(lease.owner, work); check();
     let visuals: MediaVisuals | null = null;
-    const capture = async (c: MediaPlanningContext): Promise<MediaPair> => {
-      const observed = await (dependencies.capture ?? captureMediaPlanningPair)(c, lease.owner, work); check();
+    const capture = async (c: MediaPlanningContext, verifiedTransport?: MediaOperationDiscovery): Promise<MediaPair> => {
+      const observed = await (dependencies.capture ?? captureMediaPlanningPair)(c, lease.owner, work,
+        verifiedTransport ? { verifiedTransport } : undefined); check();
       // Planning without pixel fingerprints could write the same photo twice in another encoding.
       if (!observed.visuals || typeof observed.visuals !== "object") fail("MEDIA_VISUAL_IDENTITY_MISSING");
       visuals = observed.visuals;
@@ -113,8 +114,8 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
     const ref = { operationId: opId, step: stepIndex, phaseIndex: 0 };
     let journal = await rpc.read(ref, lease.owner, work);
     if (journal.chain?.status === "verified") {
-      const current = await capture(context);
       const discovered = await (dependencies.discover ?? discoverMediaTransportOperation)(ref, work);
+      const current = await capture(context, discovered);
       const target = (discovered.step.body as { target?: string })?.target;
       if (target !== "gallery" && target !== "shopify") fail("MEDIA_PLANNING_BODY_INVALID");
       // Re-pin a complete raw observation after byte decoding. The SQL gate

@@ -115,6 +115,43 @@ export function onlyForwardProductTimestampDrift(fresh: ShopifyMediaTransportRea
   return stable(strip(fresh)) === stable(strip(before));
 }
 
+function reorderTimestampMicros(value: string): bigint | null {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!parts) return null;
+  const [, y, m, d, h, min, sec, fraction, offset] = parts;
+  const year = Number(y), month = Number(m), day = Number(d);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > days[month - 1] ||
+      Number(h) > 23 || Number(min) > 59 || Number(sec) > 59) return null;
+  if (offset !== "Z" && (Number(offset.slice(1, 3)) > 15 || Number(offset.slice(4)) > 59)) return null;
+  const wholeMillis = Date.parse(`${y}-${m}-${d}T${h}:${min}:${sec}${offset}`);
+  return Number.isFinite(wholeMillis) ? BigInt(wholeMillis) * BigInt(1000) + BigInt((fraction ?? "").padEnd(6, "0")) : null;
+}
+
+/** POST-reorder readback only. Never use this to refresh a pre-call guard.
+ * Shopify advances media.updatedAt for photos moved directly or shifted by a move.
+ * All unchanged positions, other media fields, identities and variant facts stay exact. */
+export function matchesMediaReorderReadback(before: ShopifyMediaTransportRead, observed: ShopifyMediaTransportRead, desiredIds: string[]): boolean {
+  try { assertMediaTransportRead(before); assertMediaTransportRead(observed); } catch { return false; }
+  if (!Array.isArray(desiredIds) || desiredIds.length !== before.media.length || new Set(desiredIds).size !== desiredIds.length) return false;
+  const stable = (x: unknown): string => Array.isArray(x) ? `[${x.map(stable).join(",")}]` : x && typeof x === "object"
+    ? `{${Object.keys(x).sort().map(k => `${JSON.stringify(k)}:${stable((x as Record<string, unknown>)[k])}`).join(",")}}` : JSON.stringify(x);
+  const expectedMedia: TransportMedia[] = [];
+  for (const [position, id] of desiredIds.entries()) {
+    const oldPosition = before.media.findIndex(m => m.mediaId === id), old = before.media[oldPosition], actual = observed.media[position];
+    if (!old || !actual || actual.mediaId !== id) return false;
+    if (oldPosition === position) expectedMedia.push(old);
+    else {
+      const oldTime = reorderTimestampMicros(old.updatedAt), newTime = reorderTimestampMicros(actual.updatedAt);
+      if (oldTime === null || newTime === null || newTime < oldTime) return false;
+      expectedMedia.push({ ...old, updatedAt: actual.updatedAt });
+    }
+  }
+  const comparable = (read: ShopifyMediaTransportRead) => { const rest: Record<string, unknown> = { ...read }; delete rest.updatedAt; delete rest.revision; return rest; };
+  return stable({ ...comparable(before), media: expectedMedia }) === stable(comparable(observed));
+}
+
 /** Re-parse private stored readbacks too: a hash is not a substitute for shape validation. */
 export function assertMediaTransportRead(read: ShopifyMediaTransportRead, expectedRevision = read.revision): void {
   if (!read || read.side !== "shopify" || read.complete !== true || !Array.isArray(read.media) || !Array.isArray(read.variantMediaIds)) fail("MEDIA_TRANSPORT_READ_INVALID");
