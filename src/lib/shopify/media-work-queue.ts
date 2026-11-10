@@ -123,7 +123,7 @@ export async function drainMediaWork(deadline: number, client?: Db,
     }
     status = outcome.status === "done" ? "done" : outcome.status === "review" ? "review" : "pending";
     // A durable wait that needs diagnosis stays claimable but is never a silent pending.
-    if (status === "pending" && "diagnostic" in outcome && typeof outcome.diagnostic === "string" && /^MEDIA_[A-Z0-9_]{1,90}$/.test(outcome.diagnostic)) error = outcome.diagnostic;
+    if ((status === "pending" || status === "review") && "diagnostic" in outcome && typeof outcome.diagnostic === "string" && /^MEDIA_[A-Z0-9_]{1,90}$/.test(outcome.diagnostic)) error = outcome.diagnostic;
     if (status === "review") result.reviewed++;
     if (productProgress) result.processed++;
     // Completing an already-equal product advances the durable queue even when
@@ -148,7 +148,7 @@ export async function drainMediaWork(deadline: number, client?: Db,
     } catch { /* Even revoked proxies must reach durable finish with the safe generic code. */ }
     // An uncoded failure is otherwise undiagnosable: log its kind and an allowlisted message only.
     if (code === "MEDIA_WORK_FAILED") { try { console.error("toptik.media.work_failed", describeUncodedFailure(e)); } catch { /* never affects finish */ } }
-    error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE|MEDIA_SOURCE_BYTE_LIMIT|MEDIA_GALLERY_COVER_ALIAS_CONFLICT|MEDIA_PLANNING_EQUIVALENT_TARGET_EXISTS/.test(code) ? "review" : "failed";
+    error = code; status = /AMBIGUOUS|IDENTITY|APPROVAL|INVALID|UNSUPPORTED|REQUIRES|PROVENANCE|SOURCE_CHANGED|CAS_CHANGED|MEDIA_REVIEW_REQUIRED|MEDIA_REVIEW_REJECTED|MEDIA_TRANSPORT_FINAL_SNAPSHOT_MISMATCH|MEDIA_DETACH_RECEIPT_DUPLICATE|MEDIA_SOURCE_BYTE_LIMIT|MEDIA_GALLERY_COVER_ALIAS_CONFLICT|MEDIA_PLANNING_EQUIVALENT_TARGET_EXISTS|MEDIA_GALLERY_OBSERVATION_REUSED|MEDIA_OBSERVATION_REFRESH_/.test(code) ? "review" : "failed";
     if (status === "review") result.reviewed++; else result.failed++;
   }
   // A product claimed late in a batch may not get the budget to run its prepared

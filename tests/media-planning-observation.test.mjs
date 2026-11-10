@@ -97,6 +97,13 @@ test('exact source already represented by another Gallery identity is held',asyn
 });
 
 function recreatedAngle(){const x=f();x.raw.angles[0].id='a0000000-0000-4000-8000-000000000007';return x;}
+test('orphan with relocated source retains its paired byte-identical baseline key',async()=>{
+ const x=recreatedAngle();x.context.provenance[0].proof.url='https://ekgpaoavsavrtbhlbwdg.supabase.co/storage/v1/object/public/carousel-media/imports/prior.png';
+ const before=structuredClone(x.context),out=await x.run();assert.equal(out.refs[1].key,'existing');assert.deepEqual(x.context,before);
+ const plan=core.reconcileMedia(x.context.baselines,out.pair,[],[]);assert.deepEqual(plan.conflicts,[]);assert.deepEqual(plan.patches,[]);
+ assert.equal(out.pair.gallery.assets[0].contentId,x.pair.gallery.assets[0].contentId);
+ assert.notEqual(out.pair.gallery.assets[0].evidenceId,x.pair.gallery.assets[0].evidenceId);
+});
 test('recreated physical angle reuses its orphaned exact baseline identity without transport',async()=>{
  const x=recreatedAngle(),out=await x.run();assert.equal(out.refs[1].angleId,x.raw.angles[0].id);assert.equal(out.refs[1].key,'existing');
  assert.deepEqual(out.pair.gallery.assets,x.pair.gallery.assets);assert.deepEqual(out.pair.shopify.assets,x.pair.shopify.assets);
@@ -107,7 +114,7 @@ for(const [name,change] of [
  ['old angle still exists',x=>x.raw.angles.push({...x.raw.angles[0],id:x.refs[1].angleId,angle_order:2})],
  ['two replacements claim one source',x=>x.raw.angles.push({...x.raw.angles[0],id:'a0000000-0000-4000-8000-000000000008',angle_order:2})],
  ['baseline proof is missing',x=>x.context.provenance=x.context.provenance.filter(p=>p.side!=='gallery')],
- ['old source URL differs',x=>x.context.provenance[0].proof.url=url+'?other=1'],
+ ['relocated source bytes are not its baseline',x=>{x.context.provenance[0].proof.url=url+'?other=1';x.context.provenance[0].proof.decodedSha256='e'.repeat(64);}],
  ['old physical reference differs',x=>x.context.provenance[0].proof.platformRef='angle:a0000000-0000-4000-8000-000000000009'],
  ['proof belongs to another product',x=>x.context.provenance[0].product_gid='gid://shopify/Product/999'],
  ['baseline evidence differs',x=>x.context.baselines.gallery.assets[0].evidenceId='unrelated'],
@@ -116,6 +123,37 @@ for(const [name,change] of [
  ['old reference has no physical row identity',x=>x.context.galleryRefs[1].angleId=null],
  ['two old physical references claim the key',x=>x.context.galleryRefs.push({...x.refs[1],angleId:'a0000000-0000-4000-8000-000000000009'})],
 ])test('orphan rebinding refuses '+name,async()=>{const x=recreatedAngle();change(x);await assert.rejects(x.run(),/EQUIVALENT_TARGET_EXISTS/);});
+for(const [name,change] of [
+ ['current bytes differ',x=>x.deps.capture=async()=>({...x.bytes,sha256:'e'.repeat(64)})],
+ ['native baseline content differs',x=>x.context.baselines.shopify.assets[0].contentId='e'.repeat(64)],
+ ['native baseline proof differs',x=>x.context.baselines.shopify.assets[0].evidenceId='unrelated'],
+ ['native proof belongs to another product',x=>x.context.provenance[1].product_gid='gid://shopify/Product/999'],
+ ['native URL changed',x=>x.context.provenance[1].proof.url=url+'?different=1'],
+ ['native metadata changed',x=>x.context.provenance[1].proof.width=41],
+ ['native decoded checksum differs',x=>x.context.provenance[1].proof.decodedSha256='e'.repeat(64)],
+ ['native MIME differs',x=>x.context.provenance[1].proof.mime='image/jpeg'],
+ ['native byte length differs',x=>x.context.provenance[1].proof.byteLength=101],
+ ['native height differs',x=>x.context.provenance[1].proof.height=61],
+ ['duplicate native proof',x=>x.context.provenance.push(structuredClone(x.context.provenance[1]))],
+ ['duplicate gallery proof',x=>x.context.provenance.push(structuredClone(x.context.provenance[0]))],
+ ['gallery transformed receipt',x=>x.context.provenance[0].proof.operationId='receipt'],
+ ['native transformed receipt',x=>x.context.provenance[1].proof.sourceEvidenceId='parent'],
+ ['duplicate bytes under another gallery key',x=>x.context.baselines.gallery.assets.push({...x.context.baselines.gallery.assets[0],key:'duplicate'})],
+ ['duplicate bytes under another native key',x=>x.context.baselines.shopify.assets.push({...x.context.baselines.shopify.assets[0],key:'duplicate'})],
+])test('relocated orphan refuses '+name,async()=>{const x=recreatedAngle();x.context.provenance[0].proof.url=url+'?prior=1';change(x);await assert.rejects(x.run(),/EQUIVALENT_TARGET_EXISTS/);});
+test('a relocated cover-only key with a separate cover URL stays held',async()=>{
+ const x=recreatedAngle();x.context.provenance[0].proof.url=url+'?prior=1';
+ x.raw.item.cover_image_path=url+'?cover=1';x.context.galleryRefs=x.context.galleryRefs.filter(r=>r.role==='cover');
+ await assert.rejects(x.run(),/EQUIVALENT_TARGET_EXISTS|COVER_AMBIGUOUS/);
+});
+for(const [name,change] of [
+ ['native baseline is absent',x=>x.context.baselines.shopify.assets=[]],
+ ['native platform changed',x=>x.context.provenance[1].proof.platformRef='gid://shopify/MediaImage/9'],
+])test('changed identity does not inherit an orphan key: '+name,async()=>{
+ const x=recreatedAngle();x.context.provenance[0].proof.url=url+'?prior=1';change(x);
+ const before=structuredClone(x.context.baselines),out=await x.run();assert.notEqual(out.refs[1].key,'existing');
+ assert.deepEqual(x.context.baselines,before);assert.ok(core.reconcileMedia(before,out.pair,[],[]).conflicts.length>0);
+});
 test('new modal angle for independent cover preserves cover identity and does not synthesize removal',async()=>{
  const x=f(),coverUrl=url+'?cover=1';x.raw.item.cover_image_path=coverUrl;
  const oldCover={...x.context.galleryRefs[0],key:'independent-cover',evidenceId:'g-cover'};x.context.galleryRefs[0]=oldCover;

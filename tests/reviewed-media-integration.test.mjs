@@ -7,6 +7,20 @@ const factory=await import(mod(`import * as guard from '${guardUrl}';import{crea
  export function make(reviews){const assertNotDeniedMedia=(u,h)=>guard.assertNotDeniedMedia(u,h,reviews),requireReviewedMedia=(i,u,h,r)=>guard.requireReviewedMedia(i,u,h,r??reviews),isReviewedMediaProof=(i,p,ps,r)=>guard.isReviewedMediaProof(i,p,ps,r??reviews),reviewedMediaRegistry=entries=>({...reviews,items:[...reviews.items,...entries]}),loadReviewedMedia=async()=>[];${stripped('media-planning-observation').replace(/^export /gm,'')}return captureMediaPlanningPair;}`));
 function f(){const x=fixture();const deps={now:()=>now,capture:async()=>x.bytes,shopify:async()=>x.read,gallery:()=>({read:async()=>x.raw})};return {x,deps};}
 const review=(u)=>({sku:id.exactGallerySku,shopifySku:id.exactShopifySku,productId:id.productId,variantId:id.variantId,galleryId:id.itemId,imageUrl:u});
+
+test('relocated orphan identity does not approve its new Gallery proof without exact-image review',async()=>{
+ const {x,deps}=f(),reviews={items:[],deniedUrls:[],deniedSha256:[]},capture=factory.make(reviews);
+ x.raw.angles[0].id='a0000000-0000-4000-8000-000000000007';
+ x.context.provenance[0].proof.url='https://ekgpaoavsavrtbhlbwdg.supabase.co/storage/v1/object/public/carousel-media/imports/prior.png';
+ await assert.rejects(capture(x.context,owner,now+30000,deps),/MEDIA_REVIEW_REQUIRED/);
+ reviews.items.push({...review(url),decodedSha256:'f'.repeat(64)});
+ await assert.rejects(capture(x.context,owner,now+30000,deps),/MEDIA_REVIEW_REQUIRED/);
+ reviews.items[0].decodedSha256=x.bytes.sha256;reviews.items[0].sku='ANOTHER';
+ await assert.rejects(capture(x.context,owner,now+30000,deps),/MEDIA_REVIEW_REQUIRED/);
+ reviews.items[0].sku=id.exactGallerySku;const out=await capture(x.context,owner,now+30000,deps);
+ assert.equal(out.refs[1].key,'existing');assert.equal(out.proofs.filter(p=>p.side==='gallery').length,1);
+ reviews.deniedSha256.push(x.bytes.sha256);await assert.rejects(capture(x.context,owner,now+30000,deps),/MEDIA_REVIEW_REJECTED/);
+});
 test('actual planning keeps unchanged legacy but rejects a new unreviewed source before proof registration',async()=>{
  const {x,deps}=f(),reviews={items:[],deniedUrls:[],deniedSha256:[]},capture=factory.make(reviews);
  assert.deepEqual((await capture(x.context,owner,now+30000,deps)).pair,x.pair);

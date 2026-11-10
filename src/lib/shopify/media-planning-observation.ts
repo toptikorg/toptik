@@ -29,7 +29,8 @@ function registered(p: MediaProofRow): MediaRegisteredProof { return { evidenceI
  * choose() and SQL gallery_snapshot validate Gallery proof URLs, not physical
  * platformRef: the immutable proof survives while a new raw revision pins refs.
  * Explicit identity-relink RPCs have stricter physical-reference preconditions. */
-function isOrphanedAngleReplacement(c: MediaPlanningContext, key: string, url: string): boolean {
+function isOrphanedAngleReplacement(c: MediaPlanningContext, key: string, url: string,
+  bytes: CapturedMediaMetadata, mediaId: string): boolean {
   const refs = c.galleryRefs.filter(r => r.key === key && r.role === "angle");
   const baseline = c.baselines.gallery.assets.filter(a => a.key === key);
   if (refs.length !== 1 || !refs[0].angleId || baseline.length !== 1 ||
@@ -38,8 +39,24 @@ function isOrphanedAngleReplacement(c: MediaPlanningContext, key: string, url: s
       refs[0].evidenceId !== baseline[0].evidenceId) return false;
   const proofs = c.provenance.filter(p => p.product_gid === c.identity.productId && p.side === "gallery" &&
     p.asset_key === key && p.evidence_id === baseline[0].evidenceId && p.content_id === baseline[0].contentId &&
-    p.proof.url === url && p.proof.platformRef === `angle:${refs[0].angleId}`);
-  return proofs.length === 1;
+    p.proof.platformRef === `angle:${refs[0].angleId}`);
+  if (proofs.length !== 1) return false;
+  if (proofs[0].proof.url === url) return true;
+  // A relocated URL is not itself an identity. Both immutable baselines must
+  // already pair this key with these exact bytes, and the current native file
+  // must retain its own baseline evidence and platform identity. No transformed
+  // receipt, same-looking photo, duplicate content or new mapping is inferred.
+  const native = c.baselines.shopify.assets.filter(a => a.key === key);
+  const sha = bytes.sha256, galleryProof = proofs[0];
+  if (native.length !== 1 || baseline[0].contentId !== sha || native[0].contentId !== sha ||
+      galleryProof.proof.decodedSha256 !== sha || galleryProof.proof.operationId || galleryProof.proof.sourceEvidenceId ||
+      [c.baselines.gallery, c.baselines.shopify].some(s => s.assets.some(a => a.key !== key && a.contentId === sha))) return false;
+  const nativeProofs = c.provenance.filter(p => p.product_gid === c.identity.productId && p.side === "shopify" &&
+    p.asset_key === key && p.evidence_id === native[0].evidenceId && p.content_id === sha &&
+    p.proof.platformRef === mediaId && p.proof.url === url && p.proof.decodedSha256 === sha &&
+    p.proof.width === bytes.width && p.proof.height === bytes.height && p.proof.mime === bytes.mime &&
+    p.proof.byteLength === bytes.byteLength && !p.proof.operationId && !p.proof.sourceEvidenceId);
+  return nativeProofs.length === 1;
 }
 
 /** Only independent byte reads run in parallel. Every started read settles
@@ -170,7 +187,7 @@ export async function captureMediaPlanningPair(context: MediaPlanningContext, ow
         // a uniquely proven orphaned logical identity, without attaching media.
         const knownTarget = c.baselines.gallery.assets.some(a => a.key === sourceKey) || c.galleryRefs.some(r => r.key === sourceKey);
         if (angleRefs.some(r => r.key === sourceKey) ||
-            (knownTarget && !isOrphanedAngleReplacement(c, sourceKey, angle.image_path))) {
+            (knownTarget && !isOrphanedAngleReplacement(c, sourceKey, angle.image_path, bytes, image.mediaId))) {
           fail("MEDIA_PLANNING_EQUIVALENT_TARGET_EXISTS");
         }
         if (bytes.width !== image.width || bytes.height !== image.height) fail("MEDIA_PLANNING_IMAGE_DIMENSIONS_CHANGED");
