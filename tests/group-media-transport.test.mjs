@@ -18,10 +18,14 @@ test('product detach requires private intent, protects all bound and unbound nat
 });
 test('variant append/detach/cover mutate only a bound native variant and cannot clear a live primary by detaching',()=>{
  const before=snapshot(),variantId=binding.variants[0].variantGid;
- const add=build({kind:'variant_append',variantId,mediaIds:[image(3).id]},before);assert.match(add.query,/productVariantAppendMedia/);assert.deepEqual(add.variables.variantMedia,[{variantId,mediaIds:[image(3).id]}]);
+ before.variants[0].mediaIds=[image(1).id];restamp(before);
+ assert.throws(()=>build({kind:'variant_append',variantId,mediaIds:[image(2).id,image(3).id]},before),/SINGLE_IMAGE_REQUIRED/);
+ assert.throws(()=>build({kind:'variant_append',variantId,mediaIds:[image(3).id]},before),/SINGLE_IMAGE_REQUIRED/);
+ const empty=structuredClone(before);empty.variants[0].mediaIds=[];empty.variants[0].image=null;restamp(empty);
+ const add=build({kind:'variant_append',variantId,mediaIds:[image(3).id]},empty);assert.match(add.query,/productVariantAppendMedia/);assert.deepEqual(add.variables.variantMedia,[{variantId,mediaIds:[image(3).id]}]);
  assert.throws(()=>build({kind:'variant_append',variantId:before.variants[2].variantGid,mediaIds:[image(3).id]},before),/GROUP_MEDIA_VARIANT_NOT_BOUND/);
  assert.throws(()=>build({kind:'variant_detach',variantId,mediaIds:[image(1).id],removalIntentId:owner},before),/GROUP_MEDIA_VARIANT_IMAGE_PROTECTED/);
- assert.throws(()=>build({kind:'variant_cover',variantId,mediaId:image(3).id},before),/GROUP_MEDIA_COVER_NOT_ASSIGNED/);
+ assert.throws(()=>build({kind:'variant_cover',variantId,mediaId:image(99).id},before),/GROUP_MEDIA_COVER_NOT_ON_PRODUCT/);
  const cover=build({kind:'variant_cover',variantId,mediaId:image(2).id},before);assert.equal(cover.variables.variants[0].id,variantId);assert.equal(cover.variables.variants[0].mediaId,image(2).id);
 });
 test('reorder preserves complete membership and protected relative order, with readback-only noop',()=>{
@@ -32,10 +36,23 @@ test('reorder preserves complete membership and protected relative order, with r
  const noop=build({kind:'reorder',mediaIds:before.media.map(m=>m.mediaId),protectedMediaIds},before);assert.equal(noop.readOnlyNoop,true);assert.equal(transport.verifyGroupMediaPhase(noop,before,before),'verified');
 });
 test('readback verifies exact complete deltas and catches another color or unbound variant being changed',()=>{
- const before=snapshot(),variantId=binding.variants[0].variantGid,r=build({kind:'variant_append',variantId,mediaIds:[image(3).id]},before);
+ const before=snapshot(),variantId=binding.variants[0].variantGid;before.variants[0].mediaIds=[];before.variants[0].image=null;restamp(before);
+ const r=build({kind:'variant_append',variantId,mediaIds:[image(3).id]},before);
  const after=structuredClone(before);after.variants[0].mediaIds.push(image(3).id);restamp(after);assert.equal(transport.verifyGroupMediaPhase(r,before,after),'verified');
  after.variants[2].mediaIds=[];restamp(after);assert.equal(transport.verifyGroupMediaPhase(r,before,after),'review');
  assert.equal(transport.verifyGroupMediaPhase(r,before,before),'pending');
+});
+
+test('one native cover replacement follows Shopify mediaId semantics and preserves every other variant',()=>{
+ const before=snapshot(),variantId=binding.variants[0].variantGid;
+ before.variants[0].mediaIds=[image(1).id];restamp(before);
+ const request=build({kind:'variant_cover',variantId,mediaId:image(2).id},before),after=structuredClone(before);
+ after.variants[0].image={id:'gid://shopify/ProductImage/102',url:image(2).image.url};after.variants[0].mediaIds=[image(2).id];restamp(after);
+ assert.equal(transport.verifyGroupMediaPhase(request,before,after),'verified');
+ const extra=structuredClone(after);extra.variants[0].mediaIds.push(image(3).id);restamp(extra);assert.equal(transport.verifyGroupMediaPhase(request,before,extra),'review');
+ after.variants[1].mediaIds=[];restamp(after);assert.equal(transport.verifyGroupMediaPhase(request,before,after),'review');
+ const ambiguous=structuredClone(before);ambiguous.variants[0].mediaIds.push(image(2).id);restamp(ambiguous);
+ assert.throws(()=>build({kind:'variant_cover',variantId,mediaId:image(3).id},ambiguous),/MEMBERSHIP_REVIEW/);
 });
 test('a READY attachment with different content identity or alt is review, while processing is pending',()=>{
  const before=snapshot(),owned=receipt(),r=build({kind:'product_attach',owned},before),after=structuredClone(before);after.media.push(structuredClone(owned.media));restamp(after);

@@ -20,7 +20,7 @@ for(const product of [policy.FZT73_PRODUCT_GID,policy.MD20_PRODUCT_GID]){
   const intent=plan.planOwnedMediaChange(f.source,f.manifest,command),specs=phases.buildOwnedMediaPhaseSpecs(intent,f.source,{});
   assert.deepEqual(intent.impactedItemIds,[command.itemId]);
   const target=f.binding.variants.find(v=>v.itemId===command.itemId).variantGid;
-  assert.ok(specs.some(spec=>spec.kind==='variant_append'));
+  assert.equal(specs.some(spec=>spec.kind==='variant_append'),false);
   assert.ok(specs.some(spec=>spec.kind==='variant_cover'));
   assert.ok(specs.filter(spec=>spec.kind.startsWith('variant_')).every(spec=>spec.variantId===target));
   assert.ok(f.binding.variants.filter(v=>v.itemId!==command.itemId).every(v=>!specs.some(spec=>spec.variantId===v.variantGid)));
@@ -30,7 +30,8 @@ for(const product of [policy.FZT73_PRODUCT_GID,policy.MD20_PRODUCT_GID]){
   const command={...f.command,assignments:[{mediaId,itemIds:[f.command.itemId,other.itemId]}]};
   const intent=plan.planOwnedMediaChange(f.source,f.manifest,command),specs=phases.buildOwnedMediaPhaseSpecs(intent,f.source,{});
   assert.deepEqual(intent.impactedItemIds,[other.itemId]);
-  assert.ok(specs.some(spec=>spec.kind==='variant_append'&&spec.mediaRefs.includes(mediaId)));
+  assert.equal(specs.some(spec=>spec.kind==='variant_append'),false);
+  assert.equal(specs.some(spec=>spec.kind==='variant_cover'),false);
   assert.ok(specs.filter(spec=>spec.kind.startsWith('variant_')).every(spec=>spec.variantId===other.variantGid));
  });
 }

@@ -32,26 +32,16 @@ export function buildOwnedMediaPhaseSpecs(plan: OwnedMediaPlan, before: GroupMed
     steps.push({ kind: "create_owned", uploadKey: upload.key, source: structuredClone(source), alt: upload.alt });
     steps.push({ kind: "product_attach", uploadKey: upload.key });
   }
-  // Align only colors whose approved map actually changed in this command.
-  // Existing target-only associations and all untouched colors remain native as observed.
+  // Shopify supports one native image per variant. The private reviewed map owns
+  // the additional angles; never append those images as native associations.
+  // Bulk-update replaces the primary association when the cover actually changes.
   for (const target of impacted) {
     const native = before.variants.find(v => v.variantGid === target.variantGid);
     if (!native) throw new Error("GROUP_MEDIA_IDENTITY_CONFLICT");
-    const added = target.orderedMediaIds.filter(id => isUpload(id) || !native.mediaIds.includes(id));
-    if (added.length) steps.push({ kind: "variant_append", variantId: target.variantGid, mediaRefs: added });
-  }
-  // Change primary images before detaching any current primary association.
-  for (const target of impacted) {
-    const native = before.variants.find(v => v.variantGid === target.variantGid)!;
     const photo = before.media.find(m => m.mediaId === target.coverMediaId);
     if (isUpload(target.coverMediaId) || !photo || native.image?.url !== photo.image?.url) {
       steps.push({ kind: "variant_cover", variantId: target.variantGid, mediaRef: target.coverMediaId });
     }
-  }
-  for (const target of impacted) {
-    const native = before.variants.find(v => v.variantGid === target.variantGid)!;
-    const removed = plan.removedReferences.filter(ref => ref.variantGid === target.variantGid && native.mediaIds.includes(ref.mediaId)).map(ref => ref.mediaId);
-    if (removed.length) steps.push({ kind: "variant_detach", variantId: target.variantGid, mediaRefs: removed, removalIntentId: plan.requestId });
   }
   for (const mediaId of plan.productDetachMediaIds) steps.push({ kind: "product_detach", mediaRef: mediaId,
     protectedRefs: [...plan.protectedMediaIds], removalIntentId: plan.requestId });

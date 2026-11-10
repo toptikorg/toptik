@@ -4,7 +4,7 @@ import { drainMediaWork, mediaSyncEnabled } from "./media-work-queue";
 import { drainOwnedMediaWork } from "./owned-media-work-queue";
 
 const URL = "https://landing.toptik.co.il/api/admin/shopify/media/worker";
-export const MAX_MEDIA_HOPS = 250;
+export const MAX_MEDIA_HOPS = 0;
 export function validMediaHop(value: string | null) { return value && /^(?:0|[1-9]\d{0,2})$/.test(value) && Number(value) <= MAX_MEDIA_HOPS ? Number(value) : null; }
 export async function dispatchMediaSync(hop = 0): Promise<void> {
   if (!mediaSyncEnabled()) return;
@@ -28,7 +28,7 @@ export function scheduleMediaSync(hop = 0): void {
     // final finish/continuation calls.
     const deadline = Date.now() + 240000;
     const visited = new Set<string>();
-    let processed = 0, morePending = false;
+    let morePending = false;
     for (let round = 0; round < 10 && Date.now() + 12000 < deadline; round++) {
       // Shared groups have their own identity/journal, never the single-variant classification.
       // A broken shared claim cannot block independent generic products.
@@ -39,18 +39,13 @@ export function scheduleMediaSync(hop = 0): void {
       if (!result.claimedProductId) { morePending = owned.continuationNeeded; break; }
       if (visited.has(result.claimedProductId)) throw new Error("MEDIA_QUEUE_BATCH_REPEATED");
       visited.add(result.claimedProductId);
-      processed += result.processed;
       morePending = result.continuationNeeded || owned.continuationNeeded;
       // After the last shared claim, give ordinary products a turn as well.
       // An empty shared claim on the next round falls through to the generic queue.
       if (!morePending && !owned.claimedProductId) break;
     }
-    // A deep backlog continues in a FRESH invocation (its own budget) instead of
-    // waiting for the next cron tick. Strictly bounded: it chains only while this
-    // invocation finished real work (a batch of holds, failures or in-flight waits
-    // stops and falls back to the cron cadence), only while durable unvisited work
-    // remains, and never past MAX_MEDIA_HOPS. Claims, leases, exclusions and every
-    // safety gate are exactly the per-invocation ones.
-    if (processed > 0 && morePending && hop < MAX_MEDIA_HOPS) await dispatchMediaSync(hop + 1);
+    // Vercel rejects nested self-invocations with HTTP 508. Leave remaining
+    // durable work for a fresh webhook/editor/cron wakeup, never another fetch
+    // from this worker. This does not change leases, retry policy or receipts.
   } catch (error) { report(error); } });
 }
