@@ -8,6 +8,6 @@ Exactly one `captureMediaSourceBytes` call is bracketed by two native reads. A c
 
 This endpoint does not take a lease, invoke a worker, enqueue work, register provenance/reviews, approve media, adopt content, reset a baseline or write a catalog/storage/product row. Its production observation is diagnostic evidence, not model/color approval.
 
-`baselineComparison` is always `unavailable`, with `READ_ONLY_PROOF_ACCESS_NOT_EXPOSED`. Existing planning/provenance RPCs require a reconciliation lease, so this release does not call them or add a new database surface. Compare the returned tuple with an independently read exact stored proof bundle. Runtime-default response representations may vary; an unchanged URL does not prove unchanged bytes, and a byte difference does not itself prove a visible content change.
+`baselineComparison` is always `unavailable`, with `READ_ONLY_PROOF_ACCESS_NOT_EXPOSED`. Existing planning/provenance RPCs require a reconciliation lease, so this diagnostic does not call them or add a new database surface. Compare the returned tuple with an independently read exact stored proof bundle. Runtime-default response representations may vary; an unchanged URL does not prove unchanged bytes, and a byte difference does not itself prove a visible content change.
 
 The two native reads plus bounded database SELECTs do not provide a cross-system atomic snapshot. Changes after the last read remain possible. The endpoint never uses the observation as permission for a subsequent write.
