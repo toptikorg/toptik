@@ -1,0 +1,13 @@
+# Read-only current media byte diagnostic
+
+`POST /api/admin/shopify/media/diagnostic` observes one currently attached native photo of one enabled, approved ordinary product. It uses the existing `authorizeGalleryAdmin` token/session gate. Session requests require the same-origin JSON/CSRF policy even though the operation is read-only. There is no public or cron path.
+
+The only body is `{ "itemId": "<registered card UUID>", "mediaId": "gid://shopify/MediaImage/<id>" }`, at most 1,024 bytes. A URL, product identity, expected checksum, baseline or approval cannot be supplied. Shared multi-color families are unsupported by this narrowly scoped diagnostic. The server reads the enabled exact eligibility, current authoritative binding, active card and published public link with bounded service-role SELECTs. The existing read-only `read_toptik_media_status` RPC must also report the same exact registered identity and enabled copy/media lanes. It takes no lease and the endpoint never invokes its enqueue sibling. The existing native reader requires an ACTIVE, published product, an exact single variant, complete associations and READY photos.
+
+Exactly one `captureMediaSourceBytes` call is bracketed by two native reads. A changed native fingerprint or a changed/revoked database binding refuses the result. Both URL and captured checksum pass the existing denylist. No retry or alternate Accept/User-Agent is introduced. The result explicitly constructs only the SHA256, MIME, dimensions, byte length, scoped identity/native metadata and Node/Sharp versions. It returns neither raw bytes nor the pixel duplicate-detection signature. Responses use `Cache-Control: no-store`.
+
+This endpoint does not take a lease, invoke a worker, enqueue work, register provenance/reviews, approve media, adopt content, reset a baseline or write a catalog/storage/product row. Its production observation is diagnostic evidence, not model/color approval.
+
+`baselineComparison` is always `unavailable`, with `READ_ONLY_PROOF_ACCESS_NOT_EXPOSED`. Existing planning/provenance RPCs require a reconciliation lease, so this release does not call them or add a new database surface. Compare the returned tuple with an independently read exact stored proof bundle. Runtime-default response representations may vary; an unchanged URL does not prove unchanged bytes, and a byte difference does not itself prove a visible content change.
+
+The two native reads plus bounded database SELECTs do not provide a cross-system atomic snapshot. Changes after the last read remain possible. The endpoint never uses the observation as permission for a subsequent write.

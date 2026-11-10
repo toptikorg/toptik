@@ -1,0 +1,2 @@
+# SQL guards compare exact function bodies. Keep checkout bytes identical on Windows and CI.
+*.sql text eol=lf
