@@ -24,6 +24,8 @@ import { OWNED_SHARED_NOTE, OWNED_UNSUPPORTED_MESSAGES, ownedCardChanges, ownedE
 import { NO_CHANGES_MESSAGE, planChangedOnlySave } from "@/lib/carousel/editor-changes";
 import { mergeOwnedFamilyRefresh } from "@/lib/carousel/owned-editor-refresh";
 import { moveEditorAngle, promoteEditorAngle, removeEditorAngle } from "@/lib/carousel/editor-media-order";
+import { applyStagedUploadToCatalog, assertNoPendingUploadReviews, pendingUploadReviews, requestStagedReview } from "@/lib/carousel/staged-upload-review";
+import StagedImageReview from "@/components/admin/StagedImageReview";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -376,6 +378,9 @@ export default function AdminPage() {
         throw new Error("יש שינויים שלא נשלחו בכרטיס צבע של מוצר שנערך דרך החנות. שמרו אותם בכפתור \"שמור בחנות\" שבכרטיס הצבע, או טענו מחדש. לא נשמר דבר.");
       }
     }
+    // A new image of an ordinary product is saved only after its exact model and color were confirmed in its
+    // card (the server then holds a signed receipt for it). The server refuses the save otherwise; this says why.
+    assertNoPendingUploadReviews(snapshot, nextPayload, isShopifyOwnedVariant);
     const plan = planChangedOnlySave(snapshot, nextPayload);
     // Nothing to write: return the input itself (callers compare identity).
     if (!plan.hasChanges) return nextPayload;
@@ -494,6 +499,34 @@ export default function AdminPage() {
     return data.publicUrl as string;
   }
 
+  // The administrator confirmed that an uploaded image shows the exact model and color of an ordinary product.
+  // The server checks the card, copies the decoded bytes to a content-addressed place and stores a signed
+  // receipt; only then does the editor swap the upload for that copy. Resolves with an error text, or null.
+  // It counts as a pending upload meanwhile, so saving, reloading and importing wait for it.
+  async function onConfirmStagedUpload(itemId: string, uploadUrl: string, note: string): Promise<string | null> {
+    if (pendingUploadsRef.current || isCatalogBusy || !authReady) return "יש להמתין לסיום הפעולה הקודמת ואז לנסות שוב.";
+    const saved = savedSnapshotRef.current?.items.find(row => row.id === itemId);
+    if (!saved || isShopifyOwnedVariant(itemId) || !saved.catalogNumber || typeof saved.editorRevision !== "number") return "גרסת הכרטיס חסרה. טענו מחדש.";
+    const generation = catalogGenerationRef.current;
+    pendingUploadsRef.current += 1;
+    setPendingUploads(pendingUploadsRef.current);
+    try {
+      setStatus("בודק ומכין את התמונה לאישור...");
+      const { stagedUrl } = await requestStagedReview({ itemId, uploadUrl, catalogNumber: saved.catalogNumber, revision: saved.editorRevision, note, token });
+      if (generation !== catalogGenerationRef.current) throw new Error("המוצר נטען מחדש; אישור התמונה לא הוחל על נתונים שהשתנו.");
+      setPayload(current => applyStagedUploadToCatalog(current, itemId, uploadUrl, stagedUrl, generation, catalogGenerationRef.current));
+      setStatus("התמונה אושרה והוכנה. יש לשמור את השינויים.");
+      return null;
+    } catch (error) {
+      const message = resolveErrorMessage(error, "אישור התמונה נכשל");
+      setStatus(message);
+      return message;
+    } finally {
+      pendingUploadsRef.current -= 1;
+      setPendingUploads(pendingUploadsRef.current);
+    }
+  }
+
   async function onImageUpload(itemId: string, file: File, kind: "cover" | "angle") {
     if (pendingUploadsRef.current || isCatalogBusy || !authReady) return;
     if (!payload.items.some(item => item.id === itemId)) return;
@@ -505,7 +538,7 @@ export default function AdminPage() {
       const url = await uploadFile(file, `items/${itemId}/${kind === "cover" ? "cover" : "angles"}`);
       if (generation !== catalogGenerationRef.current) throw new Error("המוצר נטען מחדש; התמונה לא הוחלה על נתונים שהשתנו.");
       setPayload(current => applyUploadedImage(current, itemId, url, kind, generation, catalogGenerationRef.current));
-      setStatus("התמונה הועלתה. יש לשמור את השינויים.");
+      setStatus("התמונה הועלתה. יש לאשר אותה בכרטיס המוצר ואז לשמור את השינויים.");
     } catch (error) {
       setStatus(resolveErrorMessage(error, "שגיאת העלאה"));
     } finally {
@@ -1551,6 +1584,17 @@ export default function AdminPage() {
                       if (!before) throw new Error("גרסת המוצר חסרה. טענו מחדש.");
                       await refreshOwnedFamily(item.id, before, catalogGenerationRef.current, true);
                     }} />}
+
+                  {!sourceOwned && (() => {
+                    // New uploads wait here until the exact model and color were confirmed; the SKU and version
+                    // shown and sent are those of the saved card, which is what the server checks.
+                    const saved = savedSnapshotRef.current?.items.find(row => row.id === item.id);
+                    return pendingUploadReviews(saved, item).map(pending => (
+                      <StagedImageReview key={pending.url} sku={saved?.catalogNumber ?? ""} revision={saved?.editorRevision} title={item.title}
+                        imageUrl={pending.url} disabled={isCatalogBusy || !authReady}
+                        onConfirm={note => onConfirmStagedUpload(item.id, pending.url, note)} />
+                    ));
+                  })()}
 
                   <div className="admin-item-angles" style={{ marginTop: 12 }}>
                     <div

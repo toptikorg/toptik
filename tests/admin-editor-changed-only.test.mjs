@@ -55,6 +55,8 @@ const admin = read("src/app/admin/page.tsx");
 const persistSource = admin.slice(admin.indexOf("async function persistPayload"), admin.indexOf("const loadData = useCallback"));
 // persistPayload refuses a pending edit on a Shopify-owned color: those are delivered by their own button.
 const ownedClientSource = withoutImports(read("src/lib/shopify/owned-edit-client.ts"));
+// persistPayload also refuses a new upload of an ordinary product that nobody confirmed yet (staged Gallery review).
+const stagedReviewSource = withoutImports(read("src/lib/carousel/staged-upload-review.ts"));
 const { makePersist } = await moduleFrom(`export function makePersist(deps) {
   const { fetch, savedSnapshotRef, planChangedOnlySave } = deps;
   const authReady = true, token = "test-token";
@@ -63,6 +65,7 @@ const { makePersist } = await moduleFrom(`export function makePersist(deps) {
   const pendingUploadsRef = { current: 0 }, catalogGenerationRef = { current: 0 };
   ${variantPolicySource}
   ${ownedClientSource}
+  ${stagedReviewSource}
   ${persistSource}
   return persistPayload;
 }`);
@@ -679,4 +682,63 @@ test("an owned reply cannot replace a catalog that was reloaded while its readba
   f.resolve(); await assert.rejects(request, /הנתונים נטענו מחדש/);
   assert.deepEqual(f.savedSnapshotRef.current, f.snapshot);
   assert.deepEqual(f.payloadRef.current, f.snapshot);
+});
+
+// ---- Staged Gallery review: a new upload of an ordinary product must be confirmed before it is saved ----------------
+// These drive the real persistPayload, the real PUT route, the real saver and the emulated atomic RPC with its
+// per-card revision check. The receipt guard itself is covered in staged-media-*.test.mjs; here the point is that the
+// confirmation never replaces the version check and never lets an unconfirmed upload reach a request.
+const stagedEditor = await moduleFrom(read("src/lib/carousel/staged-upload-review.ts"));
+const stagedBucket = "https://ekgpaoavsavrtbhlbwdg.supabase.co/storage/v1/object/public/carousel-media";
+function withFreshUpload(snapshot, index) {
+  const edited = structuredClone(snapshot);
+  const target = edited.items[index];
+  const upload = `${stagedBucket}/items/${target.id}/angles/5a6e2a30-733b-4df9-be1d-7bfa056e4613.jpg`;
+  target.angles.push({ id: angleId(900, index), itemId: target.id, angleKey: "view-4", angleOrder: 4, imagePath: upload });
+  return { edited, target, upload };
+}
+
+test("(staged i) an unconfirmed upload stops the whole save before any request or write", async () => {
+  const f = store();
+  const { edited } = withFreshUpload(f.savedSnapshotRef.current, 10);
+  edited.items[3].title = "an unrelated edit that would save on its own";
+  await assert.rejects(f.persist(edited), { message: stagedEditor.PENDING_REVIEW_SAVE_MESSAGE });
+  assert.equal(f.calls.puts.length, 0);
+  assert.equal(f.calls.rpc.length, 0);
+  assert.deepEqual(f.calls.itemWrites, []);
+});
+
+test("(staged ii) the confirmed copy saves as exactly that card and is checked against the version the editor loaded", async () => {
+  const f = store();
+  const { edited, target, upload } = withFreshUpload(f.savedSnapshotRef.current, 10);
+  const copy = `${stagedBucket}/sync-staged/${target.id}/${"a".repeat(64)}.jpg`;
+  edited.items[10] = stagedEditor.applyStagedUpload(edited.items[10], upload, copy);
+  const fresh = await f.persist(edited);
+  assert.deepEqual(f.calls.puts[0].items.map(item => item.id), [target.id]);
+  assert.deepEqual(f.calls.itemWrites, [target.id]);
+  assert.equal(f.calls.rpc[0].p_expected_editor_revisions[target.id], 4, "the card version the editor loaded is what the save checks");
+  assert.ok(f.angles.some(angle => angle.item_id === target.id && angle.image_path === copy), "the confirmed copy is stored");
+  assert.ok(!f.angles.some(angle => angle.image_path === upload), "the unconfirmed upload address is never stored");
+  assert.equal(assertUntouched(f, [target.id]), UNTOUCHED);
+  assert.equal(fresh.items[10].angles.at(-1).imagePath, copy);
+});
+
+test("(staged iii) a card saved elsewhere first is still refused by its own revision check, with or without a receipt", async () => {
+  const f = store();
+  const { edited, target, upload } = withFreshUpload(f.savedSnapshotRef.current, 10);
+  edited.items[10] = stagedEditor.applyStagedUpload(edited.items[10], upload, `${stagedBucket}/sync-staged/${target.id}/${"b".repeat(64)}.png`);
+  f.rows.find(row => row.id === target.id).editor_revision += 1; // another tab or the sync saved this card meanwhile
+  await assert.rejects(f.persist(edited), /המוצר עודכן במקום אחר/);
+  assert.deepEqual(f.calls.itemWrites, []);
+  assert.ok(!f.angles.some(angle => angle.item_id === target.id && angle.image_path.includes("sync-staged")));
+});
+
+test("(staged iv) a shared multi-color card keeps its own refusal; the new check never replaces it", async () => {
+  const f = ownedCatalog();
+  const next = f.edit(snapshot => {
+    const owned = snapshot.items[0];
+    owned.angles.push({ id: angleId(901, 1), itemId: owned.id, angleKey: "2", angleOrder: 2, imagePath: `${stagedBucket}/items/${owned.id}/angles/5a6e2a30-733b-4df9-be1d-7bfa056e4613.jpg`, imageAlt: "alt" });
+  });
+  await assert.rejects(f.persist(next), error => /לא נשמר דבר/.test(error.message) && error.message !== stagedEditor.PENDING_REVIEW_SAVE_MESSAGE);
+  assert.deepEqual(f.calls, []);
 });
