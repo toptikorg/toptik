@@ -10,6 +10,11 @@ export const GROUP_MEDIA_FILE_NODE_QUERY = `query TopTikGroupOwnedFileNode($id: 
 export const GROUP_MEDIA_JOB_QUERY = "query TopTikGroupMediaJob($id: ID!) { job(id: $id) { id done } }";
 function fail(code: string): never { throw new Error(code); }
 function object(v: unknown): Record<string, unknown> { if (!v || typeof v !== "object" || Array.isArray(v)) fail("GROUP_MEDIA_RESPONSE_INVALID"); return v as Record<string, unknown>; }
+// Shopify's pinned productReorderMedia example returns a UUID Job GID. ID is opaque,
+// not a numeric primary key. Keep its exact value for the authenticated job query.
+function isJobId(value: unknown): value is string {
+  return typeof value === "string" && value.length <= 512 && /^gid:\/\/shopify\/Job\/[^/?#\s\u0000-\u001f\u007f]+$/.test(value);
+}
 function config() {
   if (configuredShopifyDomain() !== "toptikcoil.myshopify.com" || (process.env.SHOPIFY_API_VERSION?.trim() || "2026-07") !== "2026-07") fail("GROUP_MEDIA_CONFIG_MISMATCH");
 }
@@ -36,7 +41,7 @@ export async function sendGroupMediaMutation(request: GroupMediaPhaseRequest, de
     throw Object.assign(new Error("GROUP_MEDIA_WRITE_REJECTED"), { providerCodes });
   }
   if (request.input.kind === "reorder") {
-    const job = object(payload.job); if (typeof job.id !== "string" || !/^gid:\/\/shopify\/Job\/[1-9]\d*$/.test(job.id)) fail("GROUP_MEDIA_ACK_INVALID");
+    const job = object(payload.job); if (!isJobId(job.id)) fail("GROUP_MEDIA_ACK_INVALID");
     return { jobId: job.id };
   }
   if (request.input.kind === "create_owned" || request.input.kind === "product_attach" || request.input.kind === "product_detach") {
@@ -50,7 +55,7 @@ export async function sendGroupMediaMutation(request: GroupMediaPhaseRequest, de
   return { variantId: request.input.variantId };
 }
 export async function readGroupMediaJob(jobId: string, deadline: number): Promise<boolean> {
-  if (!/^gid:\/\/shopify\/Job\/[1-9]\d*$/.test(jobId)) fail("GROUP_MEDIA_ACK_INVALID");
+  if (!isJobId(jobId)) fail("GROUP_MEDIA_ACK_INVALID");
   const job = object((await query(GROUP_MEDIA_JOB_QUERY, { id: jobId }, deadline)).job);
   if (job.id !== jobId || typeof job.done !== "boolean") fail("GROUP_MEDIA_ACK_INVALID");
   return job.done;
