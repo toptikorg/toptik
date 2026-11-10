@@ -112,6 +112,8 @@ for(const [name,change] of [
  ['proof belongs to another product',x=>x.context.provenance[0].product_gid='gid://shopify/Product/999'],
  ['baseline evidence differs',x=>x.context.baselines.gallery.assets[0].evidenceId='unrelated'],
  ['baseline content differs',x=>x.context.baselines.gallery.assets[0].contentId='f'.repeat(64)],
+ ['baseline key is not unique',x=>x.context.baselines.gallery.assets.push(structuredClone(x.context.baselines.gallery.assets[0]))],
+ ['old reference has no physical row identity',x=>x.context.galleryRefs[1].angleId=null],
  ['two old physical references claim the key',x=>x.context.galleryRefs.push({...x.refs[1],angleId:'a0000000-0000-4000-8000-000000000009'})],
 ])test('orphan rebinding refuses '+name,async()=>{const x=recreatedAngle();change(x);await assert.rejects(x.run(),/EQUIVALENT_TARGET_EXISTS/);});
 test('new modal angle for independent cover preserves cover identity and does not synthesize removal',async()=>{

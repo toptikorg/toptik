@@ -25,7 +25,10 @@ function registered(p: MediaProofRow): MediaRegisteredProof { return { evidenceI
 
 /** A deleted physical row may be recreated without changing its exact image.
  * Preserve its already approved logical identity only when the old row is gone
- * and one current row uniquely claims the same immutable baseline source. */
+ * and one current row uniquely claims the same immutable baseline source.
+ * choose() and SQL gallery_snapshot validate Gallery proof URLs, not physical
+ * platformRef: the immutable proof survives while a new raw revision pins refs.
+ * Explicit identity-relink RPCs have stricter physical-reference preconditions. */
 function isOrphanedAngleReplacement(c: MediaPlanningContext, key: string, url: string): boolean {
   const refs = c.galleryRefs.filter(r => r.key === key && r.role === "angle");
   const baseline = c.baselines.gallery.assets.filter(a => a.key === key);

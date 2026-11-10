@@ -12,6 +12,18 @@ const storagePath=`sync-media/${id.itemId}/${sha}.png`,storageUrl=`https://ekgpa
 const angle='a0000000-0000-4000-8000-000000000009';
 const review={sku:id.exactGallerySku,shopifySku:id.exactShopifySku,productId:id.productId,variantId:id.variantId,galleryId:id.itemId,imageUrl:sourceUrl,decodedSha256:sha};
 const registry=()=>({items:[review],deniedUrls:[],deniedSha256:[]});
+
+test('recreated physical angle cannot bypass the real review gate when bytes change at the same URL',async()=>{
+ const v=fixture();v.raw.angles[0].id=angle;
+ const deps={now:()=>now,capture:async()=>({...v.bytes,sha256:sha}),shopify:async()=>v.read,gallery:()=>({read:async()=>v.raw})};
+ await assert.rejects(captureFactory.make([])(v.context,owner,now+30000,deps),/MEDIA_REVIEW_REQUIRED/);
+ const exact={...review,imageUrl:url};
+ const wrong={...exact,variantId:'gid://shopify/ProductVariant/999'};
+ await assert.rejects(captureFactory.make([wrong])(v.context,owner,now+30000,deps),/MEDIA_REVIEW_REQUIRED/);
+ const out=await captureFactory.make([exact])(v.context,owner,now+30000,deps);
+ assert.equal(out.refs[1].key,'existing');assert.equal(out.pair.gallery.assets[0].contentId,sha);
+ assert.equal(out.pair.shopify.assets[0].contentId,sha);
+});
 function proofs(){
  const source={product_gid:id.productId,side:'shopify',evidence_id:'s-new',asset_key:'s-media:2',content_id:sha,proof:{platformRef:'gid://shopify/MediaImage/2',url:sourceUrl,decodedSha256:sha,width:40,height:60,mime:'image/png',byteLength:200,verifiedAt:stamp,ownership:'reference_only'}};
  const copy={...source,side:'gallery',evidence_id:`gallery:${opId}:0`,proof:{...source.proof,platformRef:storagePath,url:storageUrl,ownership:'owned_storage'}};
