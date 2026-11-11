@@ -22,7 +22,33 @@ export type MediaProductRun = { status: "disabled" | "done" | "pending" | "revie
   deferred?: true };
 type Dependencies = { planning?: typeof createMediaPlanningRpc; transport?: typeof createMediaTransportRpc; gallery?: typeof createGalleryMediaTransport;
   capture?: typeof captureMediaPlanningPair; discover?: typeof discoverMediaTransportOperation; observer?: typeof createMediaRuntimeObserver;
-  phase?: typeof runPersistedMediaPhase; now?: () => number; environment?: { VERCEL_ENV?: string; SHOPIFY_MEDIA_SYNC?: string } };
+  phase?: typeof runPersistedMediaPhase; now?: () => number; timing?: (event: MediaPlanningTimingEvent) => void; environment?: { VERCEL_ENV?: string; SHOPIFY_MEDIA_SYNC?: string } };
+export type MediaPlanningStage = "acquire" | "context" | "capture" | "register" | "observe" | "journal" | "reserve" | "commit" | "begin" | "guard" | "phase" | "refresh" | "removal" | "read" | "discover" | "accept" | "prepare" | "conflict" | "review_gate";
+export type MediaPlanningTimingEvent = { productId: string; outcome: string; error: string | null; elapsedMs: number;
+  lastStage: MediaPlanningStage | "entry"; captureCount: number; stages: Partial<Record<MediaPlanningStage, { calls: number; elapsedMs: number }>> };
+/** Invocation-local measurements only: never caches bytes, changes deadlines or logs content/URLs/tokens. */
+export function createMediaPlanningTiming(productId: string, now: () => number, emit: (event: MediaPlanningTimingEvent) => void) {
+  const started = now(), stages: MediaPlanningTimingEvent["stages"] = {};
+  let lastStage: MediaPlanningTimingEvent["lastStage"] = "entry", reported = false;
+  const elapsed = (start: number) => Math.max(0, now() - start);
+  return {
+    async measure<T>(stage: MediaPlanningStage, action: () => Promise<T>): Promise<T> {
+      lastStage = stage; const start = now();
+      try { return await action(); }
+      finally { const row = stages[stage] ?? { calls: 0, elapsedMs: 0 }; row.calls++; row.elapsedMs += elapsed(start); stages[stage] = row; }
+    },
+    finish(outcome: string, error?: unknown) {
+      if (reported) return; reported = true;
+      try {
+        const message = error instanceof Error ? error.message : null;
+        const code = typeof message === "string" && /^MEDIA_[A-Z0-9_]{1,90}$/.test(message) ? message : error === undefined ? null : "MEDIA_WORK_FAILED";
+        emit({ productId, outcome, error: code, elapsedMs: elapsed(started), lastStage, captureCount: stages.capture?.calls ?? 0, stages });
+      }
+      catch { /* Diagnostics never change a reconciliation result or mask its original error. */ }
+    }
+  };
+}
+
 function fail(code: string): never { throw new Error(code); }
 function stable(v: unknown): string { return Array.isArray(v) ? `[${v.map(stable).join(",")}]` : v && typeof v === "object" ?
   `{${Object.entries(v).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, x]) => `${JSON.stringify(k)}:${stable(x)}`).join(",")}}` : JSON.stringify(v); }
@@ -50,32 +76,41 @@ export function galleryObservationNeedsRefresh(context: MediaPlanningContext): b
  * new/unknown products cannot enter this enabled-identity lane. */
 export async function reconcilePersistedMediaProduct(productId: string, evidence: MediaWorkEvidence, deadline: number,
   dependencies: Dependencies = {}): Promise<MediaProductRun> {
+  const timing = createMediaPlanningTiming(productId, dependencies.now ?? Date.now,
+    dependencies.timing ?? (event => console.info("toptik.media.planning_timing", event)));
+  try {
+    const outcome = await runMeasuredMediaProduct(productId, evidence, deadline, dependencies, timing);
+    timing.finish(outcome.status); return outcome;
+  } catch (error) { timing.finish("error", error); throw error; }
+}
+async function runMeasuredMediaProduct(productId: string, evidence: MediaWorkEvidence, deadline: number,
+  dependencies: Dependencies, timing: ReturnType<typeof createMediaPlanningTiming>): Promise<MediaProductRun> {
   const env = dependencies.environment ?? process.env, now = dependencies.now ?? Date.now;
   const result = (status: MediaProductRun["status"], progressed = false, executed = false): MediaProductRun => ({ status, progressed, executed });
   if (env.VERCEL_ENV !== "production" || env.SHOPIFY_MEDIA_SYNC !== "enabled_v1") return result("disabled");
   const stop = Math.min(deadline, now() + 40000), work = stop - 2000;
   const check = () => { if (!Number.isFinite(deadline) || now() >= work) fail("MEDIA_PLANNING_TIME_BUDGET"); }; check();
   const rpc = (dependencies.transport ?? createMediaTransportRpc)(productId), planning = (dependencies.planning ?? createMediaPlanningRpc)(productId);
-  const lease = await rpc.acquire(work); if (!lease) return result("busy");
+  const lease = await timing.measure("acquire", () => rpc.acquire(work)); if (!lease) return result("busy");
   let phaseRef: MediaTransportReference | null = null, progressed = false;
   try {
     if (lease.expiresAt < stop + 5000) fail("MEDIA_PLANNING_LEASE_TOO_SHORT");
-    let context = await planning.context(lease.owner, work); check();
+    let context = await timing.measure("context", () => planning.context(lease.owner, work)); check();
     let visuals: MediaVisuals | null = null;
     const capture = async (c: MediaPlanningContext, verifiedTransport?: MediaOperationDiscovery): Promise<MediaPair> => {
-      const observed = await (dependencies.capture ?? captureMediaPlanningPair)(c, lease.owner, work,
-        verifiedTransport ? { verifiedTransport } : undefined); check();
+      const observed = await timing.measure("capture", () => (dependencies.capture ?? captureMediaPlanningPair)(c, lease.owner, work,
+        verifiedTransport ? { verifiedTransport } : undefined)); check();
       // Planning without pixel fingerprints could write the same photo twice in another encoding.
       if (!observed.visuals || typeof observed.visuals !== "object") fail("MEDIA_VISUAL_IDENTITY_MISSING");
       visuals = observed.visuals;
-      await planning.register(lease.owner, observed.proofs, work);
+      await timing.measure("register", () => planning.register(lease.owner, observed.proofs, work));
       const gallery = (dependencies.gallery ?? createGalleryMediaTransport)(c.identity);
       let registered, refreshed = false;
-      try { registered = await gallery.observe(lease.owner, c.galleryRaw, observed.refs, work); }
+      try { registered = await timing.measure("observe", () => gallery.observe(lease.owner, c.galleryRaw, observed.refs, work)); }
       catch (error) {
         if (!(error instanceof Error) || error.message !== "MEDIA_GALLERY_OBSERVATION_REUSED" || verifiedTransport) throw error;
-        const ids = await reviewedObservationEvidenceIds(c, observed.refs, observed.proofs, work);
-        registered = await gallery.refreshReviewedObservation(lease.owner, c.galleryRaw, observed.refs, ids, work);
+        const ids = await timing.measure("review_gate", () => reviewedObservationEvidenceIds(c, observed.refs, observed.proofs, work));
+        registered = await timing.measure("refresh", () => gallery.refreshReviewedObservation(lease.owner, c.galleryRaw, observed.refs, ids, work));
         refreshed = true;
       }
       const expected = refreshed ? { ...observed.pair.gallery, revision: registered.snapshot.revision } : observed.pair.gallery;
@@ -90,24 +125,25 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
         if (!evidence[side]) continue;
         for (const asset of context.baselines[side].assets) {
           if (current[side].assets.some(a => a.key === asset.key) || removals.some(r => r.side === side && r.key === asset.key)) continue;
-          removals.push(await planning.removal(lease.owner, side, asset.key, mediaSnapshotFingerprint(context.baselines[side]), evidence[side]!, work));
+          removals.push(await timing.measure("removal", () => planning.removal(lease.owner, side, asset.key, mediaSnapshotFingerprint(context.baselines[side]), evidence[side]!, work)));
         }
       }
-      const journal = await planning.journal(lease.owner, current, work);
+      const journal = await timing.measure("journal", () => planning.journal(lease.owner, current, work));
       const plan = reconcileMedia(context.baselines, current, removals, journal.detached as typeof context.detached, visuals ?? fail("MEDIA_VISUAL_IDENTITY_MISSING"));
       if (plan.conflicts.length) {
-        await rpc.recordPlannerConflict(lease.owner, randomUUID(), context.stateVersion, current, plan.conflicts, work);
+        await timing.measure("conflict", () => rpc.recordPlannerConflict(lease.owner, randomUUID(), context.stateVersion, current, plan.conflicts, work));
         const code = plan.conflicts[0].code;
         return { ...result("review"), diagnostic: /^MEDIA_[A-Z0-9_]{1,90}$/.test(code) ? code : "MEDIA_PLANNER_CONFLICT" };
       }
       if (!plan.patches.length && !plan.orders.length && same(current, context.baselines)) return result("done");
-      const reserved = await planning.reserve(lease.owner, context.stateVersion, current, plan, work); progressed = true;
+      const reserved = await timing.measure("reserve", () => planning.reserve(lease.owner, context.stateVersion, current, plan, work)); progressed = true;
       if (typeof reserved.operationId !== "string") fail("MEDIA_PLANNING_RESERVATION_INVALID");
+      const reservedId = reserved.operationId;
       if (!plan.patches.length && !plan.orders.length) {
-        const committed = await planning.commit(lease.owner, reserved.operationId, current, work);
+        const committed = await timing.measure("commit", () => planning.commit(lease.owner, reservedId, current, work));
         return result(committed.status === "verified" ? "done" : "review", true);
       }
-      context = await planning.context(lease.owner, work);
+      context = await timing.measure("context", () => planning.context(lease.owner, work));
       operation = context.operations.find(o => o.id === reserved.operationId);
     }
     if (!operation || typeof operation.id !== "string" || !Number.isInteger(operation.next_step)) fail("MEDIA_PLANNING_OPERATION_INVALID");
@@ -116,23 +152,23 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
     if (!Array.isArray(plan?.patches) || !Array.isArray(plan?.orders)) fail("MEDIA_PLANNING_OPERATION_INVALID");
     const total = plan.patches.length + plan.orders.length;
     if (stepIndex === total) {
-      const current = await capture(context), committed = await planning.commit(lease.owner, opId, current, work);
+      const current = await capture(context), committed = await timing.measure("commit", () => planning.commit(lease.owner, opId, current, work));
       return result(committed.status === "verified" ? "done" : "review", true);
     }
     if (stepIndex < 0 || stepIndex > total) fail("MEDIA_PLANNING_STEP_INVALID");
     const step = context.steps.find(s => s.operation_id === opId && s.step_index === stepIndex);
     if (!step) fail("MEDIA_PLANNING_STEP_INVALID");
     const ref = { operationId: opId, step: stepIndex, phaseIndex: 0 };
-    let journal = await rpc.read(ref, lease.owner, work);
+    let journal = await timing.measure("read", () => rpc.read(ref, lease.owner, work));
     if (journal.chain?.status === "verified") {
-      const discovered = await (dependencies.discover ?? discoverMediaTransportOperation)(ref, work);
+      const discovered = await timing.measure("discover", () => (dependencies.discover ?? discoverMediaTransportOperation)(ref, work));
       const current = await capture(context, discovered);
       const target = (discovered.step.body as { target?: string })?.target;
       if (target !== "gallery" && target !== "shopify") fail("MEDIA_PLANNING_BODY_INVALID");
       // Re-pin a complete raw observation after byte decoding. The SQL gate
       // distinguishes copy-only product timestamps from genuine media drift.
-      const guard = await (dependencies.observer ?? createMediaRuntimeObserver)(discovered)(context.identity, target, work); check();
-      const accepted = await planning.acceptFinal(lease.owner, opId, stepIndex, current, guard, work);
+      const guard = await timing.measure("guard", () => (dependencies.observer ?? createMediaRuntimeObserver)(discovered)(context.identity, target, work)); check();
+      const accepted = await timing.measure("accept", () => planning.acceptFinal(lease.owner, opId, stepIndex, current, guard, work));
       return accepted.status === "verified" ? { ...result("pending", true), verifiedCheckpoint: `${opId}:${stepIndex}:accepted` } : result("review");
     }
     if (journal.chain?.status === "conflict" || step.status === "conflict") return result("review");
@@ -143,18 +179,18 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
       await capture(context); progressed = true;
     }
     if (step.status === "ready") {
-      const current = await capture(context), begun = await planning.begin(lease.owner, opId, stepIndex, current, work);
+      const current = await capture(context), begun = await timing.measure("begin", () => planning.begin(lease.owner, opId, stepIndex, current, work));
       if (begun.status === "conflict") return result("review");
       if (begun.status !== "started") fail("MEDIA_PLANNING_BEGIN_INVALID"); progressed = true;
     }
     if (!journal.chain) {
-      const discovered = await (dependencies.discover ?? discoverMediaTransportOperation)(ref, work);
+      const discovered = await timing.measure("discover", () => (dependencies.discover ?? discoverMediaTransportOperation)(ref, work));
       const body = discovered.step.body as { target?: string; kind?: string; key?: string };
       if (!body || !["gallery", "shopify"].includes(String(body.target))) fail("MEDIA_PLANNING_BODY_INVALID");
-      const guard = await (dependencies.observer ?? createMediaRuntimeObserver)(discovered)(context.identity, body.target as "gallery" | "shopify", work);
+      const guard = await timing.measure("guard", () => (dependencies.observer ?? createMediaRuntimeObserver)(discovered)(context.identity, body.target as "gallery" | "shopify", work));
       const phases = transportPhases(discovered.operation.observed_pair as MediaPair, body, guard, discovered.provenance);
-      await rpc.prepare(ref, lease.owner, randomUUID(), phases, guard, work); progressed = true;
-      journal = await rpc.read(ref, lease.owner, work);
+      await timing.measure("prepare", () => rpc.prepare(ref, lease.owner, randomUUID(), phases, guard, work)); progressed = true;
+      journal = await timing.measure("read", () => rpc.read(ref, lease.owner, work));
     }
     if (!journal.chain || !Number.isInteger(journal.chain.next_phase)) fail("MEDIA_PLANNING_CHAIN_INVALID");
     phaseRef = { ...ref, phaseIndex: Number(journal.chain.next_phase) };
@@ -162,7 +198,7 @@ export async function reconcilePersistedMediaProduct(productId: string, evidence
   // Never start another fixed-duration worker after a long planning request.
   // Prepared work is durable and continuation carries it into a fresh budget.
   if (stop - now() < 12000) return { ...result("pending", progressed), deferred: true };
-  const phase = await (dependencies.phase ?? runPersistedMediaPhase)(phaseRef!, stop);
+  const phase = await timing.measure("phase", () => (dependencies.phase ?? runPersistedMediaPhase)(phaseRef!, stop));
   if (phase.status === "verified") return { ...result("pending", true, phase.executed),
     verifiedCheckpoint: `${phaseRef!.operationId}:${phaseRef!.step}:phase:${phaseRef!.phaseIndex}` };
   if (phase.status === "conflict" || phase.status === "scope_missing") return result("review", false, phase.executed);
