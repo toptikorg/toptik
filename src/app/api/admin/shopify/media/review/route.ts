@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   const auth = await authorizeGalleryAdmin(req, { sessionMutation: true });
   if (!auth.ok) return auth.response;
   const deadline = Date.now() + 45000;
+  let observation: { mediaId: string; expectedSha256: string; observedSha256: string; mime: string; byteLength: number; width: number; height: number } | null = null;
   try {
     if (!req.headers.get("content-type")?.startsWith("application/json")) throw new Error("MEDIA_REVIEW_INPUT_INVALID");
     const reader = req.body?.getReader(); if (!reader) throw new Error("MEDIA_REVIEW_INPUT_INVALID");
@@ -41,7 +42,11 @@ export async function POST(req: NextRequest) {
     const image = before.images.find(i => i.mediaId === record.mediaId && i.url === record.imageUrl);
     if (!image) throw new Error("MEDIA_REVIEW_IDENTITY_CHANGED");
     const bytes = await captureMediaSourceBytes(identity, image.url, deadline);
-    if (bytes.sha256 !== record.decodedSha256) throw new Error("MEDIA_REVIEW_BYTES_CHANGED");
+    if (bytes.sha256 !== record.decodedSha256) {
+      observation = { mediaId: image.mediaId, expectedSha256: record.decodedSha256, observedSha256: bytes.sha256,
+        mime: bytes.mime, byteLength: bytes.byteLength, width: bytes.width, height: bytes.height };
+      throw new Error("MEDIA_REVIEW_BYTES_CHANGED");
+    }
     assertNotDeniedMedia(image.url, bytes.sha256);
     const after = await fetchShopifyMediaRead(identity, 8000, deadline);
     if (before.fingerprint !== after.fingerprint) throw new Error("MEDIA_REVIEW_IDENTITY_CHANGED");
@@ -51,6 +56,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...result, queued }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const code = error instanceof Error && /^MEDIA_[A-Z0-9_]{1,90}$/.test(error.message) ? error.message : "MEDIA_REVIEW_FAILED";
-    return NextResponse.json({ error: code }, { status: code.includes("INPUT") || code.includes("INVALID") ? 400 : 409, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ error: code, ...(observation ? { observation } : {}) }, { status: code.includes("INPUT") || code.includes("INVALID") ? 400 : 409, headers: { "Cache-Control": "no-store" } });
   }
 }
