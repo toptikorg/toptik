@@ -3651,7 +3651,7 @@ html.a11y-big-cursor * {
 /* Text colour names need real layout space, not a tall overlay over the photo. */
 .catalog-card-name-colors-slot { display:none; }
 @media (max-width:767px) {
-  .catalog-card-image-wrap > .catalog-card-colors:has(.is-color-name) { display:none; }
+  .catalog-card.has-named-colors .catalog-card-image-wrap > .catalog-card-colors { display:none; }
   .catalog-card-name-colors-slot { display:block; grid-column:1 / -1; grid-row:2; padding:4px 8px 8px; min-width:0; }
   .catalog-card-name-colors-slot .catalog-card-colors { position:static; transform:none; translate:none; scale:none; display:flex; flex-direction:column; width:100%; max-width:100%; border-radius:12px; padding:6px; gap:6px; }
   .catalog-card-name-colors-slot .catalog-card-colors-dots { justify-content:center; gap:6px; width:100%; }
@@ -3706,4 +3706,3 @@ html.a11y-big-cursor * {
   .catalog-card-full-description summary:focus-visible { outline:3px solid #2465a8; outline-offset:2px; }
   .catalog-card-full-description[open] summary { margin-bottom:8px; }
 }
-

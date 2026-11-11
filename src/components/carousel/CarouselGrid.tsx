@@ -148,7 +148,7 @@ export function CatalogCard({
 
   return (
     <article
-      className="catalog-card"
+      className={`catalog-card${namedSwatches ? " has-named-colors" : ""}`}
       style={{ visibility: imageReady ? undefined : "hidden" }}
       aria-hidden={!imageReady || undefined}
       aria-busy={!imageReady}
