@@ -77,8 +77,9 @@ export function createMediaPlanningRpc(productId: string, options: MediaPlanning
     async commit(owner: string, operationId: string, current: MediaPair, deadline: number) {
       uuid(operationId); pair(current, productId); return object(await call("commit_toptik_media_operation", { ...args(owner), p_operation_id: operationId, p_request_id: randomUUID(), p_fresh: current }, deadline));
     },
-    async removal(owner: string, side: "gallery" | "shopify", key: string, fingerprint: string, evidence: Record<string, unknown>, deadline: number) {
-      const requestId = randomUUID(), proof = side === "gallery" ? { kind: "authenticated_editor", ...evidence, requestId, origin: "https://landing.toptik.co.il" } : evidence;
+    async removal(owner: string, side: "gallery" | "shopify", key: string, fingerprint: string, evidence: Record<string, unknown>, deadline: number, requestId: string = randomUUID()) {
+      uuid(requestId);
+      const proof = side === "gallery" ? { kind: "authenticated_editor", ...evidence, requestId, origin: "https://landing.toptik.co.il" } : evidence;
       return await call("record_toptik_media_removal", { ...args(owner), p_request_id: requestId, p_side: side, p_key: key, p_baseline_fingerprint: fingerprint, p_auth_evidence: proof }, deadline) as RemovalEvidence;
     },
   };
