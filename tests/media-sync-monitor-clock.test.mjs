@@ -7,7 +7,8 @@ import {createRequire,stripTypeScriptTypes} from 'node:module';
 const require=createRequire(import.meta.url),ts=require('typescript');
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
-const libUrl=url(stripTypeScriptTypes(read('src/lib/shopify/media-sync-monitor.ts'))),lib=await import(libUrl);
+const livenessUrl=url(stripTypeScriptTypes(read('src/lib/shopify/media-liveness.ts')));
+const libUrl=url(stripTypeScriptTypes(read('src/lib/shopify/media-sync-monitor.ts')).replace('"./media-liveness"',JSON.stringify(livenessUrl))),lib=await import(libUrl);
 const hookUrl=url('export const useState=(...a)=>globalThis.__clockHarness.useState(...a);export const useRef=(...a)=>globalThis.__clockHarness.useRef(...a);export const useEffect=(...a)=>globalThis.__clockHarness.useEffect(...a);export const useCallback=(...a)=>globalThis.__clockHarness.useCallback(...a);');
 const source=ts.transpileModule(read('src/components/admin/MediaSyncMonitor.tsx'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText
  .replace('"react/jsx-runtime"',JSON.stringify(import.meta.resolve('react/jsx-runtime'))).replace('"react"',JSON.stringify(hookUrl))

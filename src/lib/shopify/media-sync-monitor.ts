@@ -2,6 +2,8 @@
 // admin route (building a sanitized payload) and the client (validating it).
 // Nothing here can enqueue, approve, reset or retry work.
 
+import { livenessRows, validLivenessSection, type LivenessInput } from "./media-liveness";
+
 export type QueueCounts = { pending: number; processing: number; review: number; failed: number; complete: number };
 export type ReasonRow = { status: string; code: string | null; products: number; oldestUpdatedAt: string | null; newestUpdatedAt: string | null };
 export type ItemRow = { sku: string | null; status: string; code: string | null; updatedAt: string; attempts: number };
@@ -12,6 +14,8 @@ export type MediaSyncMonitorPayload = {
     coverage: { approvedProducts: number; missingMediaBaseline: number; missingMediaQueue: number }; runtime: { copy: boolean; media: boolean } }>;
   reasons: Section<ReasonRow[]>;
   items: Section<{ openTotal: number; limit: number; rows: ItemRow[] }>;
+  /** Optional per-product liveness rows (absent on older payloads or when the feature is off). Verdicts are computed by the reader with its own clock. */
+  liveness?: Section<{ openTotal: number; limit: number; rows: LivenessInput[] }>;
 };
 
 /** Older than this, a reading is shown as unknown, never as "no problems". */
@@ -82,15 +86,18 @@ export function itemRows(input: unknown): { observedAt: string; openTotal: numbe
 
 /** Each source is independent: one failing read makes only its section unknown. */
 export function buildMonitorPayload(input: { fetchedAt: string; combined: unknown; combinedValid: boolean; runtime: { copy: boolean; media: boolean };
-  status: unknown; items: unknown }): MediaSyncMonitorPayload {
+  status: unknown; items: unknown; liveness?: unknown }): MediaSyncMonitorPayload {
   const combined = object(input.combined), cov = object(combined?.coverage), lanes = input.combinedValid ? laneCounts(combined?.queues) : null;
   const coverage = cov && ["approvedProducts", "missingMediaBaseline", "missingMediaQueue"].every(k => count(cov[k])) ?
     { approvedProducts: cov.approvedProducts as number, missingMediaBaseline: cov.missingMediaBaseline as number, missingMediaQueue: cov.missingMediaQueue as number } : null;
   const reasons = reasonRows(input.status), statusAt = object(input.status)?.observedAt, items = itemRows(input.items);
+  // undefined = not requested (feature off): the key is omitted; null or malformed = requested but unavailable.
+  const liveness = input.liveness === undefined ? undefined : livenessRows(input.liveness);
   return { version: 1, fetchedAt: input.fetchedAt, liveVerified: false,
     queues: lanes && coverage && time(combined?.observedAt) ? { available: true, observedAt: combined!.observedAt as string, data: { ...lanes, coverage, runtime: { ...input.runtime } } } : { available: false },
     reasons: reasons && time(statusAt) ? { available: true, observedAt: statusAt, data: reasons } : { available: false },
-    items: items ? { available: true, observedAt: items.observedAt, data: { openTotal: items.openTotal, limit: items.limit, rows: items.rows } } : { available: false } };
+    items: items ? { available: true, observedAt: items.observedAt, data: { openTotal: items.openTotal, limit: items.limit, rows: items.rows } } : { available: false },
+    ...(input.liveness === undefined ? {} : { liveness: liveness ? { available: true as const, observedAt: liveness.observedAt, data: { openTotal: liveness.openTotal, limit: liveness.limit, rows: liveness.rows } } : { available: false as const } }) };
 }
 
 // ---------- client side: validate, order and explain ----------
@@ -110,7 +117,9 @@ export function parseMonitorPayload(input: unknown): MediaSyncMonitorPayload | n
   const reasons = section(p.reasons, d => Array.isArray(d) && d.every(r => { const o = object(r); return !!o && typeof o.status === "string" && (o.code === null || (typeof o.code === "string" && CODE.test(o.code))) && count(o.products); }));
   const items = section(p.items, d => { const o = object(d); return !!o && count(o.openTotal) && count(o.limit) && Array.isArray(o.rows) && o.rows.length <= o.limit &&
     o.rows.every(r => { const x = object(r); return !!x && typeof x.status === "string" && time(x.updatedAt) && count(x.attempts) && (x.code === null || (typeof x.code === "string" && CODE.test(x.code))) && (x.sku === null || (typeof x.sku === "string" && SKU.test(x.sku))); }); });
-  if (!queues || !reasons || !items) return null;
+  // Older payloads carry no liveness key; a present but malformed section invalidates the payload like any other section.
+  const liveness = p.liveness === undefined ? undefined : section(p.liveness, validLivenessSection);
+  if (!queues || !reasons || !items || liveness === null) return null;
   return p as unknown as MediaSyncMonitorPayload;
 }
 
