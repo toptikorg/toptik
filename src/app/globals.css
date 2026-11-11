@@ -3683,3 +3683,15 @@ html.a11y-big-cursor * {
   }
   .catalog-card-tech-btn { white-space: normal; }
 }
+
+/* Keep long editorial copy available without making mobile product browsing a wall of text. */
+.catalog-card-mobile-description { display:none; }
+@media (max-width:767px) {
+  .catalog-card-description--desktop { display:none; }
+  .catalog-card-mobile-description { display:block; }
+  .catalog-card-mobile-description p { margin:0; }
+  .catalog-card-full-description { margin-top:6px; }
+  .catalog-card-full-description summary { min-height:44px; display:list-item; align-content:center; cursor:pointer; text-decoration:underline; text-underline-offset:3px; font-size:14px; }
+  .catalog-card-full-description summary:focus-visible { outline:3px solid #2465a8; outline-offset:2px; }
+  .catalog-card-full-description[open] summary { margin-bottom:8px; }
+}

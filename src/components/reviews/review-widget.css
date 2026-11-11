@@ -21,3 +21,7 @@
 .tt-review-dialog :focus-visible,.tt-review-header:focus-visible,.tt-review-fab:focus-visible { outline:3px solid #2465a8; outline-offset:3px; }
 @media(max-width:767px) { .tt-review-fab { left:12px; bottom:calc(110px + env(safe-area-inset-bottom)); padding:8px 12px; font-size:13px; } .tt-review-content { padding:16px; } }
 @media(prefers-reduced-motion:reduce) { .tt-review-dialog,.tt-review-fab { animation:none!important; transition:none!important; } }
+
+/* Mobile already has the same review action in the normal page header.
+   A fixed duplicate covered non-interactive description text. */
+@media(max-width:767px) { .tt-review-fab { display:none!important; } }

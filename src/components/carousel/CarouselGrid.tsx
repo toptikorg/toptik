@@ -9,6 +9,7 @@ import { buildModelSiblingSwatches, colorSwatchStyle, resolveItemSwatches, type 
 import { trimmedProductSrc, CARD_IMG_WIDTH, MODAL_IMG_WIDTH } from "@/lib/carousel/trim-src";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
 import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
+import { productCardSummary } from "@/lib/carousel/card-summary";
 import { productImageIdentity } from "@/lib/carousel/product-image";
 import { statusLine } from "@/lib/carousel/selection-summary";
 import { syncSlideInteraction } from "@/lib/carousel/slide-interaction";
@@ -123,7 +124,16 @@ export function CatalogCard({
         {catalog && <div className="catalog-card-catalog">מספר קטלוגי: {catalog}</div>}
         <div className="catalog-card-main">
           <div className="catalog-card-title">{item.title}</div>
-          {description && <div className="catalog-card-description">{description}</div>}
+          {description && <>
+            <div className="catalog-card-description catalog-card-description--desktop">{description}</div>
+            <div className="catalog-card-mobile-description">
+              <p className="catalog-card-description">{productCardSummary(description)}</p>
+              <details className="catalog-card-full-description">
+                <summary>לתיאור המלא</summary>
+                <div className="catalog-card-description">{description}</div>
+              </details>
+            </div>
+          </>}
         </div>
         <div className="catalog-card-actions">
           {purchaseUrl && (
