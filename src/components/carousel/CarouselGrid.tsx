@@ -9,6 +9,7 @@ import { buildModelSiblingSwatches, colorSwatchStyle, resolveItemSwatches, type 
 import { trimmedProductSrc, CARD_IMG_WIDTH, MODAL_IMG_WIDTH } from "@/lib/carousel/trim-src";
 import { purchaseUrlFor } from "@/lib/carousel/purchase-links";
 import { descriptionWithoutCatalogNumber } from "@/lib/carousel/description";
+import { productCardSummary } from "@/lib/carousel/card-summary";
 import { productImageIdentity } from "@/lib/carousel/product-image";
 import { statusLine } from "@/lib/carousel/selection-summary";
 import { syncSlideInteraction } from "@/lib/carousel/slide-interaction";
@@ -112,9 +113,42 @@ export function CatalogCard({
   const purchaseUrl = purchaseUrlFor(item.catalogNumber, item.shopifyLink);
   const description = descriptionWithoutCatalogNumber(item.description, catalog);
 
+  const namedSwatches = swatches.some(swatch => !swatch.hex);
+  const colorChooser = interactive && swatches.length > 0 && (
+    <div className="catalog-card-colors" dir="rtl">
+      <span className="catalog-card-colors-label">צבעים</span>
+      <div className="catalog-card-colors-dots">
+        {swatches.map((swatch) => {
+          const actionable = Boolean(swatch.imagePath);
+          return (
+            <button
+              key={swatch.key}
+              type="button"
+              className={`catalog-card-color-dot${!swatch.hex ? " is-color-name" : ""}${swatch.isCurrent ? " is-current" : ""}${actionable ? " is-actionable" : ""}`}
+              style={colorSwatchStyle(swatch)}
+              title={swatch.name}
+              aria-label={swatch.name}
+              aria-current={swatch.isCurrent || undefined}
+              onMouseEnter={() => warmCardImage(swatch.imagePath)}
+              onFocus={() => warmCardImage(swatch.imagePath)}
+              onTouchStart={() => warmCardImage(swatch.imagePath)}
+              onClick={(e) => {
+                e.stopPropagation();
+                // Each swatch IS its own product — navigate to it (unless
+                // it's the colour already shown on this card).
+                if (!swatch.isCurrent && swatch.itemId) onNavigate(swatch.itemId, e.currentTarget);
+              }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >{!swatch.hex ? swatch.name : null}</button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <article
-      className="catalog-card"
+      className={`catalog-card${namedSwatches ? " has-named-colors" : ""}`}
       style={{ visibility: imageReady ? undefined : "hidden" }}
       aria-hidden={!imageReady || undefined}
       aria-busy={!imageReady}
@@ -123,7 +157,16 @@ export function CatalogCard({
         {catalog && <div className="catalog-card-catalog">מספר קטלוגי: {catalog}</div>}
         <div className="catalog-card-main">
           <div className="catalog-card-title">{item.title}</div>
-          {description && <div className="catalog-card-description">{description}</div>}
+          {description && <>
+            <div className="catalog-card-description catalog-card-description--desktop">{description}</div>
+            <div className="catalog-card-mobile-description">
+              <p className="catalog-card-description">{productCardSummary(description)}</p>
+              <details className="catalog-card-full-description">
+                <summary>לתיאור המלא</summary>
+                <div className="catalog-card-description">{description}</div>
+              </details>
+            </div>
+          </>}
         </div>
         <div className="catalog-card-actions">
           {purchaseUrl && (
@@ -203,38 +246,9 @@ export function CatalogCard({
           </button>}
 
           {/* bottom: colour swatches */}
-          {interactive && swatches.length > 0 && (
-            <div className="catalog-card-colors" dir="rtl">
-              <span className="catalog-card-colors-label">צבעים</span>
-              <div className="catalog-card-colors-dots">
-                {swatches.map((swatch) => {
-                  const actionable = Boolean(swatch.imagePath);
-                  return (
-                    <button
-                      key={swatch.key}
-                      type="button"
-                      className={`catalog-card-color-dot${!swatch.hex ? " is-color-name" : ""}${swatch.isCurrent ? " is-current" : ""}${actionable ? " is-actionable" : ""}`}
-                      style={colorSwatchStyle(swatch)}
-                      title={swatch.name}
-                      aria-label={swatch.name}
-                      aria-current={swatch.isCurrent || undefined}
-                      onMouseEnter={() => warmCardImage(swatch.imagePath)}
-                      onFocus={() => warmCardImage(swatch.imagePath)}
-                      onTouchStart={() => warmCardImage(swatch.imagePath)}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Each swatch IS its own product — navigate to it (unless
-                        // it's the colour already shown on this card).
-                        if (!swatch.isCurrent && swatch.itemId) onNavigate(swatch.itemId, e.currentTarget);
-                      }}
-                      onKeyDown={(e) => e.stopPropagation()}
-                    >{!swatch.hex ? swatch.name : null}</button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {colorChooser}
         </div>
+        {namedSwatches && <div className="catalog-card-name-colors-slot">{colorChooser}</div>}
       </div>
     </article>
   );

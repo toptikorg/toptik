@@ -3648,6 +3648,17 @@ html.a11y-big-cursor * {
 .carousel-whatsapp-contact a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 16px; border-radius: 8px; background: #075e45; color: #fff; font-weight: 700; text-decoration: none; }
 .carousel-whatsapp-contact a:focus-visible { outline: 3px solid #1969bd; outline-offset: 3px; }
 
+/* Text colour names need real layout space, not a tall overlay over the photo. */
+.catalog-card-name-colors-slot { display:none; }
+@media (max-width:767px) {
+  .catalog-card.has-named-colors .catalog-card-image-wrap > .catalog-card-colors { display:none; }
+  .catalog-card-name-colors-slot { display:block; grid-column:1 / -1; grid-row:2; padding:4px 8px 8px; min-width:0; }
+  .catalog-card-name-colors-slot .catalog-card-colors { position:static; transform:none; translate:none; scale:none; display:flex; flex-direction:column; width:100%; max-width:100%; border-radius:12px; padding:6px; gap:6px; }
+  .catalog-card-name-colors-slot .catalog-card-colors-dots { justify-content:center; gap:6px; width:100%; }
+  .catalog-card-name-colors-slot .catalog-card-color-dot { min-height:44px; padding:4px 8px; }
+  .catalog-card-name-colors-slot .catalog-card-color-dot:hover { transform:none; }
+}
+
 /* ==========================================================================
    Mobile touch targets and readable text (QA at 390 and 360 px, 2026-11-10).
    <=767px only. The locked carousel image rules above are untouched: the image
@@ -3682,4 +3693,16 @@ html.a11y-big-cursor * {
     padding: 4px 8px;
   }
   .catalog-card-tech-btn { white-space: normal; }
+}
+
+/* Keep long editorial copy available without making mobile product browsing a wall of text. */
+.catalog-card-mobile-description { display:none; }
+@media (max-width:767px) {
+  .catalog-card-description--desktop { display:none; }
+  .catalog-card-mobile-description { display:block; }
+  .catalog-card-mobile-description p { margin:0; }
+  .catalog-card-full-description { margin-top:6px; }
+  .catalog-card-full-description summary { min-height:44px; display:list-item; align-content:center; cursor:pointer; text-decoration:underline; text-underline-offset:3px; font-size:14px; }
+  .catalog-card-full-description summary:focus-visible { outline:3px solid #2465a8; outline-offset:2px; }
+  .catalog-card-full-description[open] summary { margin-bottom:8px; }
 }
