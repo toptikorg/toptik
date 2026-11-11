@@ -1,6 +1,7 @@
 import styles from "./MediaSyncMonitor.module.css";
 import { explainMediaCode, mediaVerdict, sectionFresh, STATUS_TEXT, UNKNOWN_TEXT,
   type MediaSyncMonitorPayload, type QueueCounts, type Unknown } from "@/lib/shopify/media-sync-monitor";
+import { assessReading, explainLivenessRule, LIVENESS_STATE_TEXT, type LivenessState } from "@/lib/shopify/media-liveness";
 
 type Props = { payload: MediaSyncMonitorPayload | null; failure: Unknown | null; loading: boolean; now: number; onRefresh?: () => void };
 const UNKNOWN_VALUE = "לא ידוע";
@@ -32,6 +33,10 @@ export default function MediaSyncMonitorView({ payload, failure, loading, now, o
   const queues = known && payload?.queues.available ? payload.queues.data : null;
   const reasons = known && payload?.reasons.available && sectionFresh(payload.reasons.observedAt, now) ? payload.reasons.data.filter(r => r.status !== "done") : null;
   const items = known && payload?.items.available && sectionFresh(payload.items.observedAt, now) ? payload.items.data : null;
+  // Liveness verdicts are computed here, with the viewer's clock, from the durable rows the server sanitized. Absent key = feature off.
+  const liveness = known && payload?.liveness?.available ? assessReading(payload.liveness.data, payload.liveness.observedAt, now) : null;
+  const livenessRows = liveness ? liveness.rows.filter(r => r.state !== "healthy") : [];
+  const ago = (ms: number | null) => ms === null ? UNKNOWN_VALUE : ms < 60 * 1000 ? "פחות מדקה" : `${Math.floor(ms / 60000).toLocaleString("he-IL")} דק׳`;
   const v = VERDICT[verdict.kind];
   return <section className={styles.monitor} aria-labelledby="media-sync-monitor-title" aria-busy={loading}>
     <div className={styles.head}>
@@ -98,5 +103,32 @@ export default function MediaSyncMonitorView({ payload, failure, loading, now, o
           </table>
         </div>
       </>}
+
+    {payload?.liveness !== undefined && <>
+      <h3 className={styles.sectionTitle} id="media-liveness-title">חיות לפי מוצר (ממצאי גלאי)</h3>
+      <p className={styles.small}>מחושב בקריאה בלבד מהתקדמות מאומתת של הפעולה הנוכחית ומזמני התפיסה, לא מזמן העדכון של התור. אלה ממצאי גלאי בעת פתיחת המסך או רענון, לא התראה יזומה ולא ביקורת מחזורית. בדיקה חלקית אינה קובעת שכל הקטלוג תקין.</p>
+      {!liveness ? <p className={styles.unknownLine}>נתוני החיות אינם זמינים. {UNKNOWN_VALUE}.</p> :
+        liveness.stale ? <p className={styles.unknownLine}>קריאת החיות ישנה מדי. המצב אינו ידוע.</p> :
+        <>
+          <dl className={styles.extra}>
+            {(["stuck", "blocked", "waiting", "healthy", "unknown"] as LivenessState[]).map(s => <div key={s}><dt>{LIVENESS_STATE_TEXT[s]}</dt><dd>{liveness.counts[s].toLocaleString("he-IL")}</dd></div>)}
+          </dl>
+          <p className={styles.small}>נבדקו {liveness.returned.toLocaleString("he-IL")} מתוך {liveness.openTotal.toLocaleString("he-IL")} שורות פתוחות בתור התמונות{liveness.hasMore ? "; יש עוד שורות שלא נבדקו" : ""}. מוצרים ללא שורת תור אינם נכללים.</p>
+          {livenessRows.length === 0 ? <p>{liveness.hasMore ? "השורות שנבדקו מתקדמות; השאר לא נבדקו." : "כל השורות הפתוחות שנבדקו מתקדמות."}</p> :
+            <div className={styles.tableWrap} role="region" aria-labelledby="media-liveness-title" tabIndex={0}>
+              <table className={styles.table}>
+                <caption className={styles.srOnly}>מוצרים שאינם מתקדמים, לפי כלל שהופעל</caption>
+                <thead><tr><th scope="col">מק״ט</th><th scope="col">חיות</th><th scope="col">מאז</th><th scope="col">ניסיון חוזר</th><th scope="col">הסבר</th></tr></thead>
+                <tbody>{livenessRows.map(r => { const e = explainLivenessRule(r.rule), c = explainMediaCode(r.code); return <tr key={r.productGid}>
+                  <td data-label="מק״ט"><bdi dir="ltr">{r.sku ?? UNKNOWN_VALUE}</bdi></td>
+                  <td data-label="חיות"><span className={styles.badge}>{LIVENESS_STATE_TEXT[r.state]}</span> <span className={styles.small}>{STATUS_TEXT[r.status] ?? r.status}</span></td>
+                  <td data-label="מאז">{ago(r.ageMs)}</td>
+                  <td data-label="ניסיון חוזר">{r.dueAt ? <When value={r.dueAt} /> : "—"}</td>
+                  <td data-label="הסבר"><strong>{e.title}</strong> <bdi dir="ltr" className={styles.code}>{r.rule}</bdi><br /><span className={styles.small}>{e.detail}{r.code && <> סיבת העיכוב: {c.title} (<bdi dir="ltr">{r.code}</bdi>).</>}</span></td>
+                </tr>; })}</tbody>
+              </table>
+            </div>}
+        </>}
+    </>}
   </section>;
 }

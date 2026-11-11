@@ -7,13 +7,15 @@ const require = createRequire(import.meta.url);
 const ts = require('typescript');
 const read = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 const dataUrl = s => 'data:text/javascript;base64,' + Buffer.from(s).toString('base64');
-const libUrl = dataUrl(stripTypeScriptTypes(read('src/lib/shopify/media-sync-monitor.ts')));
+const livenessUrl = dataUrl(stripTypeScriptTypes(read('src/lib/shopify/media-liveness.ts')));
+const libUrl = dataUrl(stripTypeScriptTypes(read('src/lib/shopify/media-sync-monitor.ts')).replace('"./media-liveness"', JSON.stringify(livenessUrl)));
 const lib = await import(libUrl);
+const liveness = await import(livenessUrl);
 // Real presentational component, compiled with the project's TypeScript; CSS module class names are identity-mapped.
 const cssUrl = dataUrl('export default new Proxy({}, { get: (_, k) => String(k) });');
 const viewCode = ts.transpileModule(read('src/components/admin/MediaSyncMonitorView.tsx'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
   .replace('"react/jsx-runtime"', JSON.stringify(import.meta.resolve('react/jsx-runtime'))).replace('"./MediaSyncMonitor.module.css"', JSON.stringify(cssUrl))
-  .replace('"@/lib/shopify/media-sync-monitor"', JSON.stringify(libUrl));
+  .replace('"@/lib/shopify/media-sync-monitor"', JSON.stringify(libUrl)).replace('"@/lib/shopify/media-liveness"', JSON.stringify(livenessUrl));
 const View = (await import(dataUrl(viewCode))).default;
 const { createElement } = await import('react');
 const { renderToStaticMarkup } = await import('react-dom/server');
@@ -26,6 +28,16 @@ const combined = (extra = []) => ({ observedAt: AT, coverage: { approvedProducts
     { lane: 'specifications', status: 'complete', count: 400 }, { lane: 'media_operations', status: 'verified', count: 50 }, ...extra] });
 const status = (rows = []) => ({ observedAt: AT, queue: rows, product: null });
 const items = (rows = [], openTotal = rows.length) => ({ observedAt: AT, limit: 50, openTotal, items: rows });
+// Raw read_toptik_media_liveness rows (snake_case, as the database returns them); verdicts are computed by the view with NOW.
+const minutes = n => new Date(NOW - n * 60 * 1000).toISOString();
+const livenessItem = (o = {}) => ({ product_gid: 'gid://shopify/Product/501', sku: 'LIVE-501', status: 'pending', last_error: null, updated_at: AT, attempts: 2, generation: 3,
+  claim_id: null, claimed_at: null, claim_stale_after: null, inflight_keeps: 0, routine: false, retry_due_at: null, episode: null, episode_progress: null, last_completed: null, last_observed_at: AT, ...o });
+const episodeOf = (createdMin, verifiedMin = null) => ({
+  episode: { id: 'op-' + createdMin, status: 'running', next_step: 0, state_version: 1, created_at: minutes(createdMin), updated_at: minutes(createdMin) },
+  episode_progress: { last_verified_at: verifiedMin === null ? null : minutes(verifiedMin),
+    last_verified_source: verifiedMin === null ? null : { kind: 'transport_readback', request_id: null, step_index: 0, phase_index: 1, at: minutes(verifiedMin) },
+    verified_phases: verifiedMin === null ? 0 : 1, verified_steps: 0, last_activity_at: minutes(1), latest_attempt: null } });
+const livenessRaw = (rows = [], openTotal = rows.length) => ({ observedAt: AT, limit: 50, openTotal, items: rows, scope: 'open_work_queue_rows_only' });
 const payload = (o = {}) => lib.buildMonitorPayload({ fetchedAt: AT, runtime, combined: combined(o.extra), combinedValid: true,
   status: status(o.reasons ?? []), items: items(o.items ?? [], o.openTotal), ...o.override });
 
@@ -50,9 +62,39 @@ test('item rows: SKU, update time and reason are sanitized; provider text never 
 });
 
 test('one failing or malformed source makes only its own section unavailable', () => {
-  for (const override of [{ combined: null, combinedValid: false }, { status: null }, { items: null }, { items: { observedAt: AT, limit: 1, openTotal: 2, items: [{}, {}] } }, { combined: { observedAt: AT, queues: [{ lane: 'media', status: 'weird', count: 1 }], coverage: combined().coverage }, combinedValid: true }]) {
-    const p = payload({ override }); const off = Object.entries({ queues: p.queues, reasons: p.reasons, items: p.items }).filter(([, s]) => !s.available).map(([k]) => k);
+  for (const override of [{ combined: null, combinedValid: false }, { status: null }, { items: null }, { items: { observedAt: AT, limit: 1, openTotal: 2, items: [{}, {}] } }, { combined: { observedAt: AT, queues: [{ lane: 'media', status: 'weird', count: 1 }], coverage: combined().coverage }, combinedValid: true },
+    { liveness: null }, { liveness: livenessRaw([{}]) }, { liveness: { ...livenessRaw([livenessItem()]), scope: 'everything' } }, { liveness: { ...livenessRaw([livenessItem(), livenessItem()]), limit: 1 } }]) {
+    const p = payload({ override: { liveness: livenessRaw([livenessItem()]), ...override } });
+    const off = Object.entries({ queues: p.queues, reasons: p.reasons, items: p.items, liveness: p.liveness }).filter(([, s]) => !s.available).map(([k]) => k);
     assert.equal(off.length, 1, JSON.stringify(override)); assert.ok(lib.parseMonitorPayload(JSON.parse(JSON.stringify(p))));
+  }
+});
+
+test('liveness section: absent on older payloads, unavailable when its read fails, sanitized camelCase rows otherwise; a malformed stored section invalidates the payload', () => {
+  const without = payload();
+  assert.equal('liveness' in without, false); assert.ok(lib.parseMonitorPayload(JSON.parse(JSON.stringify(without))));
+  const unavailable = payload({ override: { liveness: null } });
+  assert.deepEqual(unavailable.liveness, { available: false }); assert.ok(lib.parseMonitorPayload(JSON.parse(JSON.stringify(unavailable))));
+  const p = payload({ override: { liveness: livenessRaw([livenessItem({ ...episodeOf(40, 35), last_error: 'connection refused key=secret' }),
+    livenessItem({ product_gid: 'gid://shopify/Product/502', sku: 'bad <sku>' })], 80) } });
+  assert.equal(p.liveness.available, true); assert.equal(p.liveness.observedAt, AT);
+  assert.deepEqual([p.liveness.data.openTotal, p.liveness.data.limit, p.liveness.data.rows.length], [80, 50, 2]);
+  assert.deepEqual([p.liveness.data.rows[0].sku, p.liveness.data.rows[0].code, p.liveness.data.rows[0].episode.id, p.liveness.data.rows[0].episodeProgress.verifiedPhases], ['LIVE-501', 'MEDIA_ERROR_UNRECOGNIZED', 'op-40', 1]);
+  assert.equal(p.liveness.data.rows[1].sku, null); assert.ok(!JSON.stringify(p).includes('secret') && !JSON.stringify(p).includes('<sku>'));
+  const stored = JSON.parse(JSON.stringify(p));
+  assert.ok(lib.parseMonitorPayload(stored));
+  assert.deepEqual(stored.liveness.data.rows.map(liveness.validLivenessRow), [true, true]);
+  assert.equal(liveness.assessLiveness(stored.liveness.data.rows[0], NOW).rule, 'NO_VERIFIED_PROGRESS', 'the stored rows feed the detector unchanged');
+  assert.equal(lib.parseMonitorPayload({ ...stored, liveness: { ...stored.liveness, data: { ...stored.liveness.data, rows: [{ productGid: 'x' }] } } }), null, 'a malformed row');
+  assert.equal(lib.parseMonitorPayload({ ...stored, liveness: { ...stored.liveness, data: { ...stored.liveness.data, limit: 1 } } }), null, 'more rows than the limit');
+  assert.equal(lib.parseMonitorPayload({ ...stored, liveness: { available: true } }), null, 'available without data');
+  for (const patch of [{openTotal: 1}, {limit: 0}, {limit: 101}, {rows: [stored.liveness.data.rows[0], stored.liveness.data.rows[0]]},
+    {rows: [{...stored.liveness.data.rows[0], episode: 'corrupted'}]}]) {
+    assert.equal(lib.parseMonitorPayload({...stored, liveness: {...stored.liveness, data: {...stored.liveness.data, ...patch}}}), null, JSON.stringify(patch));
+  }
+  for (const input of [{...livenessRaw([livenessItem()]), openTotal: 0}, {...livenessRaw([]), limit: 0}, {...livenessRaw([]), limit: 101},
+    livenessRaw([livenessItem(), livenessItem()]), livenessRaw([livenessItem({episode: 'corrupted', episode_progress: 'corrupted'})])]) {
+    assert.deepEqual(payload({override: {liveness: input}}).liveness, {available: false});
   }
 });
 
@@ -171,6 +213,22 @@ test('not-sent budget and lease holds require review, not a promised automatic r
   assert.equal(lib.explainMediaCode('MEDIA_PLANNING_TIME_BUDGET').title, 'זמן ההפעלה הסתיים');
 });
 
+test('render: liveness lists only rows that are not progressing, names the rule in plain words, states the scan size and the detector caveat', () => {
+  const p = payload({ override: { liveness: livenessRaw([livenessItem({ ...episodeOf(40, 35) }), livenessItem({ product_gid: 'gid://shopify/Product/502', sku: 'LIVE-502', ...episodeOf(4) })], 80) } });
+  const html = render({ payload: p });
+  assert.match(html, /חיות לפי מוצר/); assert.match(html, /לא התראה יזומה/); assert.match(html, /נבדקו 2 מתוך 80/); assert.match(html, /יש עוד שורות שלא נבדקו/);
+  assert.match(html, /LIVE-501/); assert.match(html, /אין התקדמות מאומתת/); assert.match(html, /NO_VERIFIED_PROGRESS/);
+  assert.doesNotMatch(html, /LIVE-502/); assert.doesNotMatch(html, /כל השורות הפתוחות שנבדקו מתקדמות/);
+  const clean = render({ payload: payload({ override: { liveness: livenessRaw([livenessItem({ ...episodeOf(4) })]) } }) });
+  assert.match(clean, /כל השורות הפתוחות שנבדקו מתקדמות/); assert.doesNotMatch(clean, /LIVE-501/);
+});
+test('render: no liveness key hides the section; an unavailable or stale liveness read is unknown, never zero problems', () => {
+  assert.doesNotMatch(render({ payload: payload() }), /חיות לפי מוצר/);
+  assert.match(render({ payload: payload({ override: { liveness: null } }) }), /נתוני החיות אינם זמינים/);
+  const stale = render({ payload: payload({ override: { liveness: { ...livenessRaw([livenessItem({ ...episodeOf(40, 35) })]), observedAt: minutes(16) } } }) });
+  assert.match(stale, /קריאת החיות ישנה מדי/); assert.doesNotMatch(stale, /LIVE-501/); assert.doesNotMatch(stale, /כל השורות הפתוחות שנבדקו מתקדמות/);
+});
+
 // ---------- route: real handler, stubbed auth/DB ----------
 const stub = s => dataUrl(s);
 async function route({ denied = null, rpc }) {
@@ -194,14 +252,33 @@ test('route: unauthenticated requests get the auth response and trigger no datab
   const r = await route({ denied: new Response('{"error":"Unauthorized"}', { status: 401 }), rpc: async () => { throw Error('must not run'); } });
   assert.equal(r.res.status, 401); assert.deepEqual(r.calls, []);
 });
-test('route: exactly three bounded read-only RPCs, sanitized payload, no-store', async () => {
-  const data = { read_toptik_combined_sync_status: combined(), read_toptik_media_status: status([{ status: 'pending', last_error: 'MEDIA_REVIEW_REQUIRED', products: 4, oldest_updated_at: AT, newest_updated_at: AT, maximum_attempts: 3 }]),
-    read_toptik_media_sync_monitor: items([{ sku: 'ABC-1', status: 'pending', last_error: 'MEDIA_REVIEW_REQUIRED', updated_at: AT, attempts: 3 }]) };
+const THREE = ['read_toptik_combined_sync_status', 'read_toptik_media_status', 'read_toptik_media_sync_monitor'];
+const routeData = () => ({ read_toptik_combined_sync_status: combined(), read_toptik_media_status: status([{ status: 'pending', last_error: 'MEDIA_REVIEW_REQUIRED', products: 4, oldest_updated_at: AT, newest_updated_at: AT, maximum_attempts: 3 }]),
+  read_toptik_media_sync_monitor: items([{ sku: 'ABC-1', status: 'pending', last_error: 'MEDIA_REVIEW_REQUIRED', updated_at: AT, attempts: 3 }]),
+  read_toptik_media_liveness: livenessRaw([livenessItem({ ...episodeOf(40, 35) })]) });
+test('route: exactly four bounded read-only RPCs, sanitized payload, no-store', async () => {
+  const data = routeData();
   const r = await route({ rpc: async n => ({ data: data[n], error: null }) });
   assert.equal(r.res.status, 200); assert.equal(r.res.headers.get('cache-control'), 'no-store');
-  assert.deepEqual(r.calls.map(c => c[0]).sort(), ['read_toptik_combined_sync_status', 'read_toptik_media_status', 'read_toptik_media_sync_monitor']);
+  assert.deepEqual(r.calls.map(c => c[0]).sort(), [...THREE, 'read_toptik_media_liveness'].sort());
   assert.deepEqual(r.calls.find(c => c[0] === 'read_toptik_media_sync_monitor')[1], { p_limit: 50 });
+  assert.deepEqual(r.calls.find(c => c[0] === 'read_toptik_media_liveness')[1], { p_limit: 50 });
   assert.ok(lib.parseMonitorPayload(r.body)); assert.equal(r.body.liveVerified, false);
+  assert.equal(r.body.liveness.available, true); assert.equal(r.body.liveness.data.rows[0].episode.id, 'op-40');
+});
+test('route: MEDIA_MONITOR_LIVENESS=off skips the fourth read and omits the key, so the payload is the one older clients know', async () => {
+  process.env.MEDIA_MONITOR_LIVENESS = 'off';
+  try {
+    const data = routeData();
+    const r = await route({ rpc: async n => { assert.notEqual(n, 'read_toptik_media_liveness'); return { data: data[n], error: null }; } });
+    assert.equal(r.res.status, 200); assert.deepEqual(r.calls.map(c => c[0]).sort(), THREE); assert.equal('liveness' in r.body, false); assert.ok(lib.parseMonitorPayload(r.body));
+  } finally { delete process.env.MEDIA_MONITOR_LIVENESS; }
+});
+test('route: a failing liveness read blanks only the liveness section and leaks nothing', async () => {
+  const data = routeData();
+  const r = await route({ rpc: async n => n === 'read_toptik_media_liveness' ? Promise.reject(Error('statement timeout SECRET')) : { data: data[n], error: null } });
+  assert.equal(r.res.status, 200); assert.ok(!JSON.stringify(r.body).includes('SECRET'));
+  assert.deepEqual(r.body.liveness, { available: false }); assert.equal(r.body.items.available, true); assert.equal(r.body.reasons.available, true); assert.equal(r.body.queues.available, true);
 });
 test('route: a database error never leaks its message and only blanks that section', async () => {
   const r = await route({ rpc: async n => n === 'read_toptik_media_sync_monitor' ? { data: null, error: { message: 'permission denied for schema toptik_media_private; key=SECRET' } } :
