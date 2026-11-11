@@ -310,7 +310,7 @@ function refreshFixture(status='refreshed'){const f=workerFixture();f.refreshCal
 test('product updatedAt-only drift refreshes the chain guard before begin and waits',async()=>{
   const f=refreshFixture(),drifted=timestampDrift(f);assert.notEqual(drifted.target.revision,f.snapshot.revision);
   f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
-  assert.deepEqual(await f.run(),{status:'pending',executed:false});
+  assert.deepEqual(await f.run(),{status:'pending',executed:false,replanCheckpoint:`${f.reference.operationId}:0:1:${drifted.sourceFingerprint}:${drifted.target.revision}`});
   assert.deepEqual(f.log,['load','acquire','observe','refresh','release']);
   const [ref,lease,guard,deadline]=f.refreshCalls[0];assert.deepEqual(ref,f.reference);assert.equal(lease,'20000000-0000-4000-8000-000000000001');
   assert.deepEqual(guard,drifted);assert.equal(deadline,f.deadline-1000);
@@ -323,7 +323,7 @@ test('SQL refusal of a refresh (attempt exists) falls through to begin and priva
 });
 test('an already-refreshed chain (stale loaded job, SQL unchanged) waits instead of beginning',async()=>{
   const f=refreshFixture('unchanged'),drifted=timestampDrift(f);f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
-  assert.deepEqual(await f.run(),{status:'pending',executed:false});
+  assert.deepEqual(await f.run(),{status:'pending',executed:false,replanCheckpoint:`${f.reference.operationId}:0:1:${drifted.sourceFingerprint}:${drifted.target.revision}`});
   assert.deepEqual(f.log,['load','acquire','observe','refresh','release']);
 });
 test('identical guard never refreshes',async()=>{
@@ -396,4 +396,48 @@ test('onlyForwardProductTimestampDrift accepts only a forward product timestamp'
   assert.equal(read.onlyForwardProductTimestampDrift(timestampDrift(f,p=>p.media.nodes[0].alt='x').target,before),false);
   assert.deepEqual([...read.PRODUCT_TIMESTAMP_TOLERANT_PHASES].sort(),['associate','detach_old','detach_reference','reorder','variant_reassign']);
   assert.ok(Object.isFrozen(read.PRODUCT_TIMESTAMP_TOLERANT_PHASES));
+});
+
+for(const refreshStatus of ['refreshed','unchanged'])test(`${refreshStatus} cursor reloads a fresh job before exactly one execute`,async()=>{
+ const f=refreshFixture(refreshStatus),drifted=timestampDrift(f),oldJob=structuredClone(f.job);let current=f.job;
+ f.deps.load=async()=>{f.log.push('load');return structuredClone(current);};
+ f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
+ f.deps.refresh=async()=>{f.log.push('refresh');current={...structuredClone(f.job),before:structuredClone(drifted.target),request:api.buildOwnedMediaAssociate({...f.context,targetRevision:drifted.target.revision},drifted.target,f.owned)};return{status:refreshStatus,refreshed:refreshStatus==='refreshed'};};
+ const first=await f.run();assert.equal(first.status,'pending');assert.equal(first.executed,false);assert.ok(first.replanCheckpoint);assert.ok(!f.log.includes('begin'));
+ assert.equal((await f.run()).status,'verified');assert.deepEqual(f.job,oldJob);
+ for(const [name,count] of [['load',2],['acquire',2],['observe',3],['refresh',1],['begin',1],['execute',1],['release',2]])assert.equal(f.log.filter(x=>x===name).length,count,name);
+ f.deps.begin=async()=>{f.log.push('begin');return{mayExecute:false,status:'uncertain',replayed:true};};
+ const replay=await f.run();assert.equal(replay.replanCheckpoint,undefined);assert.equal(f.log.filter(x=>x==='execute').length,1);
+});
+
+test('attempt_exists pending recovery never issues a replan cursor or another execute',async()=>{
+ const f=refreshFixture('attempt_exists'),drifted=timestampDrift(f);
+ f.deps.observe=async()=>structuredClone(drifted);f.deps.begin=async()=>({mayExecute:false,status:'uncertain',replayed:true});f.deps.recover=async()=>({status:'pending'});
+ assert.deepEqual(await f.run(),{status:'pending',executed:false});assert.ok(!f.log.includes('execute'));
+});
+
+test('unknown or inconsistent refresh responses cannot mint a reload cursor',async()=>{
+ for(const result of [undefined,{status:'unknown',refreshed:false},{status:'refreshed',refreshed:false},{status:'unchanged',refreshed:true}]){
+  const f=refreshFixture(),drifted=timestampDrift(f);f.deps.observe=async()=>structuredClone(drifted);f.deps.refresh=async()=>result;
+  await assert.rejects(f.run(),/MEDIA_TRANSPORT_GUARD_REFRESH_INVALID/);assert.ok(!f.log.includes('begin'));assert.ok(!f.log.includes('execute'));assert.equal(f.log.at(-1),'release');
+ }
+});
+
+// Exercise the queue's real continuation gate against the real phase worker,
+// rather than manufacturing a reload marker in the queue test alone.
+const {queueFor}=await import(moduleUrl(`import{randomUUID}from'node:crypto';export function queueFor(db,clock){const Date={now:clock};const process={env:{VERCEL_ENV:'production',SHOPIFY_MEDIA_SYNC:'enabled_v1'}};const createSupabaseServiceRoleClient=()=>db;const reconcilePersistedMediaProduct=async()=>{throw Error('explicit runner required');};const bootstrapProductionMedia=reconcilePersistedMediaProduct;${source('media-work-queue').replace(/^import[\s\S]*?;\r?\n/gm,'').replace(/^export /gm,'')}return drainMediaWork;}`));
+
+test('one queue claim follows SQL guard reload through fresh worker guards and executes exactly once',async()=>{
+ const f=refreshFixture(),drifted=timestampDrift(f),queueCalls=[];let current=structuredClone(f.job),runs=0;
+ f.deps.load=async()=>{f.log.push('load');return structuredClone(current);};f.deps.observe=async()=>{f.log.push('observe');return structuredClone(drifted);};
+ f.deps.refresh=async()=>{f.log.push('refresh');current={...structuredClone(f.job),before:structuredClone(drifted.target),request:api.buildOwnedMediaAssociate({...f.context,targetRevision:drifted.target.revision},drifted.target,f.owned)};return{status:'refreshed',refreshed:true};};
+ const db={rpc(name,args){queueCalls.push({name,args});return{abortSignal:()=>Promise.resolve({data:name.startsWith('claim_toptik_media_work')?{productId:identity.productId,claimId:args.p_claim_id,generation:1,initialized:true,evidence:{}}:true,error:null})};}};
+ const drain=queueFor(db,()=>Date.parse(time)),deadline=Date.parse(time)+240000,seen=[];
+ const result=await drain(deadline,db,async(_id,_e,d)=>{
+  runs++;seen.push(d);if(runs===3)return{status:'done',progressed:true,executed:false};
+  const phase=await f.run();return phase.status==='verified'?{status:'pending',progressed:true,executed:phase.executed,verifiedCheckpoint:'verified-phase'}:{...phase,progressed:false};
+ });
+ assert.equal(runs,3);assert.equal(result.processed,1);assert.deepEqual(seen,[deadline-5000,deadline-5000,deadline-5000]);
+ assert.equal(f.log.filter(x=>x==='execute').length,1);assert.equal(f.log.filter(x=>x==='load').length,2);assert.equal(f.log.filter(x=>x==='release').length,2);
+ assert.deepEqual(queueCalls.map(c=>c.name),['claim_toptik_media_work','finish_toptik_media_work','toptik_media_work_pending']);assert.equal(queueCalls[1].args.p_status,'done');
 });

@@ -41,11 +41,11 @@ test('permanent cover alias and equivalent target conflicts stop retries for ope
  }
 });
 
-test('verified progress advances at most three phases in one claim with one deadline and finish',async()=>{
+test('verified progress advances at most ten calls in one claim with one deadline and finish',async()=>{
  const f=fixture(),runs=[],deadline=Date.now()+40000;
  const run=async(...a)=>{runs.push(a);return{status:'pending',progressed:true,executed:true,verifiedCheckpoint:'phase:'+runs.length};};
  const r=await f.api.drainMediaWork(deadline,f.db,run);
- assert.equal(runs.length,3);assert.equal(r.processed,1);
+ assert.equal(runs.length,10);assert.equal(r.processed,1);
  assert.ok(runs.every(a=>a[0]===id.productId&&a[2]===deadline-5000));
  // A still-pending in-flight operation keeps its position (defer), never re-queues behind every product.
  assert.deepEqual(f.calls.filter(c=>c.name).map(c=>c.name),['claim_toptik_media_work','keep_toptik_media_work_in_flight','toptik_media_work_pending']);

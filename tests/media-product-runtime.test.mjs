@@ -144,3 +144,21 @@ test('diagnostic error inspection preserves thrown getter errors and revoked pro
   let caught;try{await x.run();}catch(e){caught=e;}assert.equal(caught,original);
  }
 });
+
+test('exact guard reload cursor propagates without creating verified progress or execution',async()=>{
+ const x=f();active(x);x.state.chain={status:'running',next_phase:0};
+ const cursor=`${opId}:0:0:${'a'.repeat(64)}:${'b'.repeat(64)}`;x.state.phase={status:'pending',executed:false,replanCheckpoint:cursor};
+ const result=await x.run();assert.deepEqual(result,{status:'pending',progressed:false,executed:false,replanCheckpoint:cursor});
+ assert.equal(result.verifiedCheckpoint,undefined);assert.ok(x.calls.findIndex(c=>c.name==='release')<x.calls.findIndex(c=>c.name==='phase'));
+});
+
+test('guard reload cursor cannot name a different operation step phase or malformed guard',async()=>{
+ const good=`${opId}:0:0:${'a'.repeat(64)}:${'b'.repeat(64)}`;
+ for(const cursor of [good.replace(opId,owner),good.replace(':0:0:',':1:0:'),good.replace(':0:0:',':0:1:'),good.slice(0,-1)]){
+  const x=f();active(x);x.state.chain={status:'running',next_phase:0};x.state.phase={status:'pending',executed:false,replanCheckpoint:cursor};
+  await assert.rejects(x.run(),/MEDIA_PLANNING_REPLAN_CHECKPOINT_INVALID/);
+ }
+ for(const phase of [{status:'verified',executed:false},{status:'pending',executed:true}]){
+  const x=f();active(x);x.state.chain={status:'running',next_phase:0};x.state.phase={...phase,replanCheckpoint:good};await assert.rejects(x.run(),/MEDIA_PLANNING_REPLAN_CHECKPOINT_INVALID/);
+ }
+});

@@ -108,16 +108,23 @@ export async function drainMediaWork(deadline: number, client?: Db,
     let outcome = claim.initialized ? await run(String(claim.productId), claim.evidence as MediaWorkEvidence, workDeadline) :
       (await initialize(String(claim.productId), true, workDeadline, { client: db }), { status: "done" as const, progressed: true, executed: false });
     let productProgress = outcome.progressed;
-    const verified = new Set<string>();
-    // Stay inside this one durable claim and absolute deadline. Only a newly
-    // verified phase/step may advance immediately, at most three calls total.
+    const verified = new Set<string>(), replanned = new Set<string>();
+    // Stay inside this one durable claim and absolute deadline, at most ten
+    // calls total. A newly verified phase/step may advance immediately.
+    // Six replacement phases, two guard reloads, acceptance and commit fit ten;
+    // the unchanged absolute deadline and reserve still stop slow products.
     // Every call reacquires its own lease and reads the persisted guards again.
+    // One exact pre-attempt guard cursor may instead reload the persisted job.
+    // Reloads have a separate seen set and never count as verified progress.
     // Preparation, attempted/uncertain writes and repeated cursors never loop.
-    for (let calls = 1; claim.initialized && calls < 3 && outcome.status === "pending" &&
-        "verifiedCheckpoint" in outcome && typeof outcome.verifiedCheckpoint === "string" &&
-        outcome.verifiedCheckpoint.length > 0 && !verified.has(outcome.verifiedCheckpoint) &&
+    for (let calls = 1; claim.initialized && calls < 10 && outcome.status === "pending" &&
         Date.now() + 18000 < workDeadline; calls++) {
-      verified.add(outcome.verifiedCheckpoint);
+      if ("verifiedCheckpoint" in outcome && typeof outcome.verifiedCheckpoint === "string" &&
+          outcome.verifiedCheckpoint.length > 0 && !verified.has(outcome.verifiedCheckpoint)) verified.add(outcome.verifiedCheckpoint);
+      else if ("replanCheckpoint" in outcome && typeof outcome.replanCheckpoint === "string" && !outcome.executed &&
+          /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}:(?:0|[1-9]\d{0,2}|1000):(?:[0-9]|10):[a-f0-9]{64}:[a-f0-9]{64}$/i.test(outcome.replanCheckpoint) &&
+          !replanned.has(outcome.replanCheckpoint)) replanned.add(outcome.replanCheckpoint);
+      else break;
       outcome = await run(String(claim.productId), claim.evidence as MediaWorkEvidence, workDeadline);
       productProgress ||= outcome.progressed;
     }

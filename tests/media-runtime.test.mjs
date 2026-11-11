@@ -129,7 +129,8 @@ test('runtime wires product-timestamp-only drift to the fixed-product guard refr
   assert.notEqual(drifted.revision,f.before.revision);
   f.deps.readShopifyMediaTransport=async(...args)=>{f.calls.push(['shopify-read',...args]);return structuredClone(drifted);};
   f.rpc.refreshGuard=async(...args)=>{f.calls.push(['refresh',...args]);return {status:'refreshed',refreshed:true};};
-  assert.deepEqual(await f.run(),{status:'pending',executed:false});
+  assert.deepEqual(await f.run(),{status:'pending',executed:false,
+    replanCheckpoint:`${ref.operationId}:${ref.step}:${ref.phaseIndex}:${f.job.request.context.sourceFingerprint}:${drifted.revision}`});
   const refresh=f.calls.find(c=>c[0]==='refresh');assert.deepEqual(refresh[1],ref);assert.equal(refresh[2],owner);assert.deepEqual(refresh[3].target,drifted);assert.equal(refresh[4],now+29000);
   assert.ok(!f.calls.some(c=>['begin','execute'].includes(c[0])));
 });
