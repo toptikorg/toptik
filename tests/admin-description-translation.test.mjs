@@ -19,9 +19,8 @@ test("legacy translation endpoint stays authorized and retired, without writes o
   for (const token of ["fetch(", ".update(", ".insert(", ".rpc("]) assert.equal(route.includes(token), false);
 });
 
-test("rich and plain descriptions remain editable through the structured editor", () => {
+test("rich and plain descriptions are connected to the structured editor", () => {
   assert.ok(source.includes("<ProductDescriptionEditor"));
   assert.ok(source.includes("html={item.descriptionHtml}"));
-  assert.ok(source.includes("next.items.find(row => row.id === item.id)"));
-  assert.ok(source.includes("changed.description = text; changed.descriptionHtml = html"));
+  // Actual identity-bound edit handlers are exercised in admin-catalog-window.test.mjs.
 });

@@ -31,6 +31,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(await visibleAdminCatalog(payload));
   } catch (error) {
     console.error("GET /api/admin/carousel failed", error);
+    if (error instanceof Error && error.message.startsWith("Missing Supabase admin env vars.")) {
+      return NextResponse.json({ error: "ניהול הגלריה אינו זמין: חסרה הגדרת שרת בסביבת הפריסה. יש להשלים את ההגדרה לפני טעינה חוזרת.",
+        code: "GALLERY_ADMIN_CONFIGURATION_MISSING" }, { status: 503 });
+    }
     return NextResponse.json({ error: "Failed to load admin data" }, { status: 500 });
   }
 }

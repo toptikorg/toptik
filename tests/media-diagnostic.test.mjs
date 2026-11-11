@@ -17,10 +17,10 @@ const guardSource = readFileSync('src/lib/shopify/reviewed-media-guard.ts', 'utf
 const guard = await import(dataUrl(stripTypeScriptTypes('const manifest={items:[],deniedUrls:[],deniedSha256:[]};' + guardSource)));
 
 const makeService = await loadWrapped('src/lib/shopify/media-diagnostic.ts',
-  ['sharp', 'fetchShopifyMediaRead', 'VERIFIED_COPY_COLUMNS', 'assertVerifiedCopyApproval', 'reviewIdentity', 'assertNotDeniedMedia',
-    'isShopifyOwnedVariant', 'captureMediaSourceBytes', 'readMediaStatus', 'process', 'AbortSignal'], ['readMediaDiagnostic', 'parseMediaDiagnosticInput']);
+  ['createHash', 'sharp', 'fetchShopifyMediaRead', 'VERIFIED_COPY_COLUMNS', 'assertVerifiedCopyApproval', 'reviewIdentity', 'assertNotDeniedMedia',
+    'isShopifyOwnedVariant', 'captureMediaSourceBytes', 'readMediaStatus', 'process', 'AbortSignal'], ['readMediaDiagnostic', 'readKl966005DiagnosticBytes', 'parseMediaDiagnosticInput']);
 const versions = { node: '22.synthetic', sharp: 'synthetic-sharp', vips: 'synthetic-vips' };
-const service = makeService({ sharp: { versions }, process: { versions }, AbortSignal,
+const service = makeService({ createHash, sharp: { versions }, process: { versions }, AbortSignal,
   VERIFIED_COPY_COLUMNS: 'product_gid,catalog_key,carousel_item_id,variant_gid,exact_gallery_sku,exact_shopify_sku,approved_product_handle,allowed_fields,enabled,approval_id,approved_source_updated_at,alias_evidence',
   assertVerifiedCopyApproval, reviewIdentity, assertNotDeniedMedia: guard.assertNotDeniedMedia, isShopifyOwnedVariant: policy.isShopifyOwnedVariant,
   fetchShopifyMediaRead: () => { throw new Error('native network must be injected'); },
@@ -44,10 +44,23 @@ const snapshot = () => ({ identity: structuredClone(identity), updatedAt: '2026-
   images: [{ mediaId, imageId: 'gid://shopify/ImageSource/100', url, width: 1698, height: 2000, alt: 'Synthetic taupe wallet', updatedAt: '2026-11-10T00:00:00Z', variantAssigned: true }],
   variantMediaIds: [mediaId], variantImageId: 'gid://shopify/ProductImage/100', variantImageUrl: url });
 
-function fixture() {
+const klIdentity = { productId: 'gid://shopify/Product/9382883918074', variantId: 'gid://shopify/ProductVariant/50148815929594',
+  itemId: '3e20d7c1-5828-5f0d-b4b9-215dfe192a1c', exactGallerySku: 'KL966005', exactShopifySku: 'KL966005',
+  productHandle: 'samsonite-intuo-55-easy-access-citrus-kl966005' };
+const klUrl = 'https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-002c093ef078.jpg?v=1787391069';
+const klMedia = 'gid://shopify/MediaImage/40701188604154';
+const klCommand = () => ({ itemId: klIdentity.itemId, mediaId: klMedia });
+function fixture(kl = false) {
   const calls = [], state = { now: 1000, deadline: 40000, approval: [approval()], binding: [binding()], card: [card()], link: [link()], native: snapshot(),
     status: { product: { identity: structuredClone(identity), catalogKey: identity.exactGallerySku, copyEnabled: true, mediaEnabled: true, baselineVersion: 1 } },
     onQuery: null, onNative: null, onCapture: null, error: null, deniedUrls: [], deniedSha256: [] };
+  if (kl) {
+    let encoded = JSON.stringify(state);
+    for (const [from, to] of [...Object.keys(identity).map(key => [identity[key], klIdentity[key]]),
+      ['67616634798330', '50148815929594'], [mediaId, klMedia], [url, klUrl]]) encoded = encoded.replaceAll(from, to);
+    Object.assign(state, JSON.parse(encoded));
+  }
+  const currentIdentity = kl ? klIdentity : identity, currentUrl = kl ? klUrl : url;
   const db = { from(table) {
     const q = { select(columns) { calls.push({ kind: 'select', table, columns }); return q; },
       eq(key, value) { calls.push({ kind: 'eq', table, key, value }); return q; },
@@ -61,17 +74,58 @@ function fixture() {
   } };
   const dependencies = {
     now: () => state.now,
-    status: async (id, deadline) => { assert.equal(id, identity.productId); assert.equal(deadline, state.deadline); calls.push({ kind: 'status' }); return structuredClone(state.status); },
-    readNative: async (id, timeout, deadline) => { assert.deepEqual(id, identity); assert.equal(timeout, 8000); assert.equal(deadline, state.deadline);
+    status: async (id, deadline) => { assert.equal(id, currentIdentity.productId); assert.equal(deadline, state.deadline); calls.push({ kind: 'status' }); return structuredClone(state.status); },
+    readNative: async (id, timeout, deadline) => { assert.deepEqual(id, currentIdentity); assert.equal(timeout, 8000); assert.equal(deadline, state.deadline);
       calls.push({ kind: 'native' }); state.onNative?.(); return structuredClone(state.native); },
-    capture: async (id, source, deadline) => { assert.deepEqual(id, identity); assert.equal(source, url); assert.equal(deadline, state.deadline);
-      calls.push({ kind: 'capture' }); state.onCapture?.(); return { bytes: Buffer.from('must never leave the service'), visual: 'private-pixel-signature',
-        sha256: 'b'.repeat(64), mime: 'image/jpeg', width: 1698, height: 2000, byteLength: 123456 }; },
+    capture: async (id, source, deadline) => { assert.deepEqual(id, currentIdentity); assert.equal(source, currentUrl); assert.equal(deadline, state.deadline);
+      calls.push({ kind: 'capture' }); state.onCapture?.(); const bytes = Buffer.from('must never leave the service');
+      return { bytes, visual: 'private-pixel-signature',
+        sha256: kl ? createHash('sha256').update(bytes).digest('hex') : 'b'.repeat(64), mime: 'image/jpeg', width: 1698, height: 2000, byteLength: kl ? bytes.length : 123456 }; },
     deny: (source, sha) => { calls.push({ kind: 'deny', source, sha }); guard.assertNotDeniedMedia(source, sha,
       { items: [], deniedUrls: state.deniedUrls, deniedSha256: state.deniedSha256 }); },
   };
-  return { db, calls, state, dependencies, run: (input = command()) => service.readMediaDiagnostic(db, input, state.deadline, dependencies) };
+  return { db, calls, state, dependencies, run: (input = kl ? klCommand() : command()) =>
+    (kl ? service.readKl966005DiagnosticBytes : service.readMediaDiagnostic)(db, input, state.deadline, dependencies) };
 }
+
+test('fixed KL byte export preserves exact capture body, hash and metadata, one capture and no write capabilities', async () => {
+  const f = fixture(true), result = await f.run();
+  assert.deepEqual(result.metadata.identity, klIdentity);
+  assert.equal(result.metadata.native.mediaId, klMedia);
+  assert.equal(result.metadata.native.imageUrl, klUrl);
+  assert.equal(createHash('sha256').update(result.bytes).digest('hex'), result.metadata.observation.sha256);
+  assert.equal(result.bytes.length, result.metadata.observation.byteLength);
+  assert.equal(JSON.stringify(result.metadata).includes('private-pixel-signature'), false);
+  assert.equal(f.calls.filter(c => c.kind === 'capture').length, 1);
+  assert.equal(f.calls.filter(c => c.kind === 'native').length, 2);
+});
+
+test('KL export refuses other items/media and caller-supplied URL/hash before reads', async () => {
+  for (const input of [command(), { ...klCommand(), mediaId }, { ...klCommand(), url: klUrl }, { ...klCommand(), expectedSha256: 'b'.repeat(64) }]) {
+    const f = fixture(true); await assert.rejects(f.run(input), /MEDIA_DIAGNOSTIC_(?:EXPORT_SCOPE|INPUT)_INVALID/); assert.deepEqual(f.calls, []);
+  }
+});
+
+test('KL export enforces pinned identity and URL before capture', async () => {
+  for (const mutate of [f => { f.state.native.images[0].url += '&different=1'; }, f => {
+    f.state.approval[0].approved_product_handle = 'changed'; f.state.binding[0].product_handle = 'changed';
+    f.state.link[0].product_handle = 'changed'; f.state.status.product.identity.productHandle = 'changed';
+  }]) {
+    const f = fixture(true); mutate(f); await assert.rejects(f.run(), /MEDIA_DIAGNOSTIC_(?:IDENTITY|SOURCE)_CHANGED/);
+    assert.equal(f.calls.some(c => c.kind === 'capture'), false);
+  }
+});
+
+test('KL export rejects corrupt body/hash/length/MIME and preserves post-capture checks', async () => {
+  for (const patch of [{ sha256: '0'.repeat(64) }, { byteLength: 1 }, { bytes: Buffer.alloc(0) },
+    { bytes: Buffer.alloc(8 * 1024 * 1024 + 1) }, { mime: 'text/html' }]) {
+    const f = fixture(true), original = f.dependencies.capture;
+    f.dependencies.capture = async (...args) => ({ ...await original(...args), ...patch });
+    await assert.rejects(f.run(), /MEDIA_DIAGNOSTIC_EXPORT_BYTES_INVALID/);
+  }
+  const f = fixture(true); f.state.onCapture = () => { f.state.native.fingerprint = 'c'.repeat(64); };
+  await assert.rejects(f.run(), /MEDIA_DIAGNOSTIC_SOURCE_CHANGED/);
+});
 
 test('strict command accepts only one card and one native media ID, never caller URLs or proofs', () => {
   for (const input of [null, [], {}, { itemId }, { ...command(), extra: true }, { ...command(), imageUrl: url },
@@ -262,10 +316,87 @@ test('route returns only bounded safe error codes, never provider/SQL details', 
 });
 
 test('diagnostic source surface contains no worker, queue, review-store, lease, registration or mutator invocation', () => {
-  for (const file of ['src/lib/shopify/media-diagnostic.ts', 'src/app/api/admin/shopify/media/diagnostic/route.ts']) {
+  for (const file of ['src/lib/shopify/media-diagnostic.ts', 'src/app/api/admin/shopify/media/diagnostic/route.ts',
+    'src/app/api/admin/shopify/media/diagnostic/kl966005-bytes/route.ts']) {
     const source = readFileSync(file, 'utf8');
-    assert.doesNotMatch(source, /\.(?:insert|update|upsert|delete|rpc|upload|remove)\s*\(/);
+    // Hash.update consumes local bytes only. Exempt this exact expression, not database updates.
+    const withoutPureHash = source.replaceAll('createHash("sha256").update(bytes).digest("hex")', 'PURE_LOCAL_SHA256');
+    assert.doesNotMatch(withoutPureHash, /\.(?:insert|update|upsert|delete|rpc|upload|remove)\s*\(/);
     assert.doesNotMatch(source, /(?:scheduleMedia|enqueue|acquire_.*lease|register_toptik|saveReviewed|saveStaged|runMediaProduct|bootstrapMedia)\s*\(/);
     assert.doesNotMatch(source, /(?:from|import\()\s*["'][^"']*(?:media-(?:schedule|runtime|planning-rpc|transport-rpc|work-queue)|reviewed-media-store)[^"']*["']/);
   }
+});
+
+const makeByteRoute = await loadWrapped('src/app/api/admin/shopify/media/diagnostic/kl966005-bytes/route.ts',
+  ['NextResponse', 'authorizeGalleryAdmin', 'createSupabaseServiceRoleClient', 'parseMediaDiagnosticInput',
+    'readKl966005DiagnosticBytes', 'Buffer', 'process'], ['POST']);
+function byteRouteFixture({ user = adminUser(), serviceError = null } = {}) {
+  const calls = [], jsonResponse = { json: (body, init) => new Response(JSON.stringify(body), { ...init,
+    headers: { 'Content-Type': 'application/json', ...init?.headers } }) };
+  const auth = makeAuth({ NextResponse: jsonResponse, redirect: () => { throw new Error('unexpected redirect'); },
+    getPanelUser: async () => user, authorizePanelUser: authCore.authorizePanelUser });
+  const tokenGate = makeToken({ createHash, timingSafeEqual, NextResponse: jsonResponse,
+    supabaseEnv: { adminToken: 'synthetic-admin-token' }, process: { env: {} } });
+  const access = makeAccess({ NextResponse: jsonResponse, requireAdminToken: tokenGate.requireAdminToken,
+    requireAdminUser: auth.requireAdminUser, allowsGallerySessionRequest: sessionPolicy.allowsGallerySessionRequest });
+  const bytes = new Uint8Array([1, 2, 3]), sha = createHash('sha256').update(bytes).digest('hex');
+  const api = makeByteRoute({ NextResponse: jsonResponse, authorizeGalleryAdmin: access.authorizeGalleryAdmin,
+    Buffer, process: { env: {} }, parseMediaDiagnosticInput: service.parseMediaDiagnosticInput,
+    createSupabaseServiceRoleClient: () => { calls.push('client'); return {}; },
+    readKl966005DiagnosticBytes: async (_db, input) => {
+      calls.push('capture'); assert.deepEqual(input, klCommand()); if (serviceError) throw new Error(serviceError);
+      return { bytes, metadata: { observation: { mime: 'image/jpeg', sha256: sha, width: 2000, height: 2400 }, observedAt: '2026-11-11T15:00:00Z',
+        native: { mediaId: klMedia, fingerprint: 'a'.repeat(64) }, identity: klIdentity,
+        runtime: { node: '22.synthetic', sharp: 'synthetic', vips: 'synthetic', requestProfile: 'captureMediaSourceBytes_runtime_default_headers' } } };
+    } });
+  const post = (body = klCommand(), headers = {}, search = '') => api.POST({ method: 'POST',
+    nextUrl: new URL('https://admin.toptik.co.il/api/admin/shopify/media/diagnostic/kl966005-bytes' + search),
+    headers: new Headers({ 'content-type': 'application/json', origin: 'https://admin.toptik.co.il', 'sec-fetch-site': 'same-origin', ...headers }),
+    get body() { calls.push('body'); return new Response(typeof body === 'string' ? body : JSON.stringify(body)).body; } });
+  return { calls, bytes, sha, post };
+}
+
+test('byte route uses real admin auth and CSRF before body/client/capture', async () => {
+  for (const user of [null, adminUser('member'), { ...adminUser(), email_confirmed_at: null }]) {
+    const f = byteRouteFixture({ user }), response = await f.post();
+    assert.ok([401, 403].includes(response.status)); assert.deepEqual(f.calls, []);
+    assert.match(response.headers.get('cache-control'), /no-store, private/);
+  }
+  for (const headers of [{ origin: 'https://evil.test' }, { origin: '' }, { 'sec-fetch-site': 'cross-site' }]) {
+    const f = byteRouteFixture(); assert.equal((await f.post(klCommand(), headers)).status, 403); assert.deepEqual(f.calls, []);
+  }
+  for (const headers of [{ authorization: 'Bearer synthetic-admin-token' }, { 'x-admin-token': 'wrong' }]) {
+    const f = byteRouteFixture({ user: null }); assert.equal((await f.post(klCommand(), headers, '?token=synthetic-admin-token')).status, 401);
+    assert.deepEqual(f.calls, []);
+  }
+});
+
+test('byte download is exact, private attachment with honest runtime and new-observation provenance', async () => {
+  for (const token of [false, true]) {
+    const f = byteRouteFixture(token ? { user: null } : {}), response = await f.post(klCommand(), token ? { 'x-admin-token': 'synthetic-admin-token' } : {});
+    assert.equal(response.status, 200); assert.deepEqual(new Uint8Array(await response.arrayBuffer()), f.bytes);
+    assert.equal(response.headers.get('x-content-sha256'), f.sha);
+    assert.equal(response.headers.get('content-length'), '3'); assert.equal(response.headers.get('content-type'), 'image/jpeg');
+    assert.match(response.headers.get('content-disposition'), /^attachment; filename="KL966005-image3-[a-f0-9]{12}\.jpg"$/);
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.match(response.headers.get('cache-control'), /no-store, private/);
+    assert.equal(response.headers.get('x-toptik-region'), 'unavailable');
+    assert.equal(response.headers.get('x-toptik-git-commit'), 'unavailable');
+    assert.equal(response.headers.get('x-toptik-deployment-id'), 'unavailable');
+    assert.equal(response.headers.get('x-toptik-environment'), 'unavailable');
+    assert.equal(response.headers.get('x-toptik-image-width'), '2000');
+    assert.equal(response.headers.get('x-toptik-image-height'), '2400');
+    assert.equal(response.headers.get('x-toptik-observation'), 'new-capture-not-historical-recovery');
+    assert.deepEqual(f.calls, ['body', 'client', 'capture']);
+  }
+});
+
+test('byte route bounds input and sanitizes errors without provider details', async () => {
+  for (const [body, headers, status] of [['{', {}, 400], [' '.repeat(1025), {}, 413],
+    [klCommand(), { 'content-length': '1025' }, 413], [klCommand(), { 'content-type': 'text/plain' }, 415],
+    [{ ...klCommand(), url: klUrl }, {}, 400]]) {
+    const f = byteRouteFixture(); assert.equal((await f.post(body, headers)).status, status); assert.equal(f.calls.includes('client'), false);
+  }
+  const f = byteRouteFixture({ serviceError: 'private credentials SQL details' }), response = await f.post();
+  assert.equal(response.status, 409); assert.deepEqual(await response.json(), { error: 'MEDIA_DIAGNOSTIC_READ_FAILED' });
 });
