@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import sharp from "sharp";
+import { createHash } from "node:crypto";
 import { fetchShopifyMediaRead } from "./admin-api";
 import { VERIFIED_COPY_COLUMNS } from "./copy-eligibility";
 import { assertVerifiedCopyApproval, type VerifiedCopyEligibility } from "./sync-rules";
@@ -98,13 +99,16 @@ export async function readMediaReviewBinding(db: Db, itemId: string, deadline: n
 
 /** Capture one current native photo using the unmodified production Node/Sharp path.
  * This observation creates no proof, review, baseline, registration, queue event or permission. */
-export async function readMediaDiagnostic(db: Db, input: MediaDiagnosticInput, deadline: number, dependencies: Dependencies = {}) {
+async function readDiagnosticCapture(db: Db, input: MediaDiagnosticInput, deadline: number, dependencies: Dependencies = {}, expected?: { identity: MediaIdentity; url: string }) {
   const command = parseMediaDiagnosticInput(input), now = dependencies.now ?? Date.now;
   const check = () => { if (!Number.isFinite(deadline) || now() >= deadline) fail("MEDIA_DIAGNOSTIC_TIME_BUDGET"); };
   check();
   if (isShopifyOwnedVariant(command.itemId)) fail("MEDIA_DIAGNOSTIC_OWNED_GROUP_UNSUPPORTED");
   const status = dependencies.status ?? readMediaStatus;
   const binding = await readBinding(db, command.itemId, deadline, now, status);
+  if (expected && Object.entries(expected.identity).some(([key, value]) => binding.identity[key as keyof MediaIdentity] !== value)) {
+    fail("MEDIA_DIAGNOSTIC_IDENTITY_CHANGED");
+  }
   const read = dependencies.readNative ?? fetchShopifyMediaRead, deny = dependencies.deny ?? assertNotDeniedMedia;
   check();
   // This reader independently requires ACTIVE, Online Store publication, the exact single variant and a complete ready media graph.
@@ -114,6 +118,7 @@ export async function readMediaDiagnostic(db: Db, input: MediaDiagnosticInput, d
   const images = before.images.filter(image => image.mediaId === command.mediaId);
   if (images.length !== 1) fail("MEDIA_DIAGNOSTIC_MEDIA_NOT_CURRENT");
   const image = images[0];
+  if (expected && image.url !== expected.url) fail("MEDIA_DIAGNOSTIC_SOURCE_CHANGED");
   deny(image.url);
   const captured = await (dependencies.capture ?? captureMediaSourceBytes)(binding.identity, image.url, deadline);
   check();
@@ -126,11 +131,44 @@ export async function readMediaDiagnostic(db: Db, input: MediaDiagnosticInput, d
   const fresh = await readBinding(db, command.itemId, deadline, now, status);
   check();
   if (fresh.stamp !== binding.stamp) fail("MEDIA_DIAGNOSTIC_BINDING_CHANGED");
-  return { readOnly: true, scope: "ordinary_current_native_image", observedAt: new Date(now()).toISOString(), identity: binding.identity,
+  const result = { readOnly: true, scope: "ordinary_current_native_image", observedAt: new Date(now()).toISOString(), identity: binding.identity,
     native: { mediaId: image.mediaId, imageId: image.imageId, imageUrl: image.url, width: image.width, height: image.height, platformUpdatedAt: image.updatedAt,
       productUpdatedAt: before.updatedAt, fingerprint: before.fingerprint },
     observation: { sha256: captured.sha256, mime: captured.mime, width: captured.width, height: captured.height, byteLength: captured.byteLength },
     runtime: { node: process.versions.node, sharp: sharp.versions.sharp, vips: sharp.versions.vips,
       requestProfile: "captureMediaSourceBytes_runtime_default_headers" },
     baselineComparison: "unavailable", baselineComparisonReason: "READ_ONLY_PROOF_ACCESS_NOT_EXPOSED" };
+  return { result, captured };
+}
+
+/** Existing metadata endpoint deliberately never exports source bytes. */
+export async function readMediaDiagnostic(db: Db, input: MediaDiagnosticInput, deadline: number, dependencies: Dependencies = {}) {
+  return (await readDiagnosticCapture(db, input, deadline, dependencies)).result;
+}
+
+/** Temporary diagnostic scope. No caller-selected identity, URL, checksum or region. */
+const KL966005_EXPORT = {
+  identity: { itemId: "3e20d7c1-5828-5f0d-b4b9-215dfe192a1c", productId: "gid://shopify/Product/9382883918074",
+    variantId: "gid://shopify/ProductVariant/50148815929594", productHandle: "samsonite-intuo-55-easy-access-citrus-kl966005",
+    exactGallerySku: "KL966005", exactShopifySku: "KL966005" },
+  mediaId: "gid://shopify/MediaImage/40701188604154",
+  url: "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/03-002c093ef078.jpg?v=1787391069",
+} as const;
+
+/** One new observation only. Never a review, proof, accepted checksum or historical recovery. */
+export async function readKl966005DiagnosticBytes(db: Db, input: MediaDiagnosticInput, deadline: number, dependencies: Dependencies = {}) {
+  const command = parseMediaDiagnosticInput(input);
+  if (command.itemId !== KL966005_EXPORT.identity.itemId || command.mediaId !== KL966005_EXPORT.mediaId) {
+    fail("MEDIA_DIAGNOSTIC_EXPORT_SCOPE_INVALID");
+  }
+  const { result, captured } = await readDiagnosticCapture(db, command, deadline, dependencies, KL966005_EXPORT);
+  // Verify the response body, not merely the producer's metadata; never return the visual signature.
+  const bytes = Uint8Array.from(captured.bytes);
+  if (!bytes.length || bytes.length > 8 * 1024 * 1024 || bytes.length !== captured.byteLength ||
+      createHash("sha256").update(bytes).digest("hex") !== captured.sha256 ||
+      !["image/jpeg", "image/png", "image/webp", "image/avif"].includes(captured.mime)) {
+    fail("MEDIA_DIAGNOSTIC_EXPORT_BYTES_INVALID");
+  }
+  if ((dependencies.now ?? Date.now)() >= deadline) fail("MEDIA_DIAGNOSTIC_TIME_BUDGET");
+  return { metadata: result, bytes };
 }
