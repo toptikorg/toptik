@@ -89,6 +89,13 @@ async function readBinding(db: Db, itemId: string, deadline: number, now: () => 
   return { identity, stamp: JSON.stringify([approval, binding, row, link, registered, product.baselineVersion]) };
 }
 
+/** Reuse the diagnostic's bounded, server-owned identity and eligibility checks
+ * for ordinary review registration, without reading the whole Gallery catalog. */
+export async function readMediaReviewBinding(db: Db, itemId: string, deadline: number) {
+  if (!UUID.test(itemId) || isShopifyOwnedVariant(itemId)) fail("MEDIA_DIAGNOSTIC_NOT_ELIGIBLE");
+  return readBinding(db, itemId, deadline, Date.now, readMediaStatus);
+}
+
 /** Capture one current native photo using the unmodified production Node/Sharp path.
  * This observation creates no proof, review, baseline, registration, queue event or permission. */
 export async function readMediaDiagnostic(db: Db, input: MediaDiagnosticInput, deadline: number, dependencies: Dependencies = {}) {
