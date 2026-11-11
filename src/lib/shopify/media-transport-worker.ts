@@ -13,7 +13,9 @@ export type MediaTransportPhaseJob = {
 };
 export type MediaTransportResult = { status: "disabled" | "scope_missing" | "lease_busy" | "pending" | "conflict" | "verified"; executed: boolean;
   /** Allowlisted MEDIA_* code explaining a durable pending wait; never a provider message. */
-  diagnostic?: string };
+  diagnostic?: string;
+  /** Pre-attempt guard reload only. Never verification, progress or an execution permit. */
+  replanCheckpoint?: string };
 type Permit = { mayExecute: boolean; status?: string; phase?: string; attemptId?: string; requestHash?: string; request?: Record<string, unknown>; replayed?: boolean };
 type ObservationResult = { status: "pending" | "conflict" | "verified" };
 export type MediaGuardRefresh = { status: "refreshed" | "unchanged" | "attempt_exists"; refreshed: boolean };
@@ -111,9 +113,12 @@ export async function runMediaTransportPhase(reference: MediaTransportReference,
       // Only an existing attempt continues, to replay/recover with its frozen before_guard.
       const refreshed = await bounded(() => deps.refresh(reference, lease, guard, workDeadline), workDeadline, deps.now);
       checkTime();
-      // A plain pending (no diagnostic) keeps an in-flight product's queue position after a
-      // verified phase in this claim; a diagnostic would send it to the back of the queue.
-      if (refreshed?.status !== "attempt_exists") return { status: "pending", executed };
+      if (!refreshed || !["refreshed", "unchanged", "attempt_exists"].includes(refreshed.status) ||
+          refreshed.refreshed !== (refreshed.status === "refreshed")) fail("MEDIA_TRANSPORT_GUARD_REFRESH_INVALID");
+      // SQL proved there is no attempt and only the product timestamp drifted.
+      // Release this lease and reload the job; never begin with this stale job.
+      if (refreshed.status !== "attempt_exists") return { status: "pending", executed: false,
+        replanCheckpoint: `${reference.operationId}:${reference.step}:${reference.phaseIndex}:${guard.sourceFingerprint}:${guard.target.revision}` };
     }
     // The SQL function checks the live shared lease and returns false for any previous attempt.
     // A timeout here grants no execution authority; its outcome is resolved next invocation.

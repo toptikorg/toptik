@@ -16,6 +16,8 @@ export type MediaWorkEvidence = { gallery?: { actorType: "supabase_user" | "admi
 export type MediaProductRun = { status: "disabled" | "done" | "pending" | "review" | "busy"; progressed: boolean; executed: boolean;
   /** Durable verified cursor only, never a capture, preparation or uncertain write. */
   verifiedCheckpoint?: string;
+  /** Exact pre-attempt guard cursor authorizes one guarded reload, never a mutation. */
+  replanCheckpoint?: string;
   /** Allowlisted reason for a durable pending wait or review, recorded as last_error. */
   diagnostic?: string;
   /** Planning finished but too little budget remained to run the prepared phase. */
@@ -199,6 +201,13 @@ async function runMeasuredMediaProduct(productId: string, evidence: MediaWorkEvi
   // Prepared work is durable and continuation carries it into a fresh budget.
   if (stop - now() < 12000) return { ...result("pending", progressed), deferred: true };
   const phase = await timing.measure("phase", () => (dependencies.phase ?? runPersistedMediaPhase)(phaseRef!, stop));
+  if (phase.replanCheckpoint !== undefined) {
+    const prefix = `${phaseRef!.operationId}:${phaseRef!.step}:${phaseRef!.phaseIndex}:`;
+    if (phase.status !== "pending" || phase.executed || typeof phase.replanCheckpoint !== "string" ||
+        !phase.replanCheckpoint.startsWith(prefix) || !/^[a-f0-9]{64}:[a-f0-9]{64}$/.test(phase.replanCheckpoint.slice(prefix.length)))
+      fail("MEDIA_PLANNING_REPLAN_CHECKPOINT_INVALID");
+    return { ...result("pending", progressed), replanCheckpoint: phase.replanCheckpoint };
+  }
   if (phase.status === "verified") return { ...result("pending", true, phase.executed),
     verifiedCheckpoint: `${phaseRef!.operationId}:${phaseRef!.step}:phase:${phaseRef!.phaseIndex}` };
   if (phase.status === "conflict" || phase.status === "scope_missing") return result("review", false, phase.executed);
