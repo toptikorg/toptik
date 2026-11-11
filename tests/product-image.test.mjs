@@ -207,16 +207,23 @@ test('GAL-028: a hidden page pauses the decode timeout; it runs in full once the
   assert.equal(page.listenerCount, 0, 'visibility listener is released with the attempt');
 });
 
-test('GAL-028: hiding the page mid-load stops the clock; showing it restarts the budget', async () => {
+test('GAL-028: hiding the page mid-load stops the clock; showing it restarts the budget', async (t) => {
+  // Advance only this test's timers so process load cannot exhaust the budget before hide().
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const page = fakePage(false);
   const hanging = probe();
   const state = settlement(decodeProductImage(cover, new AbortController().signal, () => hanging, 20, page));
-  await sleep(5);
+  t.mock.timers.tick(5);
   page.hide();
-  await sleep(60);
+  t.mock.timers.tick(60);
+  await Promise.resolve();
   assert.equal(state.settled, false, 'the original 20ms budget did not fire while hidden');
   page.show();
-  await sleep(60);
+  t.mock.timers.tick(19);
+  await Promise.resolve();
+  assert.equal(state.settled, false, 'showing the page starts a fresh full budget');
+  t.mock.timers.tick(1);
+  await Promise.resolve();
   assert.equal(state.settled, true);
   assert.match(String(state.error?.message), /timed out/);
 });
