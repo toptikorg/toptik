@@ -15,9 +15,18 @@ test('absolute typed deadline rechecks time after token refresh before any produ
  await assert.rejects(boundedGraphql('mutation guarded',{},8000,2000),/SPEC_TIME_BUDGET/);assert.equal(calls,0);
 });
 test('slow token acquisition times out without sending a late mutation',async t=>{
- env(t);let resolveToken,calls=0;t.mock.method(globalThis,'fetch',async()=>{calls++;throw Error('Must not fetch');});
+ // The clock is pinned so the pre-call deadline check cannot fire first under load; only the real
+ // 15 ms wait timer may reject, which is the slow-token path this test is about.
+ env(t);let now=1000,resolveToken,calls=0;t.mock.method(Date,'now',()=>now);t.mock.method(globalThis,'fetch',async()=>{calls++;throw Error('Must not fetch');});
  const {boundedGraphql}=await loader(()=>new Promise(resolve=>{resolveToken=resolve;}));
- await assert.rejects(boundedGraphql('mutation guarded',{},8000,Date.now()+15),/SPEC_TIME_BUDGET/);resolveToken('test-token');await new Promise(resolve=>setImmediate(resolve));assert.equal(calls,0);
+ await assert.rejects(boundedGraphql('mutation guarded',{},8000,now+15),/SPEC_TIME_BUDGET/);
+ assert.equal(typeof resolveToken,'function','the token exchange started before the deadline, so the wait itself timed out');
+ resolveToken('test-token');await new Promise(resolve=>setImmediate(resolve));assert.equal(calls,0);
+});
+test('an already-expired deadline rejects before the token exchange starts and sends nothing',async t=>{
+ env(t);let now=1000,tokenCalls=0,calls=0;t.mock.method(Date,'now',()=>now);t.mock.method(globalThis,'fetch',async()=>{calls++;throw Error('Must not fetch');});
+ const {boundedGraphql}=await loader(async()=>{tokenCalls++;return 'test-token';});
+ await assert.rejects(boundedGraphql('mutation guarded',{},8000,now),/SPEC_TIME_BUDGET/);assert.equal(tokenCalls,0);assert.equal(calls,0);
 });
 test('GraphQL network allowance is recomputed after authentication consumed time',async t=>{
  env(t);let now=1000,allowance; t.mock.method(Date,'now',()=>now);const original=AbortSignal.timeout;t.mock.method(AbortSignal,'timeout',ms=>{allowance=ms;return original(ms);});
