@@ -2,6 +2,36 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import{mod,stripped,coreUrl,core,fixture,id,owner,opId,now,visualsFor}from'./helpers/media-planning-fixture.mjs';
 Error.stackTraceLimit=0;
 const api=await import(mod(`import{randomUUID}from'node:crypto';import{reconcileMedia,mediaSnapshotFingerprint}from'${coreUrl}';${stripped('media-product-runtime')}`));
+
+test('invocation timing aggregates repeated captures using a fake clock and never serializes errors',async()=>{
+ let time=100;const events=[],t=api.createMediaPlanningTiming(id.productId,()=>time,e=>events.push(e));
+ await t.measure('capture',async()=>{time+=12;});await t.measure('capture',async()=>{time+=8;});
+ t.finish('error',Error('secret token and customer content'));t.finish('done');
+ assert.equal(events.length,1);assert.equal(events[0].captureCount,2);assert.equal(events[0].elapsedMs,20);
+ assert.deepEqual(events[0].stages.capture,{calls:2,elapsedMs:20});assert.equal(events[0].error,'MEDIA_WORK_FAILED');
+ assert.equal(JSON.stringify(events).includes('secret'),false);
+});
+
+test('budget after a slow capture reports the stage and releases without reserving or executing',async()=>{
+ const x=f(),events=[];x.deps.timing=e=>events.push(e);
+ const original=x.deps.capture;x.deps.capture=async(...args)=>{const r=await original(...args);x.state.time=now+39000;return r;};
+ await assert.rejects(x.run(),/MEDIA_PLANNING_TIME_BUDGET/);
+ assert.equal(events.length,1);assert.equal(events[0].error,'MEDIA_PLANNING_TIME_BUDGET');
+ assert.equal(events[0].lastStage,'capture');assert.equal(events[0].captureCount,1);assert.equal(events[0].stages.capture.elapsedMs,39000);
+ assert.equal(x.calls.at(-1).name,'release');assert.equal(x.calls.some(c=>['reserve','phase'].includes(c.name)),false);
+});
+
+test('successful no-op emits timing without changing any reconciliation inputs',async()=>{
+ const x=f(),events=[],before=structuredClone(x.state.current);x.deps.timing=e=>events.push(e);
+ assert.equal((await x.run()).status,'done');assert.deepEqual(x.state.current,before);
+ assert.equal(events.length,1);assert.equal(events[0].outcome,'done');assert.equal(events[0].captureCount,1);
+ assert.equal(events[0].stages.register.calls,1);assert.equal(events[0].stages.observe.calls,1);
+});
+
+test('throwing diagnostic sink cannot fail success or replace the original reconciliation error',async()=>{
+ const x=f();x.deps.timing=()=>{throw Error('sink failed');};assert.equal((await x.run()).status,'done');
+ x.deps.capture=async()=>{throw Error('MEDIA_REVIEW_REQUIRED');};await assert.rejects(x.run(),/MEDIA_REVIEW_REQUIRED/);
+});
 function f(){const v=fixture(),calls=[],state={context:v.context,current:structuredClone(v.pair),chain:null,time:now,phase:{status:'verified',executed:true}};
  const record=(name,args,value)=>{calls.push({name,args});return value;};
  const planning={context:async(...a)=>record('context',a,state.context),register:async(...a)=>record('register',a,true),journal:async(...a)=>record('journal',a,{detached:[]}),
@@ -103,4 +133,14 @@ test('durable pending transport diagnostic is preserved; only allowlisted MEDIA 
  const r=await z.run();assert.equal(r.status,'pending');assert.equal(r.diagnostic,'MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED');
  for(const phase of [{status:'pending',executed:true,diagnostic:'provider said: secret'},{status:'conflict',executed:false,diagnostic:'MEDIA_STORAGE_X'},{status:'pending',executed:false}]){
   const y=f();active(y);y.state.phase=phase;assert.equal((await y.run()).diagnostic,undefined);}
+});
+
+
+test('diagnostic error inspection preserves thrown getter errors and revoked proxies by identity',async()=>{
+ const getter=Object.defineProperty(new Error(), 'message',{get(){throw Error('getter must not escape');}});
+ const {proxy,revoke}=Proxy.revocable({},{});revoke();
+ for(const original of [getter,proxy]){
+  const x=f();x.deps.timing=()=>{};x.deps.capture=async()=>{throw original;};
+  let caught;try{await x.run();}catch(e){caught=e;}assert.equal(caught,original);
+ }
 });
