@@ -26,6 +26,7 @@ import { mergeOwnedFamilyRefresh } from "@/lib/carousel/owned-editor-refresh";
 import { moveEditorAngle, promoteEditorAngle, removeEditorAngle } from "@/lib/carousel/editor-media-order";
 import { applyStagedUploadToCatalog, assertNoPendingUploadReviews, pendingUploadReviews, requestStagedReview } from "@/lib/carousel/staged-upload-review";
 import StagedImageReview from "@/components/admin/StagedImageReview";
+import { editorCatalogWindow } from "@/lib/carousel/editor-catalog-window";
 
 const STORAGE_KEY = "toptik_admin_token";
 const BATCH_IMPORT_INITIAL = 5;
@@ -79,6 +80,7 @@ export default function AdminPage() {
   const payloadRef = useRef<CarouselPayload>(payload);
   useEffect(() => { payloadRef.current = payload; }, [payload]);
   const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogPage, setCatalogPage] = useState(0);
   const [status, setStatus] = useState<string>("טוען...");
   const [isSaving, setIsSaving] = useState(false);
   const [pendingUploads, setPendingUploads] = useState(0);
@@ -440,6 +442,7 @@ export default function AdminPage() {
       setLoginUrl("/login?next=/admin");
     }
     const savedToken = window.localStorage.getItem(STORAGE_KEY) || "";
+    setCatalogSearch(new URLSearchParams(window.location.search).get("catalog")?.slice(0, 200) ?? "");
     setToken(savedToken);
     void loadData(savedToken);
     return () => { generationRef.current++; };
@@ -451,8 +454,8 @@ export default function AdminPage() {
     value: string | number | boolean,
   ) {
     setPayload((current) => {
-      const next = structuredClone(current);
-      const item = next.items[index];
+      if (!current.items[index]) return current;
+      const item = { ...current.items[index] };
       if (field === "displayOrder") item.displayOrder = Number(value);
       else if (field === "isActive") item.isActive = Boolean(value);
       else if (field === "catalogNumber") {
@@ -467,7 +470,7 @@ export default function AdminPage() {
       else if (field === "seoTitle") item.seoTitle = String(value);
       else if (field === "seoDescription") item.seoDescription = String(value);
       else item.title = String(value);
-      return next;
+      return { ...current, items: current.items.map((row, rowIndex) => rowIndex === index ? item : row) };
     });
   }
 
@@ -1011,6 +1014,17 @@ export default function AdminPage() {
     () => [...payload.items].sort((a, b) => a.displayOrder - b.displayOrder),
     [payload.items],
   );
+  const catalogWindow = useMemo(() => editorCatalogWindow(sortedItems, catalogSearch, catalogPage),
+    [sortedItems, catalogSearch, catalogPage]);
+  function catalogPager(position: string) {
+    return <nav aria-label={`דפדוף במוצרי הניהול, ${position}`} style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginBlock: 12 }}>
+      <button type="button" disabled={isCatalogBusy || catalogWindow.page === 0}
+        onClick={() => setCatalogPage(catalogWindow.page - 1)}>העמוד הקודם</button>
+      <span role="status">מוצרים {catalogWindow.first} עד {catalogWindow.last} מתוך {catalogWindow.total}, עמוד {catalogWindow.page + 1} מתוך {catalogWindow.pages}</span>
+      <button type="button" disabled={isCatalogBusy || catalogWindow.page + 1 >= catalogWindow.pages}
+        onClick={() => setCatalogPage(catalogWindow.page + 1)}>העמוד הבא</button>
+    </nav>;
+  }
 
   return (
     <main className="admin-page" inert={isCatalogBusy} aria-busy={isCatalogBusy}>
@@ -1386,11 +1400,13 @@ export default function AdminPage() {
             </div>
 
             <label>חיפוש לפי שם או מספר קטלוגי
-              <input type="search" value={catalogSearch} onChange={e => setCatalogSearch(e.target.value)}
+              <input type="search" value={catalogSearch} onChange={e => { setCatalogSearch(e.target.value); setCatalogPage(0); }}
                 placeholder="חיפוש מוצר" autoComplete="off" />
             </label>
-            {sortedItems.filter(item => !catalogSearch.trim() || `${item.title} ${item.catalogNumber ?? ""}`.toLowerCase().includes(catalogSearch.trim().toLowerCase())
-              || (normalizeCatalogKey(catalogSearch).length >= 2 && normalizeCatalogKey(item.catalogNumber ?? "").includes(normalizeCatalogKey(catalogSearch)))).map((item) => {
+            <p>החיפוש כולל את כל המוצרים. מעבר בין עמודים אינו מוחק שינויים, והשמירה כוללת את כל השינויים שביצעת.</p>
+            {catalogPager("עליון")}
+            {catalogWindow.total === 0 && <p role="status">לא נמצאו מוצרים לחיפוש הזה.</p>}
+            {catalogWindow.items.map((item) => {
               const itemIndex = payload.items.findIndex((row) => row.id === item.id);
               const sourceOwned = isShopifyOwnedVariant(item.id);
               return (
@@ -1426,10 +1442,8 @@ export default function AdminPage() {
                     </label>
                     <ProductDescriptionEditor text={item.description ?? ""} html={item.descriptionHtml}
                       onChange={({ text, html }) => setPayload(current => {
-                        const next = structuredClone(current);
-                        const changed = next.items.find(row => row.id === item.id);
-                        if (changed) { changed.description = text; changed.descriptionHtml = html; }
-                        return next;
+                        return { ...current, items: current.items.map(row => row.id === item.id ?
+                          { ...row, description: text, descriptionHtml: html } : row) };
                       })} />
                     <label>
                       כותרת SEO לחנות
@@ -1682,6 +1696,7 @@ export default function AdminPage() {
                 </article>
               );
             })}
+            {catalogPager("תחתון")}
           </section>
 
           <section className="admin-save">
