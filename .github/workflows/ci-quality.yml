@@ -55,5 +55,8 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Offline queue regressions after the actual failure-streak migration
+        run: npm run test:media-queue-upgrade
+
       - name: Offline Shopify theme transport and signature policy regressions
         run: python3 -m unittest discover -s tests -p test_shopify_theme_prepublish_gate.py

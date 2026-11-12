@@ -1,3 +1,4 @@
+import { upgradeQueueRegressionFixture } from './helpers/queue-failure-streak-regression-upgrade.mjs';
 // A stale storage attempt whose create-only object is absent may be retired by an
 // operator, per exact attempt, so the planner re-plans from the current state.
 // Real-migration integration runs on an offline PGlite engine (TOPTIK_PGLITE_DIR or the
@@ -64,6 +65,7 @@ create function public.assert_shopify_verified_copy_identity(p_item uuid,p_key t
       '20261001_existing_media_25mp.sql', '20261007_media_final_readback.sql', '20261007_media_transport_not_sent_precondition.sql']) await db.exec(migration(name));
     await db.exec(queueTable); await db.exec(enqueue);
     for (const name of ['20261007_media_storage_repair.sql', '20261008_media_storage_attempt_retire.sql']) await db.exec(migration(name));
+    await upgradeQueueRegressionFixture(db);
     return { db, core };
   })();
   return ready;
