@@ -146,6 +146,7 @@ test('responses arriving out of order: only the latest request wins, older obser
 
 test('plain Hebrew explanations for the key codes; unknown codes are flagged, not hidden', () => {
   assert.equal(lib.explainMediaCode('MEDIA_REVIEW_REQUIRED').title, 'תמונה ממתינה לאישור');
+  assert.equal(lib.explainMediaCode('MEDIA_AMBIGUOUS_INSERT_ORDER').title, 'סדר התמונות דורש בדיקה');
   assert.equal(lib.explainMediaCode('MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED').title, 'התאוששות נדרשת');
   assert.equal(lib.explainMediaCode('MEDIA_STORAGE_OBJECT_PRESENT_UNREADABLE').title, 'הקובץ קיים אך עדיין לא ניתן לקריאה');
   assert.equal(lib.explainMediaCode('MEDIA_PLANNING_TIME_BUDGET').title, 'זמן ההפעלה הסתיים');
