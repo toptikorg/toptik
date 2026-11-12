@@ -146,6 +146,7 @@ test('responses arriving out of order: only the latest request wins, older obser
 
 test('plain Hebrew explanations for the key codes; unknown codes are flagged, not hidden', () => {
   assert.equal(lib.explainMediaCode('MEDIA_REVIEW_REQUIRED').title, 'תמונה ממתינה לאישור');
+  assert.equal(lib.explainMediaCode('MEDIA_AMBIGUOUS_INSERT_ORDER').title, 'סדר התמונות דורש בדיקה');
   assert.equal(lib.explainMediaCode('MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED').title, 'התאוששות נדרשת');
   assert.equal(lib.explainMediaCode('MEDIA_STORAGE_OBJECT_PRESENT_UNREADABLE').title, 'הקובץ קיים אך עדיין לא ניתן לקריאה');
   assert.equal(lib.explainMediaCode('MEDIA_PLANNING_TIME_BUDGET').title, 'זמן ההפעלה הסתיים');
@@ -156,6 +157,16 @@ test('plain Hebrew explanations for the key codes; unknown codes are flagged, no
 });
 
 const counts = html => [...html.matchAll(/<dt>([^<]+)<\/dt><dd>([^<]+)<\/dd>/g)].map(m => [m[1], m[2]]);
+test('render: ambiguous insertion order is explained across reasons, item rows and liveness without losing its code', () => {
+  const html = render({ payload: payload({ extra: [{ lane: 'media', status: 'review', count: 1 }],
+    reasons: [{ status: 'review', last_error: 'MEDIA_AMBIGUOUS_INSERT_ORDER', products: 1, oldest_updated_at: AT, newest_updated_at: AT }],
+    items: [{ sku: 'MONITOR-1', status: 'review', last_error: 'MEDIA_AMBIGUOUS_INSERT_ORDER', updated_at: AT, attempts: 1 }],
+    override: { liveness: livenessRaw([livenessItem({ status: 'review', last_error: 'MEDIA_AMBIGUOUS_INSERT_ORDER' })]) } }) });
+  assert.equal([...html.matchAll(/סדר התמונות דורש בדיקה/g)].length, 3, 'all three consumers explain the same diagnostic');
+  assert.equal([...html.matchAll(/נדרשת בדיקה לפני שינוי הסדר/g)].length, 2, 'the reasons and item rows include full detail');
+  assert.equal([...html.matchAll(/MEDIA_AMBIGUOUS_INSERT_ORDER/g)].length, 3, 'each consumer preserves the diagnostic code');
+  assert.doesNotMatch(html, /קוד שאינו מתורגם/);
+});
 test('render: success shows separate lanes, reasons, SKU rows and the live-site caveat; read-only controls only', () => {
   const html = render({ payload: payload({ extra: [{ lane: 'media', status: 'review', count: 3 }], reasons: [{ status: 'review', last_error: 'MEDIA_REVIEW_REQUIRED', products: 3, oldest_updated_at: AT, newest_updated_at: AT }],
     items: [{ sku: 'P10FZT59001', status: 'review', last_error: 'MEDIA_REVIEW_REQUIRED', updated_at: AT, attempts: 2 }] }), onRefresh: () => {} });

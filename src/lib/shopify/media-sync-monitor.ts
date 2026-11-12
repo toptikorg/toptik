@@ -160,6 +160,7 @@ const EXPLAIN: Record<string, Explanation> = {
   MEDIA_REVIEW_REQUIRED: { title: "תמונה ממתינה לאישור", detail: "יש לאשר שהתמונה שייכת למק״ט ולצבע המדויקים במסך אישור התמונות. עד אז היא לא תישלח." },
   MEDIA_REVIEW_REJECTED: { title: "התמונה נדחתה", detail: "נמצאה התאמה למוצר או לצבע שגויים. הסנכרון של תמונה זו נעצר." },
   MEDIA_TARGET_MAPPING_REQUIRED: { title: "נדרש שיוך תמונה", detail: "לא ניתן לקבוע בוודאות לאיזו תמונה בצד השני היא מתאימה. נדרשת בדיקה ידנית." },
+  MEDIA_AMBIGUOUS_INSERT_ORDER: { title: "סדר התמונות דורש בדיקה", detail: "לא ניתן לקבוע בוודאות היכן להוסיף את התמונה ביחס לתמונות הקיימות. נדרשת בדיקה לפני שינוי הסדר." },
   MEDIA_STORAGE_OBJECT_NOT_READABLE_REPAIR_NEEDED: { title: "התאוששות נדרשת", detail: "העלאה קודמת לא הסתיימה בוודאות והקובץ לא נמצא. נדרש אישור התאוששות של מנהל לפני העלאה נוספת." },
   MEDIA_STORAGE_OBJECT_PRESENT_UNREADABLE: { title: "הקובץ קיים אך עדיין לא ניתן לקריאה", detail: "האחסון מדווח שהקובץ קיים, אבל קריאתו נכשלה. המערכת תבדוק שוב בקריאה בלבד, בלי להעלות מחדש." },
   MEDIA_STORAGE_OBJECT_NOT_READABLE_AFTER_UPLOAD: { title: "הקובץ עדיין לא נקרא אחרי ההעלאה", detail: "ההעלאה נשלחה, אך הקובץ עוד לא נקרא בהצלחה. המערכת תבדוק שוב בקריאה בלבד." },
