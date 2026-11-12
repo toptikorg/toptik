@@ -157,12 +157,14 @@ test('plain Hebrew explanations for the key codes; unknown codes are flagged, no
 });
 
 const counts = html => [...html.matchAll(/<dt>([^<]+)<\/dt><dd>([^<]+)<\/dd>/g)].map(m => [m[1], m[2]]);
-test('render: ambiguous insertion order keeps its diagnostic code and shows the Hebrew review explanation', () => {
+test('render: ambiguous insertion order is explained across reasons, item rows and liveness without losing its code', () => {
   const html = render({ payload: payload({ extra: [{ lane: 'media', status: 'review', count: 1 }],
-    reasons: [{ status: 'review', last_error: 'MEDIA_AMBIGUOUS_INSERT_ORDER', products: 1, oldest_updated_at: AT, newest_updated_at: AT }] }) });
-  assert.match(html, /סדר התמונות דורש בדיקה/);
-  assert.match(html, /נדרשת בדיקה לפני שינוי הסדר/);
-  assert.match(html, /MEDIA_AMBIGUOUS_INSERT_ORDER/);
+    reasons: [{ status: 'review', last_error: 'MEDIA_AMBIGUOUS_INSERT_ORDER', products: 1, oldest_updated_at: AT, newest_updated_at: AT }],
+    items: [{ sku: 'MONITOR-1', status: 'review', last_error: 'MEDIA_AMBIGUOUS_INSERT_ORDER', updated_at: AT, attempts: 1 }],
+    override: { liveness: livenessRaw([livenessItem({ status: 'review', last_error: 'MEDIA_AMBIGUOUS_INSERT_ORDER' })]) } }) });
+  assert.equal([...html.matchAll(/סדר התמונות דורש בדיקה/g)].length, 3, 'all three consumers explain the same diagnostic');
+  assert.equal([...html.matchAll(/נדרשת בדיקה לפני שינוי הסדר/g)].length, 2, 'the reasons and item rows include full detail');
+  assert.equal([...html.matchAll(/MEDIA_AMBIGUOUS_INSERT_ORDER/g)].length, 3, 'each consumer preserves the diagnostic code');
   assert.doesNotMatch(html, /קוד שאינו מתורגם/);
 });
 test('render: success shows separate lanes, reasons, SKU rows and the live-site caveat; read-only controls only', () => {
