@@ -157,6 +157,14 @@ test('plain Hebrew explanations for the key codes; unknown codes are flagged, no
 });
 
 const counts = html => [...html.matchAll(/<dt>([^<]+)<\/dt><dd>([^<]+)<\/dd>/g)].map(m => [m[1], m[2]]);
+test('render: ambiguous insertion order keeps its diagnostic code and shows the Hebrew review explanation', () => {
+  const html = render({ payload: payload({ extra: [{ lane: 'media', status: 'review', count: 1 }],
+    reasons: [{ status: 'review', last_error: 'MEDIA_AMBIGUOUS_INSERT_ORDER', products: 1, oldest_updated_at: AT, newest_updated_at: AT }] }) });
+  assert.match(html, /סדר התמונות דורש בדיקה/);
+  assert.match(html, /נדרשת בדיקה לפני שינוי הסדר/);
+  assert.match(html, /MEDIA_AMBIGUOUS_INSERT_ORDER/);
+  assert.doesNotMatch(html, /קוד שאינו מתורגם/);
+});
 test('render: success shows separate lanes, reasons, SKU rows and the live-site caveat; read-only controls only', () => {
   const html = render({ payload: payload({ extra: [{ lane: 'media', status: 'review', count: 3 }], reasons: [{ status: 'review', last_error: 'MEDIA_REVIEW_REQUIRED', products: 3, oldest_updated_at: AT, newest_updated_at: AT }],
     items: [{ sku: 'P10FZT59001', status: 'review', last_error: 'MEDIA_REVIEW_REQUIRED', updated_at: AT, attempts: 2 }] }), onRefresh: () => {} });
