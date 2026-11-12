@@ -52,7 +52,11 @@ function same(a: unknown, b: unknown): boolean {
 async function call(query: string, variables: Record<string, unknown>, deadline: number, mutation = false) {
   config(mutation); checkDeadline(deadline);
   const stopAt = Math.min(deadline, Date.now() + (mutation ? 15_000 : 8_000));
-  const data = await shopifyAdminGraphql<unknown>(query, variables, stopAt - Date.now(), stopAt);
+  let data: unknown;
+  // The shared transport names an exhausted deadline with the typed-specification code; this lane records
+  // MEDIA_ codes only, so the same transient condition keeps its media code. Nothing else is translated.
+  try { data = await shopifyAdminGraphql<unknown>(query, variables, stopAt - Date.now(), stopAt); }
+  catch (error) { throw error instanceof Error && error.message === "SPEC_TIME_BUDGET" ? new Error("MEDIA_TIME_BUDGET") : error; }
   checkDeadline(deadline);
   return { data: object(data) };
 }

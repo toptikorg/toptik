@@ -117,6 +117,14 @@ export function configuredShopifyDomain(): string {
   return getConfig().domain;
 }
 
+/** The shared transport reports an exhausted absolute deadline with the typed-specification lane's code.
+ * Media callers persist only MEDIA_ codes (anything else is recorded as the undiagnosable MEDIA_WORK_FAILED,
+ * which the liveness monitor treats as needing a person), so the same transient condition keeps its media
+ * code at this boundary. Every other error passes through unchanged. */
+function mediaTimeBudgetError(error: unknown): unknown {
+  return error instanceof Error && error.message === "SPEC_TIME_BUDGET" ? new Error("MEDIA_TIME_BUDGET") : error;
+}
+
 /** Complete media associations, read only; decoding/private lineage is a separate required gate. */
 export async function fetchShopifyMediaRead(identity: import("./media-sync-core").MediaIdentity, timeoutMs = 8_000, outerDeadline?: number) {
   const { buildMediaReadRequest, parseMediaReadResponse } = await import("./media-read-adapter");
@@ -127,7 +135,9 @@ export async function fetchShopifyMediaRead(identity: import("./media-sync-core"
     throw new Error("MEDIA_TIME_BUDGET_INVALID");
   }
   const deadline = Math.min(Date.now() + Math.min(timeoutMs, 8_000), outerDeadline ?? Infinity);
-  const data = await graphql<Record<string, unknown>>(request.query, request.variables, timeoutMs, deadline);
+  let data: Record<string, unknown>;
+  try { data = await graphql<Record<string, unknown>>(request.query, request.variables, timeoutMs, deadline); }
+  catch (error) { throw mediaTimeBudgetError(error); }
   return parseMediaReadResponse({ data }, identity);
 }
 
