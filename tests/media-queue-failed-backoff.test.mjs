@@ -1,3 +1,4 @@
+import { queueUpgradeRegression, upgradeQueueRegressionFixture } from './helpers/queue-failure-streak-regression-upgrade.mjs';
 // A chronically failing queue row backs off (least(attempts, 36) * 10 minutes since its last
 // attempt) instead of burning a claim and a full image observation every batch; a real enqueue
 // resets it immediately. Real queue migrations on the offline PGlite engine; no network.
@@ -42,6 +43,7 @@ create function public.assert_shopify_verified_copy_identity(p_item uuid,p_key t
       /create function public\.finish_toptik_media_work\([\s\S]*?end \$\$;/, /create function public\.recover_toptik_media_work\([\s\S]*?end \$\$;/]) await db.exec(pick(planning, re));
     for (const name of ['20261007_media_queue_inflight.sql', '20261007_media_queue_distinct.sql', '20261007_media_queue_repair_backoff.sql',
       '20261007_media_queue_defer.sql', '20261008_media_queue_priority.sql', '20261008_media_queue_failed_backoff.sql']) await db.exec(migration(name));
+    await upgradeQueueRegressionFixture(db);
     return db;
   })();
   return ready;
@@ -75,6 +77,8 @@ test('a chronic failure settles at the 6-hour horizon and never exceeds it', { s
   const db = await database(); const gid = await product(db);
   await enqueue(db, gid); await fail(db, gid);
   await db.query('update toptik_media_private.work_queue set attempts=282 where product_gid=$1', [gid]);
+  // Model the same chronic-failure fixture after conversion; assertions remain unchanged.
+  if (queueUpgradeRegression) await db.query('update toptik_media_private.work_queue set failure_streak=36 where product_gid=$1', [gid]);
   await age(db, gid, 5 * 60); assert.equal(await claim(db), null, 'held inside 6 hours');
   await age(db, gid, 6 * 60 + 1);
   const c = await claim(db); assert.equal(c.productId, gid);

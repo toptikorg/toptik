@@ -1,3 +1,4 @@
+import { queueUpgradeRegression, upgradeQueueRegressionFixture } from './helpers/queue-failure-streak-regression-upgrade.mjs';
 // Real read_toptik_media_liveness against an offline PGlite database with the real journal, transport and queue migrations.
 // No network, no live database. Verifies the evidence the RPC returns, its scoping to the current episode, backoff mirrors, limits and grants.
 import test from 'node:test';
@@ -22,6 +23,7 @@ async function database() {
   for (const name of ['20261007_media_queue_inflight.sql', '20261007_media_queue_distinct.sql', '20261007_media_queue_repair_backoff.sql',
     '20261007_media_queue_defer.sql', '20261008_media_queue_priority.sql', '20261008_media_queue_failed_backoff.sql',
     '20261111121000_media_liveness_read.sql']) await db.exec(await migration(name));
+  await upgradeQueueRegressionFixture(db);
   const liveness = async (limit = 50) => (await db.query('select public.read_toptik_media_liveness($1) result', [limit])).rows[0].result;
   let n = 7100;
   const product = async (sku, queue) => {
@@ -31,6 +33,8 @@ async function database() {
     await db.query(`insert into toptik_media_private.work_queue(product_gid,status,last_error,attempts,generation,claim_id,claimed_at,updated_at)
       values($1,$2,$3,$4,$5,$6,clock_timestamp()-$7::interval,clock_timestamp()-$8::interval)`,
       [gid, queue.status, queue.lastError ?? null, queue.attempts ?? 0, queue.generation ?? 1, queue.claimId ?? null, ago(queue.claimedAgoMin), ago(queue.updatedAgoMin ?? 1)]);
+    // This inserts a synthetic historical row directly, so seed its converted failure history.
+    if (queueUpgradeRegression) await db.query("update toptik_media_private.work_queue set failure_streak=least(greatest(attempts,case when status='failed' then 1 else 0 end),36) where product_gid=$1", [gid]);
     return gid;
   };
   const operation = async (gid, status, createdAgoMin, updatedAgoMin = createdAgoMin) => {
@@ -115,7 +119,9 @@ test('failed rows carry the same retry due time the claim function applies (capp
     assert.equal(by[proc].retry_due_at, null); assert.equal(by[capped].claim_stale_after, null);
     // The mirrored formulas are the ones the existing claim function enforces; if that function changes, this read must change with it.
     const claimSql = (await h.db.query("select pg_get_functiondef('public.claim_toptik_media_work_excluding(uuid,text[])'::regprocedure) d")).rows[0].d;
-    assert.match(claimSql, /least\(\s*q\.attempts\s*,\s*36\s*\)\s*\*\s*interval\s*'10 minutes'/i);
+    assert.match(claimSql, queueUpgradeRegression
+      ? /least\(\s*q\.failure_streak\s*,\s*36\s*\)\s*\*\s*interval\s*'10 minutes'/i
+      : /least\(\s*q\.attempts\s*,\s*36\s*\)\s*\*\s*interval\s*'10 minutes'/i);
     assert.match(claimSql, /q\.claimed_at\s*<\s*clock_timestamp\(\)\s*-\s*interval\s*'5 minutes'/i);
   } finally { await h.db.close(); }
 });
