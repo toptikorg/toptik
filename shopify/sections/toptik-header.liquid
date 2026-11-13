@@ -1,0 +1,595 @@
+{%- comment -%}
+  TopTik — סקשן כותרת (toptik-header.liquid)
+  שמירה כ־sections/toptik-header.liquid ואז ב־layout/theme.liquid:
+    {% section 'toptik-header' %}   במקום   {% section 'header' %}
+  תחום תחת #toptik-header. שמר את {% schema %}.
+
+  === v2 — כולל את כיווני הנייד המדויקים של הלקוח (2026-08-18) ===
+  הנייד (≤900px) כוון ידנית סליידר-אחר-סליידר. אל תשנה ערכי פיקסל
+  בבלוק ה-media query המסומן "כוונו ידנית".
+
+  !! נכסים להעלאה ל-Admin → Content → Files (בשמות המדויקים):
+     toptiklogomandarinayellow.png, toptikiconsearch.png,
+     toptikiconcart.png, toptikiconaccount.png
+{%- endcomment -%}
+
+{%- liquid
+  assign tt_brand_tag = ''
+
+  if request.page_type == 'page'
+    if page.handle == 'about-brics'
+      assign tt_brand_tag = 'BRICS'
+    elsif page.handle == 'about-mandarina-duck'
+      assign tt_brand_tag = 'mandarinaduck'
+    endif
+  elsif request.page_type == 'product'
+    assign tt_product_vendor = product.vendor | downcase
+    if tt_product_vendor == 'brics'
+      assign tt_brand_tag = 'BRICS'
+    elsif tt_product_vendor == 'mandarinaduck'
+      assign tt_brand_tag = 'mandarinaduck'
+    elsif tt_product_vendor == 'samsonite'
+      assign tt_brand_tag = 'samsonite'
+    elsif tt_product_vendor == 'american tourister'
+      assign tt_brand_tag = 'american-tourister'
+    endif
+  elsif request.page_type == 'collection'
+    if current_tags contains 'BRICS' or collection.handle contains 'brics-'
+      assign tt_brand_tag = 'BRICS'
+    elsif current_tags contains 'mandarinaduck' or current_tags contains 'Mandarinaduck' or collection.handle contains 'mandarina-duck-'
+      assign tt_brand_tag = 'mandarinaduck'
+    elsif current_tags contains 'samsonite' or current_tags contains 'Samsonite' or collection.handle == 'samsonite' or collection.handle contains 'samsonite-'
+      assign tt_brand_tag = 'samsonite'
+    elsif current_tags contains 'american-tourister' or current_tags contains 'American Tourister' or collection.handle == 'american-tourister' or collection.handle contains 'american-tourister-'
+      assign tt_brand_tag = 'american-tourister'
+    endif
+  endif
+
+  assign tt_suitcases_url = '/collections/מזוודות'
+  assign tt_carry_on_url = '/collections/טרולי-carry-on'
+  assign tt_all_products_url = '/collections/all'
+
+  if tt_brand_tag != blank
+    comment
+      The automated "מזוודות וטרולי" collection includes both suitcase product types.
+      Use Shopify's clean collection/tag path so Google can crawl the category;
+      query-string storefront filters are intentionally blocked by Shopify robots.
+    endcomment
+    assign tt_suitcases_url = '/collections/מזוודות-וטרולי/' | append: tt_brand_tag
+    assign tt_carry_on_url = tt_carry_on_url | append: '/' | append: tt_brand_tag
+    assign tt_all_products_url = tt_all_products_url | append: '/' | append: tt_brand_tag
+
+    if tt_brand_tag == 'samsonite'
+      assign tt_all_products_url = '/collections/samsonite'
+    elsif tt_brand_tag == 'american-tourister'
+      assign tt_all_products_url = '/collections/american-tourister'
+    elsif collection.handle == 'samsonite' or collection.handle == 'american-tourister'
+      assign tt_all_products_url = collection.url
+    endif
+  endif
+-%}
+
+<style>
+  #toptik-header {
+    --tt-ink: #2A2118;
+    --tt-ink-strong: #241B10;
+    --tt-cream: #F5EFE3;
+    --tt-paper: #FDFBF6;
+    --tt-leather: #1A1512;
+    --tt-gold: #C9A063;
+    --tt-gold-soft: #D9B77A;
+    --tt-gold-text: #7A5C2F;
+    --tt-line: rgba(201, 160, 99, .32);
+    direction: rtl;
+    font-family: 'Assistant', sans-serif;
+    color: var(--tt-ink);
+    background: var(--tt-cream);
+    line-height: 1.6;
+    border-bottom: 1px solid rgba(201, 160, 99, .35);
+  }
+  #toptik-header *, #toptik-header *::before, #toptik-header *::after { box-sizing: border-box; }
+  #toptik-header a { color: inherit; text-decoration: none; }
+  #toptik-header img { display: block; height: 100%; width: auto; }
+
+  #toptik-header .tt-announcement {
+    display: block;
+    padding: 9px 20px;
+    background: var(--tt-leather);
+    color: var(--tt-gold-soft);
+    text-align: center;
+    font-size: 17px;
+    letter-spacing: .08em;
+  }
+
+  /* ===== שורת הכותרת — דסקטופ (שכבות אבסולוטיות, ערכים מכוונים) ===== */
+  #toptik-header .tt-row {
+    position: relative;
+    min-height: 116px;
+    padding-inline: clamp(14px, 1.6vw, 28px);
+    overflow: hidden;
+  }
+  #toptik-header .tt-duck {
+    position: absolute;
+    inset-inline-start: clamp(14px, 1.6vw, 28px);
+    top: 50%;
+    transform: translate(-148px, -50%);
+    display: block;
+    height: 80px;
+  }
+  #toptik-header .tt-icons {
+    position: absolute;
+    inset-inline-start: 250px;
+    top: 50%;
+    transform: translate(-220px, -50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 3;
+  }
+  #toptik-header .tt-icon {
+    position: relative;
+    width: 66px; height: 66px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+  }
+  #toptik-header .tt-icon:hover { background: rgba(201, 160, 99, .16); }
+  #toptik-header .tt-icon img { width: 100%; height: 100%; object-fit: contain; }
+  #toptik-header .tt-icon b {
+    position: absolute;
+    top: 0; left: 0;
+    min-width: 19px; height: 19px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--tt-gold);
+    color: var(--tt-ink-strong);
+    font-size: 11px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+  }
+  #toptik-header .tt-mark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(calc(-50% + -72px), calc(-50% + -1px));
+    z-index: 1;
+  }
+  #toptik-header .tt-mark a { display: inline-block; text-align: center; }
+  #toptik-header .tt-mark b {
+    display: block;
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 45px;
+    letter-spacing: .28em;
+    text-indent: .28em;
+    color: var(--tt-ink);
+    white-space: nowrap;
+    text-align: center;
+  }
+  #toptik-header .tt-mark i {
+    display: block;
+    direction: ltr;
+    unicode-bidi: isolate;
+    margin-top: 3px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    letter-spacing: .05em;
+    color: var(--tt-gold-text);
+    white-space: nowrap;
+  }
+  #toptik-header .tt-brics {
+    position: absolute;
+    inset-inline-end: clamp(14px, 1.6vw, 28px);
+    top: 50%;
+    transform: translate(40px, -50%);
+    display: block;
+    height: 72px;
+  }
+  #toptik-header .tt-samsonite {
+    position: absolute;
+    left: clamp(240px, 20.7vw, 265px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    direction: ltr;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 170px;
+    height: 72px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: transparent;
+    opacity: .94;
+    transition: opacity .2s ease, transform .2s ease, background-color .2s ease;
+  }
+  #toptik-header .tt-samsonite:hover {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.04);
+    background: rgba(201, 160, 99, .08);
+  }
+  #toptik-header .tt-samsonite img {
+    flex: 0 0 56px;
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+  }
+  #toptik-header .tt-samsonite__name {
+    direction: ltr;
+    unicode-bidi: isolate;
+    color: var(--tt-gold-text);
+    font-family: 'Assistant', Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: .06em;
+    white-space: nowrap;
+  }
+  @media (max-width: 1100px) and (min-width: 901px) {
+    #toptik-header .tt-samsonite { display: none; }
+  }
+  #toptik-header .tt-burger { display: none; }
+  #toptik-header .tt-menu-toggle { display: none; }
+
+  /* ===== תפריט — דסקטופ ===== */
+  #toptik-header .tt-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 34px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px 18px;
+    font-size: 18px;
+    color: #3A2E22;
+    transform: translateX(-88px);
+  }
+  #toptik-header .tt-nav a:hover { color: var(--tt-gold-text); }
+  #toptik-header :focus-visible { outline: 2px solid var(--tt-gold); outline-offset: 4px; }
+
+  /* Desktop header: three real grid zones prevent brand, logo and action overlap. */
+  @media (min-width: 901px) {
+    #toptik-header .tt-row {
+      display: grid;
+      direction: ltr;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      column-gap: clamp(24px, 3vw, 56px);
+    }
+    #toptik-header .tt-brics {
+      position: relative;
+      inset: auto;
+      transform: none;
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: start;
+    }
+    /* BRIC'S and Samsonite form one visual brand group with a stable desktop gap. */
+    #toptik-header .tt-samsonite {
+      position: relative;
+      inset: auto;
+      margin-left: 225px;
+      transform: none;
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: start;
+    }
+    #toptik-header .tt-samsonite:hover { transform: scale(1.04); }
+    #toptik-header .tt-mark {
+      position: relative;
+      inset: auto;
+      transform: none;
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: center;
+    }
+    #toptik-header .tt-icons {
+      position: relative;
+      inset: auto;
+      transform: none;
+      direction: rtl;
+      grid-column: 3;
+      grid-row: 1;
+      justify-self: start;
+    }
+    #toptik-header .tt-duck {
+      position: relative;
+      inset: auto;
+      transform: none;
+      grid-column: 3;
+      grid-row: 1;
+      justify-self: end;
+    }
+    #toptik-header .tt-nav { transform: none; }
+  }
+
+  @media (min-width: 901px) and (max-width: 1280px) {
+    #toptik-header .tt-duck,
+    #toptik-header .tt-brics,
+    #toptik-header .tt-samsonite { display: none; }
+  }
+
+  /* ===== נייד ≤900px — ערכים כוונו ידנית ע"י הלקוח, לא לשנות ===== */
+  @media (max-width: 900px) {
+    #toptik-header .tt-row {
+      min-height: 84px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      overflow: visible;
+      padding-inline: 14px;
+    }
+    #toptik-header .tt-duck, #toptik-header .tt-brics, #toptik-header .tt-samsonite { display: none; }
+    #toptik-header .tt-burger {
+      display: grid;
+      place-items: center;
+      gap: 5px;
+      order: -1;                      /* המבורגר ראשון — צד ימין ב-RTL */
+      margin-inline-start: 10px;
+      transform: translate(12px, 0);
+      width: 36px; height: 36px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      position: relative;
+      z-index: 4;
+    }
+    #toptik-header .tt-burger span {
+      display: block;
+      width: 22px; height: 1.5px;
+      background: #3A2E22;
+    }
+    #toptik-header .tt-icons {
+      position: relative;
+      inset-inline-start: auto;
+      top: auto;
+      transform: translateY(calc(-50% + 18px));
+      gap: 12px;
+    }
+    #toptik-header .tt-icon { width: 36px; height: 36px; }
+    #toptik-header .tt-mark {
+      position: relative;
+      left: auto;
+      top: auto;
+      transform: translate(0, 6px);
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+    #toptik-header .tt-mark b { font-size: 26px; }
+    #toptik-header .tt-mark i {
+      font-size: 9px;
+      transform: translate(1px, -9px);
+    }
+    /* תפריט נפתח — נסתר עד לחיצה על המבורגר */
+    #toptik-header .tt-nav {
+      display: none;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 2px 0;
+      padding: 10px 18px 18px;
+      font-size: 17px;
+      transform: none;
+      border-top: 1px solid rgba(201, 160, 99, .3);
+    }
+    #toptik-header .tt-nav.is-open { display: flex; }
+    #toptik-header .tt-nav a {
+      padding: 14px 4px;
+      border-bottom: 1px solid rgba(201, 160, 99, .22);
+    }
+  }
+/* Approved compact mobile header, preserving logo and icon positioning. */
+  @media(max-width:749px){
+    #toptik-header .tt-announcement{padding:5px 20px;font-size:15px;}
+    #toptik-header .tt-row{min-height:72px;}
+    #toptik-header .tt-burger{min-width:44px;min-height:44px;}
+  }
+
+ #toptik-header .tt-mobile-groups{display:none}
+ @media(max-width:900px){
+  #toptik-header .tt-nav>a,#toptik-header .tt-nav>details{display:none}
+  #toptik-header .tt-mobile-groups{display:grid;gap:18px;width:100%}
+  #toptik-header .tt-mobile-groups h2{font-family:inherit;font-size:17px;font-weight:700;margin:6px 0;color:#3a2e22}
+  #toptik-header .tt-mobile-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px}
+  #toptik-header .tt-mobile-links a{font-size:15px;min-height:44px;display:flex;align-items:center;line-height:1.5;overflow-wrap:anywhere}
+  #toptik-header .tt-menu-caption{font-family:inherit;font-size:11px;line-height:1.2;font-weight:600;color:#3a2e22}
+  #toptik-header .tt-burger{gap:4px}
+ }
+
+@media(max-width:900px){
+ #toptik-header .tt-shop-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px;padding:5px 16px 9px}
+ #toptik-header .tt-shop-shortcuts .tt-brands-label{grid-column:1/-1;text-align:center;font-size:12px;color:#685747;padding-top:4px}
+ #toptik-header .tt-shop-shortcuts a{justify-content:center;border-bottom:1px solid #c9a06355;font-size:14px;min-height:44px}
+ #toptik-header .tt-mobile-secondary>summary{font-weight:600;min-height:44px;display:list-item;cursor:pointer;padding:10px 0}
+}
+@media(max-width:900px){#toptik-header .tt-mobile-links a{min-height:48px;font-size:17px;display:flex;align-items:center;white-space:normal;line-height:1.4} #toptik-header .tt-mobile-groups h2{font-size:18px}}
+
+@media(max-width:900px){#toptik-header .tt-brand-choice-heading{grid-column:1/-1;display:flex;justify-content:center;align-items:center;gap:16px}#toptik-header .tt-shop-shortcuts .tt-brands-label{padding-top:0}#toptik-header .tt-shop-shortcuts .tt-all-brands-link{font-size:12px;font-weight:400;min-height:44px;color:#685747;border:0;text-decoration:underline;}}
+</style>
+
+<header id="toptik-header" dir="rtl" data-ui-section="header">
+  {%- if section.settings.announcement != blank -%}
+    <a class="tt-announcement" href="/policies/shipping-policy" aria-label="למידע על עלויות ומדיניות המשלוחים">{{ section.settings.announcement }}</a>
+  {%- endif -%}
+
+  <div class="tt-row">
+    <a class="tt-duck" href="/collections/all/mandarinaduck" aria-label="Mandarina Duck">
+      <img src="{{ images['toptiklogomandarinayellow.png'] | image_url: width: 360 }}" alt="Mandarina Duck" width="360" height="139" loading="eager" decoding="async">
+    </a>
+
+    <div class="tt-icons">
+      <a class="tt-icon" href="{{ routes.search_url }}" aria-label="חיפוש">
+        <img src="{{ images['toptikiconsearch.png'] | image_url: width: 144 }}" alt="" width="144" height="144" loading="eager" decoding="async">
+      </a>
+      <a class="tt-icon" href="{{ routes.cart_url }}" aria-label="סל הקניות">
+        <img src="{{ images['toptikiconcart.png'] | image_url: width: 144 }}" alt="" width="144" height="144" loading="eager" decoding="async">
+        {%- if cart.item_count > 0 -%}<b>{{ cart.item_count }}</b>{%- endif -%}
+      </a>
+      <a class="tt-icon" href="{{ routes.account_url }}" aria-label="האזור האישי">
+        <img src="{{ images['toptikiconaccount.png'] | image_url: width: 144 }}" alt="" width="144" height="144" loading="eager" decoding="async">
+      </a>
+    </div>
+
+    <div class="tt-mark">
+      <a href="{{ routes.root_url }}">
+        <b>TOPTIK</b>
+        <i>Move in Style. Travel with Purpose.</i>
+      </a>
+    </div>
+
+    <a class="tt-brics" href="/collections/all/BRICS" aria-label="BRIC'S Milano">
+      <img src="{{ images['e1e3402c74cdf4a6cdf0f9237d83d46e.png'] | image_url: width: 360 }}" alt="BRIC'S Milano" width="360" height="154" loading="eager" decoding="async">
+    </a>
+
+    <a class="tt-samsonite" href="/collections/samsonite" aria-label="סמסונייט Samsonite – כל המוצרים">
+      <img src="{{ 'samsonite-swirl.svg' | asset_url }}" alt="Samsonite" width="56" height="56" loading="eager" decoding="async">
+      <span class="tt-samsonite__name">SAMSONITE</span>
+    </a>
+
+    <button class="tt-burger" type="button" aria-label="פתיחת תפריט" aria-expanded="false" aria-controls="tt-main-nav">
+      <span></span><span></span><span></span><b class="tt-menu-caption">תפריט</b>
+    </button>
+  </div>
+
+  {%- liquid
+    assign tt_nav_brand = ''
+    case tt_brand_tag
+      when 'samsonite'
+        assign tt_nav_brand = 'Samsonite'
+      when 'american-tourister'
+        assign tt_nav_brand = 'American Tourister'
+      when 'mandarinaduck'
+        assign tt_nav_brand = 'Mandarina Duck'
+      when 'BRICS'
+        assign tt_nav_brand = "Bric’s"
+    endcase
+  -%}
+  <nav class="tt-nav" id="tt-main-nav" aria-label="תפריט ראשי">
+<details class="tt-nav__brands"><summary>מזוודות וטרולי</summary><div class="tt-nav__submenu"><a href="/collections/מזוודות-וטרולי">כל המזוודות והטרולי</a><a href="/collections/טרולי-carry-on">טרולי לעלייה למטוס</a><a href="/collections/מזוודות">מזוודות לבטן המטוס</a></div></details>
+<details class="tt-nav__brands"><summary>תיקים</summary><div class="tt-nav__submenu"><a href="/collections/fashion-bags">תיקי אופנה</a><a href="/collections/backpacks">תיקי גב</a><a href="/collections/תיקי-גב-למחשב">תיקי גב למחשב</a><a href="/collections/תיקי-נסיעות">תיקי נסיעות</a></div></details>
+<details class="tt-nav__brands"><summary>ארנקים ואביזרים</summary><div class="tt-nav__submenu"><a href="/collections/wallets">ארנקים</a><a href="/collections/toiletry-pouches">תיקי רחצה ונרתיקים</a></div></details>
+<details class="tt-nav__brands"><summary>מותגים</summary><div class="tt-nav__submenu"><a href="/collections/all/mandarinaduck">Mandarina Duck</a><a href="/collections/all/BRICS">Bric’s</a><a href="/collections/samsonite">Samsonite</a><a href="/collections/american-tourister">American Tourister</a></div></details>
+<a class="tt-nav__sale" href="/collections/toptik-promotions">מבצעים</a>
+<details class="tt-nav__brands"><summary>שירות ומידע</summary><div class="tt-nav__submenu"><a href="/#toptik-footer">סניפים ושעות פתיחה</a><a href="/policies/shipping-policy">משלוחים והחזרות</a><a href="/pages/contact">יצירת קשר</a><a href="/blogs/מדריכים">מגזין ומדריכי נסיעות</a><a href="/pages/מפת-השקילה">מפת השקילה של הקבוצה</a><a href="/pages/אתם-בוחרים">אתם בוחרים</a></div></details>
+<div class="tt-mobile-groups"><section><h2>מזוודות וטרולי</h2><div class="tt-mobile-links"><a href="/collections/מזוודות-וטרולי">כל המזוודות והטרולי</a><a href="/collections/טרולי-carry-on">טרולי לעלייה למטוס</a><a href="/collections/מזוודות">מזוודות לבטן המטוס</a></div></section><section><h2>תיקים</h2><div class="tt-mobile-links"><a href="/collections/fashion-bags">תיקי אופנה</a><a href="/collections/backpacks">תיקי גב</a><a href="/collections/תיקי-גב-למחשב">תיקי גב למחשב</a><a href="/collections/תיקי-נסיעות">תיקי נסיעות</a></div></section><section><h2>ארנקים ואביזרים</h2><div class="tt-mobile-links"><a href="/collections/wallets">ארנקים</a><a href="/collections/toiletry-pouches">תיקי רחצה ונרתיקים</a></div></section><section><h2>קנייה לפי מותג</h2><div class="tt-mobile-links"><a href="/collections/all/mandarinaduck">Mandarina Duck</a><a href="/collections/all/BRICS">Bric’s</a><a href="/collections/samsonite">Samsonite</a><a href="/collections/american-tourister">American Tourister</a></div></section><section><h2>עוד בחנות</h2><div class="tt-mobile-links"><a href="/collections/toptik-promotions">מבצעים</a><a href="/collections/all">כל המוצרים</a></div></section><section><h2>שירות ומידע</h2><div class="tt-mobile-links"><a href="/#toptik-footer">סניפים ושעות פתיחה</a><a href="/policies/shipping-policy">משלוחים והחזרות</a><a href="/pages/contact">יצירת קשר</a><a href="/blogs/מדריכים">מגזין ומדריכי נסיעות</a><a href="/pages/מפת-השקילה">מפת השקילה של הקבוצה</a><a href="/pages/אתם-בוחרים">אתם בוחרים</a></div></section></div></nav>
+  <style>
+    #toptik-header .tt-nav__sale {
+      color: #b65b2b;
+      font-weight: 700;
+    }
+    #toptik-header .tt-nav__brands {
+      position: relative;
+      margin: 0;
+      color: inherit;
+    }
+    #toptik-header .tt-nav__brands summary {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      list-style: none;
+      color: inherit;
+      font: inherit;
+      white-space: nowrap;
+    }
+    #toptik-header .tt-nav__brands summary::-webkit-details-marker {
+      display: none;
+    }
+    #toptik-header .tt-nav__brands:not([open]) .tt-nav__submenu {
+      display: none;
+    }
+    #toptik-header .tt-nav__brands[open] .tt-nav__submenu {
+      display: grid;
+    }
+    #toptik-header .tt-nav__submenu {
+      position: absolute;
+      z-index: 60;
+      top: calc(100% + 12px);
+      right: 0;
+      min-width: 190px;
+      gap: 4px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 4px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+    }
+    #toptik-header .tt-nav__submenu a {
+      display: block;
+      padding: 9px 12px;
+      white-space: nowrap;
+    }
+    @media (max-width: 900px) {
+      #toptik-header .tt-nav__brands {
+        width: 100%;
+      }
+      #toptik-header .tt-nav__brands summary {
+        justify-content: center;
+      }
+      #toptik-header .tt-nav__submenu {
+        position: static;
+        min-width: 0;
+        margin-top: 6px;
+        padding: 4px 0 0;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        text-align: center;
+      }
+    }
+  </style>
+  <script>
+    (function () {
+      var header = document.getElementById('toptik-header');
+      if (!header) return;
+      var button = header.querySelector('.tt-burger');
+      var nav = header.querySelector('#tt-main-nav');
+      if (!button || !nav) return;
+
+      function setMenu(open) {
+        nav.classList.toggle('is-open', open);
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        button.setAttribute('aria-label', open ? 'סגירת תפריט' : 'פתיחת תפריט');
+      }
+
+      button.addEventListener('click', function () {
+        setMenu(button.getAttribute('aria-expanded') !== 'true');
+      });
+      nav.addEventListener('click', function (event) {
+        if (event.target.closest('a')) setMenu(false);
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && button.getAttribute('aria-expanded') === 'true') {
+          setMenu(false);
+          button.focus();
+        }
+      });
+    }());
+  </script>
+<style>
+  #toptik-header .tt-shop-shortcuts{display:none}
+  @media(max-width:900px){
+    #toptik-header .tt-shop-shortcuts{display:flex;flex-wrap:wrap;justify-content:center;gap:0 14px;padding:5px 10px;border-top:1px solid #c9a06355;background:#fcf8f0;color:#2b211b;direction:rtl}
+    #toptik-header .tt-shop-shortcuts a{display:flex;align-items:center;min-height:44px;font-size:15px;text-decoration:none;font-weight:600}
+    #toptik-header .tt-shop-shortcuts a:focus-visible{outline:2px solid #76502e;outline-offset:2px}
+  }
+</style>
+<nav class="tt-shop-shortcuts" aria-label="קנייה לפי מותג"><div class="tt-brand-choice-heading"><span class="tt-brands-label">בחרו מותג</span><a class="tt-all-brands-link" href="/collections/all">כל המותגים</a></div><a href="/collections/all/mandarinaduck" dir="ltr">Mandarina Duck</a><a href="/collections/all/BRICS" dir="ltr">Bric’s</a><a href="/collections/samsonite" dir="ltr">Samsonite</a><a href="/collections/american-tourister" dir="ltr">American Tourister</a></nav>
+</header>
+
+{% schema %}
+{
+  "name": "TopTik Header",
+  "settings": [
+    { "type": "text", "id": "announcement", "label": "הודעה עליונה", "default": "משלוחים לכל הארץ" }
+  ],
+  "presets": [{ "name": "TopTik Header" }]
+}
+{% endschema %}
