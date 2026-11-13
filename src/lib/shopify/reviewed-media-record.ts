@@ -40,7 +40,7 @@ export function reviewRecord(input: unknown): MediaReviewRecord {
   keys(v, ["version", "identity", "mediaId", "imageUrl", "decodedSha256", "sourceUrl", "evidence", "actorId", "reviewedAt", "reviewedExactSkuColor"]);
   if (v.version !== 1 || v.reviewedExactSkuColor !== true || !HASH.test(String(v.decodedSha256)) ||
       !/^gid:\/\/shopify\/MediaImage\/[1-9]\d*$/.test(String(v.mediaId)) || !UUID.test(String(v.actorId)) ||
-      typeof v.reviewedAt !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v.reviewedAt) || !Number.isFinite(Date.parse(v.reviewedAt))) fail();
+      typeof v.reviewedAt !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v.reviewedAt) || !Number.isFinite(Date.parse(v.reviewedAt)) || new Date(v.reviewedAt).toISOString() !== v.reviewedAt) fail();
   return { version: 1, identity: reviewIdentity(v.identity), mediaId: text(v.mediaId, 100), imageUrl: url(v.imageUrl, true),
     decodedSha256: text(v.decodedSha256, 64), sourceUrl: url(v.sourceUrl), evidence: text(v.evidence, 1000),
     actorId: text(v.actorId, 36), reviewedAt: text(v.reviewedAt, 24), reviewedExactSkuColor: true };

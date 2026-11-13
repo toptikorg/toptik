@@ -8,6 +8,13 @@ const api = await import('data:text/javascript;base64,' + Buffer.from(stripTypeS
 const identity = { productId: 'gid://shopify/Product/123', variantId: 'gid://shopify/ProductVariant/456', itemId: '01234567-0123-4123-8123-012345678901', exactGallerySku: 'P10FZT59001', exactShopifySku: 'P10FZT59001', productHandle: 'p10fzt59001' };
 const record = { version: 1, identity, mediaId: 'gid://shopify/MediaImage/789', imageUrl: 'https://cdn.shopify.com/s/files/1/0001/photo.jpg?v=1', decodedSha256: 'a'.repeat(64), sourceUrl: 'https://manufacturer.example/exact-sku.jpg', evidence: 'visually reviewed exact SKU and color, batch09', actorId: '11111111-1111-4111-8111-111111111111', reviewedAt: '2026-10-07T08:00:00.000Z', reviewedExactSkuColor: true };
 const key = 'test-only-secret-not-a-production-key';
+
+test('review timestamp rejects normalized impossible dates and accepts valid leap days', () => {
+  for (const reviewedAt of ['2026-02-31T00:00:00.000Z', '2026-04-31T00:00:00.000Z', '2025-02-29T00:00:00.000Z', '2026-01-01T24:00:00.000Z'])
+    assert.throws(() => api.reviewRecord({ ...record, reviewedAt }), /MEDIA_REVIEW_RECORD_INVALID/, reviewedAt);
+  const reviewedAt = '2024-02-29T23:59:59.999Z';
+  assert.equal(api.reviewRecord({ ...record, reviewedAt }).reviewedAt, reviewedAt);
+});
 test('exact signed record roundtrip and dynamic registry fields', () => {
   const signed = api.signMediaReview(record, key);
   assert.deepEqual(api.verifyMediaReview(signed, identity, key), record);
