@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { staged, nativeRecord, guard, KEY, itemId, otherItemId, identity, sha, uploadUrl, uploadUrlFor, recordInput, record, actorId } from './helpers/staged-media-harness.mjs';
 
+test('staged review timestamp rejects normalized impossible dates and accepts valid leap days', () => {
+  for (const reviewedAt of ['2026-02-31T00:00:00.000Z', '2026-04-31T00:00:00.000Z', '2025-02-29T00:00:00.000Z', '2026-01-01T24:00:00.000Z'])
+    assert.throws(() => staged.stagedRecord(recordInput({ reviewedAt })), /STAGED_MEDIA_RECORD_INVALID/, reviewedAt);
+  const reviewedAt = '2024-02-29T23:59:59.999Z';
+  assert.equal(staged.stagedRecord(recordInput({ reviewedAt })).reviewedAt, reviewedAt);
+});
+
 test('the staged path and URL are fixed by the item, the SHA-256 and the type', () => {
   assert.equal(staged.stagedStoragePath(itemId, sha, 'image/jpeg'), `sync-staged/${itemId}/${sha}.jpg`);
   assert.equal(staged.stagedStoragePath(itemId, sha, 'image/png'), `sync-staged/${itemId}/${sha}.png`);

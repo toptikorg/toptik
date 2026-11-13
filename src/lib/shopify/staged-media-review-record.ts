@@ -86,7 +86,7 @@ export function stagedRecord(input: unknown): StagedGalleryReviewRecord {
     "byteLength", "note", "actorId", "reviewedAt", "reviewedExactSkuColor"]);
   if (v.version !== 1 || v.kind !== "staged_gallery_upload" || v.reviewedExactSkuColor !== true || !HASH.test(String(v.decodedSha256)) ||
       !UUID.test(String(v.actorId)) || !STAGED_UPLOAD_MIMES.includes(v.mime as StagedUploadMime) ||
-      typeof v.reviewedAt !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v.reviewedAt) || !Number.isFinite(Date.parse(v.reviewedAt)) ||
+      typeof v.reviewedAt !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v.reviewedAt) || !Number.isFinite(Date.parse(v.reviewedAt)) || new Date(v.reviewedAt).toISOString() !== v.reviewedAt ||
       typeof v.note !== "string" || v.note.length > MAX_STAGED_NOTE || /[\u0000-\u001f\u007f]/.test(v.note) || v.note !== v.note.trim()) fail();
   const identity = reviewIdentity(v.identity);
   const mime = v.mime as StagedUploadMime;
