@@ -164,3 +164,28 @@ test('new modal angle for independent cover preserves cover identity and does no
  const out=await x.run();assert.equal(out.refs[0].key,'independent-cover');assert.equal(out.refs[2].key,'independent-cover');assert.equal(out.pair.gallery.assets.length,2);
  const plan=core.reconcileMedia(x.context.baselines,out.pair,[],[]);assert.ok(!plan.conflicts.some(c=>c.code==='MEDIA_REMOVAL_INTENT_REQUIRED'));assert.ok(!plan.patches.some(p=>p.kind==='detach_reference'||p.kind==='attach'));
 });
+function replacedIndependentCover(mode) {
+ const x=f(),coverUrl=url+'?replacement=1',priorUrl=mode==='same URL new bytes'?coverUrl:url+'?prior-cover=1';
+ const oldCover={...x.context.galleryRefs[0],key:'independent-cover',evidenceId:'prior-cover'};
+ x.context.galleryRefs[0]=oldCover;
+ x.context.baselines.gallery.assets.unshift({...x.context.baselines.gallery.assets[0],key:oldCover.key,evidenceId:oldCover.evidenceId,contentId:'c'.repeat(64)});
+ x.context.provenance.push({...structuredClone(x.context.provenance[0]),asset_key:oldCover.key,evidence_id:oldCover.evidenceId,content_id:'c'.repeat(64),proof:{...x.context.provenance[0].proof,url:priorUrl,decodedSha256:'c'.repeat(64),platformRef:`cover:${id.itemId}`}});
+ x.raw.item.cover_image_path=coverUrl;
+ x.deps.capture=async(_i,u)=>({...x.bytes,sha256:u===coverUrl?'d'.repeat(64):x.bytes.sha256});
+ if(mode!=='without modal alias')x.raw.angles.push({...x.raw.angles[0],id:'a0000000-0000-4000-8000-000000000007',angle_order:2,image_path:coverUrl});
+ return x;
+}
+for(const mode of ['new URL','same URL new bytes','without modal alias'])test(`replaced independent cover retains its slot but never reuses old evidence: ${mode}`,async()=>{
+ const x=replacedIndependentCover(mode),before=structuredClone(x.context.baselines),out=await x.run();
+ const cover=out.refs.find(r=>r.role==='cover'),asset=out.pair.gallery.assets.find(a=>a.key===cover.key);
+ assert.equal(cover.key,'independent-cover');assert.equal(asset.contentId,'d'.repeat(64));assert.notEqual(cover.evidenceId,'prior-cover');
+ const observed=out.proofs.find(p=>p.evidenceId===cover.evidenceId);
+ assert.equal(observed.proof.decodedSha256,'d'.repeat(64));assert.equal(observed.proof.url,x.raw.item.cover_image_path);
+ if(mode!=='without modal alias')assert.equal(out.refs.find(r=>r.angleId==='a0000000-0000-4000-8000-000000000007').evidenceId,cover.evidenceId);
+ assert.deepEqual(x.context.baselines,before);
+});
+test('retaining a replaced independent cover slot routes changed-image evidence through the review gate',async()=>{
+ const x=replacedIndependentCover('same URL new bytes');
+ const guarded=await import(mod(`import{createHash}from'node:crypto';import{galleryRawToSnapshot}from'${galleryUrl}';import{mediaReadToSnapshot}from'${readyUrl}';const assertNotDeniedMedia=()=>{};const requireReviewedMedia=()=>{throw Error('MEDIA_REVIEW_REQUIRED');};const isReviewedMediaProof=()=>false;const reviewedMediaRegistry=()=>({});const loadReviewedMedia=async()=>[];${stripped('media-planning-observation')}`));
+ await assert.rejects(guarded.captureMediaPlanningPair(x.context,owner,now+30000,x.deps),/MEDIA_REVIEW_REQUIRED/);
+});
