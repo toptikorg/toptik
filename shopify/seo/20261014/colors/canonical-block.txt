@@ -1,0 +1,11 @@
+  {% comment %}Only direct product pages; preserve collection-path, tag and explicit variant alternates.{% endcomment %}
+  {% if request.page_type == 'product' and request.path == product.url and product.selected_variant == blank %}
+    {% capture tt_family_parent %}{% render 'toptik-seo-color-family', product: product, mode: 'parent' %}{% endcapture %}
+    {% assign tt_family_parent = tt_family_parent | strip %}
+    {% if tt_family_parent != blank %}
+      {% assign tt_family_parent_product = all_products[tt_family_parent] %}
+      {% if tt_family_parent_product.id != blank %}
+        {% assign tt_effective_canonical_url = 'https://www.toptik.co.il' | append: tt_family_parent_product.url %}
+      {% endif %}
+    {% endif %}
+  {% endif %}

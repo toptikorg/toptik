@@ -1,0 +1,276 @@
+{% doc %}
+  Reviewed color-family mapping. No customer color-picker changes.
+  @param {product} product - Current product.
+  @param {string} mode - parent, colors, or siblings.
+{% enddoc %}
+{%- case product.handle -%}
+{%- when 'bah08450001', 'bah08450006' -%}
+  {%- assign family_parent = 'bah08450001' -%}
+  {%- capture family_colors -%}["שחור", "כחול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/bah08450006#product"}]{%- endcapture -%}
+{%- when 'bah08451-001', 'bah08451006', 'bah08451078' -%}
+  {%- assign family_parent = 'bah08451-001' -%}
+  {%- capture family_colors -%}["שחור", "כחול", "ירוק זית"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/bah08451006#product"}, {"@id": "https://www.toptik.co.il/products/bah08451078#product"}]{%- endcapture -%}
+{%- when 'bah08454-001', 'bah08454006', 'bah08454078' -%}
+  {%- assign family_parent = 'bah08454-001' -%}
+  {%- capture family_colors -%}["שחור", "כחול", "ירוק זית"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/bah08454006#product"}, {"@id": "https://www.toptik.co.il/products/bah08454078#product"}]{%- endcapture -%}
+{%- when 'bxg45072078', 'bxg45072101' -%}
+  {%- assign family_parent = 'bxg45072101' -%}
+  {%- capture family_colors -%}["ירוק זית", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/bxg45072078#product"}]{%- endcapture -%}
+{%- when 'bxl44649001', 'bxl44649050' -%}
+  {%- assign family_parent = 'bxl44649001' -%}
+  {%- capture family_colors -%}["שחור", "כחול אוקיינוס"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/bxl44649050#product"}]{%- endcapture -%}
+{%- when 'p10fzp61a28', 'p10fzp61b01', 'p10fzp61b09' -%}
+  {%- assign family_parent = 'p10fzp61a28' -%}
+  {%- capture family_colors -%}["טאופ חם", "אספרסו", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzp61b01#product"}, {"@id": "https://www.toptik.co.il/products/p10fzp61b09#product"}]{%- endcapture -%}
+{%- when 'p10fzt03001', 'p10fzt0308q', 'p10fzt0327o', 'p10fzt0328s', 'p10fzt03a28' -%}
+  {%- assign family_parent = 'p10fzt03001' -%}
+  {%- capture family_colors -%}["שחור", "כחול כהה", "לבן", "שקד", "טאופ חם"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt0308q#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt0327o#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt0328s#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt03a28#product"}]{%- endcapture -%}
+{%- when 'p10fzt05001', 'p10fzt0508q', 'p10fzt0528s', 'p10fzt05a28', 'p10fzt05b01', 'p10fzt05b09' -%}
+  {%- assign family_parent = 'p10fzt05001' -%}
+  {%- capture family_colors -%}["שחור", "כחול כהה", "שקד", "טאופ חם", "אספרסו", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt0508q#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt0528s#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt05a28#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt05b01#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt05b09#product"}]{%- endcapture -%}
+{%- when 'p10fzt12001', 'p10fzt1208q', 'p10fzt1228s', 'p10fzt12a28', 'p10fzt12a38', 'p10fzt12a43', 'p10fzt12a82', 'p10fzt12b01', 'p10fzt12b09' -%}
+  {%- assign family_parent = 'p10fzt12001' -%}
+  {%- capture family_colors -%}["שחור", "כחול כהה", "שקד", "טאופ חם", "מרמלדה", "שמיי דצמבר", "אגוז פקאן", "אספרסו", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt1208q#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt1228s#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt12a28#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt12a38#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt12a43#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt12a82#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt12b01#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt12b09#product"}]{%- endcapture -%}
+{%- when 'p10fzt13001', 'p10fzt1306m', 'p10fzt1308q', 'p10fzt1327o', 'p10fzt13a28', 'p10fzt13a82', 'p10fzt13b09' -%}
+  {%- assign family_parent = 'p10fzt13001' -%}
+  {%- capture family_colors -%}["שחור", "שוקולד חלב", "כחול כהה", "לבן", "טאופ חם", "חום פקאן", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt1306m#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt1308q#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt1327o#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt13a28#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt13a82#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt13b09#product"}]{%- endcapture -%}
+{%- when 'p10fzt5223q', 'p10fzt5224a', 'p10fzt5224f', 'p10fzt5225i', 'p10fzt5225t', 'p10fzt5226o', 'p10fzt5226r', 'p10fzt5228h', 'p10fzt5228m', 'p10fzt52369', 'p10fzt52758', 'p10fzt52a02' -%}
+  {%- assign family_parent = 'p10fzt5224a' -%}
+  {%- capture family_colors -%}["צהוב", "לבן", "אדום", "ורוד סגלגל", "אפור חום", "אפור כהה", "שמנת", "ירוק", "בז׳ בהיר"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt5223q#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5224f#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5225i#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5225t#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5226o#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5226r#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5228h#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5228m#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt52369#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt52758#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt52a02#product"}]{%- endcapture -%}
+{%- when 'p10fzt59001', 'p10fzt5908u', 'p10fzt5913c', 'p10fzt5913d', 'p10fzt5913u', 'p10fzt5924f', 'p10fzt59a82' -%}
+  {%- assign family_parent = 'p10fzt59001' -%}
+  {%- capture family_colors -%}["שחור", "גרגויל", "אדום", "אפור", "חום כהה", "אגוז פקאן"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt5908u#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5913c#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5913d#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5913u#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt5924f#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt59a82#product"}]{%- endcapture -%}
+{%- when 'p10fzt69001', 'p10fzt6908q', 'p10fzt69a01', 'p10fzt69a28', 'p10fzt69a61', 'p10fzt69b01' -%}
+  {%- assign family_parent = 'p10fzt69001' -%}
+  {%- capture family_colors -%}["שחור", "כחול כהה", "ענן נימבוס", "טאופ חם", "ירוק אייסברג", "אספרסו"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt6908q#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt69a01#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt69a28#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt69a61#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt69b01#product"}]{%- endcapture -%}
+{%- when 'p10fzt7304o', 'p10fzt7313u', 'p10fzt73209', 'p10fzt7324x', 'p10fzt7325g', 'p10fzt7326r', 'p10fzt7328m', 'p10fzt73a41', 'p10fzt73a46', 'p10fzt73a61', 'p10fzt73b01', 'p10fzt73b07', 'תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק' -%}
+  {%- assign family_parent = 'תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק' -%}
+  {%- capture family_colors -%}["בורדו", "חום כהה", "הוואנה", "צהוב", "חום ורדרד", "אפור כהה", "אדום סגול", "ירוק סקראב", "ירוק אייסברג", "אספרסו", "קפוצ׳ינו", "שחור", "כחול", "תכלת", "צ'אי הודי (חום)"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt7304o#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt7313u#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt73209#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt7324x#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt7325g#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt7326r#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt7328m#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt73a41#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt73a46#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt73a61#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt73b01#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt73b07#product"}]{%- endcapture -%}
+{%- when 'p10fzt79001', 'p10fzt7908q', 'p10fzt7928s', 'p10fzt79a28', 'p10fzt79a61', 'p10fzt79a82', 'p10fzt79a93', 'p10fzt79b01' -%}
+  {%- assign family_parent = 'p10fzt79001' -%}
+  {%- capture family_colors -%}["שחור", "כחול כהה", "שקד", "טאופ חם", "ירוק אייסברג", "חום פקאן", "דיווה", "אספרסו"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt7908q#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt7928s#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt79a28#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt79a61#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt79a82#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt79a93#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt79b01#product"}]{%- endcapture -%}
+{%- when 'p10fzt80001', 'p10fzt8008q', 'p10fzt8024x', 'p10fzt8025g', 'p10fzt8026r' -%}
+  {%- assign family_parent = 'p10fzt80001' -%}
+  {%- capture family_colors -%}["שחור", "כחול כהה", "אוכרה", "בלסמי", "מול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzt8008q#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt8024x#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt8025g#product"}, {"@id": "https://www.toptik.co.il/products/p10fzt8026r#product"}]{%- endcapture -%}
+{%- when 'p10fzta7001', 'p10fzta7b01' -%}
+  {%- assign family_parent = 'p10fzta7001' -%}
+  {%- capture family_colors -%}["שחור", "אספרסו"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzta7b01#product"}]{%- endcapture -%}
+{%- when 'p10fzta8001', 'p10fzta8b01', 'p10fzta8b09' -%}
+  {%- assign family_parent = 'p10fzta8001' -%}
+  {%- capture family_colors -%}["שחור", "אספרסו", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzta8b01#product"}, {"@id": "https://www.toptik.co.il/products/p10fzta8b09#product"}]{%- endcapture -%}
+{%- when 'p10fzta9001', 'p10fzta9b09' -%}
+  {%- assign family_parent = 'p10fzta9001' -%}
+  {%- capture family_colors -%}["שחור", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10fzta9b09#product"}]{%- endcapture -%}
+{%- when 'samsonite-upscape-55-easy-access-climbing-ivy-kj114007', 'samsonite-upscape-55-easy-access-yellow-kj106007' -%}
+  {%- assign family_parent = 'samsonite-upscape-55-easy-access-climbing-ivy-kj114007' -%}
+  {%- capture family_colors -%}["ירוק", "צהוב"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/samsonite-upscape-55-easy-access-yellow-kj106007#product"}]{%- endcapture -%}
+{%- when 'samsonite-intuo-55-black-kl909001', 'samsonite-intuo-55-blue-nights-kl901001', 'samsonite-intuo-55-citrus-kl966001', 'samsonite-intuo-55-lime-kl974001', 'samsonite-intuo-55-olive-green-kl924001' -%}
+  {%- assign family_parent = 'samsonite-intuo-55-black-kl909001' -%}
+  {%- capture family_colors -%}["שחור", "כחול לילה", "צהוב הדרים", "ליים", "ירוק זית"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/samsonite-intuo-55-blue-nights-kl901001#product"}, {"@id": "https://www.toptik.co.il/products/samsonite-intuo-55-citrus-kl966001#product"}, {"@id": "https://www.toptik.co.il/products/samsonite-intuo-55-lime-kl974001#product"}, {"@id": "https://www.toptik.co.il/products/samsonite-intuo-55-olive-green-kl924001#product"}]{%- endcapture -%}
+{%- when 'km201008', 'km209008' -%}
+  {%- assign family_parent = 'km209008' -%}
+  {%- capture family_colors -%}["כחול", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/km201008#product"}]{%- endcapture -%}
+{%- when 'samsonite-urbify-78-black-ko709007', 'samsonite-urbify-78-lava-ko776007', 'samsonite-urbify-78-navy-blue-ko701007', 'samsonite-urbify-78-pine-green-ko704007' -%}
+  {%- assign family_parent = 'samsonite-urbify-78-black-ko709007' -%}
+  {%- capture family_colors -%}["שחור", "לבה", "כחול נייבי", "ירוק אורן"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/samsonite-urbify-78-lava-ko776007#product"}, {"@id": "https://www.toptik.co.il/products/samsonite-urbify-78-navy-blue-ko701007#product"}, {"@id": "https://www.toptik.co.il/products/samsonite-urbify-78-pine-green-ko704007#product"}]{%- endcapture -%}
+{%- when 'p10osv0405j', 'p10osv0416q' -%}
+  {%- assign family_parent = 'p10osv0405j' -%}
+  {%- capture family_colors -%}["צהוב", "ירוק כהה"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10osv0416q#product"}]{%- endcapture -%}
+{%- when 'p10osv0505j', 'p10osv05651' -%}
+  {%- assign family_parent = 'p10osv05651' -%}
+  {%- capture family_colors -%}["צהוב", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10osv0505j#product"}]{%- endcapture -%}
+{%- when 'p10osv0605j', 'p10osv06651' -%}
+  {%- assign family_parent = 'p10osv06651' -%}
+  {%- capture family_colors -%}["צהוב", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10osv0605j#product"}]{%- endcapture -%}
+{%- when 'p10otn0208q', 'p10otn02651' -%}
+  {%- assign family_parent = 'p10otn02651' -%}
+  {%- capture family_colors -%}["כחול כהה", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10otn0208q#product"}]{%- endcapture -%}
+{%- when 'p10otv0108q', 'p10otv0129u', 'p10otv01651' -%}
+  {%- assign family_parent = 'p10otv01651' -%}
+  {%- capture family_colors -%}["כחול כהה", "גרפיט", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10otv0108q#product"}, {"@id": "https://www.toptik.co.il/products/p10otv0129u#product"}]{%- endcapture -%}
+{%- when 'p10otv0508q', 'p10otv0529u', 'p10otv05651' -%}
+  {%- assign family_parent = 'p10otv05651' -%}
+  {%- capture family_colors -%}["כחול כהה", "גרפיט", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10otv0508q#product"}, {"@id": "https://www.toptik.co.il/products/p10otv0529u#product"}]{%- endcapture -%}
+{%- when 'p10oxb01001', 'p10oxb0129o', 'p10oxb01645', 'p10oxb01a96', 'p10oxb01b11' -%}
+  {%- assign family_parent = 'p10oxb01001' -%}
+  {%- capture family_colors -%}["שחור", "ירוק עלווה", "אדום", "לילך", "כחול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10oxb0129o#product"}, {"@id": "https://www.toptik.co.il/products/p10oxb01645#product"}, {"@id": "https://www.toptik.co.il/products/p10oxb01a96#product"}, {"@id": "https://www.toptik.co.il/products/p10oxb01b11#product"}]{%- endcapture -%}
+{%- when 'p10oxm02001', 'p10oxm0229o', 'p10oxm02645', 'p10oxm02a96', 'p10oxm02b11' -%}
+  {%- assign family_parent = 'p10oxm02001' -%}
+  {%- capture family_colors -%}["שחור", "ירוק עלווה", "אדום", "לילך", "כחול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10oxm0229o#product"}, {"@id": "https://www.toptik.co.il/products/p10oxm02645#product"}, {"@id": "https://www.toptik.co.il/products/p10oxm02a96#product"}, {"@id": "https://www.toptik.co.il/products/p10oxm02b11#product"}]{%- endcapture -%}
+{%- when 'p10oxm04001', 'p10oxm0429o', 'p10oxm04645', 'p10oxm04a96', 'p10oxm04b11' -%}
+  {%- assign family_parent = 'p10oxm04001' -%}
+  {%- capture family_colors -%}["שחור", "ירוק עלווה", "אדום", "לילך", "כחול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10oxm0429o#product"}, {"@id": "https://www.toptik.co.il/products/p10oxm04645#product"}, {"@id": "https://www.toptik.co.il/products/p10oxm04a96#product"}, {"@id": "https://www.toptik.co.il/products/p10oxm04b11#product"}]{%- endcapture -%}
+{%- when 'p10oxt01001', 'p10oxt0129o', 'p10oxt01645', 'p10oxt01a96', 'p10oxt01b11' -%}
+  {%- assign family_parent = 'p10oxt01001' -%}
+  {%- capture family_colors -%}["שחור", "ירוק עלווה", "אדום", "לילך", "כחול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10oxt0129o#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt01645#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt01a96#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt01b11#product"}]{%- endcapture -%}
+{%- when 'p10oxt03001', 'p10oxt0329o', 'p10oxt03645', 'p10oxt03a96', 'p10oxt03b11' -%}
+  {%- assign family_parent = 'p10oxt03001' -%}
+  {%- capture family_colors -%}["שחור", "ירוק עלווה", "אדום", "לילך", "כחול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10oxt0329o#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt03645#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt03a96#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt03b11#product"}]{%- endcapture -%}
+{%- when 'p10oxt04001', 'p10oxt04b11' -%}
+  {%- assign family_parent = 'p10oxt04001' -%}
+  {%- capture family_colors -%}["שחור", "כחול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10oxt04b11#product"}]{%- endcapture -%}
+{%- when 'p10oxt05001', 'p10oxt0529o', 'p10oxt05645', 'p10oxt05a96', 'p10oxt05b11' -%}
+  {%- assign family_parent = 'p10oxt05001' -%}
+  {%- capture family_colors -%}["שחור", "ירוק עלווה", "אדום", "לילך", "כחול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10oxt0529o#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt05645#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt05a96#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt05b11#product"}]{%- endcapture -%}
+{%- when 'p10oxt08001', 'p10oxt0829o', 'p10oxt08645', 'p10oxt08a96', 'p10oxt08b11' -%}
+  {%- assign family_parent = 'p10oxt08001' -%}
+  {%- capture family_colors -%}["שחור", "ירוק עלווה", "אדום", "לילך", "כחול"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10oxt0829o#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt08645#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt08a96#product"}, {"@id": "https://www.toptik.co.il/products/p10oxt08b11#product"}]{%- endcapture -%}
+{%- when 'p10qmmm301v', 'p10qmmm3b03', 'p10qmmm3b06', 'p10qmmm3b09', 'p10qmmm3b10' -%}
+  {%- assign family_parent = 'p10qmmm301v' -%}
+  {%- capture family_colors -%}["מנטה", "בורדו", "ענבר", "קוקון", "קוסמיק"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmmm3b03#product"}, {"@id": "https://www.toptik.co.il/products/p10qmmm3b06#product"}, {"@id": "https://www.toptik.co.il/products/p10qmmm3b09#product"}, {"@id": "https://www.toptik.co.il/products/p10qmmm3b10#product"}]{%- endcapture -%}
+{%- when 'p10qmmo1b09', 'p10qmmo1b10' -%}
+  {%- assign family_parent = 'p10qmmo1b09' -%}
+  {%- capture family_colors -%}["קוקון", "קוסמיק"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmmo1b10#product"}]{%- endcapture -%}
+{%- when 'p10qmn01b09', 'p10qmn01b10' -%}
+  {%- assign family_parent = 'p10qmn01b09' -%}
+  {%- capture family_colors -%}["קוקון", "קוסמיק"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmn01b10#product"}]{%- endcapture -%}
+{%- when 'p10qmt17465', 'p10qmt17a46', 'p10qmt17b06' -%}
+  {%- assign family_parent = 'p10qmt17465' -%}
+  {%- capture family_colors -%}["אפור פלדה", "סקראב", "ענבר"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmt17a46#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt17b06#product"}]{%- endcapture -%}
+{%- when 'p10qmt2809k', 'p10qmt28651' -%}
+  {%- assign family_parent = 'p10qmt28651' -%}
+  {%- capture family_colors -%}["טאופ", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmt2809k#product"}]{%- endcapture -%}
+{%- when 'p10qmt3201v', 'p10qmt32b09' -%}
+  {%- assign family_parent = 'p10qmt3201v' -%}
+  {%- capture family_colors -%}["מנטה", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmt32b09#product"}]{%- endcapture -%}
+{%- when 'p10qmt3901v', 'p10qmt3909k', 'p10qmt39465', 'p10qmt39651', 'p10qmt39b06', 'p10qmt39b09' -%}
+  {%- assign family_parent = 'p10qmt39651' -%}
+  {%- capture family_colors -%}["מנטה", "טאופ", "אפור פלדה", "שחור", "ענבר", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmt3901v#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt3909k#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt39465#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt39b06#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt39b09#product"}]{%- endcapture -%}
+{%- when 'p10qmt49651', 'p10qmt49b06', 'p10qmt49b09' -%}
+  {%- assign family_parent = 'p10qmt49651' -%}
+  {%- capture family_colors -%}["שחור", "ענבר", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmt49b06#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt49b09#product"}]{%- endcapture -%}
+{%- when 'p10qmt5809k', 'p10qmt58465', 'p10qmt58651' -%}
+  {%- assign family_parent = 'p10qmt58651' -%}
+  {%- capture family_colors -%}["טאופ", "אפור פלדה", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmt5809k#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt58465#product"}]{%- endcapture -%}
+{%- when 'p10qmt69465', 'p10qmt69651' -%}
+  {%- assign family_parent = 'p10qmt69651' -%}
+  {%- capture family_colors -%}["אפור פלדה", "שחור"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmt69465#product"}]{%- endcapture -%}
+{%- when 'p10qmt7109k', 'p10qmt71465', 'p10qmt71651', 'p10qmt71b06', 'p10qmt71b09' -%}
+  {%- assign family_parent = 'p10qmt71651' -%}
+  {%- capture family_colors -%}["טאופ", "אפור פלדה", "שחור", "ענבר", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmt7109k#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt71465#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt71b06#product"}, {"@id": "https://www.toptik.co.il/products/p10qmt71b09#product"}]{%- endcapture -%}
+{%- when 'p10qmtt101v', 'p10qmtt1b03', 'p10qmtt1b06', 'p10qmtt1b09' -%}
+  {%- assign family_parent = 'p10qmtt101v' -%}
+  {%- capture family_colors -%}["מנטה", "בורדו", "ענבר", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmtt1b03#product"}, {"@id": "https://www.toptik.co.il/products/p10qmtt1b06#product"}, {"@id": "https://www.toptik.co.il/products/p10qmtt1b09#product"}]{%- endcapture -%}
+{%- when 'p10qmtt2b03', 'p10qmtt2b06' -%}
+  {%- assign family_parent = 'p10qmtt2b03' -%}
+  {%- capture family_colors -%}["בורדו", "ענבר"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmtt2b06#product"}]{%- endcapture -%}
+{%- when 'p10qmtv109k', 'p10qmtv1651', 'p10qmtv1b03', 'p10qmtv1b09' -%}
+  {%- assign family_parent = 'p10qmtv1651' -%}
+  {%- capture family_colors -%}["טאופ", "שחור", "בורדו", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmtv109k#product"}, {"@id": "https://www.toptik.co.il/products/p10qmtv1b03#product"}, {"@id": "https://www.toptik.co.il/products/p10qmtv1b09#product"}]{%- endcapture -%}
+{%- when 'p10qmtv8b03', 'p10qmtv8b06', 'p10qmtv8b09' -%}
+  {%- assign family_parent = 'p10qmtv8b03' -%}
+  {%- capture family_colors -%}["בורדו", "ענבר", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmtv8b06#product"}, {"@id": "https://www.toptik.co.il/products/p10qmtv8b09#product"}]{%- endcapture -%}
+{%- when 'p10qmtx501v', 'p10qmtx5a46', 'p10qmtx5b06', 'p10qmtx5b09' -%}
+  {%- assign family_parent = 'p10qmtx501v' -%}
+  {%- capture family_colors -%}["מנטה", "סקראב", "ענבר", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmtx5a46#product"}, {"@id": "https://www.toptik.co.il/products/p10qmtx5b06#product"}, {"@id": "https://www.toptik.co.il/products/p10qmtx5b09#product"}]{%- endcapture -%}
+{%- when 'p10qmtx6b03', 'p10qmtx6b09' -%}
+  {%- assign family_parent = 'p10qmtx6b03' -%}
+  {%- capture family_colors -%}["בורדו", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmtx6b09#product"}]{%- endcapture -%}
+{%- when 'p10qmtz401v', 'p10qmtz4b03', 'p10qmtz4b06', 'p10qmtz4b09' -%}
+  {%- assign family_parent = 'p10qmtz401v' -%}
+  {%- capture family_colors -%}["מנטה", "בורדו", "ענבר", "קוקון"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10qmtz4b03#product"}, {"@id": "https://www.toptik.co.il/products/p10qmtz4b06#product"}, {"@id": "https://www.toptik.co.il/products/p10qmtz4b09#product"}]{%- endcapture -%}
+{%- when 'p10tkt34001', 'p10tkt34a28' -%}
+  {%- assign family_parent = 'p10tkt34001' -%}
+  {%- capture family_colors -%}["שחור", "טאופ חם"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10tkt34a28#product"}]{%- endcapture -%}
+{%- when 'p10tktv8001', 'p10tktv8a28' -%}
+  {%- assign family_parent = 'p10tktv8001' -%}
+  {%- capture family_colors -%}["שחור", "טאופ חם"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10tktv8a28#product"}]{%- endcapture -%}
+{%- when 'p10tktz4001', 'p10tktz4a28' -%}
+  {%- assign family_parent = 'p10tktz4001' -%}
+  {%- capture family_colors -%}["שחור", "טאופ חם"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10tktz4a28#product"}]{%- endcapture -%}
+{%- when 'p10ukt01001', 'p10ukt01a28' -%}
+  {%- assign family_parent = 'p10ukt01001' -%}
+  {%- capture family_colors -%}["שחור", "טאופ חם"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10ukt01a28#product"}]{%- endcapture -%}
+{%- when 'p10ukt03001', 'p10ukt03a28' -%}
+  {%- assign family_parent = 'p10ukt03001' -%}
+  {%- capture family_colors -%}["שחור", "טאופ חם"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10ukt03a28#product"}]{%- endcapture -%}
+{%- when 'p10ukt04001', 'p10ukt04a28' -%}
+  {%- assign family_parent = 'p10ukt04001' -%}
+  {%- capture family_colors -%}["שחור", "טאופ חם"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10ukt04a28#product"}]{%- endcapture -%}
+{%- when 'p10ukt07001', 'p10ukt07a28' -%}
+  {%- assign family_parent = 'p10ukt07001' -%}
+  {%- capture family_colors -%}["שחור", "טאופ חם"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10ukt07a28#product"}]{%- endcapture -%}
+{%- when 'p10uyt39466', 'p10uyt39b04' -%}
+  {%- assign family_parent = 'p10uyt39466' -%}
+  {%- capture family_colors -%}["כסוף", "קוקו עשיר"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10uyt39b04#product"}]{%- endcapture -%}
+{%- when 'p10uytt1466', 'p10uytt1b04' -%}
+  {%- assign family_parent = 'p10uytt1466' -%}
+  {%- capture family_colors -%}["כסוף", "קוקו עשיר"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10uytt1b04#product"}]{%- endcapture -%}
+{%- when 'p10uytv1466', 'p10uytv1b04' -%}
+  {%- assign family_parent = 'p10uytv1466' -%}
+  {%- capture family_colors -%}["כסוף", "קוקו עשיר"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10uytv1b04#product"}]{%- endcapture -%}
+{%- when 'p10uytx5466', 'p10uytx5b04' -%}
+  {%- assign family_parent = 'p10uytx5466' -%}
+  {%- capture family_colors -%}["כסוף", "קוקו עשיר"]{%- endcapture -%}
+  {%- capture family_siblings -%}[{"@id": "https://www.toptik.co.il/products/p10uytx5b04#product"}]{%- endcapture -%}
+{%- endcase -%}
+{%- case mode -%}
+{%- when 'parent' -%}{{- family_parent -}}
+{%- when 'colors' -%}{{- family_colors -}}
+{%- when 'siblings' -%}{{- family_siblings -}}
+{%- endcase -%}

@@ -1,0 +1,892 @@
+[
+  {
+    "model": "BAH08450",
+    "from": "https://www.toptik.co.il/products/bah08450006",
+    "to": "https://www.toptik.co.il/products/bah08450001"
+  },
+  {
+    "model": "BAH08451",
+    "from": "https://www.toptik.co.il/products/bah08451006",
+    "to": "https://www.toptik.co.il/products/bah08451-001"
+  },
+  {
+    "model": "BAH08451",
+    "from": "https://www.toptik.co.il/products/bah08451078",
+    "to": "https://www.toptik.co.il/products/bah08451-001"
+  },
+  {
+    "model": "BAH08454",
+    "from": "https://www.toptik.co.il/products/bah08454006",
+    "to": "https://www.toptik.co.il/products/bah08454-001"
+  },
+  {
+    "model": "BAH08454",
+    "from": "https://www.toptik.co.il/products/bah08454078",
+    "to": "https://www.toptik.co.il/products/bah08454-001"
+  },
+  {
+    "model": "BXG45072",
+    "from": "https://www.toptik.co.il/products/bxg45072078",
+    "to": "https://www.toptik.co.il/products/bxg45072101"
+  },
+  {
+    "model": "BXL44649",
+    "from": "https://www.toptik.co.il/products/bxl44649050",
+    "to": "https://www.toptik.co.il/products/bxl44649001"
+  },
+  {
+    "model": "FZP61",
+    "from": "https://www.toptik.co.il/products/p10fzp61b01",
+    "to": "https://www.toptik.co.il/products/p10fzp61a28"
+  },
+  {
+    "model": "FZP61",
+    "from": "https://www.toptik.co.il/products/p10fzp61b09",
+    "to": "https://www.toptik.co.il/products/p10fzp61a28"
+  },
+  {
+    "model": "FZT03",
+    "from": "https://www.toptik.co.il/products/p10fzt0308q",
+    "to": "https://www.toptik.co.il/products/p10fzt03001"
+  },
+  {
+    "model": "FZT03",
+    "from": "https://www.toptik.co.il/products/p10fzt0327o",
+    "to": "https://www.toptik.co.il/products/p10fzt03001"
+  },
+  {
+    "model": "FZT03",
+    "from": "https://www.toptik.co.il/products/p10fzt0328s",
+    "to": "https://www.toptik.co.il/products/p10fzt03001"
+  },
+  {
+    "model": "FZT03",
+    "from": "https://www.toptik.co.il/products/p10fzt03a28",
+    "to": "https://www.toptik.co.il/products/p10fzt03001"
+  },
+  {
+    "model": "FZT05",
+    "from": "https://www.toptik.co.il/products/p10fzt0508q",
+    "to": "https://www.toptik.co.il/products/p10fzt05001"
+  },
+  {
+    "model": "FZT05",
+    "from": "https://www.toptik.co.il/products/p10fzt0528s",
+    "to": "https://www.toptik.co.il/products/p10fzt05001"
+  },
+  {
+    "model": "FZT05",
+    "from": "https://www.toptik.co.il/products/p10fzt05a28",
+    "to": "https://www.toptik.co.il/products/p10fzt05001"
+  },
+  {
+    "model": "FZT05",
+    "from": "https://www.toptik.co.il/products/p10fzt05b01",
+    "to": "https://www.toptik.co.il/products/p10fzt05001"
+  },
+  {
+    "model": "FZT05",
+    "from": "https://www.toptik.co.il/products/p10fzt05b09",
+    "to": "https://www.toptik.co.il/products/p10fzt05001"
+  },
+  {
+    "model": "FZT12",
+    "from": "https://www.toptik.co.il/products/p10fzt1208q",
+    "to": "https://www.toptik.co.il/products/p10fzt12001"
+  },
+  {
+    "model": "FZT12",
+    "from": "https://www.toptik.co.il/products/p10fzt1228s",
+    "to": "https://www.toptik.co.il/products/p10fzt12001"
+  },
+  {
+    "model": "FZT12",
+    "from": "https://www.toptik.co.il/products/p10fzt12a28",
+    "to": "https://www.toptik.co.il/products/p10fzt12001"
+  },
+  {
+    "model": "FZT12",
+    "from": "https://www.toptik.co.il/products/p10fzt12a38",
+    "to": "https://www.toptik.co.il/products/p10fzt12001"
+  },
+  {
+    "model": "FZT12",
+    "from": "https://www.toptik.co.il/products/p10fzt12a43",
+    "to": "https://www.toptik.co.il/products/p10fzt12001"
+  },
+  {
+    "model": "FZT12",
+    "from": "https://www.toptik.co.il/products/p10fzt12a82",
+    "to": "https://www.toptik.co.il/products/p10fzt12001"
+  },
+  {
+    "model": "FZT12",
+    "from": "https://www.toptik.co.il/products/p10fzt12b01",
+    "to": "https://www.toptik.co.il/products/p10fzt12001"
+  },
+  {
+    "model": "FZT12",
+    "from": "https://www.toptik.co.il/products/p10fzt12b09",
+    "to": "https://www.toptik.co.il/products/p10fzt12001"
+  },
+  {
+    "model": "FZT13",
+    "from": "https://www.toptik.co.il/products/p10fzt1306m",
+    "to": "https://www.toptik.co.il/products/p10fzt13001"
+  },
+  {
+    "model": "FZT13",
+    "from": "https://www.toptik.co.il/products/p10fzt1308q",
+    "to": "https://www.toptik.co.il/products/p10fzt13001"
+  },
+  {
+    "model": "FZT13",
+    "from": "https://www.toptik.co.il/products/p10fzt1327o",
+    "to": "https://www.toptik.co.il/products/p10fzt13001"
+  },
+  {
+    "model": "FZT13",
+    "from": "https://www.toptik.co.il/products/p10fzt13a28",
+    "to": "https://www.toptik.co.il/products/p10fzt13001"
+  },
+  {
+    "model": "FZT13",
+    "from": "https://www.toptik.co.il/products/p10fzt13a82",
+    "to": "https://www.toptik.co.il/products/p10fzt13001"
+  },
+  {
+    "model": "FZT13",
+    "from": "https://www.toptik.co.il/products/p10fzt13b09",
+    "to": "https://www.toptik.co.il/products/p10fzt13001"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt5223q",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt5224f",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt5225i",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt5225t",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt5226o",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt5226r",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt5228h",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt5228m",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt52369",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt52758",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT52",
+    "from": "https://www.toptik.co.il/products/p10fzt52a02",
+    "to": "https://www.toptik.co.il/products/p10fzt5224a"
+  },
+  {
+    "model": "FZT59",
+    "from": "https://www.toptik.co.il/products/p10fzt5908u",
+    "to": "https://www.toptik.co.il/products/p10fzt59001"
+  },
+  {
+    "model": "FZT59",
+    "from": "https://www.toptik.co.il/products/p10fzt5913c",
+    "to": "https://www.toptik.co.il/products/p10fzt59001"
+  },
+  {
+    "model": "FZT59",
+    "from": "https://www.toptik.co.il/products/p10fzt5913d",
+    "to": "https://www.toptik.co.il/products/p10fzt59001"
+  },
+  {
+    "model": "FZT59",
+    "from": "https://www.toptik.co.il/products/p10fzt5913u",
+    "to": "https://www.toptik.co.il/products/p10fzt59001"
+  },
+  {
+    "model": "FZT59",
+    "from": "https://www.toptik.co.il/products/p10fzt5924f",
+    "to": "https://www.toptik.co.il/products/p10fzt59001"
+  },
+  {
+    "model": "FZT59",
+    "from": "https://www.toptik.co.il/products/p10fzt59a82",
+    "to": "https://www.toptik.co.il/products/p10fzt59001"
+  },
+  {
+    "model": "FZT69",
+    "from": "https://www.toptik.co.il/products/p10fzt6908q",
+    "to": "https://www.toptik.co.il/products/p10fzt69001"
+  },
+  {
+    "model": "FZT69",
+    "from": "https://www.toptik.co.il/products/p10fzt69a01",
+    "to": "https://www.toptik.co.il/products/p10fzt69001"
+  },
+  {
+    "model": "FZT69",
+    "from": "https://www.toptik.co.il/products/p10fzt69a28",
+    "to": "https://www.toptik.co.il/products/p10fzt69001"
+  },
+  {
+    "model": "FZT69",
+    "from": "https://www.toptik.co.il/products/p10fzt69a61",
+    "to": "https://www.toptik.co.il/products/p10fzt69001"
+  },
+  {
+    "model": "FZT69",
+    "from": "https://www.toptik.co.il/products/p10fzt69b01",
+    "to": "https://www.toptik.co.il/products/p10fzt69001"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt7304o",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt7313u",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt73209",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt7324x",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt7325g",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt7326r",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt7328m",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt73a41",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt73a46",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt73a61",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt73b01",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT73",
+    "from": "https://www.toptik.co.il/products/p10fzt73b07",
+    "to": "https://www.toptik.co.il/products/תיק-פאוץ-מעור-קלאסי-מבית-מנדרינה-דאק"
+  },
+  {
+    "model": "FZT79",
+    "from": "https://www.toptik.co.il/products/p10fzt7908q",
+    "to": "https://www.toptik.co.il/products/p10fzt79001"
+  },
+  {
+    "model": "FZT79",
+    "from": "https://www.toptik.co.il/products/p10fzt7928s",
+    "to": "https://www.toptik.co.il/products/p10fzt79001"
+  },
+  {
+    "model": "FZT79",
+    "from": "https://www.toptik.co.il/products/p10fzt79a28",
+    "to": "https://www.toptik.co.il/products/p10fzt79001"
+  },
+  {
+    "model": "FZT79",
+    "from": "https://www.toptik.co.il/products/p10fzt79a61",
+    "to": "https://www.toptik.co.il/products/p10fzt79001"
+  },
+  {
+    "model": "FZT79",
+    "from": "https://www.toptik.co.il/products/p10fzt79a82",
+    "to": "https://www.toptik.co.il/products/p10fzt79001"
+  },
+  {
+    "model": "FZT79",
+    "from": "https://www.toptik.co.il/products/p10fzt79a93",
+    "to": "https://www.toptik.co.il/products/p10fzt79001"
+  },
+  {
+    "model": "FZT79",
+    "from": "https://www.toptik.co.il/products/p10fzt79b01",
+    "to": "https://www.toptik.co.il/products/p10fzt79001"
+  },
+  {
+    "model": "FZT80",
+    "from": "https://www.toptik.co.il/products/p10fzt8008q",
+    "to": "https://www.toptik.co.il/products/p10fzt80001"
+  },
+  {
+    "model": "FZT80",
+    "from": "https://www.toptik.co.il/products/p10fzt8024x",
+    "to": "https://www.toptik.co.il/products/p10fzt80001"
+  },
+  {
+    "model": "FZT80",
+    "from": "https://www.toptik.co.il/products/p10fzt8025g",
+    "to": "https://www.toptik.co.il/products/p10fzt80001"
+  },
+  {
+    "model": "FZT80",
+    "from": "https://www.toptik.co.il/products/p10fzt8026r",
+    "to": "https://www.toptik.co.il/products/p10fzt80001"
+  },
+  {
+    "model": "FZTA7",
+    "from": "https://www.toptik.co.il/products/p10fzta7b01",
+    "to": "https://www.toptik.co.il/products/p10fzta7001"
+  },
+  {
+    "model": "FZTA8",
+    "from": "https://www.toptik.co.il/products/p10fzta8b01",
+    "to": "https://www.toptik.co.il/products/p10fzta8001"
+  },
+  {
+    "model": "FZTA8",
+    "from": "https://www.toptik.co.il/products/p10fzta8b09",
+    "to": "https://www.toptik.co.il/products/p10fzta8001"
+  },
+  {
+    "model": "FZTA9",
+    "from": "https://www.toptik.co.il/products/p10fzta9b09",
+    "to": "https://www.toptik.co.il/products/p10fzta9001"
+  },
+  {
+    "model": "KJ1-007",
+    "from": "https://www.toptik.co.il/products/samsonite-upscape-55-easy-access-yellow-kj106007",
+    "to": "https://www.toptik.co.il/products/samsonite-upscape-55-easy-access-climbing-ivy-kj114007"
+  },
+  {
+    "model": "KL9-001",
+    "from": "https://www.toptik.co.il/products/samsonite-intuo-55-blue-nights-kl901001",
+    "to": "https://www.toptik.co.il/products/samsonite-intuo-55-black-kl909001"
+  },
+  {
+    "model": "KL9-001",
+    "from": "https://www.toptik.co.il/products/samsonite-intuo-55-citrus-kl966001",
+    "to": "https://www.toptik.co.il/products/samsonite-intuo-55-black-kl909001"
+  },
+  {
+    "model": "KL9-001",
+    "from": "https://www.toptik.co.il/products/samsonite-intuo-55-lime-kl974001",
+    "to": "https://www.toptik.co.il/products/samsonite-intuo-55-black-kl909001"
+  },
+  {
+    "model": "KL9-001",
+    "from": "https://www.toptik.co.il/products/samsonite-intuo-55-olive-green-kl924001",
+    "to": "https://www.toptik.co.il/products/samsonite-intuo-55-black-kl909001"
+  },
+  {
+    "model": "KM2-008",
+    "from": "https://www.toptik.co.il/products/km201008",
+    "to": "https://www.toptik.co.il/products/km209008"
+  },
+  {
+    "model": "KO7-007",
+    "from": "https://www.toptik.co.il/products/samsonite-urbify-78-lava-ko776007",
+    "to": "https://www.toptik.co.il/products/samsonite-urbify-78-black-ko709007"
+  },
+  {
+    "model": "KO7-007",
+    "from": "https://www.toptik.co.il/products/samsonite-urbify-78-navy-blue-ko701007",
+    "to": "https://www.toptik.co.il/products/samsonite-urbify-78-black-ko709007"
+  },
+  {
+    "model": "KO7-007",
+    "from": "https://www.toptik.co.il/products/samsonite-urbify-78-pine-green-ko704007",
+    "to": "https://www.toptik.co.il/products/samsonite-urbify-78-black-ko709007"
+  },
+  {
+    "model": "OSV04",
+    "from": "https://www.toptik.co.il/products/p10osv0416q",
+    "to": "https://www.toptik.co.il/products/p10osv0405j"
+  },
+  {
+    "model": "OSV05",
+    "from": "https://www.toptik.co.il/products/p10osv0505j",
+    "to": "https://www.toptik.co.il/products/p10osv05651"
+  },
+  {
+    "model": "OSV06",
+    "from": "https://www.toptik.co.il/products/p10osv0605j",
+    "to": "https://www.toptik.co.il/products/p10osv06651"
+  },
+  {
+    "model": "OTN02",
+    "from": "https://www.toptik.co.il/products/p10otn0208q",
+    "to": "https://www.toptik.co.il/products/p10otn02651"
+  },
+  {
+    "model": "OTV01",
+    "from": "https://www.toptik.co.il/products/p10otv0108q",
+    "to": "https://www.toptik.co.il/products/p10otv01651"
+  },
+  {
+    "model": "OTV01",
+    "from": "https://www.toptik.co.il/products/p10otv0129u",
+    "to": "https://www.toptik.co.il/products/p10otv01651"
+  },
+  {
+    "model": "OTV05",
+    "from": "https://www.toptik.co.il/products/p10otv0508q",
+    "to": "https://www.toptik.co.il/products/p10otv05651"
+  },
+  {
+    "model": "OTV05",
+    "from": "https://www.toptik.co.il/products/p10otv0529u",
+    "to": "https://www.toptik.co.il/products/p10otv05651"
+  },
+  {
+    "model": "OXB01",
+    "from": "https://www.toptik.co.il/products/p10oxb0129o",
+    "to": "https://www.toptik.co.il/products/p10oxb01001"
+  },
+  {
+    "model": "OXB01",
+    "from": "https://www.toptik.co.il/products/p10oxb01645",
+    "to": "https://www.toptik.co.il/products/p10oxb01001"
+  },
+  {
+    "model": "OXB01",
+    "from": "https://www.toptik.co.il/products/p10oxb01a96",
+    "to": "https://www.toptik.co.il/products/p10oxb01001"
+  },
+  {
+    "model": "OXB01",
+    "from": "https://www.toptik.co.il/products/p10oxb01b11",
+    "to": "https://www.toptik.co.il/products/p10oxb01001"
+  },
+  {
+    "model": "OXM02",
+    "from": "https://www.toptik.co.il/products/p10oxm0229o",
+    "to": "https://www.toptik.co.il/products/p10oxm02001"
+  },
+  {
+    "model": "OXM02",
+    "from": "https://www.toptik.co.il/products/p10oxm02645",
+    "to": "https://www.toptik.co.il/products/p10oxm02001"
+  },
+  {
+    "model": "OXM02",
+    "from": "https://www.toptik.co.il/products/p10oxm02a96",
+    "to": "https://www.toptik.co.il/products/p10oxm02001"
+  },
+  {
+    "model": "OXM02",
+    "from": "https://www.toptik.co.il/products/p10oxm02b11",
+    "to": "https://www.toptik.co.il/products/p10oxm02001"
+  },
+  {
+    "model": "OXM04",
+    "from": "https://www.toptik.co.il/products/p10oxm0429o",
+    "to": "https://www.toptik.co.il/products/p10oxm04001"
+  },
+  {
+    "model": "OXM04",
+    "from": "https://www.toptik.co.il/products/p10oxm04645",
+    "to": "https://www.toptik.co.il/products/p10oxm04001"
+  },
+  {
+    "model": "OXM04",
+    "from": "https://www.toptik.co.il/products/p10oxm04a96",
+    "to": "https://www.toptik.co.il/products/p10oxm04001"
+  },
+  {
+    "model": "OXM04",
+    "from": "https://www.toptik.co.il/products/p10oxm04b11",
+    "to": "https://www.toptik.co.il/products/p10oxm04001"
+  },
+  {
+    "model": "OXT01",
+    "from": "https://www.toptik.co.il/products/p10oxt0129o",
+    "to": "https://www.toptik.co.il/products/p10oxt01001"
+  },
+  {
+    "model": "OXT01",
+    "from": "https://www.toptik.co.il/products/p10oxt01645",
+    "to": "https://www.toptik.co.il/products/p10oxt01001"
+  },
+  {
+    "model": "OXT01",
+    "from": "https://www.toptik.co.il/products/p10oxt01a96",
+    "to": "https://www.toptik.co.il/products/p10oxt01001"
+  },
+  {
+    "model": "OXT01",
+    "from": "https://www.toptik.co.il/products/p10oxt01b11",
+    "to": "https://www.toptik.co.il/products/p10oxt01001"
+  },
+  {
+    "model": "OXT03",
+    "from": "https://www.toptik.co.il/products/p10oxt0329o",
+    "to": "https://www.toptik.co.il/products/p10oxt03001"
+  },
+  {
+    "model": "OXT03",
+    "from": "https://www.toptik.co.il/products/p10oxt03645",
+    "to": "https://www.toptik.co.il/products/p10oxt03001"
+  },
+  {
+    "model": "OXT03",
+    "from": "https://www.toptik.co.il/products/p10oxt03a96",
+    "to": "https://www.toptik.co.il/products/p10oxt03001"
+  },
+  {
+    "model": "OXT03",
+    "from": "https://www.toptik.co.il/products/p10oxt03b11",
+    "to": "https://www.toptik.co.il/products/p10oxt03001"
+  },
+  {
+    "model": "OXT04",
+    "from": "https://www.toptik.co.il/products/p10oxt04b11",
+    "to": "https://www.toptik.co.il/products/p10oxt04001"
+  },
+  {
+    "model": "OXT05",
+    "from": "https://www.toptik.co.il/products/p10oxt0529o",
+    "to": "https://www.toptik.co.il/products/p10oxt05001"
+  },
+  {
+    "model": "OXT05",
+    "from": "https://www.toptik.co.il/products/p10oxt05645",
+    "to": "https://www.toptik.co.il/products/p10oxt05001"
+  },
+  {
+    "model": "OXT05",
+    "from": "https://www.toptik.co.il/products/p10oxt05a96",
+    "to": "https://www.toptik.co.il/products/p10oxt05001"
+  },
+  {
+    "model": "OXT05",
+    "from": "https://www.toptik.co.il/products/p10oxt05b11",
+    "to": "https://www.toptik.co.il/products/p10oxt05001"
+  },
+  {
+    "model": "OXT08",
+    "from": "https://www.toptik.co.il/products/p10oxt0829o",
+    "to": "https://www.toptik.co.il/products/p10oxt08001"
+  },
+  {
+    "model": "OXT08",
+    "from": "https://www.toptik.co.il/products/p10oxt08645",
+    "to": "https://www.toptik.co.il/products/p10oxt08001"
+  },
+  {
+    "model": "OXT08",
+    "from": "https://www.toptik.co.il/products/p10oxt08a96",
+    "to": "https://www.toptik.co.il/products/p10oxt08001"
+  },
+  {
+    "model": "OXT08",
+    "from": "https://www.toptik.co.il/products/p10oxt08b11",
+    "to": "https://www.toptik.co.il/products/p10oxt08001"
+  },
+  {
+    "model": "QMMM3",
+    "from": "https://www.toptik.co.il/products/p10qmmm3b03",
+    "to": "https://www.toptik.co.il/products/p10qmmm301v"
+  },
+  {
+    "model": "QMMM3",
+    "from": "https://www.toptik.co.il/products/p10qmmm3b06",
+    "to": "https://www.toptik.co.il/products/p10qmmm301v"
+  },
+  {
+    "model": "QMMM3",
+    "from": "https://www.toptik.co.il/products/p10qmmm3b09",
+    "to": "https://www.toptik.co.il/products/p10qmmm301v"
+  },
+  {
+    "model": "QMMM3",
+    "from": "https://www.toptik.co.il/products/p10qmmm3b10",
+    "to": "https://www.toptik.co.il/products/p10qmmm301v"
+  },
+  {
+    "model": "QMMO1",
+    "from": "https://www.toptik.co.il/products/p10qmmo1b10",
+    "to": "https://www.toptik.co.il/products/p10qmmo1b09"
+  },
+  {
+    "model": "QMN01",
+    "from": "https://www.toptik.co.il/products/p10qmn01b10",
+    "to": "https://www.toptik.co.il/products/p10qmn01b09"
+  },
+  {
+    "model": "QMT17",
+    "from": "https://www.toptik.co.il/products/p10qmt17a46",
+    "to": "https://www.toptik.co.il/products/p10qmt17465"
+  },
+  {
+    "model": "QMT17",
+    "from": "https://www.toptik.co.il/products/p10qmt17b06",
+    "to": "https://www.toptik.co.il/products/p10qmt17465"
+  },
+  {
+    "model": "QMT28",
+    "from": "https://www.toptik.co.il/products/p10qmt2809k",
+    "to": "https://www.toptik.co.il/products/p10qmt28651"
+  },
+  {
+    "model": "QMT32",
+    "from": "https://www.toptik.co.il/products/p10qmt32b09",
+    "to": "https://www.toptik.co.il/products/p10qmt3201v"
+  },
+  {
+    "model": "QMT39",
+    "from": "https://www.toptik.co.il/products/p10qmt3901v",
+    "to": "https://www.toptik.co.il/products/p10qmt39651"
+  },
+  {
+    "model": "QMT39",
+    "from": "https://www.toptik.co.il/products/p10qmt3909k",
+    "to": "https://www.toptik.co.il/products/p10qmt39651"
+  },
+  {
+    "model": "QMT39",
+    "from": "https://www.toptik.co.il/products/p10qmt39465",
+    "to": "https://www.toptik.co.il/products/p10qmt39651"
+  },
+  {
+    "model": "QMT39",
+    "from": "https://www.toptik.co.il/products/p10qmt39b06",
+    "to": "https://www.toptik.co.il/products/p10qmt39651"
+  },
+  {
+    "model": "QMT39",
+    "from": "https://www.toptik.co.il/products/p10qmt39b09",
+    "to": "https://www.toptik.co.il/products/p10qmt39651"
+  },
+  {
+    "model": "QMT49",
+    "from": "https://www.toptik.co.il/products/p10qmt49b06",
+    "to": "https://www.toptik.co.il/products/p10qmt49651"
+  },
+  {
+    "model": "QMT49",
+    "from": "https://www.toptik.co.il/products/p10qmt49b09",
+    "to": "https://www.toptik.co.il/products/p10qmt49651"
+  },
+  {
+    "model": "QMT58",
+    "from": "https://www.toptik.co.il/products/p10qmt5809k",
+    "to": "https://www.toptik.co.il/products/p10qmt58651"
+  },
+  {
+    "model": "QMT58",
+    "from": "https://www.toptik.co.il/products/p10qmt58465",
+    "to": "https://www.toptik.co.il/products/p10qmt58651"
+  },
+  {
+    "model": "QMT69",
+    "from": "https://www.toptik.co.il/products/p10qmt69465",
+    "to": "https://www.toptik.co.il/products/p10qmt69651"
+  },
+  {
+    "model": "QMT71",
+    "from": "https://www.toptik.co.il/products/p10qmt7109k",
+    "to": "https://www.toptik.co.il/products/p10qmt71651"
+  },
+  {
+    "model": "QMT71",
+    "from": "https://www.toptik.co.il/products/p10qmt71465",
+    "to": "https://www.toptik.co.il/products/p10qmt71651"
+  },
+  {
+    "model": "QMT71",
+    "from": "https://www.toptik.co.il/products/p10qmt71b06",
+    "to": "https://www.toptik.co.il/products/p10qmt71651"
+  },
+  {
+    "model": "QMT71",
+    "from": "https://www.toptik.co.il/products/p10qmt71b09",
+    "to": "https://www.toptik.co.il/products/p10qmt71651"
+  },
+  {
+    "model": "QMTT1",
+    "from": "https://www.toptik.co.il/products/p10qmtt1b03",
+    "to": "https://www.toptik.co.il/products/p10qmtt101v"
+  },
+  {
+    "model": "QMTT1",
+    "from": "https://www.toptik.co.il/products/p10qmtt1b06",
+    "to": "https://www.toptik.co.il/products/p10qmtt101v"
+  },
+  {
+    "model": "QMTT1",
+    "from": "https://www.toptik.co.il/products/p10qmtt1b09",
+    "to": "https://www.toptik.co.il/products/p10qmtt101v"
+  },
+  {
+    "model": "QMTT2",
+    "from": "https://www.toptik.co.il/products/p10qmtt2b06",
+    "to": "https://www.toptik.co.il/products/p10qmtt2b03"
+  },
+  {
+    "model": "QMTV1",
+    "from": "https://www.toptik.co.il/products/p10qmtv109k",
+    "to": "https://www.toptik.co.il/products/p10qmtv1651"
+  },
+  {
+    "model": "QMTV1",
+    "from": "https://www.toptik.co.il/products/p10qmtv1b03",
+    "to": "https://www.toptik.co.il/products/p10qmtv1651"
+  },
+  {
+    "model": "QMTV1",
+    "from": "https://www.toptik.co.il/products/p10qmtv1b09",
+    "to": "https://www.toptik.co.il/products/p10qmtv1651"
+  },
+  {
+    "model": "QMTV8",
+    "from": "https://www.toptik.co.il/products/p10qmtv8b06",
+    "to": "https://www.toptik.co.il/products/p10qmtv8b03"
+  },
+  {
+    "model": "QMTV8",
+    "from": "https://www.toptik.co.il/products/p10qmtv8b09",
+    "to": "https://www.toptik.co.il/products/p10qmtv8b03"
+  },
+  {
+    "model": "QMTX5",
+    "from": "https://www.toptik.co.il/products/p10qmtx5a46",
+    "to": "https://www.toptik.co.il/products/p10qmtx501v"
+  },
+  {
+    "model": "QMTX5",
+    "from": "https://www.toptik.co.il/products/p10qmtx5b06",
+    "to": "https://www.toptik.co.il/products/p10qmtx501v"
+  },
+  {
+    "model": "QMTX5",
+    "from": "https://www.toptik.co.il/products/p10qmtx5b09",
+    "to": "https://www.toptik.co.il/products/p10qmtx501v"
+  },
+  {
+    "model": "QMTX6",
+    "from": "https://www.toptik.co.il/products/p10qmtx6b09",
+    "to": "https://www.toptik.co.il/products/p10qmtx6b03"
+  },
+  {
+    "model": "QMTZ4",
+    "from": "https://www.toptik.co.il/products/p10qmtz4b03",
+    "to": "https://www.toptik.co.il/products/p10qmtz401v"
+  },
+  {
+    "model": "QMTZ4",
+    "from": "https://www.toptik.co.il/products/p10qmtz4b06",
+    "to": "https://www.toptik.co.il/products/p10qmtz401v"
+  },
+  {
+    "model": "QMTZ4",
+    "from": "https://www.toptik.co.il/products/p10qmtz4b09",
+    "to": "https://www.toptik.co.il/products/p10qmtz401v"
+  },
+  {
+    "model": "TKT34",
+    "from": "https://www.toptik.co.il/products/p10tkt34a28",
+    "to": "https://www.toptik.co.il/products/p10tkt34001"
+  },
+  {
+    "model": "TKTV8",
+    "from": "https://www.toptik.co.il/products/p10tktv8a28",
+    "to": "https://www.toptik.co.il/products/p10tktv8001"
+  },
+  {
+    "model": "TKTZ4",
+    "from": "https://www.toptik.co.il/products/p10tktz4a28",
+    "to": "https://www.toptik.co.il/products/p10tktz4001"
+  },
+  {
+    "model": "UKT01",
+    "from": "https://www.toptik.co.il/products/p10ukt01a28",
+    "to": "https://www.toptik.co.il/products/p10ukt01001"
+  },
+  {
+    "model": "UKT03",
+    "from": "https://www.toptik.co.il/products/p10ukt03a28",
+    "to": "https://www.toptik.co.il/products/p10ukt03001"
+  },
+  {
+    "model": "UKT04",
+    "from": "https://www.toptik.co.il/products/p10ukt04a28",
+    "to": "https://www.toptik.co.il/products/p10ukt04001"
+  },
+  {
+    "model": "UKT07",
+    "from": "https://www.toptik.co.il/products/p10ukt07a28",
+    "to": "https://www.toptik.co.il/products/p10ukt07001"
+  },
+  {
+    "model": "UYT39",
+    "from": "https://www.toptik.co.il/products/p10uyt39b04",
+    "to": "https://www.toptik.co.il/products/p10uyt39466"
+  },
+  {
+    "model": "UYTT1",
+    "from": "https://www.toptik.co.il/products/p10uytt1b04",
+    "to": "https://www.toptik.co.il/products/p10uytt1466"
+  },
+  {
+    "model": "UYTV1",
+    "from": "https://www.toptik.co.il/products/p10uytv1b04",
+    "to": "https://www.toptik.co.il/products/p10uytv1466"
+  },
+  {
+    "model": "UYTX5",
+    "from": "https://www.toptik.co.il/products/p10uytx5b04",
+    "to": "https://www.toptik.co.il/products/p10uytx5466"
+  }
+]

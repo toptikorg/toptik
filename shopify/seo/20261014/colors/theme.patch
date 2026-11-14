@@ -1,0 +1,28 @@
+--- a/layout/theme.liquid
++++ b/layout/theme.liquid
+@@ -158,6 +158,17 @@
+     {% assign tt_effective_canonical_url = 'https://www.toptik.co.il/collections/american-tourister' %}
+   {% elsif tt_spurious_page_tag_url %}
+     {% assign tt_effective_canonical_url = 'https://www.toptik.co.il' | append: page.url %}
++  {% endif %}
++  {% comment %}Only direct product pages; preserve collection-path, tag and explicit variant alternates.{% endcomment %}
++  {% if request.page_type == 'product' and request.path == product.url and product.selected_variant == blank %}
++    {% capture tt_family_parent %}{% render 'toptik-seo-color-family', product: product, mode: 'parent' %}{% endcapture %}
++    {% assign tt_family_parent = tt_family_parent | strip %}
++    {% if tt_family_parent != blank %}
++      {% assign tt_family_parent_product = all_products[tt_family_parent] %}
++      {% if tt_family_parent_product.id != blank %}
++        {% assign tt_effective_canonical_url = 'https://www.toptik.co.il' | append: tt_family_parent_product.url %}
++      {% endif %}
++    {% endif %}
+   {% endif %}
+   <link rel="canonical" href="{{ tt_effective_canonical_url }}">
+ 
+@@ -330,6 +341,7 @@
+       {% assign tt_product_structured_data = tt_product_structured_data | replace: tt_sku_field, '' %}
+     {% endif %}
+   {% endfor %}
++  {% capture tt_product_structured_data %}{% render 'toptik-seo-family-schema', product: product, structured_data: tt_product_structured_data %}{% endcapture %}
+   <script type="application/ld+json">{{ tt_product_structured_data }}</script>
+ {% elsif request.page_type == 'article' %}
+   <script type="application/ld+json">{{ article | structured_data }}</script>
