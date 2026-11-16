@@ -67,7 +67,7 @@ test('a 429 still closes the gate if response-body cancellation fails', async ()
 });
 
 test('color selector checks stop immediately on 429 instead of iterating over remaining products', async () => {
-  const product = (handle) => ({ handle, options: [{ name: 'color', values: ['a', 'b'] }], variants: [{ sku: 'a' }, { sku: 'b' }] });
+  const product = (handle) => ({ handle, options: [{ name: 'color', values: ['a', 'b'] }], variants: [{ id: 1, sku: 'a' }, { id: 2, sku: 'b' }] });
   let attempted = 0;
   await assert.rejects(checkStoreColorSelectors('https://www.toptik.co.il', [product('one'), product('two')], async () => {
     attempted += 1;

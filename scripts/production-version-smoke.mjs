@@ -5,17 +5,19 @@ const LIVE = ['landing', 'admin'].map(host => `https://${host}.toptik.co.il/api/
 const SITE = 'https://site.toptik.co.il/api/build-version';
 const SHA = /^[a-f0-9]{40}$/i;
 
-async function readJson(fetchImpl, url, label) {
+async function readJson(fetchImpl, url, label, githubToken) {
+  const headers = { 'user-agent': 'TopTik-Version-Monitor/1.0', 'cache-control': 'no-cache' };
+  if (url === SOURCE && githubToken) headers.authorization = `Bearer ${githubToken}`;
   let response;
   try {
-    response = await fetchImpl(url, { headers: { 'user-agent': 'TopTik-Version-Monitor/1.0', 'cache-control': 'no-cache' }, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(15_000) });
+    response = await fetchImpl(url, { headers, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(15_000) });
   } catch { throw new Error(`${label}_UNAVAILABLE`); }
   if (!response.ok) throw new Error(`${label}_HTTP_${response.status}`);
   try { return await response.json(); } catch { throw new Error(`${label}_INVALID_RESPONSE`); }
 }
 
-export async function checkProductionVersion(fetchImpl = fetch) {
-  const source = await readJson(fetchImpl, SOURCE, 'MASTER');
+export async function checkProductionVersion(fetchImpl = fetch, { githubToken = process.env.GITHUB_TOKEN } = {}) {
+  const source = await readJson(fetchImpl, SOURCE, 'MASTER', githubToken);
   const expected = source?.object?.sha;
   if (typeof expected !== 'string' || !SHA.test(expected)) throw new Error('MASTER_INVALID_COMMIT');
   const versions = {};
@@ -37,7 +39,7 @@ export async function checkProductionVersion(fetchImpl = fetch) {
   await redirect.body?.cancel();
   // Read the reference again even when all observed commits match: master
   // may have moved during the live reads, so success would be stale evidence.
-  const reread = await readJson(fetchImpl, SOURCE, 'MASTER_RECHECK');
+  const reread = await readJson(fetchImpl, SOURCE, 'MASTER_RECHECK', githubToken);
   const current = reread?.object?.sha;
   if (typeof current !== 'string' || !SHA.test(current)) throw new Error('MASTER_RECHECK_INVALID_COMMIT');
   if (current.toLowerCase() !== expected.toLowerCase()) throw new Error('MASTER_CHANGED_DURING_CHECK');

@@ -1,3 +1,4 @@
+import { parseFragment } from "parse5";
 import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -289,6 +290,31 @@ export function assertColorSelector(html, skus) {
   }
 }
 
+// Variant IDs remain stable even when an accessory has no merchant SKU.
+export function assertVariantColorSelector(html, product) {
+  const root = parseFragment(html);
+  const anchors = [];
+  function visit(node, inColors = false) {
+    const attrs = Object.fromEntries((node.attrs || []).map(({name, value}) => [name, value]));
+    if ('hidden' in attrs || attrs['aria-hidden'] === 'true') return;
+    const colors = inColors || (node.tagName === 'nav' && (attrs.class || '').split(/\s+/).some(name => ['tt-variant-colors', 'tt-model-colors'].includes(name)));
+    if (colors && node.tagName === 'a') anchors.push(attrs);
+    for (const child of node.childNodes || []) visit(child, colors);
+  }
+  visit(root);
+  for (const variant of product.variants) {
+    if (!/^\d+$/.test(String(variant.id))) throw new Error(`Missing variant ID on ${product.handle}`);
+    const found = anchors.some((attrs) => {
+      let url;
+      try { url = new URL(attrs.href, 'https://www.toptik.co.il'); } catch { return false; }
+      return url.origin === 'https://www.toptik.co.il' && decodeURIComponent(url.pathname) === `/products/${product.handle}`
+        && url.searchParams.get('variant') === String(variant.id)
+        && (!variant.sku || attrs['data-color-sku'] === variant.sku);
+    });
+    if (!found) throw new Error(`Visible color selection missing for variant ${variant.id} on ${product.handle}`);
+  }
+}
+
 export function assertReadableSubcategoryHover(html) {
   const rules = [...html.matchAll(/\.tt-subcats\s+a:hover\s*\{([^}]*)\}/gi)];
   if (html.includes('class="tt-subcats"') && rules.length === 0) throw new Error("Subcategory hover style is missing");
@@ -339,9 +365,8 @@ export async function checkStoreColorSelectors(storeBase, products, fetchProduct
       const failures = [];
       for (const product of productsWithMultipleColors(products)) {
         try {
-          const expected = product.variants.map((variant) => variant.sku);
-          if (expected.some((sku) => !sku)) throw new Error(`Missing variant SKU on ${product.handle}`);
-          assertColorSelector(await fetchProduct(`${storeBase}/products/${encodeURIComponent(product.handle)}?monitor_check=${Date.now()}`), expected);
+          const html = await fetchProduct(`${storeBase}/products/${encodeURIComponent(product.handle)}?monitor_check=${Date.now()}`);
+          assertVariantColorSelector(html, product);
         } catch (error) {
           if (/HTTP 429/.test(error.message)) throw error;
           failures.push(`${product.handle}: ${error.message}`);
