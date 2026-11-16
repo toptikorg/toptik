@@ -87,3 +87,15 @@ test('version route exposes only an exact public SHA and is never cached', async
     else process.env.VERCEL_GIT_COMMIT_SHA = before;
   }
 });
+
+test('GitHub token is scoped to both source reads and never sent to production', async () => {
+  const values=[master(current),production(current),production(current),siteRedirect(),master(current)];
+  const seen=[];
+  await checkProductionVersion(async (url,options)=>{
+    seen.push(url);
+    assert.equal(new Headers(options.headers).get('authorization'),url.startsWith('https://api.github.com/')?'Bearer test-token':null);
+    assert.equal(options.redirect,url.includes('site.toptik.co.il')?'manual':'error');
+    return values.shift();
+  },{githubToken:'test-token'});
+  assert.equal(seen.length,5);
+});

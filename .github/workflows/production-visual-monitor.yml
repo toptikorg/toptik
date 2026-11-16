@@ -24,6 +24,8 @@ jobs:
           node-version: 22
       - name: Compare deployed commit with current master
         id: version_check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         continue-on-error: true
         shell: bash
         run: |
