@@ -12,3 +12,7 @@ test('SKU remains checked whenever the merchant supplied one',()=>{
  assert.throws(()=>assertVariantColorSelector(html,withSku),/Visible color selection missing/);
  assertVariantColorSelector(html.replace('variant=12"','variant=12" data-color-sku="CODE"'),withSku);
 });
+
+test('legacy model color navigation verifies the same exact variant identities',()=>{
+ assertVariantColorSelector(html.replace('tt-variant-colors','tt-model-colors'),product);
+});

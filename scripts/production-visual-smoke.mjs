@@ -297,7 +297,7 @@ export function assertVariantColorSelector(html, product) {
   function visit(node, inColors = false) {
     const attrs = Object.fromEntries((node.attrs || []).map(({name, value}) => [name, value]));
     if ('hidden' in attrs || attrs['aria-hidden'] === 'true') return;
-    const colors = inColors || (node.tagName === 'nav' && (attrs.class || '').split(/\s+/).includes('tt-variant-colors'));
+    const colors = inColors || (node.tagName === 'nav' && (attrs.class || '').split(/\s+/).some(name => ['tt-variant-colors', 'tt-model-colors'].includes(name)));
     if (colors && node.tagName === 'a') anchors.push(attrs);
     for (const child of node.childNodes || []) visit(child, colors);
   }
