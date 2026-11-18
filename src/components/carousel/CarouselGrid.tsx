@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import Image from "next/image";
 import { A11y, Keyboard, Virtual } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { Swiper as SwiperType } from "swiper";
@@ -241,8 +242,7 @@ export function CatalogCard({
             }}
             aria-label={`הגדלה וזוויות נוספות עבור ${item.title}`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/magnifier.png" alt="" aria-hidden="true" className="catalog-card-cta-icon" />
+            <Image src="/magnifier.png" width={53} height={53} alt="" aria-hidden="true" className="catalog-card-cta-icon" />
           </button>}
 
           {/* bottom: colour swatches */}
