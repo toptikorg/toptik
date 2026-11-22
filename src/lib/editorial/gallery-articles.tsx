@@ -1,3 +1,4 @@
+import { knirpsArticles } from "./knirps-articles";
 import { productGuideArticles } from "./product-guide-articles";
 import { mandarinaHubArticles } from "./mandarina-hub-articles";
 import type { ReactNode } from "react";
@@ -269,6 +270,7 @@ export const galleryArticles: readonly GalleryArticle[] = [
   ...comparisonArticles,
   ...suitcaseArticles,
   ...productGuideArticles,
+  ...knirpsArticles,
   ...mandarinaHubArticles,
   ...premiumArticles,
   ...collectionArticles,
