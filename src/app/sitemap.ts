@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "1970-01-01",
   );
   const mainPages: MetadataRoute.Sitemap = [
+    { url: absoluteUrl("/knirps"), lastModified: "2026-11-22", changeFrequency: "monthly", priority: 0.8 },
     { url: absoluteUrl("/"), changeFrequency: "monthly", priority: 1 },
     { url: absoluteUrl("/carousel"), changeFrequency: "weekly", priority: 0.9 },
     { url: absoluteUrl("/videos"), changeFrequency: "weekly", priority: 0.7 },

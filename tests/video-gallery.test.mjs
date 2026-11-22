@@ -26,10 +26,14 @@ test('video and poster baselines detect changes without claiming image or audio 
 });
 
 test('each video has a unique route, playable file, poster, Hebrew captions and clean store links', () => {
-  assert.equal(videos.length, 3);
+  assert.equal(videos.length, 4);
   assert.equal(new Set(videos.map(video => video.slug)).size, videos.length);
-  assert.deepEqual(Array.from(videos.filter(video => video.collection).map(video => video.slug)), ['intuo-upscape', 'choosing-55cm-trolley']);
+  assert.deepEqual(Array.from(videos.filter(video => video.collection).map(video => video.slug)), ['knirps-umbrella-in-the-city', 'intuo-upscape', 'choosing-55cm-trolley']);
   for (const video of videos.filter(video => video.collection)) {
+    if (video.slug === 'knirps-umbrella-in-the-city') {
+      assert.equal(video.collection.url, '/knirps');
+      continue;
+    }
     assert.equal(new URL(video.collection.url).origin, 'https://www.toptik.co.il');
     assert.equal(decodeURI(new URL(video.collection.url).pathname), '/collections/מזוודות');
   }

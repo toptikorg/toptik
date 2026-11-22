@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "מטריות Knirps: דגמים, מנגנוני פתיחה וצבעים | TopTik",
   description: "מטריות קנירפס מתקפלות, השוואת פתיחה ידנית ו־Duomatic, תמונות פתוחות וסגורות ומדריכים לבחירה ולטיפול. לפרטים ולרכישה בחנות טופ תיק.",
   alternates: { canonical: "/knirps" },
-  robots: { index: false, follow: true },
+  robots: { index: true, follow: true },
 };
 
 export default function KnirpsPage() {
@@ -25,6 +25,7 @@ export default function KnirpsPage() {
       <h1>מטריות Knirps ליום בעיר</h1>
       <p>לדרך לעבודה, ליום בעיר ולתיק שמלווה אותך. כאן אפשר להשוות מנגנוני פתיחה, לראות את המטרייה פתוחה וסגורה ולבחור דגם וצבע. המחיר, המפרט והזמינות העדכניים מופיעים בחנות.</p>
     </header>
+    <section aria-labelledby="knirps-video"><h2 id="knirps-video" className={local.heading}>מטרייה ליום גשום בעיר</h2><p>צפו במטריית Knirps US.050 האדומה ובתמונות שלה פתוחה וסגורה.</p><Link href="/videos/knirps-umbrella-in-the-city" className={styles.cardLink}>לצפייה בסרטון ולפרטי המטרייה</Link></section>
     <section aria-labelledby="knirps-guides">
       <h2 id="knirps-guides" className={local.heading}>לפני שבוחרים מטרייה</h2>
       <div className={styles.archiveGrid}>{stories.map(story => <article className={styles.archiveCard} key={story.slug}>

@@ -17,6 +17,21 @@ export type GalleryVideo = {
 
 export const galleryVideos: readonly GalleryVideo[] = [
   {
+    slug: "knirps-umbrella-in-the-city",
+    file: "04-knirps-city",
+    firstPublishedOn: "2026-11-22",
+    durationSeconds: 20,
+    title: "מטריית Knirps מתקפלת ליום גשום בעיר",
+    seoTitle: "מטרייה מתקפלת Knirps ליום בעיר",
+    seoDescription: "מטריית קנירפס US.050 אדומה בתנועה בעיר ובתמונות פתוחות וסגורות. צפו בסרטון ובחרו מטרייה מתקפלת בחנות טופ תיק.",
+    liveCopy: ["גשם בעיר, וקצת צבע בדרך.", "מטריית Knirps US.050 אדומה עם פתיחה ידנית."],
+    eyebrow: "מטריות ליום יום",
+    description: "מטרייה מתקפלת שאפשר לצרף לתיק היומי. בסרטון מופיעה Knirps US.050 באדום. למפרט, למחיר ולזמינות העדכניים עברו לעמוד המוצר בחנות.",
+    transcript: "גשם בעיר, וקצת צבע בדרך. מטרייה מתקפלת של קנירפס, באתר טופ תיק.",
+    collection: { name: "למבחר המטריות ולמדריכי הבחירה", url: "/knirps" },
+    products: [{ name: "מטריית Knirps US.050 אדומה", url: "https://www.toptik.co.il/products/knirps-00501501" }],
+  },
+  {
     slug: "intuo-upscape",
     file: "01-intuo-vs-upscape",
     firstPublishedOn: "2026-11-06",
@@ -79,6 +94,7 @@ export function videoStructuredData(video: GalleryVideo, origin: string) {
     thumbnailUrl: new URL(`/videos/${video.file}.webp`, origin).href,
     contentUrl: new URL(`/videos/${video.file}.mp4`, origin).href,
     uploadDate: video.firstPublishedOn,
+    ...(video.durationSeconds ? { duration: `PT${video.durationSeconds}S` } : {}),
     inLanguage: "he",
   };
 }
