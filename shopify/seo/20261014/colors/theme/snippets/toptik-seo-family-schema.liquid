@@ -1,0 +1,29 @@
+{% doc %}
+  Enriches the existing native Product nodes of reviewed parent pages.
+  Keeps native offers, identifiers, images and variant colors unchanged.
+  @param {product} product - Current product.
+  @param {string} structured_data - Existing native JSON after store enhancements.
+{% enddoc %}
+{%- capture tt_parent -%}{%- render 'toptik-seo-color-family', product: product, mode: 'parent' -%}{%- endcapture -%}
+{%- assign tt_parent = tt_parent | strip -%}
+{%- if tt_parent == product.handle and tt_parent != blank -%}
+  {%- capture tt_colors -%}{%- render 'toptik-seo-color-family', product: product, mode: 'colors' -%}{%- endcapture -%}
+  {%- capture tt_siblings -%}{%- render 'toptik-seo-color-family', product: product, mode: 'siblings' -%}{%- endcapture -%}
+  {%- assign tt_parts = structured_data | split: '"@type":"Product",' -%}
+  {%- for tt_part in tt_parts -%}
+    {%- if forloop.first -%}
+      {{- tt_part -}}
+    {%- else -%}
+      "@type":"Product",
+      {%- unless tt_part contains '"isSimilarTo":' -%}
+        "isSimilarTo":{{ tt_siblings | strip }},
+      {%- endunless -%}
+      {%- unless tt_part contains '"color":' -%}
+        "color":{{ tt_colors | strip }},
+      {%- endunless -%}
+      {{- tt_part -}}
+    {%- endif -%}
+  {%- endfor -%}
+{%- else -%}
+  {{- structured_data -}}
+{%- endif -%}
