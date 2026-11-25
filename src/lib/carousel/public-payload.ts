@@ -1,10 +1,11 @@
 import { getCarouselPayload } from "@/lib/carousel/repository";
 import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { appendSamsoniteItems } from "@/lib/carousel/samsonite-catalog";
+import { appendKnirpsItems } from "./knirps-catalog";
 import { readStoreClassification, applyStoreClassification } from "./store-classification";
 
 /**
- * The public gallery catalog includes the reviewed Samsonite supplement and
+ * The public gallery catalog includes reviewed Samsonite and Knirps supplements and
  * excludes rows hidden by an editor. Reuse this in every public surface so
  * article product cards resolve against the same active SKUs as /api/carousel.
  */
@@ -24,7 +25,7 @@ export async function getPublicCarouselPayload(onTiming?: (name: string, ms: num
   ]);
   if (isUnavailableCarouselPayload(payload)) return payload;
 
-  let items = appendSamsoniteItems(payload.items).filter((item) => item.isActive)
+  let items = appendKnirpsItems(appendSamsoniteItems(payload.items), classification).filter((item) => item.isActive)
     .filter((item) => item.shopifyLink?.isPublished !== false);
   if (applySpecs) items = applySpecs(items);
   return { ...payload, items: applyStoreClassification(items, classification) };

@@ -1,4 +1,7 @@
 <!-- BEGIN:nextjs-agent-rules -->
+<!-- PURCHASE-PATH-CRITICAL-GATE-20261125 -->
+Before accepting a product/content release, follow docs/PURCHASE-LINK-RELEASE-GATE.md. Missing purchase links are critical; complete safe repairs within existing authorization, preserve manual hides, and verify the rendered purchase path on desktop and mobile. A product hub alone does not prove gallery inclusion. Safety and release approvals still apply.
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
