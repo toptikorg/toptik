@@ -4,8 +4,10 @@ import { brandForItem } from "./brands";
 import { REVIEWED_SERIES, type GallerySeries } from "./series";
 import type { ProductCategory } from "./categories";
 
-type StoreProduct = { vendor: string; product_type: string; tags: string[]; variants: { sku: string }[] };
-type Classification = { brand: string; series: GallerySeries | null; category: ProductCategory | null };
+type StoreProduct = { vendor: string; product_type: string; tags: string[]; handle?: string; variants: { sku: string; id?: string | number }[] };
+export type StoreClassification = { brand: string; series: GallerySeries | null; category: ProductCategory | null;
+  purchaseLink?: CarouselItem["shopifyLink"] };
+type Classification = StoreClassification;
 const brands: Record<string,string> = { "mandarina duck":"mandarina-duck", mandarinaduck:"mandarina-duck", "bric's":"brics", "bric’s":"brics", brics:"brics", samsonite:"samsonite", "american tourister":"american-tourister" };
 const categories: Record<string,ProductCategory> = {
   "מזוודה":"suitcase", "checked luggage":"suitcase", "טרולי":"carryon", "carry-on luggage":"carryon",
@@ -19,7 +21,8 @@ const normalize = (sku: string) => sku.normalize("NFKC").toUpperCase().replace(/
 export function classificationIndex(products: StoreProduct[]): Map<string,Classification | null> {
   const index = new Map<string,Classification | null>();
   for (const product of products) {
-    const brand = brands[product.vendor.trim().toLowerCase()];
+    const vendor = product.vendor.trim().toLowerCase();
+    const brand = vendor === "knirps" ? "brand:knirps" : brands[vendor];
     if (!brand || !Array.isArray(product.tags) || !Array.isArray(product.variants)) continue;
     const matches = REVIEWED_SERIES.filter(s => s.brand === brand && product.tags.includes(`tt-series:${s.key}`));
     const classification = { brand, series: matches.length === 1 ? matches[0] : null,
@@ -27,7 +30,11 @@ export function classificationIndex(products: StoreProduct[]): Map<string,Classi
     for (const variant of product.variants) {
       if (typeof variant.sku !== "string" || !variant.sku.trim()) continue;
       const key = normalize(variant.sku);
-      index.set(key, index.has(key) ? null : classification);
+      const variantId = String(variant.id ?? "");
+      const purchaseLink = brand === "brand:knirps" && typeof product.handle === "string" &&
+        /^[a-z0-9][a-z0-9-]{0,254}$/.test(product.handle) && /^\d+$/.test(variantId)
+        ? { handle: product.handle, variantId, isPublished: true } : undefined;
+      index.set(key, index.has(key) ? null : { ...classification, ...(purchaseLink ? { purchaseLink } : {}) });
     }
   }
   return index;

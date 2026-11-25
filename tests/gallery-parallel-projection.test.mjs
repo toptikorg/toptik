@@ -12,6 +12,7 @@ const compiled = stripTypeScriptTypes(`export function reader(deps) {
   const process = { env: { VERCEL_ENV: 'production', SHOPIFY_TYPED_SPEC_SYNC: 'enabled_v1' } };
   const isUnavailableCarouselPayload = payload => payload.unavailable;
   const appendSamsoniteItems = items => items;
+  const appendKnirpsItems = items => items;
   const applyStoreClassification = items => items;
   ${body}
   return getPublicCarouselPayload;
