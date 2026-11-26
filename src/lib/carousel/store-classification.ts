@@ -6,7 +6,8 @@ import type { ProductCategory } from "./categories";
 
 type StoreProduct = { vendor: string; product_type: string; tags: string[]; handle?: string; variants: { sku: string; id?: string | number }[] };
 export type StoreClassification = { brand: string; series: GallerySeries | null; category: ProductCategory | null;
-  purchaseLink?: CarouselItem["shopifyLink"] };
+  purchaseLink?: CarouselItem["shopifyLink"];
+  identity?: { sku: string; handle: string; variantId: string; vendor: string } };
 type Classification = StoreClassification;
 const brands: Record<string,string> = { "mandarina duck":"mandarina-duck", mandarinaduck:"mandarina-duck", "bric's":"brics", "bric’s":"brics", brics:"brics", samsonite:"samsonite", "american tourister":"american-tourister" };
 const categories: Record<string,ProductCategory> = {
@@ -17,6 +18,13 @@ const categories: Record<string,ProductCategory> = {
   "נרתיק":"pouches", "תיק רחצה":"pouches", pouch:"pouches", "toiletry bag":"pouches",
 };
 const normalize = (sku: string) => sku.normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^(P[0-9]{2}.*)TU$/, "$1");
+const exactSku = (sku: string) => sku.normalize("NFKC").trim().toUpperCase();
+
+function hasDeclaredBrand(item: CarouselItem): boolean {
+  return (item.techSpecs?.specs ?? []).some(section => section.items.some(spec =>
+    ["מותג", "brand"].includes(spec.label.normalize("NFKC").trim()
+      .replace(/\s+/g, " ").replace(/:$/, "").trim().toLowerCase())));
+}
 
 export function classificationIndex(products: StoreProduct[]): Map<string,Classification | null> {
   const index = new Map<string,Classification | null>();
@@ -34,7 +42,11 @@ export function classificationIndex(products: StoreProduct[]): Map<string,Classi
       const purchaseLink = brand === "brand:knirps" && typeof product.handle === "string" &&
         /^[a-z0-9][a-z0-9-]{0,254}$/.test(product.handle) && /^\d+$/.test(variantId)
         ? { handle: product.handle, variantId, isPublished: true } : undefined;
-      index.set(key, index.has(key) ? null : { ...classification, ...(purchaseLink ? { purchaseLink } : {}) });
+      const identity = typeof product.handle === "string" && product.handle.length <= 255 &&
+        /^[A-Za-z0-9א-ת][A-Za-z0-9א-ת-]*$/.test(product.handle) && /^\d+$/.test(variantId)
+        ? { sku: exactSku(variant.sku), handle: product.handle, variantId, vendor: product.vendor.trim() } : undefined;
+      index.set(key, index.has(key) ? null : { ...classification,
+        ...(purchaseLink ? { purchaseLink } : {}), ...(identity ? { identity } : {}) });
     }
   }
   return index;
@@ -67,8 +79,22 @@ export function applyStoreClassification(items: CarouselItem[], index: Map<strin
   if (!index) return items;
   return items.map(item => {
     const value = index.get(normalize(item.catalogNumber ?? ""));
-    if (!value || value.brand !== brandForItem(item)?.key) return item;
-    return { ...item, series: value.series,
-      ...(value.category ? { techSpecs: { ...(item.techSpecs ?? { specs: [], colors: [] }), category: value.category } } : {}) };
+    if (!value) return item;
+    let classified = item;
+    if (!brandForItem(item)) {
+      const identity = value.identity;
+      const link = item.shopifyLink;
+      // The public store is the source for a missing brand only when the exact
+      // published purchase identity agrees. Never infer it from a title/SKU
+      // prefix, override explicit conflicting data, or revive a hidden item.
+      if (!item.isActive || hasDeclaredBrand(item) || !identity || link?.isPublished !== true ||
+        exactSku(item.catalogNumber ?? "") !== identity.sku ||
+        link.handle !== identity.handle || link.variantId !== identity.variantId) return item;
+      classified = { ...item, techSpecs: { ...(item.techSpecs ?? { specs: [], colors: [] }),
+        specs: [...(item.techSpecs?.specs ?? []), { heading: "פרטי מוצר", items: [{ label: "מותג", value: identity.vendor }] }] } };
+    }
+    if (value.brand !== brandForItem(classified)?.key) return item;
+    return { ...classified, series: value.series,
+      ...(value.category ? { techSpecs: { ...(classified.techSpecs ?? { specs: [], colors: [] }), category: value.category } } : {}) };
   });
 }

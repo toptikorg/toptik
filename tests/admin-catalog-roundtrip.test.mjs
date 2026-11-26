@@ -24,6 +24,7 @@ const { createPublicReader } = await moduleFrom(`export function createPublicRea
   const appendKnirpsItems = items => items;
   const readStoreClassification = async () => null;
   const applyStoreClassification = items => items;
+  const publicCollectionItems = items => items;
   const isUnavailableCarouselPayload = () => false;
   ${publicRepository.slice(publicRepository.indexOf("export async function getPublicCarouselPayload")).replace(/^export /gm, "")}
   return getPublicCarouselPayload;

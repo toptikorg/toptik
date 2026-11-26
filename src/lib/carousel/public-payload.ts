@@ -3,6 +3,7 @@ import { isUnavailableCarouselPayload } from "@/lib/carousel/fallback-data";
 import { appendSamsoniteItems } from "@/lib/carousel/samsonite-catalog";
 import { appendKnirpsItems } from "./knirps-catalog";
 import { readStoreClassification, applyStoreClassification } from "./store-classification";
+import { publicCollectionItems } from "./brands";
 
 /**
  * The public gallery catalog includes reviewed Samsonite and Knirps supplements and
@@ -28,5 +29,10 @@ export async function getPublicCarouselPayload(onTiming?: (name: string, ms: num
   let items = appendKnirpsItems(appendSamsoniteItems(payload.items), classification).filter((item) => item.isActive)
     .filter((item) => item.shopifyLink?.isPublished !== false);
   if (applySpecs) items = applySpecs(items);
-  return { ...payload, items: applyStoreClassification(items, classification) };
+  const classified = applyStoreClassification(items, classification);
+  // Monitor the same brand/publication filter used by the client. Raw API
+  // presence alone must not count a product that disappears from the gallery.
+  const visibleProductHandles = [...new Set(publicCollectionItems(classified).flatMap(item =>
+    item.shopifyLink?.isPublished === true ? [item.shopifyLink.handle] : []))];
+  return { ...payload, items: classified, visibleProductHandles };
 }

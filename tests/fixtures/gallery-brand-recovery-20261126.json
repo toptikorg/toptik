@@ -1,0 +1,1422 @@
+{
+  "capturedAt": "2026-11-26T02:42:30Z",
+  "items": [
+    {
+      "id": "905228e3-22cd-4818-80aa-7ed9bf03f3be",
+      "title": "תיק גב Mandarina Duck MD20 Lux 2.0 UYTZ4 בצבע כסוף",
+      "catalogNumber": "P10UYTZ4466",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "p10uytz4466",
+        "variantId": "67616634470650",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "כיסים חיצוניים קדמיים עם flap and zip 2",
+                "value": ""
+              },
+              {
+                "label": "סגירה",
+                "value": "double-zip closure"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "כיס רוכסן פנימי 1",
+                "value": ""
+              },
+              {
+                "label": "כיס טלפון פנימי 1",
+                "value": ""
+              }
+            ],
+            "heading": "פנימי"
+          }
+        ],
+        "colors": [
+          {
+            "hex": "#c0c0c0",
+            "name": "כסף",
+            "swatchUrl": null
+          }
+        ]
+      },
+      "angles": [
+        {
+          "id": "a6a66c12-91f7-4dbf-bd98-5884f9773df2",
+          "itemId": "905228e3-22cd-4818-80aa-7ed9bf03f3be",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYTZ4466-01.jpg?v=1790852538",
+          "imageAlt": "תיק גב Mandarina Duck MD20 Lux 2.0 UYTZ4 בצבע כסוף | P10UYTZ4466 | תמונה 1",
+          "angleOrder": 1
+        },
+        {
+          "id": "57278843-c3fc-4716-bcc4-12c809763b49",
+          "itemId": "905228e3-22cd-4818-80aa-7ed9bf03f3be",
+          "angleKey": "view-2",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYTZ4466-02.jpg?v=1790852538",
+          "imageAlt": "תיק גב Mandarina Duck MD20 Lux 2.0 UYTZ4 בצבע כסוף | P10UYTZ4466 | תמונה 2",
+          "angleOrder": 2
+        },
+        {
+          "id": "65365e69-52a0-4961-aabc-3630be828fa8",
+          "itemId": "905228e3-22cd-4818-80aa-7ed9bf03f3be",
+          "angleKey": "view-3",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYTZ4466-03.jpg?v=1790852538",
+          "imageAlt": "תיק גב Mandarina Duck MD20 Lux 2.0 UYTZ4 בצבע כסוף | P10UYTZ4466 | תמונה 3",
+          "angleOrder": 3
+        },
+        {
+          "id": "bf717cfd-fa33-4b77-917f-20175e5faf38",
+          "itemId": "905228e3-22cd-4818-80aa-7ed9bf03f3be",
+          "angleKey": "view-4",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYTZ4466-04.jpg?v=1790852538",
+          "imageAlt": "תיק גב Mandarina Duck MD20 Lux 2.0 UYTZ4 בצבע כסוף | P10UYTZ4466 | תמונה 4",
+          "angleOrder": 4
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYTZ4466-01.jpg?v=1790852538"
+    },
+    {
+      "id": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+      "title": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית",
+      "catalogNumber": "BAH08451078",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "bah08451078",
+        "variantId": "67628770787578",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "פוליקרבונט"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "נפח",
+                "value": "42 ליטר"
+              },
+              {
+                "label": "מידות",
+                "value": "40 × 55 × 22 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "2.1 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": "#1a1a1a",
+            "name": "שחור",
+            "swatchUrl": null
+          },
+          {
+            "hex": "#1e4d9c",
+            "name": "כחול",
+            "swatchUrl": null
+          },
+          {
+            "hex": "#6b7028",
+            "name": "זית",
+            "swatchUrl": null
+          },
+          {
+            "hex": "#fffdd0",
+            "name": "קרם",
+            "swatchUrl": null
+          },
+          {
+            "hex": null,
+            "name": "Sky",
+            "swatchUrl": null
+          },
+          {
+            "hex": "#e8789a",
+            "name": "ורוד",
+            "swatchUrl": null
+          }
+        ]
+      },
+      "angles": [
+        {
+          "id": "faf713da-a8a6-46fa-b0f8-68aed1a1ff82",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/bah08451078-front.jpg?v=1791050068",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית — מבט קדמי",
+          "angleOrder": 1
+        },
+        {
+          "id": "aabfb4ff-35e3-415c-810f-bf11ae6ab437",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "extra-2",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/BAH08451078_extra_8d349aec43641b6a.jpg?v=1791350399",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית, תמונה נוספת 2",
+          "angleOrder": 2
+        },
+        {
+          "id": "1647b9bf-f27b-4a20-9437-16c40b880d6f",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "extra-3",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/BAH08451078_extra_7c6e42d49512259d.jpg?v=1791350399",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית, תמונה נוספת 3",
+          "angleOrder": 3
+        },
+        {
+          "id": "2afb288a-47ab-49cc-9e59-bf1c325533ac",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "extra-4",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/BAH08451078_extra_15413471a3585af1.jpg?v=1791350399",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית, תמונה נוספת 4",
+          "angleOrder": 4
+        },
+        {
+          "id": "155308e1-e791-4850-840d-763d9a7abf4c",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "extra-5",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/BAH08451078_extra_bfcd751718604cc6.jpg?v=1791350398",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית, תמונה נוספת 5",
+          "angleOrder": 5
+        },
+        {
+          "id": "e4163bbf-ba98-4193-b591-3930e6076dd2",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "extra-6",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/BAH08451078_extra_96df79b59ed42cb8.jpg?v=1791350399",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית, תמונה נוספת 6",
+          "angleOrder": 6
+        },
+        {
+          "id": "40055390-92a5-4915-ae5b-8bbfe670ee05",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "extra-7",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/BAH08451078_extra_f568d54bea780332.jpg?v=1791350399",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית, תמונה נוספת 7",
+          "angleOrder": 7
+        },
+        {
+          "id": "a02569f4-02fa-4371-abce-235cc86ca49b",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "extra-8",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/BAH08451078_extra_51e3faeb4d29fbed.jpg?v=1791350399",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית, תמונה נוספת 8",
+          "angleOrder": 8
+        },
+        {
+          "id": "e4c602e6-c7e5-4892-9148-d95e1efe42d1",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "extra-9",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/BAH08451078_extra_5d35e08e9964bc3e.jpg?v=1791350399",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית, תמונה נוספת 9",
+          "angleOrder": 9
+        },
+        {
+          "id": "512b1411-5312-4300-bb3c-75d9fa028e2d",
+          "itemId": "93d237f6-7f9a-4180-ab00-d77d512ac352",
+          "angleKey": "extra-10",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/BAH08451078_extra_d8c3ec6bf10c03d7.jpg?v=1791350399",
+          "imageAlt": "טרולי Bric’s Taormina 55 ס״מ מתרחב – ירוק זית, תמונה נוספת 10",
+          "angleOrder": 10
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/bah08451078-front.jpg?v=1791050068"
+    },
+    {
+      "id": "65a15b0d-3ef4-4013-875a-a62df9f28b46",
+      "title": "תיק צד Mandarina Duck Mellow Leather FZT05 בצבע שחור",
+      "catalogNumber": "P10FZT05001",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "p10fzt05001",
+        "variantId": "67636209778938",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "כיס קדמי עם zipper 1",
+                "value": ""
+              },
+              {
+                "label": "כיס אחורי עם zipper 1",
+                "value": ""
+              },
+              {
+                "label": "סגירה",
+                "value": "Zipper"
+              },
+              {
+                "label": "אורך רצועה",
+                "value": "137 ס\"מ"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "כיס רוכסן פנימי 1",
+                "value": ""
+              },
+              {
+                "label": "כיס טלפון פנימי 1",
+                "value": ""
+              }
+            ],
+            "heading": "פנימי"
+          },
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "עור"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "23 × 23 × 2.5 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.4 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Nero",
+            "swatchUrl": null
+          }
+        ]
+      },
+      "angles": [
+        {
+          "id": "ef09a47a-b2a9-4db8-b429-761bf45a6043",
+          "itemId": "65a15b0d-3ef4-4013-875a-a62df9f28b46",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZT05001-01-nobg.png?v=1791120500",
+          "imageAlt": "תיק צד Mandarina Duck Mellow Leather FZT05 בצבע שחור | P10FZT05001 | תמונה 1",
+          "angleOrder": 1
+        },
+        {
+          "id": "3a41506b-f0f6-496e-942b-a9e25087867f",
+          "itemId": "65a15b0d-3ef4-4013-875a-a62df9f28b46",
+          "angleKey": "extra-2",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZT05001-02-nobg.png?v=1791121125",
+          "imageAlt": "תיק צד Mandarina Duck Mellow Leather FZT05 בצבע שחור | P10FZT05001 | תמונה 2",
+          "angleOrder": 2
+        },
+        {
+          "id": "a5b76b53-1d51-4d42-a85a-de6f067b8136",
+          "itemId": "65a15b0d-3ef4-4013-875a-a62df9f28b46",
+          "angleKey": "extra-3",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZT05001_extra_8089440739990d7e.png?v=1791350975",
+          "imageAlt": "תיק צד Mandarina Duck Mellow Leather FZT05 בצבע שחור, תמונה נוספת 3",
+          "angleOrder": 3
+        },
+        {
+          "id": "f7365013-dc89-47ac-88a9-df98097918c0",
+          "itemId": "65a15b0d-3ef4-4013-875a-a62df9f28b46",
+          "angleKey": "extra-4",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZT05001_extra_c9e76e2d15cf4651.png?v=1791350974",
+          "imageAlt": "תיק צד Mandarina Duck Mellow Leather FZT05 בצבע שחור, תמונה נוספת 4",
+          "angleOrder": 4
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZT05001-01-nobg.png?v=1791120500"
+    },
+    {
+      "id": "093340d3-9dae-4192-bc74-6aada9c66455",
+      "title": "ארנק עור Mandarina Duck Mellow Leather FZP61 בצבע חמרה Havana",
+      "catalogNumber": "P10FZP61209",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "ארנק-עור-mandarina-duck-mellow-leather-fzp61-בצבע-חמרה-havana",
+        "variantId": "68128017711354",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "סגירה",
+                "value": "with zip"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "Bill compartment",
+                "value": ""
+              },
+              {
+                "label": "Credit card כיסים",
+                "value": ""
+              },
+              {
+                "label": "Document holder flyer",
+                "value": ""
+              }
+            ],
+            "heading": "פנימי"
+          },
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "עור"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "10.5 × 19 × 2.1 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.2 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Havana",
+            "swatchUrl": null
+          }
+        ],
+        "category": "wallets"
+      },
+      "angles": [
+        {
+          "id": "cca5dba3-8909-44c1-8c92-9e2fd94a4f99",
+          "itemId": "093340d3-9dae-4192-bc74-6aada9c66455",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZP61_209_S_1639.jpg?v=1794158686",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZP61_209_S_1639.jpg?v=1794158686"
+    },
+    {
+      "id": "11d9bcaa-0075-4c94-8d01-2b3bbb8119fa",
+      "title": "ארנק עור Mandarina Duck Mellow Leather FZP61 בצבע קפוצ׳ינו",
+      "catalogNumber": "P10FZP61B07",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "ארנק-עור-mandarina-duck-mellow-leather-fzp61-בצבע-קפוצ-ינו",
+        "variantId": "68128038322426",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "סגירה",
+                "value": "with zip"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "Bill compartment",
+                "value": ""
+              },
+              {
+                "label": "Credit card כיסים",
+                "value": ""
+              },
+              {
+                "label": "Document holder flyer",
+                "value": ""
+              }
+            ],
+            "heading": "פנימי"
+          },
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "עור"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "10.5 × 19 × 2.1 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.2 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": "#a58a6f",
+            "name": "קפוצ'ינו",
+            "swatchUrl": null
+          }
+        ],
+        "category": "wallets"
+      },
+      "angles": [
+        {
+          "id": "b7c03724-9da3-462b-9aa2-c2131f378468",
+          "itemId": "11d9bcaa-0075-4c94-8d01-2b3bbb8119fa",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZP61_B07_S_1670.jpg?v=1794158801",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZP61_B07_S_1670.jpg?v=1794158801"
+    },
+    {
+      "id": "51cd4a28-710f-45fb-a6bc-e21c6b1bb4ae",
+      "title": "ארנק עור Mandarina Duck Mellow Leather FZP61 בצבע זית חורפי",
+      "catalogNumber": "P10FZP61B08",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "ארנק-עור-mandarina-duck-mellow-leather-fzp61-בצבע-זית-חורפי",
+        "variantId": "68128046252282",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "סגירה",
+                "value": "with zip"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "Bill compartment",
+                "value": ""
+              },
+              {
+                "label": "Credit card כיסים",
+                "value": ""
+              },
+              {
+                "label": "Document holder flyer",
+                "value": ""
+              }
+            ],
+            "heading": "פנימי"
+          },
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "עור"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "10.5 × 19 × 2.1 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.2 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": "#6b7028",
+            "name": "winter זית",
+            "swatchUrl": null
+          }
+        ],
+        "category": "wallets"
+      },
+      "angles": [
+        {
+          "id": "3d24f1cf-5951-4d87-b61c-617570c811e0",
+          "itemId": "51cd4a28-710f-45fb-a6bc-e21c6b1bb4ae",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZP61_B08_S_1661.jpg?v=1794158848",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZP61_B08_S_1661.jpg?v=1794158848"
+    },
+    {
+      "id": "4c9c4d97-d722-469f-80da-5a529873f4bf",
+      "title": "תיק צד Mandarina Duck Mellow Leather FZTA9 בצבע חמרה Havana",
+      "catalogNumber": "P10FZTA9209",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "תיק-צד-mandarina-duck-mellow-leather-fzta9-בצבע-חמרה-havana",
+        "variantId": "68128085016826",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "עור"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "15.5 × 24 × 7 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.6 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Havana",
+            "swatchUrl": null
+          }
+        ],
+        "category": "fashion-bags"
+      },
+      "angles": [
+        {
+          "id": "93a6afe6-7689-4f23-b1c9-5b82aaf9b226",
+          "itemId": "4c9c4d97-d722-469f-80da-5a529873f4bf",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZTA9_209_S_0944.jpg?v=1794158982",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZTA9_209_S_0944.jpg?v=1794158982"
+    },
+    {
+      "id": "7dc8df30-e015-4905-a329-d17ddf9ec16c",
+      "title": "תיק צד מעור Mandarina Duck Daisy UKT03 בצבע בורדו Sin",
+      "catalogNumber": "P10UKT03B03",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "תיק-צד-מעור-mandarina-duck-daisy-ukt03-בצבע-בורדו-sin",
+        "variantId": "68128211960058",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "אורך רצועת כתף",
+                "value": "90 ס\"מ"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "עור"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "18 × 27 × 11 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.5 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Sin",
+            "swatchUrl": null
+          }
+        ],
+        "category": "fashion-bags"
+      },
+      "angles": [
+        {
+          "id": "18bc7109-16b7-4577-be49-077579180ea2",
+          "itemId": "7dc8df30-e015-4905-a329-d17ddf9ec16c",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UKT03_B03_M_0984.jpg?v=1794160144",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UKT03_B03_M_0984.jpg?v=1794160144"
+    },
+    {
+      "id": "22e38822-7762-4bbc-944e-e610a78d5272",
+      "title": "תיק צד Mandarina Duck MD20 Lux 2.0 UYT32 בצבע Rich Coco",
+      "catalogNumber": "P10UYT32B04",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "תיק-צד-mandarina-duck-md20-lux-2-0-uyt32-בצבע-rich-coco",
+        "variantId": "68132296196346",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "סגירה",
+                "value": "zip closure"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "16 × 26 × 9 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.2 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Rich Coco",
+            "swatchUrl": null
+          }
+        ],
+        "category": "fashion-bags"
+      },
+      "angles": [
+        {
+          "id": "a29f0106-ce04-490b-b67b-90acde93f257",
+          "itemId": "22e38822-7762-4bbc-944e-e610a78d5272",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYT32_B04_S.jpg?v=1794202486",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYT32_B04_S.jpg?v=1794202486"
+    },
+    {
+      "id": "444a33a5-304a-4d26-866f-7b245a930245",
+      "title": "תיק צד Mandarina Duck MD20 Lux 2.0 UYTV8 בצבע Rich Coco",
+      "catalogNumber": "P10UYTV8B04",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "תיק-צד-mandarina-duck-md20-lux-2-0-uytv8-בצבע-rich-coco",
+        "variantId": "68132347740410",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "כיסים חיצוניים קדמיים עם flap and zip 2",
+                "value": ""
+              },
+              {
+                "label": "כיס אחורי עם velcro closure 1",
+                "value": ""
+              },
+              {
+                "label": "סגירה",
+                "value": "with zip"
+              },
+              {
+                "label": "אורך רצועת כתף",
+                "value": "148 ס\"מ"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "כיס טלפון פנימי 1",
+                "value": ""
+              }
+            ],
+            "heading": "פנימי"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "20.5 × 28 × 11 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.3 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Rich Coco",
+            "swatchUrl": null
+          }
+        ],
+        "category": "fashion-bags"
+      },
+      "angles": [
+        {
+          "id": "f46e622e-bb05-4a54-a97b-aecfda18a9d2",
+          "itemId": "444a33a5-304a-4d26-866f-7b245a930245",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYTV8_B04_M_1272.jpg?v=1794202750",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYTV8_B04_M_1272.jpg?v=1794202750"
+    },
+    {
+      "id": "e6f6f8a6-b8aa-4cb0-a9b5-e510fe599438",
+      "title": "תיק גב Mandarina Duck MD20 Lux 2.0 UYTZ4 בצבע Rich Coco",
+      "catalogNumber": "P10UYTZ4B04",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "תיק-גב-mandarina-duck-md20-lux-2-0-uytz4-בצבע-rich-coco",
+        "variantId": "68132370678010",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "סגירה",
+                "value": "double-zip closure"
+              }
+            ],
+            "heading": "חיצוני"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Rich Coco",
+            "swatchUrl": null
+          }
+        ],
+        "category": "backpacks"
+      },
+      "angles": [
+        {
+          "id": "e3ef9f7a-59de-493b-8bfe-81e025398772",
+          "itemId": "e6f6f8a6-b8aa-4cb0-a9b5-e510fe599438",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYTZ4_B04_M_1215.jpg?v=1794202855",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYTZ4_B04_M_1215.jpg?v=1794202855"
+    },
+    {
+      "id": "c889290c-3f62-4ff1-84bb-b7f107cc1607",
+      "title": "תיק צד מעור Mandarina Duck Mellow Leather FZTA8 בצבע בורדו Sin",
+      "catalogNumber": "P10FZTA8B03",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "תיק-צד-מעור-mandarina-duck-mellow-leather-fzta8-בצבע-בורדו-sin",
+        "variantId": "68132762452218",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "סגירה",
+                "value": "visible zip"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "עור"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "15.5 × 24 × 7 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.5 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Sin",
+            "swatchUrl": null
+          }
+        ],
+        "category": "fashion-bags"
+      },
+      "angles": [
+        {
+          "id": "cbaf5cde-4479-465f-9d20-4abbe02715f0",
+          "itemId": "c889290c-3f62-4ff1-84bb-b7f107cc1607",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZTA8_B03_S_1717.jpg?v=1794205868",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZTA8_B03_S_1717.jpg?v=1794205868"
+    },
+    {
+      "id": "15cbdd82-b20a-486b-9f4e-01fd9c930846",
+      "title": "תיק סלינג Mandarina Duck MD Urban SJT03 בצבע ירוק זית Soldier",
+      "catalogNumber": "P10SJT0306I",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "תיק-סלינג-mandarina-duck-md-urban-sjt03-בצבע-ירוק-זית-soldier",
+        "variantId": "68138330161402",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "ניילון"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "30 × 20.5 × 9 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.3 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Soldier",
+            "swatchUrl": null
+          }
+        ],
+        "category": "fashion-bags"
+      },
+      "angles": [
+        {
+          "id": "3424d481-ff46-4a8c-89af-8cd37f9d9500",
+          "itemId": "15cbdd82-b20a-486b-9f4e-01fd9c930846",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/MANDARINA-DUCK-Sling-Bag-MD-Urban-Sling-Bag-Soldier-447474.jpg?v=1794236009",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/MANDARINA-DUCK-Sling-Bag-MD-Urban-Sling-Bag-Soldier-447474.jpg?v=1794236009"
+    },
+    {
+      "id": "20eef554-4c5f-49a5-a1b6-787b610a710a",
+      "title": "נרתיק Mandarina Duck MD20 Lux 2.0 UYT65 בצבע כסוף",
+      "catalogNumber": "P10UYT65466",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "נרתיק-mandarina-duck-md20-lux-2-0-uyt65-בצבע-כסוף",
+        "variantId": "68138347102458",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "סגירה",
+                "value": "zip closure"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "mesh כיס 1",
+                "value": ""
+              }
+            ],
+            "heading": "פנימי"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "13.5 × 20 × 10 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.1 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": "#c0c0c0",
+            "name": "כסף",
+            "swatchUrl": null
+          }
+        ],
+        "category": "pouches"
+      },
+      "angles": [
+        {
+          "id": "465a27ea-d939-44e4-a92b-a656e31e8061",
+          "itemId": "20eef554-4c5f-49a5-a1b6-787b610a710a",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYT65466-front.jpg?v=1794236112",
+          "imageAlt": null,
+          "angleOrder": 1
+        },
+        {
+          "id": "99b85e65-aeb5-4521-b576-be55c229c837",
+          "itemId": "20eef554-4c5f-49a5-a1b6-787b610a710a",
+          "angleKey": "view-2",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYT65466-side.jpg?v=1794236124",
+          "imageAlt": null,
+          "angleOrder": 2
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10UYT65466-front.jpg?v=1794236112"
+    },
+    {
+      "id": "d6550080-f8bc-422c-bef0-f30af275bacf",
+      "title": "תיק צד מעור Mandarina Duck Mellow Leather FZT82 בצבע חמרה Havana",
+      "catalogNumber": "P10FZT82209",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "תיק-צד-מעור-mandarina-duck-mellow-leather-fzt82-בצבע-חמרה-havana",
+        "variantId": "68138519068922",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "סגירה",
+                "value": "רוכסן"
+              },
+              {
+                "label": "אורך רצועה",
+                "value": "137 ס\"מ"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "עור"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "15 × 23 × 9 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.4 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Havana",
+            "swatchUrl": null
+          }
+        ],
+        "category": "fashion-bags"
+      },
+      "angles": [
+        {
+          "id": "ae44fdce-19d7-4055-a8da-e30b1cc41dd3",
+          "itemId": "d6550080-f8bc-422c-bef0-f30af275bacf",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZT82209-front.jpg?v=1794236643",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10FZT82209-front.jpg?v=1794236643"
+    },
+    {
+      "id": "be7b79bc-85dd-4a52-b414-da27c2d91b8a",
+      "title": "תיק צד מעור Mandarina Duck MD20 Leather TKTV8 בצבע בורדו Sin",
+      "catalogNumber": "P10TKTV8B03",
+      "isActive": true,
+      "shopifyLink": {
+        "handle": "תיק-צד-מעור-mandarina-duck-md20-leather-tktv8-בצבע-בורדו-sin",
+        "variantId": "68138526867706",
+        "isPublished": true
+      },
+      "techSpecs": {
+        "specs": [
+          {
+            "items": [
+              {
+                "label": "סגירה",
+                "value": "zip closure"
+              }
+            ],
+            "heading": "חיצוני"
+          },
+          {
+            "items": [
+              {
+                "label": "חומר",
+                "value": "עור"
+              }
+            ],
+            "heading": "הרכב"
+          },
+          {
+            "items": [
+              {
+                "label": "מידות",
+                "value": "18.5 × 25 × 9 ס\"מ"
+              },
+              {
+                "label": "משקל",
+                "value": "0.4 ק\"ג"
+              }
+            ],
+            "heading": "מידות"
+          }
+        ],
+        "colors": [
+          {
+            "hex": null,
+            "name": "Sin",
+            "swatchUrl": null
+          }
+        ],
+        "category": "fashion-bags"
+      },
+      "angles": [
+        {
+          "id": "6d29cf46-2aa8-478e-b19b-d4d01207a062",
+          "itemId": "be7b79bc-85dd-4a52-b414-da27c2d91b8a",
+          "angleKey": "front",
+          "imagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10TKTV8B03-front.jpg?v=1794236674",
+          "imageAlt": null,
+          "angleOrder": 1
+        }
+      ],
+      "coverImagePath": "https://cdn.shopify.com/s/files/1/0622/8082/7130/files/P10TKTV8B03-front.jpg?v=1794236674"
+    }
+  ],
+  "products": [
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "p10uytz4466",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10UYTZ4466",
+          "id": "67616634470650"
+        }
+      ]
+    },
+    {
+      "vendor": "BRICS",
+      "product_type": "",
+      "handle": "bah08451078",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "BAH08451078",
+          "id": "67628770787578"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "p10fzt05001",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10FZT05001",
+          "id": "67636209778938"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "ארנק-עור-mandarina-duck-mellow-leather-fzp61-בצבע-חמרה-havana",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10FZP61209",
+          "id": "68128017711354"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "ארנק-עור-mandarina-duck-mellow-leather-fzp61-בצבע-קפוצ-ינו",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10FZP61B07",
+          "id": "68128038322426"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "ארנק-עור-mandarina-duck-mellow-leather-fzp61-בצבע-זית-חורפי",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10FZP61B08",
+          "id": "68128046252282"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "תיק-צד-mandarina-duck-mellow-leather-fzta9-בצבע-חמרה-havana",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10FZTA9209",
+          "id": "68128085016826"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "תיק-צד-מעור-mandarina-duck-daisy-ukt03-בצבע-בורדו-sin",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10UKT03B03",
+          "id": "68128211960058"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "תיק-צד-mandarina-duck-md20-lux-2-0-uyt32-בצבע-rich-coco",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10UYT32B04",
+          "id": "68132296196346"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "תיק-צד-mandarina-duck-md20-lux-2-0-uytv8-בצבע-rich-coco",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10UYTV8B04",
+          "id": "68132347740410"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "תיק-גב-mandarina-duck-md20-lux-2-0-uytz4-בצבע-rich-coco",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10UYTZ4B04",
+          "id": "68132370678010"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "תיק-צד-מעור-mandarina-duck-mellow-leather-fzta8-בצבע-בורדו-sin",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10FZTA8B03",
+          "id": "68132762452218"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "תיק-סלינג-mandarina-duck-md-urban-sjt03-בצבע-ירוק-זית-soldier",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10SJT0306I",
+          "id": "68138330161402"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "נרתיק-mandarina-duck-md20-lux-2-0-uyt65-בצבע-כסוף",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10UYT65466",
+          "id": "68138347102458"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "תיק-צד-מעור-mandarina-duck-mellow-leather-fzt82-בצבע-חמרה-havana",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10FZT82209",
+          "id": "68138519068922"
+        }
+      ]
+    },
+    {
+      "vendor": "Mandarina Duck",
+      "product_type": "",
+      "handle": "תיק-צד-מעור-mandarina-duck-md20-leather-tktv8-בצבע-בורדו-sin",
+      "tags": [],
+      "variants": [
+        {
+          "sku": "P10TKTV8B03",
+          "id": "68138526867706"
+        }
+      ]
+    }
+  ]
+}
