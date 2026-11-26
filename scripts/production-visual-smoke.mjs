@@ -155,6 +155,15 @@ export function retainPublicMissingHandles(missingHandles, statusByHandle) {
   });
 }
 
+export function compareVisibleStoreGalleryProductHandles(storeProductUrls, payload) {
+  if (!Array.isArray(payload?.visibleProductHandles) ||
+    !payload.visibleProductHandles.every(handle => typeof handle === "string" && handle.length > 0)) {
+    throw new Error("Gallery public visibility projection is missing or invalid");
+  }
+  return compareStoreGalleryProductHandles(storeProductUrls, payload.visibleProductHandles.map(handle =>
+    ({ shopifyLink: { handle, isPublished: true } })));
+}
+
 function extractXmlLocations(xml) {
   return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)].map((match) => decodeHtmlAttribute(match[1]));
 }
@@ -505,7 +514,7 @@ export async function runProductionVisualSmoke(baseUrl = DEFAULT_BASE_URL) {
       try { return new URL(url).origin === storeBase && new URL(url).pathname.startsWith("/products/"); }
       catch { return false; }
     });
-  const catalogCoverage = compareStoreGalleryProductHandles(storeProductUrls, carouselPayload.items);
+  const catalogCoverage = compareVisibleStoreGalleryProductHandles(storeProductUrls, carouselPayload);
   if (catalogCoverage.missing.length > 0) {
     const storeUrlByHandle = new Map(storeProductUrls.map((url) => {
       const handle = decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean)[1] ?? "").toLowerCase();

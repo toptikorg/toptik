@@ -14,6 +14,7 @@ const compiled = stripTypeScriptTypes(`export function reader(deps) {
   const appendSamsoniteItems = items => items;
   const appendKnirpsItems = items => items;
   const applyStoreClassification = items => items;
+  const publicCollectionItems = deps.publicCollectionItems ?? (items => items);
   ${body}
   return getPublicCarouselPayload;
 }`);
@@ -47,4 +48,13 @@ test('unpublished store bindings disappear, while manual hides and gallery-only 
     readPublicTypedSpecOverlay:async()=>items=>items});
   assert.deepEqual((await get()).items.map(x=>x.id),['store','gallery-only']);
   assert.equal(items.length,4,'editor records are never deleted');
+});
+
+test('public visibility metadata excludes API records rejected by the display filter', async () => {
+  const items = ['visible','hidden'].map(id=>({id,isActive:true,shopifyLink:{handle:id,isPublished:true}}));
+  const get=reader({getCarouselPayload:async()=>({items,settings:{}}),readStoreClassification:async()=>null,
+    readPublicTypedSpecOverlay:async()=>items=>items,publicCollectionItems:items=>items.filter(x=>x.id==='visible')});
+  const payload=await get();
+  assert.equal(payload.items.length,2);
+  assert.deepEqual(payload.visibleProductHandles,['visible']);
 });

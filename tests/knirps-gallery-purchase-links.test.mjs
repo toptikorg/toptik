@@ -94,6 +94,7 @@ test("public payload composes reviewed umbrellas using the already loaded store 
     const isUnavailableCarouselPayload = p => p.unavailable;
     const appendSamsoniteItems = items => items;
     const applyStoreClassification = items => items;
+    const publicCollectionItems = items => items;
     const appendKnirpsItems = deps.appendKnirpsItems;
     ${body}
     return getPublicCarouselPayload;

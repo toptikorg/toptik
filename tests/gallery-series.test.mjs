@@ -39,6 +39,47 @@ const storeSource=readFileSync('src/lib/carousel/store-classification.ts','utf8'
  .replace('import "server-only";','').replace('"./brands"',JSON.stringify(brands)).replace('"./series"',JSON.stringify(seriesModuleUrl));
 const {classificationIndex,applyStoreClassification}=await import(moduleUrl(storeSource));
 
+test('published store identity restores all 16 missing brands before public gallery filtering',()=>{
+ const fixture=JSON.parse(readFileSync('tests/fixtures/gallery-brand-recovery-20261126.json','utf8'));
+ const before=structuredClone(fixture.items);
+ assert.equal(fixture.items.length,16);
+ assert.equal(publicCollectionItems(fixture.items).length,0,'reproduces the original display failure');
+ const repaired=applyStoreClassification(fixture.items,classificationIndex(fixture.products));
+ assert.equal(publicCollectionItems(repaired).length,16);
+ for(const item of repaired) assert.deepEqual(item.shopifyLink,before.find(x=>x.id===item.id).shopifyLink);
+ assert.deepEqual(fixture.items,before,'public enrichment must not write or mutate gallery source data');
+});
+
+test('a future published SKU receives its exact store brand without a manual SKU allowlist',()=>{
+ const future={id:'future',catalogNumber:'FUTURE-991',title:'No brand in this title',isActive:true,
+   shopifyLink:{handle:'future-bag',variantId:'123456',isPublished:true},techSpecs:{specs:[],colors:[]}};
+ const product={vendor:'Mandarina Duck',handle:'future-bag',product_type:'תיק גב',tags:[],variants:[{sku:'FUTURE-991',id:'123456'}]};
+ const index=classificationIndex([product]);
+ const [repaired]=applyStoreClassification([future],index);
+ assert.equal(publicCollectionItems([repaired]).length,1);
+ assert.equal(repaired.techSpecs.category,'backpacks');
+ assert.equal(publicCollectionItems(applyStoreClassification([future],null)).length,0);
+ for(const item of [
+   {...future,isActive:false},
+   {...future,shopifyLink:{...future.shopifyLink,isPublished:false}},
+   {...future,shopifyLink:{...future.shopifyLink,handle:'different'}},
+   {...future,shopifyLink:{...future.shopifyLink,variantId:'654321'}},
+   {...future,catalogNumber:'FUTURE991'},
+   {...future,techSpecs:{specs:[{items:[{label:'מותג',value:'Mandarina Duck'},{label:'Brand',value:'Samsonite'}]}],colors:[]}},
+   {...future,techSpecs:{specs:[{items:[{label:'מותג',value:''}]}],colors:[]}},
+ ]) assert.equal(applyStoreClassification([item],index)[0],item,'unsafe or conflicting data must remain unchanged');
+ assert.equal(applyStoreClassification([future],classificationIndex([product,product]))[0],future,'ambiguous SKU stays blocked');
+ const conflicting={...future,techSpecs:{specs:[{items:[{label:'מותג',value:'Samsonite'}]}],colors:[]}};
+ assert.equal(applyStoreClassification([conflicting],index)[0],conflicting,'never overwrite an explicit different brand');
+ for(const changed of [
+   {...product,handle:'wrong-handle'},
+   {...product,handle:undefined},
+   {...product,handle:'https://untrusted.invalid'},
+   {...product,variants:[{sku:'FUTURE-991',id:'not-an-id'}]},
+   {...product,vendor:'Unverified vendor'},
+ ]) assert.equal(applyStoreClassification([future],classificationIndex([changed]))[0],future);
+});
+
 test('three verified MD20 color projections remain public and enter the exact MD20 series without a brand spec',()=>{
  const skus=['P10QMMM1651','P10QMMM1465','P10QMMM109K'];
  const projections=skus.map(sku=>({id:sku,catalogNumber:sku,isActive:true,techSpecs:{specs:[],colors:[]}}));
