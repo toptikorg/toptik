@@ -148,13 +148,6 @@ export function compareStoreGalleryProductHandles(storeProductUrls, carouselItem
   };
 }
 
-export function retainPublicMissingHandles(missingHandles, statusByHandle) {
-  return missingHandles.filter((handle) => {
-    const status = statusByHandle.get(handle);
-    return status === undefined || status === 200;
-  });
-}
-
 export function compareVisibleStoreGalleryProductHandles(storeProductUrls, payload) {
   if (!Array.isArray(payload?.visibleProductHandles) ||
     !payload.visibleProductHandles.every(handle => typeof handle === "string" && handle.length > 0)) {
@@ -162,6 +155,13 @@ export function compareVisibleStoreGalleryProductHandles(storeProductUrls, paylo
   }
   return compareStoreGalleryProductHandles(storeProductUrls, payload.visibleProductHandles.map(handle =>
     ({ shopifyLink: { handle, isPublished: true } })));
+}
+
+export function retainPublicMissingHandles(missingHandles, statusByHandle) {
+  return missingHandles.filter((handle) => {
+    const status = statusByHandle.get(handle);
+    return status === undefined || status === 200;
+  });
 }
 
 function extractXmlLocations(xml) {
